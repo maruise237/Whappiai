@@ -1,0 +1,16 @@
+{
+  "name": "super-light-web-whatsapp-api-root",
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "cd Super-Light-Web-WhatsApp-API-Server-main && npm run dev",
+    "dev:frontend": "cd Super-Light-Web-WhatsApp-API-Server-main/frontend && npm run dev",
+    "dev": "npx concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "install:all": "npm install && cd Super-Light-Web-WhatsApp-API-Server-main && npm install && cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}
