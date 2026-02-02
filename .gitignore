@@ -1,48 +1,59 @@
+# Authentication & Session Data
+auth_info_*
+auth_info_baileys/
+sessions/
+session_tokens.json
+session_tokens.enc
+
+# Database
+data/
+whatsapp.db
+
+# User & Security Data
+users.enc
+users.json
+.env
+.env.production
+.env.local
+
+# Campaign & Recipient Data (contains encrypted user data)
+campaigns/
+recipient_lists/
+campaign_media/
+
+# Activity & Log Files
+activity_logs/
+logs/
+*.log
+system.log
+
+# Dependencies & Build
 node_modules/
 npm-debug.log
 package-lock.json
-.env
-.env.local
-.env.production
-.DS_Store
-Thumbs.db
 
-# Subproject sensitive data
-Super-Light-Web-WhatsApp-API-Server-main/auth_info_*
-Super-Light-Web-WhatsApp-API-Server-main/auth_info_baileys/
-Super-Light-Web-WhatsApp-API-Server-main/sessions/
-Super-Light-Web-WhatsApp-API-Server-main/session_tokens.json
-Super-Light-Web-WhatsApp-API-Server-main/session_tokens.enc
-Super-Light-Web-WhatsApp-API-Server-main/data/
-Super-Light-Web-WhatsApp-API-Server-main/whatsapp.db
-Super-Light-Web-WhatsApp-API-Server-main/users.enc
-Super-Light-Web-WhatsApp-API-Server-main/users.json
-Super-Light-Web-WhatsApp-API-Server-main/campaigns/
-Super-Light-Web-WhatsApp-API-Server-main/recipient_lists/
-Super-Light-Web-WhatsApp-API-Server-main/campaign_media/
-Super-Light-Web-WhatsApp-API-Server-main/activity_logs/
-Super-Light-Web-WhatsApp-API-Server-main/logs/
-Super-Light-Web-WhatsApp-API-Server-main/*.log
-Super-Light-Web-WhatsApp-API-Server-main/system.log
-Super-Light-Web-WhatsApp-API-Server-main/media/
-Super-Light-Web-WhatsApp-API-Server-main/.env
-Super-Light-Web-WhatsApp-API-Server-main/.env.production
-Super-Light-Web-WhatsApp-API-Server-main/.env.local
-
-# Subproject build/node_modules
-Super-Light-Web-WhatsApp-API-Server-main/node_modules/
-Super-Light-Web-WhatsApp-API-Server-main/frontend/node_modules/
-Super-Light-Web-WhatsApp-API-Server-main/frontend/.next/
-Super-Light-Web-WhatsApp-API-Server-main/frontend/out/
-Super-Light-Web-WhatsApp-API-Server-main/frontend/build/
-Super-Light-Web-WhatsApp-API-Server-main/frontend/.env.local
-Super-Light-Web-WhatsApp-API-Server-main/frontend/.env.production
+# Media Files (user uploads)
+media/
 
 # IDE & Editor Files
 .idea/
 .vscode/
-*.code-workspace
+Super-Light-Web-WhatsApp-API-Server.code-workspace
 
 # Backup & Temporary Files
 *.bak
 .pm2/
+
+# Development & Testing Files
+plan.md
+SECURITY_IMPROVEMENTS.md
+test_api_readme.md
+test_whatsapp_api.py
+test-encryption.js
+requirements.txt
+whatsapp_campaign_plan.md
+tests/
+
+# OS Files
+.DS_Store
+Thumbs.db
