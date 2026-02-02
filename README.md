@@ -1,6 +1,6 @@
-# Super-Light Web WhatsApp API Server
+# Whappi - WhatsApp API Server
 
-Ce projet est une API WhatsApp puissante et légère utilisant la bibliothèque `@whiskeysockets/baileys`, accompagnée d'un tableau de bord moderne en Next.js.
+Whappi est une API WhatsApp puissante et légère utilisant la bibliothèque `@whiskeysockets/baileys`, accompagnée d'un tableau de bord moderne en Next.js.
 
 ## Structure du projet
 
