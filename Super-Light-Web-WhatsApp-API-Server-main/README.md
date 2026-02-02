@@ -186,11 +186,32 @@ Key requirements for cPanel:
 - At least 1GB RAM
 - Set `MAX_SESSIONS=5` for optimal performance
 
-### Other Deployment Options
+### Docker Deployment (Recommended)
 
-- **VPS/Cloud**: Use the production scripts (`start-production.sh` or `start-production.bat`)
+The easiest way to run the server and frontend together is using Docker Compose:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/maruise237/Super-Light-Web-WhatsApp-API-Server-main.git
+   cd Super-Light-Web-WhatsApp-API-Server-main
+   ```
+
+2. **Configure environment variables:**
+   Copy `.env.example` to `.env` and fill in the required keys.
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Start the containers:**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+The **Backend/API** will be available at `http://localhost:3000` and the **Frontend** at `http://localhost:3001`.
+
+### VPS/Cloud Deployment
+- Use the production scripts (`start-production.sh` or `start-production.bat`)
 - **PM2**: Configuration included in `ecosystem.config.js`
-- **Docker**: Coming soon
 
 ## Admin Dashboard
 

@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./auth_info_baileys:/app/auth_info_baileys
+      - ./sessions:/app/sessions
+      - ./logs:/app/logs
+      - ./media:/app/media
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    restart: unless-stopped
