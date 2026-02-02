@@ -48,4 +48,4 @@ Si vous souhaitez pousser ce projet sur votre propre dépôt GitHub :
 
 ## Auteur
 Basé sur le travail de **Alucard0x1**.
-Amélioré et configuré pour le déploiement par Trae AI.
+Amélioré et configuré par kamtech.
