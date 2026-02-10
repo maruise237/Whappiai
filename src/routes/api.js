@@ -269,8 +269,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/sessions', checkSessionOrTokenAuth, (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl });
 
-        // If authenticated, filter sessions based on role
-        res.status(200).json(getSessionsDetails(req.currentUser.email, req.currentUser.role === 'admin'));
+        // IMPORTANT: By default, everyone (including admin) only sees their own sessions
+        // If an admin wants to see ALL sessions, they could potentially use a query param
+        const showAll = req.query.all === 'true' && req.currentUser.role === 'admin';
+        
+        res.status(200).json(getSessionsDetails(req.currentUser.email, showAll));
     });
 
     router.get('/sessions/:sessionId/qr', checkSessionOrTokenAuth, (req, res) => {
