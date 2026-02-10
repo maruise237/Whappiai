@@ -8,10 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/lib/api"
-import { showConfirm, showAlert, showLoading } from "@/lib/swal"
-import MySwal from "@/lib/swal"
+import { useNotification } from "@/hooks/use-notification"
 import { cn, copyToClipboard as copyUtil } from "@/lib/utils"
-import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import {
   Tooltip,
@@ -21,6 +19,7 @@ import {
 } from "@/components/ui/tooltip"
 
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
+  const { toast, confirm, loading: notificationLoading } = useNotification()
   const [loading, setLoading] = React.useState(false)
   const [showToken, setShowToken] = React.useState(false)
   const [copiedId, setCopiedId] = React.useState(false)
