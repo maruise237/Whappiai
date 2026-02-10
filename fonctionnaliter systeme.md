@@ -16,24 +16,22 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
 ### 📱 Gestion des Sessions WhatsApp
 - **Description** : Création et gestion d'instances WhatsApp indépendantes via Baileys.
 - **Fonctions** : Génération de QR Code en temps réel, monitoring de l'état de connexion (Connected, Connecting, Disconnected), et suppression sécurisée des données de session.
-- **Filtrage Intelligent** : Les administrateurs ne voient par défaut que leurs propres sessions, avec possibilité d'afficher toutes les sessions via paramètre global.
 
 ### 🤖 Module d'Automatisation IA (Agnostique)
 - **Description** : Connexion de n'importe quel fournisseur d'IA (OpenAI, Groq, OpenRouter, Ollama) à une instance spécifique.
 - **Modes de Réponse** :
-  - **Bot** : Réponse 100% automatique avec formatage intelligent pour WhatsApp (Markdown vers syntaxe WA).
-  - **Suggestion** : L'IA génère des réponses dans le dashboard pour envoi manuel par l'humain.
-  - **Animation de Groupe** : Génération de messages engageants basés sur le profil du groupe (mission, objectifs, règles) et intégration de liens produits/CTA.
-- **Humanisation** : Simulation réaliste du statut "en train d'écrire" avec un délai proportionnel à la longueur du texte généré.
+  - **Bot** : Réponse 100% automatique.
+  - **Humain** : L'IA génère des suggestions dans le dashboard pour envoi manuel.
+  - **Hybride** : Réponse automatique avec un délai d'annulation pour intervention humaine.
+- **Humanisation** : Simulation du statut "en train d'écrire" avec délai basé sur la longueur du texte.
 
 ### 📊 Gestion des Campagnes & Marketing
-- **Description** : Envoi massif de messages personnalisés à des listes de contacts.
-- **Options** : Délais aléatoires paramétrables entre les messages (stratégie anti-ban), planification différée via file d'attente, et support multi-médias (images, documents, audio/PTT, vidéos).
-- **Suivi** : Monitoring de la progression en temps réel avec statistiques détaillées (envoyés, échoués, en attente).
+- **Description** : Envoi massif de messages (texte et médias) à des listes de contacts.
+- **Options** : Délais aléatoires entre les messages (anti-ban), planification différée, et suivi de progression en temps réel.
 
 ### 👥 Gestion des Destinataires
-- **Description** : Importation (CSV/Excel) et organisation des contacts en listes segmentées.
-- **Fonctions** : Support complet des champs personnalisés (Custom Fields) pour une personnalisation dynamique des messages via des variables type `{{Name}}`, `{{Company}}`, etc.
+- **Description** : Importation et organisation des contacts en listes segmentées.
+- **Fonctions** : Support des champs personnalisés pour la personnalisation des messages de campagne.
 
 ### 📜 Monitoring & Audit
 - **Description** : Journalisation détaillée de toutes les actions système et erreurs.
@@ -43,29 +41,40 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
 
 ## 🛠️ Stack des Bibliothèques Externes
 
-### 🗺️ Onboarding (Tour Guidé)
+### 🗺️ Onboarding & Expérience Utilisateur
 - **Outil** : `driver.js`
-- **Usage** : Accompagner l'utilisateur lors de sa première visite ou lors de l'ajout d'une section complexe.
-- **Cohérence** : Le thème doit être injecté via `popoverClass: 'driverjs-theme'` pour correspondre au design minimaliste.
+- **Usage** : Accompagner l'utilisateur via des tours guidés modulaires adaptés au contexte.
+- **Zones Couvertes** :
+  - **Dashboard** : Initialisation et connexion de session (QR Code).
+  - **IA & Automatisation** : Configuration des prompts et des modèles.
+  - **Modération de Groupe** (Audit 2024) : Guide pour la mise en place des règles et profils d'animation.
+  - **Campagnes & Marketing** (Audit 2024) : Aide à l'importation CSV et au paramétrage des délais anti-ban.
+- **Cohérence** : Utilisation systématique de `popoverClass: 'driverjs-theme'` pour une intégration visuelle fluide.
 
 ### ⏳ Indicateurs de Progression
 - **Outil** : `nprogress.js`
 - **Usage** : Barre de progression subtile en haut de l'écran lors des changements de page ou d'appels API longs.
 - **Référence Design** : Couleur fixée sur le vert WhatsApp (`#10b981`).
 
-### 💬 Info-bulles & Tooltips
-- **Outil** : `tippy.js` (via `@tippyjs/react`)
-- **Usage** : Explications contextuelles au survol des icônes ou des termes techniques.
+### 💬 Info-bulles & Tooltips (Standardisation)
+- **Outil** : Shadcn/UI Tooltip (basé sur `Radix UI`)
+- **Note Audit** : Migration effectuée de `tippy.js` vers Radix pour une meilleure accessibilité et intégration React.
+- **Usage** : Explications contextuelles sur les icônes d'action, les statuts de session complexes, et les paramètres techniques (ex: Température IA, Délais de campagne).
 
 ### 🔔 Notifications & Alertes
 - **Outil** : `sonner` (Toasts)
-- **Usage** : Feedback immédiat pour les actions rapides (copie de texte, succès d'envoi, erreurs API).
+- **Usage** : Feedback immédiat pour les actions rapides (copie de texte, succès d'envoi).
 - **Outil** : `sweetalert2` (Dialogues)
-- **Usage** : Confirmations critiques (suppression de session/campagne) ou messages d'erreur bloquants avec support du thème sombre.
+- **Usage** : Confirmations critiques (suppression) ou messages d'erreur bloquants.
 
 ### 🎊 Gamification & Feedback Positif
 - **Outil** : `canvas-confetti`
-- **Usage** : Célébrer des étapes clés (ex: première connexion réussie d'une session).
+- **Usage** : Célébrer des succès utilisateurs pour renforcer l'engagement.
+- **Triggers Identifiés (Audit 2024)** :
+  - **Connexion Session** : Succès de l'appairage QR Code/Code.
+  - **Campagnes Terminées** : Fin d'un envoi massif sans erreur critique.
+  - **Génération IA** : Création réussie d'un message d'animation de groupe complexe.
+  - **Importation Contacts** : Validation d'une liste de destinataires volumineuse.
 
 ### 🔍 Coloration Syntaxique
 - **Outil** : `prism.js`

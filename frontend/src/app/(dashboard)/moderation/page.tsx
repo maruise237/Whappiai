@@ -22,6 +22,8 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAuth, useUser } from "@clerk/nextjs"
+import { ModerationTour } from "@/components/dashboard/moderation-tour"
+import { HelpCircle } from "lucide-react"
 
 interface SessionItem {
   sessionId: string
@@ -34,6 +36,7 @@ export default function ModerationSessionsPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [isAdmin, setIsAdmin] = React.useState(false)
+  const [showTour, setShowTour] = React.useState(false)
   const router = useRouter()
   const { getToken } = useAuth()
   const { user } = useUser()
@@ -83,8 +86,10 @@ export default function ModerationSessionsPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
+      <ModerationTour enabled={showTour} onExit={() => setShowTour(false)} />
+
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-card p-6 sm:p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg relative overflow-hidden group">
+      <div className="moderation-header flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-card p-6 sm:p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-primary/10 transition-colors duration-200" />
         
         <div className="space-y-3 relative z-10">
@@ -93,9 +98,19 @@ export default function ModerationSessionsPage() {
               <Users className="w-8 h-8 text-primary" />
             </div>
             <div className="space-y-1">
-              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-primary leading-none uppercase">
-                Gestion des Groupes
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-primary leading-none uppercase">
+                  Gestion des Groupes
+                </h1>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-primary/10 text-primary/60 hover:text-primary transition-colors"
+                  onClick={() => setShowTour(true)}
+                >
+                  <HelpCircle className="w-6 h-6" />
+                </Button>
+              </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="font-bold text-[10px] uppercase tracking-widest border-primary/20 bg-primary/5 text-primary px-3 py-1 rounded-lg">
                   MODÉRATION & ANIMATION
@@ -108,7 +123,7 @@ export default function ModerationSessionsPage() {
           </p>
         </div>
 
-        <div className="relative w-full lg:w-80 z-10">
+        <div className="session-selector relative w-full lg:w-80 z-10">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             placeholder="RECHERCHER UNE SESSION..." 
@@ -135,7 +150,7 @@ export default function ModerationSessionsPage() {
       </div>
 
       {/* Sessions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+      <div className="group-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         {filteredSessions.length === 0 ? (
           <div className="col-span-full py-24 bg-slate-50 dark:bg-card/50 border border-dashed border-slate-200 dark:border-primary/10 rounded-lg flex flex-col items-center justify-center space-y-4">
             <Zap className="w-12 h-12 text-muted-foreground opacity-20" />
