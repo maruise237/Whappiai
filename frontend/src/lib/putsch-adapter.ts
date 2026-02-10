@@ -11,12 +11,17 @@ class PutschNotificationAdapter implements IPutschAdapter {
   private preferences: PutschPreferences;
   private queue: PutschNotification[] = [];
   private isProcessing: boolean = false;
-  private audioContext: AudioContext | null = null;
+  private audioContext: any | null = null;
 
   private constructor() {
     // Charger les préférences depuis le localStorage
-    const savedPrefs = typeof window !== 'undefined' ? localStorage.getItem('putsch_prefs') : null;
-    this.preferences = savedPrefs ? { ...DEFAULT_PREFERENCES, ...JSON.parse(savedPrefs) } : DEFAULT_PREFERENCES;
+    try {
+      const savedPrefs = typeof window !== 'undefined' ? localStorage.getItem('putsch_prefs') : null;
+      this.preferences = savedPrefs ? { ...DEFAULT_PREFERENCES, ...JSON.parse(savedPrefs) } : DEFAULT_PREFERENCES;
+    } catch (e) {
+      console.error('Failed to load PUTSCH preferences:', e);
+      this.preferences = DEFAULT_PREFERENCES;
+    }
   }
 
   public static getInstance(): PutschNotificationAdapter {
@@ -111,9 +116,12 @@ class PutschNotificationAdapter implements IPutschAdapter {
   }
 
   private async playNotificationSound(priority: string): Promise<void> {
+    if (typeof window === 'undefined') return;
     try {
       if (!this.audioContext) {
-        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+        this.audioContext = new AudioContextClass();
       }
 
       const oscillator = this.audioContext.createOscillator();
