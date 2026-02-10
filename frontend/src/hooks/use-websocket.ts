@@ -28,15 +28,19 @@ export function useWebSocket() {
         // Determine WebSocket URL based on API_BASE_URL or current location
         let wsUrl: string;
         
-        if (API_BASE_URL) {
-          // If API_BASE_URL is set (e.g., http://localhost:3000), use its host
+        // Use the resolved API_BASE_URL if it looks like a full URL
+        if (API_BASE_URL && API_BASE_URL.includes('://')) {
           const url = new URL(API_BASE_URL);
           const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
           wsUrl = `${protocol}//${url.host}?token=${token}`;
         } else {
-          // Fallback to current location (production)
+          // Fallback to current location (production or relative)
           const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          wsUrl = `${protocol}//${window.location.host}?token=${token}`;
+          // If we are on port 3011, we know backend is on 3010
+          const host = window.location.port === '3011' 
+            ? `${window.location.hostname}:3010` 
+            : window.location.host;
+          wsUrl = `${protocol}//${host}?token=${token}`;
         }
 
         socket = new WebSocket(wsUrl)
