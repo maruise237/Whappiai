@@ -262,25 +262,33 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
       <CardContent className="p-0 relative z-10">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10">
-            <TabsList className="flex flex-row w-full h-auto p-2 sm:p-3 bg-background/40 backdrop-blur-xl border-2 border-primary/10 rounded-lg shadow-2xl overflow-x-auto no-scrollbar justify-start gap-2 sm:gap-3">
-              {[
-                { value: "text", icon: Type, label: "Texte" },
-                { value: "image", icon: ImageIcon, label: "Image" },
-                { value: "document", icon: FileText, label: "Doc" },
-                { value: "audio", icon: Mic, label: "Audio" },
-                { value: "video", icon: Video, label: "Vidéo" },
-                { value: "combo", icon: Layers, label: "Combo" }
-              ].map((tab) => (
-                <TabsTrigger 
-                  key={tab.value}
-                  value={tab.value} 
-                  className="flex-1 min-w-[80px] sm:min-w-[120px] gap-2 sm:gap-4 py-3 sm:py-5 rounded-lg font-black uppercase tracking-widest text-[9px] sm:text-[11px] data-[state=active]:whappi-gradient data-[state=active]:text-white data-[state=active]:shadow-2xl data-[state=active]:shadow-primary/30 transition-all duration-200 hover:bg-primary/5"
-                >
-                  <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <TooltipProvider delayDuration={300}>
+              <TabsList className="flex flex-row w-full h-auto p-2 sm:p-3 bg-background/40 backdrop-blur-xl border-2 border-primary/10 rounded-lg shadow-2xl overflow-x-auto no-scrollbar justify-start gap-2 sm:gap-3">
+                {[
+                  { value: "text", icon: Type, label: "Texte", tooltip: "Envoyer un message texte simple" },
+                  { value: "image", icon: ImageIcon, label: "Image", tooltip: "Envoyer une image avec légende" },
+                  { value: "document", icon: FileText, label: "Doc", tooltip: "Envoyer un document (PDF, DOCX...)" },
+                  { value: "audio", icon: Mic, label: "Audio", tooltip: "Envoyer un fichier audio ou PTT" },
+                  { value: "video", icon: Video, label: "Vidéo", tooltip: "Envoyer une vidéo (mp4)" },
+                  { value: "combo", icon: Layers, label: "Combo", tooltip: "Envoi multiple / Campagne rapide" }
+                ].map((tab) => (
+                  <Tooltip key={tab.value}>
+                    <TooltipTrigger asChild>
+                      <TabsTrigger 
+                        value={tab.value} 
+                        className="flex-1 min-w-[80px] sm:min-w-[120px] gap-2 sm:gap-4 py-3 sm:py-5 rounded-lg font-black uppercase tracking-widest text-[9px] sm:text-[11px] data-[state=active]:whappi-gradient data-[state=active]:text-white data-[state=active]:shadow-2xl data-[state=active]:shadow-primary/30 transition-all duration-200 hover:bg-primary/5"
+                      >
+                        <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="hidden sm:inline">{tab.label}</span>
+                      </TabsTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-[10px] font-bold uppercase tracking-widest">{tab.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </TabsList>
+            </TooltipProvider>
           </div>
 
           <div className="p-4 sm:p-8 lg:p-12">

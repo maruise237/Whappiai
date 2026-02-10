@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { AITour } from "@/components/dashboard/ai-tour"
 import { 
   Bot, 
   Plus, 
@@ -13,7 +14,8 @@ import {
   Save,
   MoreVertical,
   Zap,
-  Sparkles
+  Sparkles,
+  HelpCircle
 } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -73,6 +75,7 @@ export default function AIPage() {
   const [isQuickEditOpen, setIsQuickEditOpen] = React.useState(false)
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
   const [isAdmin, setIsAdmin] = React.useState(false)
+  const [showTour, setShowTour] = React.useState(false)
   
   const [formData, setFormData] = React.useState({
     sessionId: "",
@@ -191,8 +194,10 @@ export default function AIPage() {
 
   return (
     <div className="space-y-10 pb-12 animate-in fade-in duration-200">
+      <AITour enabled={showTour} onExit={() => setShowTour(false)} />
+      
       {/* Header Section - Centralized Admin Config Notice */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg relative overflow-hidden group">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg relative overflow-hidden group ai-page-header">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[100px] -mr-40 -mt-40 group-hover:bg-primary/10 transition-colors duration-200" />
         
         <div className="space-y-4 relative z-10">
@@ -201,9 +206,20 @@ export default function AIPage() {
               <Bot className="w-8 h-8 text-primary" />
             </div>
             <div className="space-y-1">
-              <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none uppercase">
-                Assistant IA
-              </h1>
+              <div className="flex items-center gap-4">
+                <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none uppercase">
+                  Assistant IA
+                </h1>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowTour(true)}
+                  className="rounded-full h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                  title="Démarrer le tour guidé"
+                >
+                  <HelpCircle className="w-5 h-5" />
+                </Button>
+              </div>
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="font-bold text-[10px] uppercase tracking-[0.2em] px-3 py-1 rounded-lg border-2 bg-background/50 border-primary/10 text-primary shadow-sm">
                   Smart Automation
@@ -248,10 +264,13 @@ export default function AIPage() {
             </div>
           </div>
         ) : (
-          items.map((item) => (
+          items.map((item, index) => (
             <Card 
               key={item.sessionId} 
-              className="group hover:shadow-2xl transition-all duration-300 border border-slate-200 dark:border-primary/10 hover:border-primary/30 rounded-lg overflow-hidden bg-white dark:bg-card flex flex-col hover:bg-slate-50/50 dark:hover:bg-primary/5"
+              className={cn(
+                "group hover:shadow-2xl transition-all duration-300 border border-slate-200 dark:border-primary/10 hover:border-primary/30 rounded-lg overflow-hidden bg-white dark:bg-card flex flex-col hover:bg-slate-50/50 dark:hover:bg-primary/5",
+                index === 0 && "ai-session-card"
+              )}
             >
               <CardHeader className="flex flex-row items-start justify-between space-y-0 p-8 pb-4">
                 <div className="flex items-center gap-5">
@@ -292,11 +311,11 @@ export default function AIPage() {
                   <DropdownMenuContent align="end" className="w-64 p-2 rounded-lg border border-slate-200 dark:border-primary/10 shadow-xl bg-white/95 dark:bg-card/95 backdrop-blur-sm">
                     <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black uppercase text-muted-foreground tracking-widest opacity-60">Actions de l'Assistant</DropdownMenuLabel>
                     <DropdownMenuSeparator className="my-1 bg-slate-100 dark:bg-primary/5" />
-                    <DropdownMenuItem onClick={() => handleOpenQuickEdit(item)} className="cursor-pointer rounded-lg p-3 focus:bg-primary/10 focus:text-primary group/item transition-colors duration-200">
+                    <DropdownMenuItem onClick={() => handleOpenQuickEdit(item)} className={cn("cursor-pointer rounded-lg p-3 focus:bg-primary/10 focus:text-primary group/item transition-colors duration-200", index === 0 && "ai-quick-settings")}>
                       <Settings2 className="w-4 h-4 mr-3 text-primary transition-transform duration-200 group-hover/item:rotate-90" />
                       <span className="font-bold uppercase tracking-widest text-[10px]">Réglages Rapides</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-3 focus:bg-amber-500/10 focus:text-amber-500 transition-colors duration-200">
+                    <DropdownMenuItem asChild className={cn("cursor-pointer rounded-lg p-3 focus:bg-amber-500/10 focus:text-amber-500 transition-colors duration-200", index === 0 && "ai-advanced-config")}>
                        <Link href={`/ai/config?session=${item.sessionId}`} className="flex items-center w-full" prefetch={false}>
                         <Zap className="w-4 h-4 mr-3 text-amber-500" />
                         <span className="font-bold uppercase tracking-widest text-[10px]">Configuration IA</span>
@@ -349,7 +368,7 @@ export default function AIPage() {
                   id={`switch-${item.sessionId}`}
                   checked={item.aiConfig.enabled}
                   onCheckedChange={() => toggleAI(item)}
-                  className="data-[state=checked]:bg-primary shadow-sm scale-110"
+                  className={cn("data-[state=checked]:bg-primary shadow-sm scale-110", index === 0 && "ai-toggle-switch")}
                 />
               </CardFooter>
             </Card>

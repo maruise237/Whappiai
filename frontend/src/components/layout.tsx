@@ -57,7 +57,7 @@ const mainNavigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Assistant IA", href: "/ai", icon: Bot },
   { name: "Moderation", href: "/moderation", icon: Shield },
-  { name: "Activités", href: "/activities", icon: History },
+  { name: "Activités", href: "/activities", icon: History, adminOnly: true },
   { name: "Utilisateurs", href: "/users", icon: Users, adminOnly: true },
   { name: "Configuration IA", href: "/ai-models", icon: Settings2, adminOnly: true },
 ]
@@ -162,12 +162,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <h3 className="hidden lg:block px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] opacity-50 mb-4">Principale</h3>
                 <div className="lg:hidden h-px bg-slate-100 dark:bg-primary/5 mx-4 my-2" />
                 <nav className="space-y-2">
-                  {filteredMainNavigation.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href
-                    return (
-                      <Link key={item.name} href={item.href} prefetch={false} className="block relative">
-                        <TooltipProvider delayDuration={300}>
+                  <TooltipProvider delayDuration={300}>
+                    {filteredMainNavigation.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+                      return (
+                        <Link key={item.name} href={item.href} prefetch={false} className="block relative">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -201,10 +201,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                               <p className="text-[10px] font-black uppercase tracking-widest">{item.name}</p>
                             </TooltipContent>
                           </Tooltip>
-                        </TooltipProvider>
-                      </Link>
-                    )
-                  })}
+                        </Link>
+                      )
+                    })}
+                  </TooltipProvider>
                 </nav>
               </div>
 
@@ -464,7 +464,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Bottom Bar - Essential for Modern UX */}
           <div className="md:hidden fixed bottom-6 left-6 right-6 h-16 bg-white/90 dark:bg-card/90 backdrop-blur-2xl border border-slate-200/50 dark:border-primary/10 rounded-lg shadow-2xl flex items-center justify-around px-2 z-40">
-            {mainNavigation.slice(0, 4).map((item) => {
+            {filteredMainNavigation.slice(0, 4).map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
               return (

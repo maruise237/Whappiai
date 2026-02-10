@@ -166,6 +166,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             }
         }
 
+        // 5. Check if it's a specific action that should be allowed for all users (like pairing code)
+        // Note: createSession already handles its own session validation
+        const isCreateSession = req.originalUrl.includes('/sessions') && req.method === 'POST';
+        if (isCreateSession) {
+            return next();
+        }
+
         log(`Accès refusé: Authentification échouée pour ${req.originalUrl}`, 'SYSTEM', { 
             event: 'auth-failed', 
             endpoint: req.originalUrl,

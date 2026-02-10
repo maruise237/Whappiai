@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import { AITour } from "@/components/dashboard/ai-tour"
 import { 
   ArrowLeft, 
   Save, 
@@ -11,7 +12,8 @@ import {
   ShieldAlert,
   KeyRound,
   Network,
-  Zap
+  Zap,
+  HelpCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,6 +45,7 @@ function AIConfigForm() {
   const [isSaving, setIsSaving] = React.useState(false)
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
   const [isAdmin, setIsAdmin] = React.useState(false)
+  const [showTour, setShowTour] = React.useState(false)
 
   const [formData, setFormData] = React.useState({
     enabled: false,
@@ -123,8 +126,10 @@ function AIConfigForm() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-20 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
+      <AITour enabled={showTour} onExit={() => setShowTour(false)} isConfigPage={true} />
+      
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-xl relative overflow-hidden group">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-xl relative overflow-hidden group ai-config-header">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[100px] -mr-40 -mt-40 group-hover:bg-primary/10 transition-colors duration-200" />
         
         <div className="flex items-center gap-6 relative z-10">
@@ -137,9 +142,20 @@ function AIConfigForm() {
             <ArrowLeft className="w-7 h-7" />
           </Button>
           <div className="space-y-1.5">
-            <h1 className="text-3xl font-black tracking-tighter uppercase leading-none">
-              Configuration <span className="text-primary">IA Avancée</span>
-            </h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl font-black tracking-tighter uppercase leading-none">
+                Configuration <span className="text-primary">IA Avancée</span>
+              </h1>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowTour(true)}
+                className="rounded-full h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                title="Démarrer le tour guidé"
+              >
+                <HelpCircle className="w-5 h-5" />
+              </Button>
+            </div>
             <div className="flex items-center gap-3">
               <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest bg-background/50 border-primary/10 px-3 py-1 rounded-lg text-primary shadow-sm">
                 SESSION: {sessionId}
@@ -152,7 +168,7 @@ function AIConfigForm() {
         <Button 
           onClick={handleSave} 
           disabled={isSaving}
-          className="w-full md:w-auto shadow-xl shadow-primary/20 h-16 px-10 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg transition-all duration-200 gap-3 bg-primary hover:bg-primary/90 text-white relative z-10"
+          className="w-full md:w-auto shadow-xl shadow-primary/20 h-16 px-10 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg transition-all duration-200 gap-3 bg-primary hover:bg-primary/90 text-white relative z-10 ai-save-button"
         >
           {isSaving ? (
             <div className="w-5 h-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -174,7 +190,7 @@ function AIConfigForm() {
               </CardTitle>
               <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Définissez comment l'IA interagit avec vos clients</CardDescription>
             </CardHeader>
-            <CardContent className="p-8 space-y-10">
+            <CardContent className="p-8 space-y-10 ai-model-selector">
               <div className="flex items-center justify-between p-6 rounded-lg bg-primary/5 border border-primary/10 transition-all hover:bg-primary/10 group shadow-inner duration-200">
                 <div className="space-y-1">
                   <Label className="text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Activer l'Assistant</Label>
@@ -191,7 +207,7 @@ function AIConfigForm() {
                 <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
                   <Cpu className="w-4 h-4" /> Mode de Fonctionnement
                 </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 ai-mode-selector">
                   {[
                     { id: 'bot', name: 'Robot', icon: Bot, desc: '100% Auto', color: 'bg-primary' },
                     { id: 'hybrid', name: 'Hybride', icon: Cpu, desc: 'Délai 5s', color: 'bg-amber-500' },
@@ -233,7 +249,7 @@ function AIConfigForm() {
               </CardTitle>
               <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Personnalisez la personnalité de votre bot</CardDescription>
             </CardHeader>
-            <CardContent className="p-8 space-y-6">
+            <CardContent className="p-8 space-y-6 ai-prompt-area">
               <Textarea 
                 value={formData.prompt}
                 onChange={(e) => setFormData({...formData, prompt: e.target.value})}
@@ -267,7 +283,7 @@ function AIConfigForm() {
                 Sélectionnez le modèle configuré par l'administrateur
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-8 space-y-10">
+            <CardContent className="p-8 space-y-10 ai-model-selector">
               <div className="space-y-4">
                 <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
                   <Cpu className="w-4 h-4" /> Modèle Sélectionné

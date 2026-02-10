@@ -12,6 +12,7 @@ import { showConfirm, showAlert, showLoading } from "@/lib/swal"
 import MySwal from "@/lib/swal"
 import { cn, copyToClipboard as copyUtil } from "@/lib/utils"
 import { toast } from "sonner"
+import confetti from "canvas-confetti"
 import {
   Tooltip,
   TooltipContent,
@@ -50,6 +51,14 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         const newSessionId = `session_${Math.random().toString(36).substring(2, 9)}`
         await api.sessions.create(newSessionId, phoneNumber)
         onRefresh()
+        
+        // Célébration de création
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#3b82f6', '#60a5fa', '#93c5fd', '#ffffff']
+        })
       } else {
         // Relancer avec numéro de téléphone
         await api.sessions.create(session.sessionId, phoneNumber)
@@ -195,13 +204,19 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                       {session ? session.sessionId : "---"}
                     </span>
                     {session && (
-                      <button 
-                        onClick={() => copyToClipboard(session.sessionId, 'id')}
-                        className="p-0.5 sm:p-1 rounded-md sm:rounded-lg hover:bg-primary/10 transition-all duration-200 hover:scale-110 shrink-0"
-                        title="Copier ID"
-                      >
-                        {copiedId ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" /> : <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-40 group-hover/id:opacity-100 transition-opacity" />}
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button 
+                            onClick={() => copyToClipboard(session.sessionId, 'id')}
+                            className="p-0.5 sm:p-1 rounded-md sm:rounded-lg hover:bg-primary/10 transition-all duration-200 hover:scale-110 shrink-0"
+                          >
+                            {copiedId ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" /> : <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-40 group-hover/id:opacity-100 transition-opacity" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-[10px] font-bold uppercase tracking-widest">Copier l'ID de session</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
 
@@ -212,20 +227,33 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                         {showToken ? session.token : "••••••••"}
                       </span>
                       <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
-                        <button 
-                          onClick={() => setShowToken(!showToken)}
-                          className="p-0.5 sm:p-1 rounded-md sm:rounded-lg hover:bg-amber-500/10 transition-all duration-200 hover:scale-110"
-                          title={showToken ? "Masquer" : "Afficher"}
-                        >
-                          {showToken ? <EyeOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600" /> : <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600 opacity-40 group-hover/token:opacity-100" />}
-                        </button>
-                        <button 
-                          onClick={() => copyToClipboard(session.token, 'token')}
-                          className="p-0.5 sm:p-1 rounded-md sm:rounded-lg hover:bg-amber-500/10 transition-all duration-200 hover:scale-110"
-                          title="Copier Token"
-                        >
-                          {copiedToken ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" /> : <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600 opacity-40 group-hover/token:opacity-100" />}
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button 
+                              onClick={() => setShowToken(!showToken)}
+                              className="p-0.5 sm:p-1 rounded-md sm:rounded-lg hover:bg-amber-500/10 transition-all duration-200 hover:scale-110"
+                            >
+                              {showToken ? <EyeOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600" /> : <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600 opacity-40 group-hover/token:opacity-100" />}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            <p className="text-[10px] font-bold uppercase tracking-widest">{showToken ? "Masquer le token" : "Afficher le token"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button 
+                              onClick={() => copyToClipboard(session.token, 'token')}
+                              className="p-0.5 sm:p-1 rounded-md sm:rounded-lg hover:bg-amber-500/10 transition-all duration-200 hover:scale-110"
+                            >
+                              {copiedToken ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" /> : <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600 opacity-40 group-hover/token:opacity-100" />}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            <p className="text-[10px] font-bold uppercase tracking-widest">Copier le Token API</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   )}
