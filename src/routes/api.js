@@ -1212,13 +1212,29 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
         try {
             // Check ownership if user is authenticated
-            if (req.currentUser && req.currentUser.role !== 'admin' && userManager) {
-                const sessionOwner = userManager.getSessionOwner(sessionId);
-                if (sessionOwner && sessionOwner.email !== req.currentUser.email) {
-                    return res.status(403).json({
-                        status: 'error',
-                        message: 'You can only delete your own sessions'
-                    });
+            if (req.currentUser) {
+                log(`Delete session attempt: ${sessionId} by ${req.currentUser.email} (role: ${req.currentUser.role})`, 'AUTH');
+                
+                // Admin can delete everything
+                if (req.currentUser.role === 'admin') {
+                    log(`Admin ${req.currentUser.email} allowed to delete session ${sessionId}`, 'AUTH');
+                } else if (req.currentUser.role === 'api') {
+                    // Token-based auth for this specific session is allowed
+                    if (!req.currentUser.email.endsWith(sessionId)) {
+                        return res.status(403).json({
+                            status: 'error',
+                            message: 'Token does not match session'
+                        });
+                    }
+                } else if (userManager) {
+                    const sessionOwner = userManager.getSessionOwner(sessionId);
+                    if (sessionOwner && sessionOwner.email !== req.currentUser.email) {
+                        log(`Denied delete session ${sessionId}: Owner is ${sessionOwner.email}, requester is ${req.currentUser.email}`, 'AUTH');
+                        return res.status(403).json({
+                            status: 'error',
+                            message: 'You can only delete your own sessions'
+                        });
+                    }
                 }
             }
 

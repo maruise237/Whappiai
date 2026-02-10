@@ -131,6 +131,14 @@ const sessionStore = new FileStore({
 // Middleware
 app.use(cookieParser());
 app.use(ClerkExpressWithAuth());
+
+// Debug Clerk Auth
+app.use((req, res, next) => {
+    if (req.auth && req.auth.userId) {
+        log(`Clerk Auth: UserID=${req.auth.userId}, Claims=${JSON.stringify(req.auth.sessionClaims)}`, 'AUTH', null, 'DEBUG');
+    }
+    next();
+});
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
