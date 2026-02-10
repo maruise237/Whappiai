@@ -4,7 +4,7 @@ RUN apk add --no-cache python3 make g++ gcc libc-dev
 WORKDIR /app
 COPY package*.json ./
 # better-sqlite3 needs compilation
-RUN npm ci
+RUN npm install
 
 # STAGE 2: Runner
 FROM node:20-alpine AS runner
