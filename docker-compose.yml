@@ -6,7 +6,7 @@ services:
     container_name: whappi-backend
     restart: always
     ports:
-      - "3000:3000"
+      - "3010:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -15,7 +15,7 @@ services:
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
       - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
-      - FRONTEND_URL=http://${SERVER_IP}:3001
+      - FRONTEND_URL=http://${SERVER_IP}:3011
       - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD}
     volumes:
       - whappi-data:/app/data
@@ -29,14 +29,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=http://${SERVER_IP}:3000
+        - NEXT_PUBLIC_API_URL=http://${SERVER_IP}:3010
         - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
         - NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
         - NEXT_PUBLIC_CLERK_SIGN_UP_URL=/register
     container_name: whappi-frontend
     restart: always
     ports:
-      - "3001:3001"
+      - "3011:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
