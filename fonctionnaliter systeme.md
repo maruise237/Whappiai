@@ -16,22 +16,24 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
 ### 📱 Gestion des Sessions WhatsApp
 - **Description** : Création et gestion d'instances WhatsApp indépendantes via Baileys.
 - **Fonctions** : Génération de QR Code en temps réel, monitoring de l'état de connexion (Connected, Connecting, Disconnected), et suppression sécurisée des données de session.
+- **Filtrage Intelligent** : Les administrateurs ne voient par défaut que leurs propres sessions, avec possibilité d'afficher toutes les sessions via paramètre global.
 
 ### 🤖 Module d'Automatisation IA (Agnostique)
 - **Description** : Connexion de n'importe quel fournisseur d'IA (OpenAI, Groq, OpenRouter, Ollama) à une instance spécifique.
 - **Modes de Réponse** :
-  - **Bot** : Réponse 100% automatique.
-  - **Humain** : L'IA génère des suggestions dans le dashboard pour envoi manuel.
-  - **Hybride** : Réponse automatique avec un délai d'annulation pour intervention humaine.
-- **Humanisation** : Simulation du statut "en train d'écrire" avec délai basé sur la longueur du texte.
+  - **Bot** : Réponse 100% automatique avec formatage intelligent pour WhatsApp (Markdown vers syntaxe WA).
+  - **Suggestion** : L'IA génère des réponses dans le dashboard pour envoi manuel par l'humain.
+  - **Animation de Groupe** : Génération de messages engageants basés sur le profil du groupe (mission, objectifs, règles) et intégration de liens produits/CTA.
+- **Humanisation** : Simulation réaliste du statut "en train d'écrire" avec un délai proportionnel à la longueur du texte généré.
 
 ### 📊 Gestion des Campagnes & Marketing
-- **Description** : Envoi massif de messages (texte et médias) à des listes de contacts.
-- **Options** : Délais aléatoires entre les messages (anti-ban), planification différée, et suivi de progression en temps réel.
+- **Description** : Envoi massif de messages personnalisés à des listes de contacts.
+- **Options** : Délais aléatoires paramétrables entre les messages (stratégie anti-ban), planification différée via file d'attente, et support multi-médias (images, documents, audio/PTT, vidéos).
+- **Suivi** : Monitoring de la progression en temps réel avec statistiques détaillées (envoyés, échoués, en attente).
 
 ### 👥 Gestion des Destinataires
-- **Description** : Importation et organisation des contacts en listes segmentées.
-- **Fonctions** : Support des champs personnalisés pour la personnalisation des messages de campagne.
+- **Description** : Importation (CSV/Excel) et organisation des contacts en listes segmentées.
+- **Fonctions** : Support complet des champs personnalisés (Custom Fields) pour une personnalisation dynamique des messages via des variables type `{{Name}}`, `{{Company}}`, etc.
 
 ### 📜 Monitoring & Audit
 - **Description** : Journalisation détaillée de toutes les actions système et erreurs.
@@ -57,9 +59,9 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
 
 ### 🔔 Notifications & Alertes
 - **Outil** : `sonner` (Toasts)
-- **Usage** : Feedback immédiat pour les actions rapides (copie de texte, succès d'envoi).
+- **Usage** : Feedback immédiat pour les actions rapides (copie de texte, succès d'envoi, erreurs API).
 - **Outil** : `sweetalert2` (Dialogues)
-- **Usage** : Confirmations critiques (suppression) ou messages d'erreur bloquants.
+- **Usage** : Confirmations critiques (suppression de session/campagne) ou messages d'erreur bloquants avec support du thème sombre.
 
 ### 🎊 Gamification & Feedback Positif
 - **Outil** : `canvas-confetti`
