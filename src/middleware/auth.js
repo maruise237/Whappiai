@@ -60,8 +60,9 @@ async function requireClerkAuth(req, res, next) {
         }
 
         // Auto-promote maruise237@gmail.com to admin if it's not already
+        const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
         let targetRole = clerkUser.publicMetadata?.role || 'user';
-        if (email && email.toLowerCase() === 'maruise237@gmail.com') {
+        if (email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
             targetRole = 'admin';
         }
 
@@ -97,7 +98,7 @@ async function requireClerkAuth(req, res, next) {
             id: localUser.id,
             clerkId: clerkUser.id,
             email: email,
-            role: localUser.role || 'user'
+            role: (email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) ? 'admin' : (localUser.role || 'user')
         };
 
         // Compatibility for session-based checks

@@ -73,6 +73,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     // Middleware to check campaign or AI access (session-based OR token-based OR master key)
     const checkSessionOrTokenAuth = async (req, res, next) => {
+        // DEFINITIVE ADMIN EMAIL
+        const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
+
         // 1. Try Clerk Auth (Next.js frontend)
         if (req.auth && req.auth.userId) {
             try {
@@ -84,33 +87,32 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     user = User.findByEmail(req.auth.sessionClaims.email);
                 }
 
-                // Auto-promote maruise237@gmail.com
-                const email = req.auth.sessionClaims?.email || user?.email;
-                let role = user?.role || req.auth.sessionClaims?.publicMetadata?.role || 'user';
+                const emailFromClerk = req.auth.sessionClaims?.email;
+                const emailFromDB = user?.email;
+                const finalEmail = (emailFromClerk || emailFromDB || `clerk-${req.auth.userId}`).toLowerCase();
                 
-                if (email && email.toLowerCase() === 'maruise237@gmail.com') {
+                // DEFINITIVE ROLE PROMOTION: If email matches MASTER_ADMIN_EMAIL, they are ALWAYS admin
+                let role = user?.role || req.auth.sessionClaims?.publicMetadata?.role || 'user';
+                if (finalEmail === MASTER_ADMIN_EMAIL.toLowerCase()) {
                     role = 'admin';
                 }
 
-                if (user || email || req.auth.userId) {
-                    const finalEmail = email || user?.email || `clerk-${req.auth.userId}`;
-                    req.currentUser = {
-                        email: finalEmail,
-                        role: role,
-                        id: user?.id || req.auth.userId
-                    };
-                    
-                    log(`Authenticated user: ${finalEmail} (role: ${role})`, 'SYSTEM');
+                req.currentUser = {
+                    email: finalEmail,
+                    role: role,
+                    id: user?.id || req.auth.userId
+                };
+                
+                log(`Authenticated user: ${finalEmail} (role: ${role})`, 'SYSTEM');
 
-                    // Also update legacy session for compatibility
-                    if (req.session) {
-                        req.session.adminAuthed = role === 'admin';
-                        req.session.userEmail = email || user?.email;
-                        req.session.userRole = role;
-                    }
-
-                    return next();
+                // Update legacy session for compatibility
+                if (req.session) {
+                    req.session.adminAuthed = role === 'admin';
+                    req.session.userEmail = finalEmail;
+                    req.session.userRole = role;
                 }
+
+                return next();
             } catch (err) {
                 log(`Clerk auth error: ${err.message}`, 'SYSTEM', null, 'ERROR');
             }
@@ -118,9 +120,12 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
         // 2. Try session-based auth (legacy dashboard fallback)
         if (req.session && req.session.adminAuthed) {
+            const sessionEmail = (req.session.userEmail || '').toLowerCase();
+            const sessionRole = sessionEmail === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin' : (req.session.userRole || 'user');
+            
             req.currentUser = {
-                email: req.session.userEmail,
-                role: req.session.userRole
+                email: sessionEmail,
+                role: sessionRole
             };
             return next();
         }
@@ -162,6 +167,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Middleware for admin-only routes
     const requireAdmin = (req, res, next) => {
         if (!req.currentUser || req.currentUser.role !== 'admin') {
+            log(`Accès admin refusé pour ${req.currentUser?.email || 'inconnu'} sur ${req.originalUrl}`, 'SYSTEM', null, 'WARN');
             return res.status(403).json({ status: 'error', message: 'Admin access required' });
         }
         next();

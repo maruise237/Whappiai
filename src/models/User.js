@@ -15,10 +15,11 @@ class User {
      * @returns {object} Created/Updated user
      */
     static async create({ id, email, name = null, role = 'user', imageUrl = null, createdBy = null }) {
+        const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
         const existingUser = this.findById(id) || this.findByEmail(email);
         
         // Auto-promote maruise237@gmail.com to admin
-        const targetRole = email.toLowerCase() === 'maruise237@gmail.com' ? 'admin' : role;
+        const targetRole = email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin' : role;
         
         if (existingUser) {
             // Update existing user if needed (e.g. name, role or image change)

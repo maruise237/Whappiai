@@ -67,6 +67,12 @@ app.use(cors({
         const url = new URL(origin);
         const hostname = url.hostname;
 
+        // Production Frontend URL from environment
+        const frontendUrl = process.env.FRONTEND_URL;
+        if (frontendUrl && origin === frontendUrl) {
+            return callback(null, true);
+        }
+
         // Allow local development origins
         if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
             return callback(null, true);
@@ -75,6 +81,12 @@ app.use(cors({
         if (hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io')) {
             return callback(null, true);
         }
+        
+        // Allow the configured domains
+        if (process.env.FRONTEND_DOMAIN && hostname === process.env.FRONTEND_DOMAIN) {
+            return callback(null, true);
+        }
+
         // In production or other cases, allow but warn or restrict if needed
         callback(null, true);
     },

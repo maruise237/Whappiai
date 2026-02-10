@@ -1,42 +1,64 @@
 services:
-  backend:
-    build: .
-    ports:
-      - "3000:3000"
+  whappi-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: whappi-backend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_PATH=/app/data/whatsapp.db
+      - SESSION_SECRET=${SESSION_SECRET}
+      - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
+      - FRONTEND_URL=https://${FRONTEND_DOMAIN}
+      - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD}
     volumes:
-      - data:/app/data
-      - auth_info:/app/auth_info_baileys
-      - sessions:/app/sessions
-      - logs:/app/logs
-      - media:/app/media
-    env_file:
-      - .env
-    restart: unless-stopped
+      - whappi-data:/app/data
+      - whappi-sessions:/app/sessions
+      - whappi-media:/app/media
     networks:
-      - whappi-network
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whappi-backend.rule=Host(`${BACKEND_DOMAIN}`)"
+      - "traefik.http.routers.whappi-backend.entrypoints=websecure"
+      - "traefik.http.routers.whappi-backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.whappi-backend.loadbalancer.server.port=3000"
+      # WebSocket Support
+      - "traefik.http.middlewares.whappi-ws.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.whappi-backend.middlewares=whappi-ws"
 
-  frontend:
+  whappi-frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
-    ports:
-      - "3001:3001"
-    env_file:
-      - .env
-    restart: unless-stopped
+        - NEXT_PUBLIC_API_URL=https://${BACKEND_DOMAIN}
+        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        - NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
+        - NEXT_PUBLIC_CLERK_SIGN_UP_URL=/register
+    container_name: whappi-frontend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
     networks:
-      - whappi-network
-    depends_on:
-      - backend
-
-networks:
-  whappi-network:
-    driver: bridge
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whappi-frontend.rule=Host(`${FRONTEND_DOMAIN}`)"
+      - "traefik.http.routers.whappi-frontend.entrypoints=websecure"
+      - "traefik.http.routers.whappi-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.whappi-frontend.loadbalancer.server.port=3001"
 
 volumes:
-  data:
-  auth_info:
-  sessions:
-  logs:
-  media:
+  whappi-data:
+  whappi-sessions:
+  whappi-media:
+
+networks:
+  dokploy-network:
+    external: true

@@ -1,0 +1,30 @@
+# STAGE 1: Dependencies
+FROM node:20-alpine AS deps
+RUN apk add --no-cache python3 make g++ gcc libc-dev
+WORKDIR /app
+COPY package*.json ./
+# better-sqlite3 needs compilation
+RUN npm ci
+
+# STAGE 2: Runner
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Create necessary directories and set permissions
+RUN mkdir -p data sessions media && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 expressjs && \
+    chown -R expressjs:nodejs /app
+
+# Copy built node_modules and source
+COPY --from=deps --chown=expressjs:nodejs /app/node_modules ./node_modules
+COPY --chown=expressjs:nodejs . .
+
+USER expressjs
+
+EXPOSE 3000
+
+CMD ["node", "index.js"]
