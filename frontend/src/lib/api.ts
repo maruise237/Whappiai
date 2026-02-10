@@ -9,21 +9,29 @@ NProgress.configure({
 
 const getApiBaseUrl = () => {
   // Always prioritize environment variable for API URL (crucial for Dokploy/Production)
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL.endsWith('/') 
-      ? process.env.NEXT_PUBLIC_API_URL.slice(0, -1) 
-      : process.env.NEXT_PUBLIC_API_URL;
+  // Check both process.env and a window-level variable (if injected)
+  const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envApiUrl && envApiUrl.includes('://')) {
+    return envApiUrl.endsWith('/') 
+      ? envApiUrl.slice(0, -1) 
+      : envApiUrl;
   }
 
   if (typeof window !== 'undefined') {
-    const { hostname, port } = window.location;
+    const { hostname, port, protocol } = window.location;
     
+    // If we are on port 3011 (Production Frontend), we need to point to port 3010 (Production Backend)
+    if (port === '3011') {
+      return `${protocol}//${hostname}:3010`;
+    }
+
     // If we are on port 3005 or 3001 (Next.js dev server), we need to point to the backend (3000)
     if (port === '3005' || port === '3001') {
-      return `http://${hostname}:3000`;
+      return `${protocol}//${hostname}:3000`;
     }
     
-    // Default for production or other cases (e.g. same origin)
+    // Fallback: use current origin if none of the above matches
     return '';
   }
 
