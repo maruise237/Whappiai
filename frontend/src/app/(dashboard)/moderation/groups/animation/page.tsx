@@ -436,7 +436,10 @@ function AnimationPageContent() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] overflow-hidden border border-slate-200 dark:border-primary/10 rounded-lg p-0 gap-0 bg-white dark:bg-card shadow-2xl flex flex-col">
+        <DialogContent 
+          className="sm:max-w-[700px] w-[95vw] max-h-[90vh] overflow-hidden border border-slate-200 dark:border-primary/10 rounded-lg p-0 gap-0 bg-white dark:bg-card shadow-2xl flex flex-col"
+          aria-describedby="animation-ia-description"
+        >
           <div className="p-6 sm:p-8 pb-4 space-y-4 sm:space-y-6 flex-shrink-0 border-b border-slate-100 dark:border-primary/5">
             <DialogHeader>
               <div className="flex items-center gap-4 mb-2">
@@ -445,7 +448,7 @@ function AnimationPageContent() {
                 </div>
                 <div className="space-y-1 text-left min-w-0 flex-1">
                   <DialogTitle className="text-xl font-bold tracking-tight uppercase text-primary truncate">Animation & IA</DialogTitle>
-                  <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground opacity-60 truncate">
+                  <DialogDescription id="animation-ia-description" className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground opacity-60 truncate">
                     Groupe: {selectedGroup?.subject}
                   </DialogDescription>
                 </div>

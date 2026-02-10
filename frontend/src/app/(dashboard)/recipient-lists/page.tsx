@@ -352,7 +352,10 @@ export default function RecipientListsPage() {
       </Card>
 
       <Dialog open={isAddRecipientOpen} onOpenChange={setIsAddRecipientOpen}>
-        <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-0 gap-0 bg-white dark:bg-card/95 backdrop-blur-sm">
+        <DialogContent 
+          className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-0 gap-0 bg-white dark:bg-card/95 backdrop-blur-sm"
+          aria-describedby="add-recipient-description"
+        >
           <DialogHeader className="p-6 sm:p-8 pb-2">
             <div className="flex items-center gap-4 mb-2">
               <div className="p-3 bg-primary/10 rounded-lg">
@@ -360,7 +363,7 @@ export default function RecipientListsPage() {
               </div>
               <div>
                 <DialogTitle className="text-2xl font-bold uppercase tracking-tight text-primary">Ajouter un Contact</DialogTitle>
-                <DialogDescription className="text-sm font-medium">
+                <DialogDescription id="add-recipient-description" className="text-sm font-medium">
                   Remplissez les informations ci-dessous.
                 </DialogDescription>
               </div>
@@ -400,7 +403,10 @@ export default function RecipientListsPage() {
       </Dialog>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] w-[95vw] rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-0 gap-0 bg-white dark:bg-card/95 backdrop-blur-sm">
+        <DialogContent 
+          className="sm:max-w-[500px] w-[95vw] rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-0 gap-0 bg-white dark:bg-card/95 backdrop-blur-sm"
+          aria-describedby="create-list-description"
+        >
           <DialogHeader className="p-6 sm:p-8 pb-2">
             <div className="flex items-center gap-4 mb-2">
               <div className="p-3 bg-primary/10 rounded-lg">
@@ -408,7 +414,7 @@ export default function RecipientListsPage() {
               </div>
               <div>
                 <DialogTitle className="text-2xl font-bold uppercase tracking-tight text-primary">Nouvelle Liste</DialogTitle>
-                <DialogDescription className="text-sm font-medium">
+                <DialogDescription id="create-list-description" className="text-sm font-medium">
                   Créez un nouveau groupe de contacts.
                 </DialogDescription>
               </div>
@@ -433,7 +439,10 @@ export default function RecipientListsPage() {
       </Dialog>
 
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] w-[95vw] rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-0 gap-0 bg-white dark:bg-card/95 backdrop-blur-sm">
+        <DialogContent 
+          className="sm:max-w-[500px] w-[95vw] rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-0 gap-0 bg-white dark:bg-card/95 backdrop-blur-sm"
+          aria-describedby="import-csv-description"
+        >
           <DialogHeader className="p-6 sm:p-8 pb-2">
             <div className="flex items-center gap-4 mb-2">
               <div className="p-3 bg-emerald-500/10 rounded-lg">
@@ -441,7 +450,7 @@ export default function RecipientListsPage() {
               </div>
               <div>
                 <DialogTitle className="text-2xl font-bold uppercase tracking-tight text-primary">Importer CSV</DialogTitle>
-                <DialogDescription className="text-sm font-medium">
+                <DialogDescription id="import-csv-description" className="text-sm font-medium">
                   Sélectionnez votre fichier contacts (.csv).
                 </DialogDescription>
               </div>
@@ -468,14 +477,17 @@ export default function RecipientListsPage() {
       </Dialog>
 
       <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-[400px] w-[95vw] rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-6 bg-white dark:bg-card/95 backdrop-blur-sm transition-all duration-200">
+        <DialogContent 
+          className="sm:max-w-[400px] w-[95vw] rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-6 bg-white dark:bg-card/95 backdrop-blur-sm transition-all duration-200"
+          aria-describedby="delete-list-description"
+        >
           <div className="text-center space-y-4">
             <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
               <Trash2 className="w-8 h-8 text-destructive" />
             </div>
             <div className="space-y-2">
               <DialogTitle className="text-xl font-bold uppercase tracking-tight">Supprimer la liste ?</DialogTitle>
-              <DialogDescription className="text-sm font-medium opacity-70">
+              <DialogDescription id="delete-list-description" className="text-sm font-medium opacity-70">
                 Cette action est irréversible et supprimera tous les contacts.
               </DialogDescription>
             </div>

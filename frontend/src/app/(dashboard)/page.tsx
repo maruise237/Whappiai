@@ -597,7 +597,10 @@ export default function DashboardPage() {
       </div>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto rounded-lg border border-primary/10 shadow-2xl backdrop-blur-sm bg-background/95">
+        <DialogContent 
+          className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto rounded-lg border border-primary/10 shadow-2xl backdrop-blur-sm bg-background/95"
+          aria-describedby="create-session-description"
+        >
           <DialogHeader className="space-y-4">
             <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2 shadow-inner border border-primary/20">
               <Plus className="w-8 h-8" />
@@ -606,7 +609,7 @@ export default function DashboardPage() {
               <DialogTitle className="text-2xl font-bold tracking-tight text-primary">
                 Nouvelle Session
               </DialogTitle>
-              <DialogDescription className="text-muted-foreground text-xs font-medium">
+              <DialogDescription id="create-session-description" className="text-muted-foreground text-xs font-medium">
                 Entrez un identifiant unique pour votre nouvelle session WhatsApp.
               </DialogDescription>
             </div>

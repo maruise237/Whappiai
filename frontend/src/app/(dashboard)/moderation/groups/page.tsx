@@ -545,7 +545,10 @@ function GroupManagementContent() {
 
       {/* Modal de Configuration Modernisé */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] overflow-hidden border-none rounded-lg p-0 gap-0 bg-background/80 backdrop-blur-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+        <DialogContent 
+          className="sm:max-w-[700px] w-[95vw] max-h-[90vh] overflow-hidden border-none rounded-lg p-0 gap-0 bg-background/80 backdrop-blur-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200"
+          aria-describedby="group-config-description"
+        >
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -mr-48 -mt-48 pointer-events-none" />
           
           {/* Header du Modal */}
@@ -559,7 +562,7 @@ function GroupManagementContent() {
                   <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight uppercase text-foreground truncate">Configuration</DialogTitle>
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    <DialogDescription className="font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-primary/60 truncate">
+                    <DialogDescription id="group-config-description" className="font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-primary/60 truncate">
                       {selectedGroup?.subject}
                     </DialogDescription>
                   </div>

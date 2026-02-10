@@ -265,7 +265,10 @@ export default function UsersPage() {
               Ajouter un Utilisateur
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto border-2 rounded-lg p-0 gap-0 bg-background/95 backdrop-blur-xl shadow-2xl animate-in zoom-in-95 duration-200">
+          <DialogContent 
+            className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto border-2 rounded-lg p-0 gap-0 bg-background/95 backdrop-blur-xl shadow-2xl animate-in zoom-in-95 duration-200"
+            aria-describedby="new-user-description"
+          >
             <form ref={formRef} className="flex flex-col h-full" onSubmit={(e) => { e.preventDefault(); editingUser ? handleUpdateUser() : handleAddUser(); }}>
               <div className="p-10 pb-6">
                 <DialogHeader>
@@ -275,7 +278,7 @@ export default function UsersPage() {
                     </div>
                     <div className="space-y-1 text-left">
                       <DialogTitle className="text-2xl font-black tracking-tight uppercase">Nouvel Utilisateur</DialogTitle>
-                      <DialogDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
+                      <DialogDescription id="new-user-description" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
                         Créez un nouveau compte pour un membre de votre équipe.
                       </DialogDescription>
                     </div>
@@ -379,7 +382,10 @@ export default function UsersPage() {
           })
         }
       }}>
-        <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto border-2 rounded-lg p-0 gap-0 bg-background/95 backdrop-blur-xl shadow-2xl animate-in zoom-in-95 duration-200">
+        <DialogContent 
+          className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto border-2 rounded-lg p-0 gap-0 bg-background/95 backdrop-blur-xl shadow-2xl animate-in zoom-in-95 duration-200"
+          aria-describedby="edit-user-description"
+        >
           <div className="flex flex-col h-full">
             <div className="p-10 pb-6">
               <DialogHeader>
@@ -389,7 +395,7 @@ export default function UsersPage() {
                   </div>
                   <div className="space-y-1 text-left">
                     <DialogTitle className="text-2xl font-black tracking-tight uppercase">Modifier l'Utilisateur</DialogTitle>
-                    <DialogDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
+                    <DialogDescription id="edit-user-description" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
                       Mettre à jour les paramètres pour {editingUser?.email}.
                     </DialogDescription>
                   </div>
