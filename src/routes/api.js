@@ -103,7 +103,18 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     id: user?.id || req.auth.userId
                 };
                 
-                log(`Authenticated user: ${finalEmail} (role: ${role})`, 'SYSTEM');
+                log(`Authenticated user: ${finalEmail} (role: ${role})`, 'AUTH', { email: finalEmail, role }, 'INFO');
+
+                // Ensure user exists and has correct role in local DB
+                if (!user || user.role !== role) {
+                    log(`Syncing local user role for ${finalEmail} to ${role}`, 'AUTH');
+                    User.create({
+                        id: req.auth.userId,
+                        email: finalEmail,
+                        name: req.auth.sessionClaims?.name || finalEmail.split('@')[0],
+                        role: role
+                    });
+                }
 
                 // Update legacy session for compatibility
                 if (req.session) {
