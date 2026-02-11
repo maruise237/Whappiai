@@ -161,17 +161,19 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
     // Handle Pairing Code request if phone number is provided
     if (phoneNumber && !state.creds.registered) {
-        log(`Demande de code d'appairage pour ${phoneNumber}`, sessionId, { event: 'pairing-code-request', phoneNumber }, 'INFO');
+        // Sanitize phone number (only digits)
+        const sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
+        log(`Demande de code d'appairage pour ${sanitizedPhoneNumber}`, sessionId, { event: 'pairing-code-request', phoneNumber: sanitizedPhoneNumber }, 'INFO');
         setTimeout(async () => {
             try {
-                const code = await sock.requestPairingCode(phoneNumber);
+                const code = await sock.requestPairingCode(sanitizedPhoneNumber);
                 log(`Code d'appairage reçu: ${code}`, sessionId, { event: 'pairing-code-received', code }, 'INFO');
                 if (onUpdate) onUpdate(sessionId, 'GENERATING_CODE', 'Pairing code generated', code);
             } catch (err) {
                 log(`Erreur lors de la demande du code d'appairage: ${err.message}`, sessionId, { event: 'pairing-code-error', error: err.message }, 'ERROR');
                 if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', `Pairing error: ${err.message}`, null);
             }
-        }, 3000); // Small delay to ensure socket is ready
+        }, 5000); // Increased delay to ensure socket is fully ready
     }
 
     // Handle credentials update

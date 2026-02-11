@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
   const [newSessionId, setNewSessionId] = React.useState("")
+  const [phoneNumber, setPhoneNumber] = React.useState("")
   const [creating, setCreating] = React.useState(false)
   const [activeMessagingTab, setActiveMessagingTab] = React.useState("text")
   const [guideEnabled, setGuideEnabled] = React.useState(false)
@@ -101,6 +102,7 @@ export default function DashboardPage() {
             // Check if status changed to connected
             const oldStatus = newSessions[index].isConnected
             const newStatus = update.isConnected
+            const statusDetail = update.detail || ""
             
             if (!oldStatus && newStatus) {
               toast.success(`Session ${update.sessionId} connectée avec succès !`)
@@ -109,6 +111,14 @@ export default function DashboardPage() {
                 spread: 70,
                 origin: { y: 0.6 },
                 colors: ['#10b981', '#34d399', '#6ee7b7', '#ffffff']
+              })
+            } else if (oldStatus && !newStatus && statusDetail.toLowerCase().includes("disconnect")) {
+              toast.error(`Session ${update.sessionId} déconnectée`, {
+                description: statusDetail
+              })
+            } else if (update.status === 'GENERATING_CODE' && update.pairingCode) {
+              toast.info("Code d'appairage généré !", {
+                description: `Le code pour ${update.sessionId} est disponible.`
               })
             }
             
@@ -223,9 +233,10 @@ export default function DashboardPage() {
     const toastId = toast.loading("Création de la session...")
     try {
       const token = await getToken()
-      await api.sessions.create(newSessionId, undefined, token || undefined)
+      await api.sessions.create(newSessionId, phoneNumber || undefined, token || undefined)
       toast.success("Session créée !", { id: toastId })
       setNewSessionId("")
+      setPhoneNumber("")
       setIsCreateOpen(false)
       const data = await fetchSessions()
       fetchRecentActivities(data)
@@ -629,6 +640,25 @@ export default function DashboardPage() {
                 data-pristine-pattern-message="Lettres, chiffres et traits d'union uniquement"
                 className="h-14 rounded-lg border border-primary/10 bg-background/50 focus:bg-background focus:border-primary/30 focus:ring-primary/20 transition-all duration-200 font-mono text-sm"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 ml-1">
+                Numéro de Téléphone (Optionnel pour Pairing Code)
+              </label>
+              <Input 
+                name="phoneNumber"
+                placeholder="ex: 2376XXXXXXXX" 
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                disabled={creating}
+                data-pristine-pattern="/^[0-9]+$/"
+                data-pristine-pattern-message="Chiffres uniquement (avec indicatif pays)"
+                className="h-14 rounded-lg border border-primary/10 bg-background/50 focus:bg-background focus:border-primary/30 focus:ring-primary/20 transition-all duration-200 font-mono text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground/60 font-medium px-1">
+                Requis uniquement si vous souhaitez utiliser un code de couplage au lieu du QR code.
+              </p>
             </div>
           </form>
 

@@ -144,8 +144,9 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
   }
 
-  const status = (session?.isConnected && !loading) ? "connected" : (session?.status === "GENERATING_QR" || session?.status === "CONNECTING" || loading) ? "connecting" : "disconnected"
+  const status = (session?.isConnected && !loading) ? "connected" : (session?.status === "GENERATING_QR" || session?.status === "GENERATING_CODE" || session?.status === "CONNECTING" || loading) ? "connecting" : "disconnected"
   const qrCode = session?.qr
+  const pairingCodeValue = session?.pairingCode || pairingCode
 
   return (
     <Card className={cn(
@@ -396,16 +397,16 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                         </p>
                       </div>
 
-                      {pairingCode ? (
+                      {pairingCodeValue ? (
                         <div className="space-y-6 pt-4 animate-in slide-in-from-bottom-4 duration-500">
                           <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase tracking-widest text-primary text-center block">Votre code d'appairage</label>
                             <div 
                               className="flex justify-center gap-2 cursor-pointer group/code relative"
-                              onClick={() => copyToClipboard(pairingCode, 'pairing')}
+                              onClick={() => copyToClipboard(pairingCodeValue, 'pairing')}
                               title="Cliquer pour copier le code"
                             >
-                              {pairingCode.split('').map((char, i) => (
+                              {pairingCodeValue.split('').map((char: string, i: number) => (
                                 <div key={i} className="w-8 h-10 sm:w-10 sm:h-12 bg-white dark:bg-primary/10 border-2 border-primary/20 rounded-lg flex items-center justify-center text-lg sm:text-xl font-black text-primary shadow-sm group-hover/code:border-primary/50 group-hover/code:scale-105 transition-all duration-200">
                                   {char}
                                 </div>
@@ -418,7 +419,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
                           <div className="flex flex-col gap-3">
                             <Button 
-                              onClick={() => copyToClipboard(pairingCode, 'pairing')}
+                              onClick={() => copyToClipboard(pairingCodeValue, 'pairing')}
                               variant="outline"
                               className="w-full h-12 rounded-xl border-primary/20 hover:bg-primary/5 font-bold uppercase tracking-widest text-[10px]"
                             >
