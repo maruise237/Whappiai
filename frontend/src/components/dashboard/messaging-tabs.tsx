@@ -40,6 +40,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { api } from "@/lib/api"
@@ -59,6 +60,7 @@ interface MessagingTabsProps {
 }
 
 export function MessagingTabs({ session, sessions, onSessionChange, onTabChange }: MessagingTabsProps) {
+  const { getToken } = useAuth()
   const [activeTab, setActiveTab] = React.useState("text")
   const [to, setTo] = React.useState("")
   const [loading, setLoading] = React.useState(false)
@@ -100,7 +102,8 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
 
     setUploading(true)
     try {
-      const data = await api.messages.upload(file, session?.token)
+      const token = await getToken()
+      const data = await api.messages.upload(file, token || undefined)
       const url = data.url
       
       switch (type) {
@@ -126,6 +129,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
     const toastId = toast.loading("Envoi du message en cours...")
 
     try {
+      const token = await getToken()
       const results: string[] = []
       
       if (activeTab === "combo") {
@@ -154,7 +158,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
 
         // Send all payloads
         for (const payload of comboPayloads) {
-          await api.messages.send(session.sessionId, { ...payload, to }, session.token)
+          await api.messages.send(session.sessionId, { ...payload, to }, token || undefined)
           results.push(`${payload.type} envoyé`)
         }
       } else {
@@ -182,7 +186,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
             payload = { ...payload, type: "video", video: { link: videoUrl, caption: videoCaption } }
             break
         }
-        await api.messages.send(session.sessionId, payload, session.token)
+        await api.messages.send(session.sessionId, payload, token || undefined)
         results.push("Message envoyé")
       }
 

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { RefreshCw, CircleCheck, CircleX, Trash2, Smartphone, QrCode, Copy, Check, Eye, EyeOff, ExternalLink, Hash } from "lucide-react"
+import { useAuth } from "@clerk/nextjs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/tooltip"
 
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
+  const { getToken } = useAuth()
   const { toast, confirm, loading: notificationLoading } = useNotification()
   const [loading, setLoading] = React.useState(false)
   const [showToken, setShowToken] = React.useState(false)
@@ -45,10 +47,11 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     const toastId = toast.loading("Génération du code d'appairage...")
 
     try {
+      const token = await getToken()
       if (!session) {
         // Create new session with phone number
         const newSessionId = `session_${Math.random().toString(36).substring(2, 9)}`
-        await api.sessions.create(newSessionId, phoneNumber)
+        await api.sessions.create(newSessionId, phoneNumber, token || undefined)
         onRefresh()
         
         // Célébration de création
@@ -60,7 +63,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         })
       } else {
         // Relancer avec numéro de téléphone
-        await api.sessions.create(session.sessionId, phoneNumber)
+        await api.sessions.create(session.sessionId, phoneNumber, token || undefined)
         onRefresh()
       }
       toast.success("Demande envoyée. Attendez le code...", { id: toastId })
@@ -101,7 +104,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     const toastId = toast.loading("Génération du QR Code...")
     
     try {
-      await api.sessions.qr(session.sessionId)
+      const token = await getToken()
+      await api.sessions.qr(session.sessionId, token || undefined)
       onRefresh()
       toast.success("QR Code généré avec succès", { id: toastId })
     } catch (error: any) {
@@ -129,7 +133,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     setLoading(true)
     const toastId = toast.loading("Suppression de la session...")
     try {
-      await api.sessions.delete(session.sessionId, session.token)
+      const token = await getToken()
+      await api.sessions.delete(session.sessionId, token || undefined)
       onRefresh()
       toast.success("Session supprimée", { id: toastId })
     } catch (error: any) {
