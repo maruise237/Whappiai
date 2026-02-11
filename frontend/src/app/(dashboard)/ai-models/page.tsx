@@ -272,10 +272,7 @@ export default function AIModelsPage() {
               Nouveau Modèle
             </Button>
           </DialogTrigger>
-          <DialogContent 
-            className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto border-2 rounded-lg p-0 gap-0 bg-background/95 backdrop-blur-xl shadow-2xl"
-            aria-describedby="new-model-description"
-          >
+          <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto border-2 rounded-lg p-0 gap-0 bg-background/95 backdrop-blur-xl shadow-2xl">
             <form ref={formRef} className="flex flex-col h-full" onSubmit={(e) => { e.preventDefault(); handleAddModel(); }}>
               <div className="p-10 pb-6">
                 <DialogHeader>
@@ -285,7 +282,7 @@ export default function AIModelsPage() {
                     </div>
                     <div className="space-y-1 text-left">
                       <DialogTitle className="text-2xl font-black tracking-tight uppercase">Nouveau Modèle d'IA</DialogTitle>
-                      <DialogDescription id="new-model-description" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
+                      <DialogDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
                         Ajoutez un fournisseur d'IA global pour tous les utilisateurs.
                       </DialogDescription>
                     </div>
@@ -533,22 +530,19 @@ export default function AIModelsPage() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingModel} onOpenChange={(open) => !open && setEditingModel(null)}>
-        <DialogContent 
-          className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto border-2 rounded-lg p-0 gap-0 bg-background/95 backdrop-blur-xl shadow-2xl"
-          aria-describedby="edit-model-description"
-        >
+        <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto border-2 rounded-lg p-0 gap-0 bg-background/95 backdrop-blur-xl shadow-2xl">
           {editingModel && (
-            <form className="flex flex-col h-full" onSubmit={(e) => { e.preventDefault(); handleUpdateModel(); }}>
+            <form onSubmit={(e) => { e.preventDefault(); handleUpdateModel(); }}>
               <div className="p-10 pb-6">
                 <DialogHeader>
                   <div className="flex items-center gap-5 mb-4">
                     <div className="p-4 bg-primary/10 rounded-lg shadow-inner">
-                      <Bot className="w-8 h-8 text-primary" />
+                      <Pencil className="w-8 h-8 text-primary" />
                     </div>
                     <div className="space-y-1 text-left">
                       <DialogTitle className="text-2xl font-black tracking-tight uppercase">Modifier le Modèle</DialogTitle>
-                      <DialogDescription id="edit-model-description" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
-                        Mettez à jour les paramètres du fournisseur d'IA.
+                      <DialogDescription className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
+                        Mise à jour de {editingModel.name}
                       </DialogDescription>
                     </div>
                   </div>

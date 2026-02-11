@@ -378,16 +378,13 @@ export default function AIPage() {
 
       {/* QUICK EDIT DIALOG */}
       <Dialog open={isQuickEditOpen} onOpenChange={setIsQuickEditOpen}>
-        <DialogContent 
-          className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-0 gap-0 bg-white dark:bg-card/95 backdrop-blur-sm"
-          aria-describedby="quick-edit-description"
-        >
+        <DialogContent className="sm:max-w-[425px] w-[95vw] max-h-[90vh] overflow-y-auto rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl p-0 gap-0 bg-white dark:bg-card/95 backdrop-blur-sm">
           <DialogHeader className="p-8 bg-primary text-white">
             <DialogTitle className="text-xl font-black flex items-center gap-3 uppercase tracking-tighter">
               <Settings2 className="w-6 h-6" />
               Réglages Rapides
             </DialogTitle>
-            <DialogDescription id="quick-edit-description" className="text-white/80 font-bold text-[10px] uppercase tracking-widest opacity-90 mt-2">
+            <DialogDescription className="text-white/80 font-bold text-[10px] uppercase tracking-widest opacity-90 mt-2">
               Ajustez l'intelligence pour {formData.sessionId}.
             </DialogDescription>
           </DialogHeader>

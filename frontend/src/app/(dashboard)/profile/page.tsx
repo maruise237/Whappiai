@@ -519,10 +519,7 @@ export default function ProfilePage() {
 
       {/* Delete Account Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent 
-          className="sm:max-w-[425px]"
-          aria-describedby="delete-account-description"
-        >
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <div className="mx-auto w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-500/10 flex items-center justify-center mb-4">
               <AlertTriangle className="w-6 h-6 text-rose-600" />
@@ -530,7 +527,7 @@ export default function ProfilePage() {
             <DialogTitle className="text-center text-xl font-bold text-slate-900 dark:text-white">
               Suppression Définitive
             </DialogTitle>
-            <DialogDescription id="delete-account-description" className="text-center pt-2">
+            <DialogDescription className="text-center pt-2">
               Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est <span className="text-rose-600 font-bold">irréversible</span>.
             </DialogDescription>
           </DialogHeader>
