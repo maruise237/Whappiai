@@ -33,7 +33,6 @@ import {
 import { cn } from "@/lib/utils"
 import { Textarea } from "@/components/ui/textarea"
 import { useUser, useAuth, useClerk } from "@clerk/nextjs"
-import { PutschSettings } from "@/components/dashboard/putsch-settings"
 import {
   Dialog,
   DialogContent,
@@ -42,7 +41,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -299,223 +297,196 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-8">
-        <div className="flex justify-center sm:justify-start">
-          <TabsList className="bg-white dark:bg-card border border-slate-200 dark:border-primary/10 p-1 h-12 rounded-xl shadow-sm">
-            <TabsTrigger 
-              value="profile" 
-              className="px-6 rounded-lg font-bold text-sm data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-200"
-            >
-              <UserIcon className="w-4 h-4 mr-2" />
-              Mon Profil
-            </TabsTrigger>
-            <TabsTrigger 
-              value="notifications" 
-              className="px-6 rounded-lg font-bold text-sm data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-200"
-            >
-              <Bell className="w-4 h-4 mr-2" />
-              Notifications
-            </TabsTrigger>
-          </TabsList>
+      <div className="grid grid-cols-1 gap-8">
+        <div className="space-y-8">
+          {/* Settings Section (Clerk Controlled) */}
+          <Card className="rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg overflow-hidden">
+            <CardHeader className="p-6 sm:p-8 border-b border-slate-100 dark:border-primary/5 flex flex-row items-center gap-4">
+              <div className="p-3 bg-primary/10 text-primary rounded-lg">
+                <UserIcon className="w-5 h-5" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-bold">Informations Personnelles</CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-9 px-4 rounded-lg font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all"
+                    onClick={() => window.open('https://accounts.clerk.com/user', '_blank')}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Gérer sur Clerk
+                  </Button>
+                </div>
+                <CardDescription>Vos informations sont synchronisées avec votre compte Clerk.</CardDescription>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="p-6 sm:p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-70">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Adresse Email</Label>
+                  <Input 
+                    type="email" 
+                    className="h-12 rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 text-sm px-4 cursor-not-allowed"
+                    value={email}
+                    readOnly
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nom Complet</Label>
+                  <Input 
+                    type="text" 
+                    className="h-12 rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 text-sm px-4 cursor-not-allowed"
+                    value={name}
+                    readOnly
+                  />
+                </div>
+              </div>
+              <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-500 text-xs font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                Les modifications du profil et du mot de passe doivent être effectuées sur Clerk pour des raisons de sécurité.
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Local Settings (Optional) */}
+          <Card className="rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg overflow-hidden">
+            <CardHeader className="p-6 sm:p-8 border-b border-slate-100 dark:border-primary/5 flex flex-row items-center gap-4">
+              <div className="p-3 bg-primary/10 text-primary rounded-lg">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <CardTitle className="text-xl font-bold">Compléments de Profil</CardTitle>
+                <CardDescription>Informations locales spécifiques à Whappi.</CardDescription>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="p-6 sm:p-8">
+              <form id="profile-form" onSubmit={handleUpdateProfile} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Numéro de Téléphone</Label>
+                    <Input 
+                      type="tel" 
+                      placeholder="+33 6 00 00 00 00" 
+                      className="h-12 rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 focus-visible:ring-primary/20 transition-all duration-200 text-sm px-4"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Localisation</Label>
+                    <Input 
+                      type="text" 
+                      placeholder="Paris, France" 
+                      className="h-12 rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 focus-visible:ring-primary/20 transition-all duration-200 text-sm px-4"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Bio / Présentation</Label>
+                  <Textarea 
+                    placeholder="Parlez-nous de vous..." 
+                    className="min-h-[100px] rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 focus-visible:ring-primary/20 transition-all duration-200 text-sm p-4 resize-none"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button 
+                    type="submit" 
+                    disabled={updating || !hasProfileChanges()}
+                    className="h-12 px-8 rounded-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 transition-all duration-200 active:scale-95 disabled:opacity-50"
+                  >
+                    {updating ? (
+                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    Mettre à jour Whappi
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
 
-        <TabsContent value="profile" className="space-y-8 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="grid grid-cols-1 gap-8">
-            <div className="space-y-8">
-              {/* Settings Section (Clerk Controlled) */}
-              <Card className="rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg overflow-hidden">
-                <CardHeader className="p-6 sm:p-8 border-b border-slate-100 dark:border-primary/5 flex flex-row items-center gap-4">
-                  <div className="p-3 bg-primary/10 text-primary rounded-lg">
-                    <UserIcon className="w-5 h-5" />
-                  </div>
-                  <div className="space-y-1 flex-1">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">Informations Personnelles</CardTitle>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-9 px-4 rounded-lg font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all"
-                        onClick={() => window.open('https://accounts.clerk.com/user', '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Gérer sur Clerk
-                      </Button>
-                    </div>
-                    <CardDescription>Vos informations sont synchronisées avec votre compte Clerk.</CardDescription>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="p-6 sm:p-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-70">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Adresse Email</Label>
-                      <Input 
-                        type="email" 
-                        className="h-12 rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 text-sm px-4 cursor-not-allowed"
-                        value={email}
-                        readOnly
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nom Complet</Label>
-                      <Input 
-                        type="text" 
-                        className="h-12 rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 text-sm px-4 cursor-not-allowed"
-                        value={name}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-500 text-xs font-medium flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    Les modifications du profil et du mot de passe doivent être effectuées sur Clerk pour des raisons de sécurité.
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Local Settings (Optional) */}
-              <Card className="rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg overflow-hidden">
-                <CardHeader className="p-6 sm:p-8 border-b border-slate-100 dark:border-primary/5 flex flex-row items-center gap-4">
-                  <div className="p-3 bg-primary/10 text-primary rounded-lg">
-                    <Sparkles className="w-5 h-5" />
+        {/* New Management Section */}
+        <div className="space-y-8">
+          <Card className="rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg overflow-hidden">
+            <CardHeader className="p-6 sm:p-8 border-b border-slate-100 dark:border-primary/5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-lg">
+                    <Shield className="w-5 h-5" />
                   </div>
                   <div className="space-y-1">
-                    <CardTitle className="text-xl font-bold">Compléments de Profil</CardTitle>
-                    <CardDescription>Informations locales spécifiques à Whappi.</CardDescription>
+                    <CardTitle className="text-xl font-bold">Gestion du Compte</CardTitle>
+                    <CardDescription>Déconnectez-vous ou gérez la suppression de votre compte.</CardDescription>
                   </div>
-                </CardHeader>
-                
-                <CardContent className="p-6 sm:p-8">
-                  <form id="profile-form" onSubmit={handleUpdateProfile} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Numéro de Téléphone</Label>
-                        <Input 
-                          type="tel" 
-                          placeholder="+33 6 00 00 00 00" 
-                          className="h-12 rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 focus-visible:ring-primary/20 transition-all duration-200 text-sm px-4"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Localisation</Label>
-                        <Input 
-                          type="text" 
-                          placeholder="Paris, France" 
-                          className="h-12 rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 focus-visible:ring-primary/20 transition-all duration-200 text-sm px-4"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                        />
-                      </div>
-                    </div>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="p-6 sm:p-8 space-y-8">
+              {/* Logout and Developer Buttons */}
+              <div className="flex flex-wrap items-center gap-4">
+                <Button 
+                  variant="outline"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="h-12 px-6 rounded-lg font-bold border-slate-200 dark:border-primary/10 hover:bg-slate-50 dark:hover:bg-primary/5 transition-all duration-200"
+                >
+                  {isLoggingOut ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <LogOut className="w-4 h-4 mr-2" />
+                  )}
+                  Déconnecter
+                </Button>
 
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Bio / Présentation</Label>
-                      <Textarea 
-                        placeholder="Parlez-nous de vous..." 
-                        className="min-h-[100px] rounded-lg bg-slate-50 dark:bg-background/50 border-slate-200 dark:border-primary/10 focus-visible:ring-primary/20 transition-all duration-200 text-sm p-4 resize-none"
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                      />
-                    </div>
+                <Link href="/docs">
+                   <Button 
+                     variant="ghost"
+                     className="h-12 px-6 rounded-lg font-bold text-slate-500 hover:text-primary transition-all duration-200"
+                   >
+                     <Code2 className="w-4 h-4 mr-2" />
+                     Documentation API
+                   </Button>
+                 </Link>
+              </div>
 
-                    <div className="flex justify-end pt-2">
-                      <Button 
-                        type="submit" 
-                        disabled={updating || !hasProfileChanges()}
-                        className="h-12 px-8 rounded-lg font-bold bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 transition-all duration-200 active:scale-95 disabled:opacity-50"
-                      >
-                        {updating ? (
-                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                        ) : (
-                          <Save className="w-4 h-4 mr-2" />
-                        )}
-                        Mettre à jour Whappi
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* New Management Section */}
-            <div className="space-y-8">
-              <Card className="rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg overflow-hidden">
-                <CardHeader className="p-6 sm:p-8 border-b border-slate-100 dark:border-primary/5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-lg">
-                        <Shield className="w-5 h-5" />
-                      </div>
-                      <div className="space-y-1">
-                        <CardTitle className="text-xl font-bold">Gestion du Compte</CardTitle>
-                        <CardDescription>Déconnectez-vous ou gérez la suppression de votre compte.</CardDescription>
-                      </div>
-                    </div>
+              <div className="pt-4 border-t border-slate-100 dark:border-primary/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-rose-600 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      Zone de Danger
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
+                      Une fois supprimé, votre compte et toutes ses données associées (sessions, logs, campagnes) seront définitivement effacés.
+                    </p>
                   </div>
-                </CardHeader>
-                
-                <CardContent className="p-6 sm:p-8 space-y-8">
-                  {/* Logout and Developer Buttons */}
-                  <div className="flex flex-wrap items-center gap-4">
-                    <Button 
-                      variant="outline"
-                      onClick={handleLogout}
-                      disabled={isLoggingOut}
-                      className="h-12 px-6 rounded-lg font-bold border-slate-200 dark:border-primary/10 hover:bg-slate-50 dark:hover:bg-primary/5 transition-all duration-200"
-                    >
-                      {isLoggingOut ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <LogOut className="w-4 h-4 mr-2" />
-                      )}
-                      Déconnecter
-                    </Button>
-
-                    <Link href="/docs">
-                      <Button 
-                        variant="ghost"
-                        className="h-12 px-6 rounded-lg font-bold text-slate-500 hover:text-primary transition-all duration-200"
-                      >
-                        <Code2 className="w-4 h-4 mr-2" />
-                        Documentation API
-                      </Button>
-                    </Link>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100 dark:border-primary/5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-rose-600 flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4" />
-                          Zone de Danger
-                        </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
-                          Une fois supprimé, votre compte et toutes ses données associées (sessions, logs, campagnes) seront définitivement effacés.
-                        </p>
-                      </div>
-                      
-                      <Button 
-                        variant="ghost"
-                        onClick={() => setShowDeleteDialog(true)}
-                        className="h-12 px-6 rounded-lg font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-700 transition-all duration-200 group"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2 transition-transform group-hover:rotate-12" />
-                        Supprimer mon compte
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="notifications" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <PutschSettings />
-        </TabsContent>
-      </Tabs>
+                  
+                  <Button 
+                    variant="ghost"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="h-12 px-6 rounded-lg font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-700 transition-all duration-200 group"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2 transition-transform group-hover:rotate-12" />
+                    Supprimer mon compte
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Delete Account Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { api } from "@/lib/api"
-import { useNotification } from "@/hooks/use-notification"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAuth, useUser } from "@clerk/nextjs"
@@ -32,7 +32,6 @@ interface SessionItem {
 }
 
 export default function ModerationSessionsPage() {
-  const { toast } = useNotification()
   const [sessions, setSessions] = React.useState<SessionItem[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
