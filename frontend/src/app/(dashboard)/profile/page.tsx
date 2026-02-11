@@ -28,8 +28,7 @@ import {
   Trash2,
   AlertTriangle,
   Code2,
-  ExternalLink,
-  Bell
+  ExternalLink
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Textarea } from "@/components/ui/textarea"
@@ -159,7 +158,7 @@ export default function ProfilePage() {
       toast.success("Profil mis à jour avec succès")
       
       // If email changed, we might need to refresh to ensure session consistency
-      if (user && email !== user.email) {
+      if (email !== user.email) {
         toast.info("L'adresse email a été mise à jour. Redirection...")
         setTimeout(() => window.location.reload(), 1500)
       }

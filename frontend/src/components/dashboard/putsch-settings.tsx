@@ -14,19 +14,7 @@ import { PutschPreferences, NotificationPriority } from "@/lib/putsch-types"
 import { toast } from "sonner"
 
 export function PutschSettings() {
-  const [prefs, setPrefs] = React.useState<PutschPreferences | null>(null)
-
-  React.useEffect(() => {
-    setPrefs(putsch.getPreferences())
-  }, [])
-
-  if (!prefs) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
-  }
+  const [prefs, setPrefs] = React.useState<PutschPreferences>(putsch.getPreferences())
 
   const handleToggle = (key: keyof PutschPreferences) => {
     const newValue = !prefs[key]
