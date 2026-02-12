@@ -389,8 +389,8 @@ const getSessionsDetailsWrapper = (email, isAdmin) => {
         let currentStatus = s.status;
         if (currentStatus === 'CONNECTED' && !isConnected) {
             currentStatus = 'DISCONNECTED';
-            // Sync DB status if it's stale
-            Session.updateStatus(s.id, 'DISCONNECTED', 'Connection lost');
+            // We don't update DB here to avoid race conditions during server restart
+            // The background connect() process will update it back to CONNECTED when ready
         }
         
         return {
@@ -554,9 +554,6 @@ AIModel.ensureDefaultDeepSeek();
         if (statusesToReinit.includes(session.status)) {
             log(`Réinitialisation de la session: ${session.id} (dernier statut: ${session.status})`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
 
-            // Reset status to DISCONNECTED briefly to ensure a clean slate for Baileys
-            Session.updateStatus(session.id, 'DISCONNECTED', 'Redémarrage...');
-
             whatsappService.connect(session.id, broadcastSessionUpdate, null);
         }
     }
@@ -575,11 +572,6 @@ server.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGINT', () => {
     log('Arrêt en cours...', 'SYSTEM', null, 'INFO');
-
-    // Disconnect all WhatsApp sessions
-    for (const [sessionId] of whatsappService.getActiveSessions()) {
-        whatsappService.disconnect(sessionId);
-    }
 
     server.close(() => {
         log('Serveur arrêté', 'SYSTEM', null, 'INFO');
