@@ -107,6 +107,12 @@ export default function RecipientListsPage() {
       const token = await getToken()
       await api.recipientLists.create({ name: createListName, recipients: [] }, token || undefined)
       toast.success("Liste créée avec succès")
+      confetti({
+        particleCount: 80,
+        spread: 50,
+        origin: { y: 0.7 },
+        colors: ['#10b981', '#34d399', '#ffffff']
+      })
       setIsCreateDialogOpen(false)
       setCreateListName("")
       fetchLists()

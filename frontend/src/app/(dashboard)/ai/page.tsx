@@ -49,6 +49,7 @@ import { useUser, useAuth } from "@clerk/nextjs"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import confetti from "canvas-confetti"
 
 interface AIAutomationItem {
   sessionId: string
@@ -182,7 +183,19 @@ export default function AIPage() {
         key: formData.key,
         prompt: formData.prompt
       }, token || undefined)
-      toast.success("Configuration enregistrée")
+      
+      if (formData.enabled) {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ffffff']
+        })
+        toast.success("Assistant IA activé et configuré ! 🚀")
+      } else {
+        toast.success("Configuration enregistrée")
+      }
+      
       setIsQuickEditOpen(false)
       fetchData()
     } catch (error: any) {
