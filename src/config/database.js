@@ -194,17 +194,7 @@ function initializeSchema() {
         { name: 'ai_last_error', type: 'TEXT' },
         { name: 'ai_last_message_at', type: 'DATETIME' },
         { name: 'ai_temperature', type: 'REAL DEFAULT 0.7' },
-        { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' },
-        { name: 'ai_ignore_if_user_typing', type: 'INTEGER DEFAULT 1' },
-        { name: 'ai_ignore_if_user_replied', type: 'INTEGER DEFAULT 1' },
-        { name: 'ai_whitelist', type: 'TEXT' },
-        { name: 'ai_blacklist', type: 'TEXT' },
-        { name: 'ai_keywords_trigger', type: 'TEXT' },
-        { name: 'ai_keywords_ignore', type: 'TEXT' },
-        { name: 'ai_schedule_enabled', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_schedule_config', type: 'TEXT' },
-        { name: 'ai_typing_delay_min', type: 'INTEGER DEFAULT 2000' },
-        { name: 'ai_typing_delay_max', type: 'INTEGER DEFAULT 5000' }
+        { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' }
     ];
 
     aiColumns.forEach(col => {

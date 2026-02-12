@@ -26,7 +26,6 @@ const logger = pino({ level: process.env.LOG_LEVEL || defaultLogLevel });
 // Active socket connections (in-memory)
 const activeSockets = new Map();
 const retryCounters = new Map();
-const typingStates = new Map(); // sessionId -> Map(remoteJid -> isTyping)
 
 // Auth directory
 const AUTH_DIR = path.join(__dirname, '../../auth_info_baileys');
@@ -278,62 +277,13 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         }
     });
 
-    // Handle presence updates (typing status)
-    sock.ev.on('presence.update', ({ id, presences }) => {
-        try {
-            const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
-            if (presences[myJid]) {
-                const status = presences[myJid].lastKnownPresence;
-                const isTyping = status === 'composing' || status === 'recording';
-                
-                if (!typingStates.has(sessionId)) typingStates.set(sessionId, new Map());
-                typingStates.get(sessionId).set(id, isTyping);
-                
-                if (isTyping) {
-                    log(`Propriétaire en train d'écrire dans ${id}`, sessionId, { event: 'owner-typing', remoteJid: id }, 'DEBUG');
-                }
-            }
-        } catch (err) {}
-    });
-
     // Handle incoming messages
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
-        if (!msg.message) return;
-
-        const remoteJid = msg.key.remoteJid;
-        const isGroup = remoteJid.endsWith('@g.us');
-
-        // Store messages in memory (both from me and others)
-        if (msg.message) {
-            try {
-                const aiService = require('./ai');
-                // Extract message text safely
-                let messageContent = msg.message;
-                if (messageContent?.ephemeralMessage) messageContent = messageContent.ephemeralMessage.message;
-                if (messageContent?.viewOnceMessage) messageContent = messageContent.viewOnceMessage.message;
-                if (messageContent?.viewOnceMessageV2) messageContent = messageContent.viewOnceMessageV2.message;
-
-                const messageText = messageContent?.conversation || 
-                                    messageContent?.extendedTextMessage?.text || 
-                                    messageContent?.imageMessage?.caption ||
-                                    messageContent?.videoMessage?.caption;
-
-                if (messageText) {
-                    const role = msg.key.fromMe ? 'assistant' : 'user';
-                    await aiService.storeMemory(sessionId, remoteJid, role, messageText);
-                    
-                    // If message is from me, it means I replied.
-                    if (msg.key.fromMe) {
-                        log(`Message envoyé par le propriétaire à ${remoteJid}, enregistrement en mémoire.`, sessionId, { event: 'owner-replied' }, 'DEBUG');
-                    }
-                }
-            } catch (err) {
-                log(`Erreur lors de l'enregistrement en mémoire: ${err.message}`, sessionId, { event: 'memory-error' }, 'ERROR');
-            }
-        }
-
-        if (!msg.key.fromMe) {
+        if (!msg.key.fromMe && msg.message) {
+            const remoteJid = msg.key.remoteJid;
+            const isGroup = remoteJid.endsWith('@g.us');
+            
             log(`Message entrant de ${remoteJid} (${isGroup ? 'Groupe' : 'Direct'})`, sessionId, {
                 event: 'message-received',
                 remoteJid: remoteJid,
@@ -368,12 +318,8 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             if (!isGroup) {
                 try {
                     const aiService = require('./ai');
-                    
-                    // Check if owner is currently typing in this chat
-                    const isOwnerTyping = typingStates.get(sessionId)?.get(remoteJid) || false;
-                    
-                    log(`Déclenchement du gestionnaire d'IA personnel pour la session ${sessionId}...`, sessionId, { event: 'ai-trigger', isOwnerTyping }, 'DEBUG');
-                    await aiService.handleIncomingMessage(sock, sessionId, msg, false, isOwnerTyping);
+                    log(`Déclenchement du gestionnaire d'IA personnel pour la session ${sessionId}...`, sessionId, { event: 'ai-trigger' }, 'DEBUG');
+                    await aiService.handleIncomingMessage(sock, sessionId, msg);
                 } catch (err) {
                     log(`Erreur du gestionnaire d'IA pour la session ${sessionId}: ${err.message}`, sessionId, { event: 'ai-handler-error', error: err.message }, 'ERROR');
                 }
