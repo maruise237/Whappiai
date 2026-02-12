@@ -21,19 +21,32 @@ const getApiBaseUrl = () => {
     const { hostname, port, protocol } = window.location;
     
     // If we are on port 3011 (Production Frontend), we need to point to port 3010 (Production Backend)
-    // We check for hostname to be valid (not empty)
     if (port === '3011' && hostname) {
       return `${protocol}//${hostname}:3010`;
+    }
+
+    // Handle Dokploy/Production domains (where port might be empty)
+    // If hostname is present but port is empty, we might be on a subdomain
+    if (!port && hostname) {
+      // If we are on app.domain.com, backend might be on api.domain.com
+      if (hostname.startsWith('app.')) {
+        return `${protocol}//${hostname.replace('app.', 'api.')}`;
+      }
+      // If we are on dashboard.domain.com, backend might be on api.domain.com
+      if (hostname.startsWith('dashboard.')) {
+        return `${protocol}//${hostname.replace('dashboard.', 'api.')}`;
+      }
+      // Fallback: try the same hostname on port 3010 if it's a raw IP
+      if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+        return `${protocol}//${hostname}:3010`;
+      }
+      // Default fallback to current origin (for same-domain setups)
+      return `${protocol}//${hostname}${protocol === 'https:' ? '' : ':3010'}`;
     }
 
     // If we are on port 3005 or 3001 (Next.js dev server), we need to point to the backend (3000)
     if ((port === '3005' || port === '3001') && hostname) {
       return `${protocol}//${hostname}:3000`;
-    }
-    
-    // Fallback: If we have a hostname but no specific port match, try current origin
-    if (hostname) {
-      return `${protocol}//${hostname}:3010`; // Default to 3010 for our production setup
     }
   }
 
