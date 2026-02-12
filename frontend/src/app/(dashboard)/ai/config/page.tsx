@@ -65,15 +65,46 @@ function AIConfigForm() {
     prompt: "",
     ignore_if_user_typing: true,
     ignore_if_user_replied: true,
-    whitelist: "",
-    blacklist: "",
     keywords_trigger: "",
     keywords_ignore: "",
     schedule_enabled: false,
-    schedule_config: "",
+    schedule_config: "{}",
     typing_delay_min: 2000,
     typing_delay_max: 5000
   })
+
+  // Simple Schedule Helper
+  const parseSchedule = (configStr: string) => {
+    try {
+      return JSON.parse(configStr || "{}")
+    } catch {
+      return {}
+    }
+  }
+
+  const updateSchedule = (day: string, field: string, value: any) => {
+    const current = parseSchedule(formData.schedule_config)
+    const dayConfig = current[day] || { enabled: false, start: "09:00", end: "18:00" }
+    
+    const updated = {
+      ...current,
+      [day]: {
+        ...dayConfig,
+        [field]: value
+      }
+    }
+    setFormData({ ...formData, schedule_config: JSON.stringify(updated) })
+  }
+
+  const days = [
+    { id: 'monday', label: 'Lundi' },
+    { id: 'tuesday', label: 'Mardi' },
+    { id: 'wednesday', label: 'Mercredi' },
+    { id: 'thursday', label: 'Jeudi' },
+    { id: 'friday', label: 'Vendredi' },
+    { id: 'saturday', label: 'Samedi' },
+    { id: 'sunday', label: 'Dimanche' }
+  ]
 
   React.useEffect(() => {
     const loadData = async () => {
@@ -99,16 +130,14 @@ function AIConfigForm() {
           endpoint: config.endpoint || defaultModel?.endpoint || "",
           key: config.key || "",
           prompt: config.prompt || "Tu es un assistant utile.",
-          ignore_if_user_typing: config.ai_ignore_if_user_typing !== undefined ? Boolean(config.ai_ignore_if_user_typing) : true,
-          ignore_if_user_replied: config.ai_ignore_if_user_replied !== undefined ? Boolean(config.ai_ignore_if_user_replied) : true,
-          whitelist: config.ai_whitelist || "",
-          blacklist: config.ai_blacklist || "",
-          keywords_trigger: config.ai_keywords_trigger || "",
-          keywords_ignore: config.ai_keywords_ignore || "",
-          schedule_enabled: config.ai_schedule_enabled !== undefined ? Boolean(config.ai_schedule_enabled) : false,
-          schedule_config: config.ai_schedule_config || "",
-          typing_delay_min: config.ai_typing_delay_min || 2000,
-          typing_delay_max: config.ai_typing_delay_max || 5000
+          ignore_if_user_typing: config.ignore_if_user_typing ?? true,
+          ignore_if_user_replied: config.ignore_if_user_replied ?? true,
+          keywords_trigger: config.keywords_trigger || "",
+          keywords_ignore: config.keywords_ignore || "",
+          schedule_enabled: config.schedule_enabled ?? false,
+          schedule_config: config.schedule_config || "{}",
+          typing_delay_min: config.typing_delay_min || 2000,
+          typing_delay_max: config.typing_delay_max || 5000
         })
       } catch (error) {
         toast.error("Impossible de charger la configuration")
@@ -328,72 +357,74 @@ function AIConfigForm() {
         </div>
 
         <div className="lg:col-span-5 space-y-10">
-          {/* Model & API */}
-          <Card className="border border-slate-200 dark:border-primary/10 shadow-xl rounded-lg overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl">
-            <CardHeader className="p-8 border-b border-slate-100 dark:border-primary/5">
-              <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-4">
-                <Settings2 className="w-6 h-6 text-primary" />
-                Modèle & API
-              </CardTitle>
-              <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Configuration technique du cerveau IA</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Modèle d'IA</Label>
-                <div className="grid grid-cols-2 gap-4 ai-model-selector">
-                  {[
-                    { id: 'deepseek-chat', name: 'DeepSeek', desc: 'Rapide & Pro' },
-                    { id: 'gpt-4o', name: 'GPT-4o', desc: 'Le plus intelligent' },
-                    { id: 'gpt-3.5-turbo', name: 'GPT-3.5', desc: 'Économique' },
-                    { id: 'custom', name: 'Custom', desc: 'Autre API' }
-                  ].map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => setFormData({...formData, model: m.id})}
-                      className={cn(
-                        "p-5 rounded-lg border-2 transition-all duration-300 text-left group",
-                        formData.model === m.id 
-                          ? "border-primary bg-primary/5" 
-                          : "border-transparent bg-slate-50/50 dark:bg-muted/20 hover:bg-slate-100 dark:hover:bg-muted/40"
-                      )}
-                    >
-                      <div className="text-[11px] font-black uppercase tracking-tight group-hover:text-primary transition-colors">{m.name}</div>
-                      <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60 mt-1">{m.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-primary/5">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Clé API</Label>
-                  <div className="relative group ai-api-key">
-                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <Input 
-                      type="password"
-                      value={formData.key}
-                      onChange={(e) => setFormData({...formData, key: e.target.value})}
-                      placeholder="sk-..."
-                      className="pl-12 bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg font-mono text-xs"
-                    />
+          {/* Model & API (Admins Only) */}
+          {isAdmin && (
+            <Card className="border border-slate-200 dark:border-primary/10 shadow-xl rounded-lg overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl">
+              <CardHeader className="p-8 border-b border-slate-100 dark:border-primary/5">
+                <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-4">
+                  <Settings2 className="w-6 h-6 text-primary" />
+                  Modèle & API
+                </CardTitle>
+                <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Configuration technique du cerveau IA (Admin)</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 space-y-8">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Modèle d'IA</Label>
+                  <div className="grid grid-cols-2 gap-4 ai-model-selector">
+                    {[
+                      { id: 'deepseek-chat', name: 'DeepSeek', desc: 'Rapide & Pro' },
+                      { id: 'gpt-4o', name: 'GPT-4o', desc: 'Le plus intelligent' },
+                      { id: 'gpt-3.5-turbo', name: 'GPT-3.5', desc: 'Économique' },
+                      { id: 'custom', name: 'Custom', desc: 'Autre API' }
+                    ].map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => setFormData({...formData, model: m.id})}
+                        className={cn(
+                          "p-5 rounded-lg border-2 transition-all duration-300 text-left group",
+                          formData.model === m.id 
+                            ? "border-primary bg-primary/5" 
+                            : "border-transparent bg-slate-50/50 dark:bg-muted/20 hover:bg-slate-100 dark:hover:bg-muted/40"
+                        )}
+                      >
+                        <div className="text-[11px] font-black uppercase tracking-tight group-hover:text-primary transition-colors">{m.name}</div>
+                        <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60 mt-1">{m.desc}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Endpoint (Optionnel)</Label>
-                  <div className="relative group">
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <Input 
-                      value={formData.endpoint}
-                      onChange={(e) => setFormData({...formData, endpoint: e.target.value})}
-                      placeholder="https://api.openai.com/v1"
-                      className="pl-12 bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg text-xs"
-                    />
+                <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-primary/5">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Clé API</Label>
+                    <div className="relative group ai-api-key">
+                      <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <Input 
+                        type="password"
+                        value={formData.key}
+                        onChange={(e) => setFormData({...formData, key: e.target.value})}
+                        placeholder="sk-..."
+                        className="pl-12 bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Endpoint (Optionnel)</Label>
+                    <div className="relative group">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <Input 
+                        value={formData.endpoint}
+                        onChange={(e) => setFormData({...formData, endpoint: e.target.value})}
+                        placeholder="https://api.openai.com/v1"
+                        className="pl-12 bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
           {/* Typing Simulation */}
           <Card className="border border-slate-200 dark:border-primary/10 shadow-xl rounded-lg overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl">
             <CardHeader className="p-8 border-b border-slate-100 dark:border-primary/5">
@@ -454,22 +485,55 @@ function AIConfigForm() {
                 </div>
 
                 {formData.schedule_enabled && (
-                  <div className="space-y-4 animate-in slide-in-from-top-4 duration-300">
-                    <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-500" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">Format JSON requis</span>
-                      </div>
+                  <div className="space-y-6 animate-in slide-in-from-top-4 duration-300 bg-slate-50/50 dark:bg-muted/10 p-6 rounded-lg border-2 border-slate-100 dark:border-primary/5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Clock className="w-5 h-5 text-primary" />
+                      <span className="text-[11px] font-black uppercase tracking-widest">Configuration des Horaires</span>
                     </div>
-                    <Textarea 
-                      value={formData.schedule_config}
-                      onChange={(e) => setFormData({...formData, schedule_config: e.target.value})}
-                      placeholder='{
-  "monday": {"enabled": true, "start": "09:00", "end": "18:00"},
-  "tuesday": {"enabled": true, "start": "09:00", "end": "18:00"}
-}'
-                      className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 font-mono text-xs rounded-lg min-h-[150px] p-4"
-                    />
+                    
+                    <div className="space-y-4">
+                      {days.map((day) => {
+                        const config = parseSchedule(formData.schedule_config)[day.id] || { enabled: false, start: "09:00", end: "18:00" }
+                        return (
+                          <div key={day.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-white dark:bg-card border border-slate-100 dark:border-primary/5 shadow-sm">
+                            <div className="flex items-center gap-4 min-w-[120px]">
+                              <Switch 
+                                checked={config.enabled}
+                                onCheckedChange={(c) => updateSchedule(day.id, 'enabled', c)}
+                                className="scale-90"
+                              />
+                              <Label className="text-[10px] font-bold uppercase tracking-wider">{day.label}</Label>
+                            </div>
+                            
+                            {config.enabled && (
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] font-black uppercase text-muted-foreground">De</span>
+                                  <Input 
+                                    type="time" 
+                                    value={config.start} 
+                                    onChange={(e) => updateSchedule(day.id, 'start', e.target.value)}
+                                    className="h-8 w-24 text-[10px] font-bold"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] font-black uppercase text-muted-foreground">À</span>
+                                  <Input 
+                                    type="time" 
+                                    value={config.end} 
+                                    onChange={(e) => updateSchedule(day.id, 'end', e.target.value)}
+                                    className="h-8 w-24 text-[10px] font-bold"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {!config.enabled && (
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 italic">Désactivé</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
