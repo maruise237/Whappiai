@@ -143,8 +143,20 @@ export default function AIPage() {
   React.useEffect(() => {
     if (isLoaded && user) {
       fetchData()
+      
+      // Auto-start tour if first time on this page
+      const hasSeenAITour = localStorage.getItem("hasSeenAITour")
+      if (!hasSeenAITour) {
+        const timer = setTimeout(() => setShowTour(true), 1000)
+        return () => clearTimeout(timer)
+      }
     }
   }, [isLoaded, user, fetchData])
+
+  const handleTourExit = () => {
+    setShowTour(false)
+    localStorage.setItem("hasSeenAITour", "true")
+  }
 
   const handleOpenQuickEdit = (item: AIAutomationItem) => {
     setFormData({
@@ -193,10 +205,10 @@ export default function AIPage() {
   }
 
   return (
-    <div className="space-y-10 pb-12 animate-in fade-in duration-200">
-      <AITour enabled={showTour} onExit={() => setShowTour(false)} />
+    <div className="space-y-6 sm:space-y-8 pb-12">
+      <AITour enabled={showTour} onExit={handleTourExit} />
       
-      {/* Header Section - Centralized Admin Config Notice */}
+      {/* Header Section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg relative overflow-hidden group ai-page-header">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[100px] -mr-40 -mt-40 group-hover:bg-primary/10 transition-colors duration-200" />
         

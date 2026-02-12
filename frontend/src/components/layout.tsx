@@ -65,7 +65,6 @@ const mainNavigation = [
 const secondaryNavigation = [
   { name: "Paramètres", href: "/profile", icon: Settings },
   { name: "API Docs", href: "/docs", icon: FileText },
-  { name: "Aide", href: "/help", icon: HelpCircle },
 ]
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {

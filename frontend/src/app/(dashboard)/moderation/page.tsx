@@ -67,7 +67,19 @@ export default function ModerationSessionsPage() {
 
   React.useEffect(() => {
     fetchSessions()
+    
+    // Auto-start tour if first time on this page
+    const hasSeenModerationTour = localStorage.getItem("hasSeenModerationTour")
+    if (!hasSeenModerationTour) {
+      const timer = setTimeout(() => setShowTour(true), 1000)
+      return () => clearTimeout(timer)
+    }
   }, [fetchSessions])
+
+  const handleTourExit = () => {
+    setShowTour(false)
+    localStorage.setItem("hasSeenModerationTour", "true")
+  }
 
   const filteredSessions = sessions.filter(s => 
     s.sessionId.toLowerCase().includes(searchQuery.toLowerCase())
@@ -86,7 +98,7 @@ export default function ModerationSessionsPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
-      <ModerationTour enabled={showTour} onExit={() => setShowTour(false)} />
+      <ModerationTour enabled={showTour} onExit={handleTourExit} />
 
       {/* Header Section */}
       <div className="moderation-header flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-card p-6 sm:p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg relative overflow-hidden group">

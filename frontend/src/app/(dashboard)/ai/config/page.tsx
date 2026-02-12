@@ -95,6 +95,12 @@ function AIConfigForm() {
           read_on_reply: config.read_on_reply ?? false,
           reject_calls: config.reject_calls ?? false
         })
+
+        // Auto-start tour if first time on this config page
+        const hasSeenAIConfigTour = localStorage.getItem("hasSeenAIConfigTour")
+        if (!hasSeenAIConfigTour) {
+          setTimeout(() => setShowTour(true), 1000)
+        }
       } catch (error) {
         toast.error("Impossible de charger la configuration")
       } finally {
@@ -103,6 +109,11 @@ function AIConfigForm() {
     }
     loadData()
   }, [sessionId, getToken, clerkUser])
+
+  const handleTourExit = () => {
+    setShowTour(false)
+    localStorage.setItem("hasSeenAIConfigTour", "true")
+  }
 
   const handleSave = async () => {
     if (!sessionId) return
@@ -138,7 +149,7 @@ function AIConfigForm() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-20 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
-      <AITour enabled={showTour} onExit={() => setShowTour(false)} isConfigPage={true} />
+      <AITour enabled={showTour} onExit={handleTourExit} isConfigPage={true} />
       
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-xl relative overflow-hidden group ai-config-header">

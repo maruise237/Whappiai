@@ -280,9 +280,10 @@ export default function DashboardPage() {
   const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
 
   return (
-    <div className="space-y-10 pb-10" suppressHydrationWarning>
+    <div className="space-y-6 sm:space-y-8 pb-12">
       <DashboardTour enabled={guideEnabled} onExit={handleGuideExit} />
 
+      {/* Hero Section */}
       <div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-150">
         <div className={cn(
           "grid gap-4 sm:gap-8 grid-cols-1 sm:grid-cols-2",
@@ -374,17 +375,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-4 relative z-10">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setGuideEnabled(true)} 
-            className="help-button h-9 sm:h-10 px-3 sm:px-5 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-lg border border-slate-200/50 dark:border-primary/5"
-          >
-            Aide
-          </Button>
-          
-          <div className="h-8 w-px bg-slate-200 dark:bg-primary/10 hidden lg:block" />
-
           {sessions.length > 0 && (
             <div className="flex items-center gap-2 bg-slate-50/50 dark:bg-background/40 p-1 rounded-lg border border-slate-200 dark:border-primary/5 shadow-inner backdrop-blur-sm w-full sm:w-auto">
               <Select 

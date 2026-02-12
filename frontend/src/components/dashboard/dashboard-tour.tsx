@@ -66,15 +66,6 @@ export function DashboardTour({ enabled, onExit }: DashboardTourProps) {
               side: "top",
               align: 'center'
             }
-          },
-          {
-            element: '.help-button',
-            popover: {
-              title: 'Besoin d\'aide ?',
-              description: 'Vous pouvez relancer ce tour guidé à tout moment en cliquant ici. Bonne découverte !',
-              side: "left",
-              align: 'center'
-            }
           }
         ],
         onDestroyStarted: () => {
