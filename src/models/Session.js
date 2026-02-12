@@ -117,7 +117,10 @@ class Session {
      * @returns {object} Updated session
      */
     static updateAIConfig(sessionId, aiConfig) {
-        const { enabled, endpoint, key, model, prompt, mode, temperature, max_tokens } = aiConfig;
+        const { 
+            enabled, endpoint, key, model, prompt, mode, temperature, max_tokens,
+            deactivate_on_typing, deactivate_on_read, trigger_keywords
+        } = aiConfig;
         
         // Handle undefined values to prevent overwriting existing ones with null if not provided
         const existing = this.findById(sessionId);
@@ -126,7 +129,9 @@ class Session {
         const stmt = db.prepare(`
             UPDATE whatsapp_sessions 
             SET ai_enabled = ?, ai_endpoint = ?, ai_key = ?, ai_model = ?, ai_prompt = ?, ai_mode = ?, 
-                ai_temperature = ?, ai_max_tokens = ?, updated_at = datetime('now')
+                ai_temperature = ?, ai_max_tokens = ?, 
+                ai_deactivate_on_typing = ?, ai_deactivate_on_read = ?, ai_trigger_keywords = ?,
+                updated_at = datetime('now')
             WHERE id = ?
         `);
         
@@ -139,6 +144,9 @@ class Session {
             mode !== undefined ? mode : (existing.ai_mode || 'bot'), 
             temperature !== undefined ? temperature : (existing.ai_temperature ?? 0.7), 
             max_tokens !== undefined ? max_tokens : (existing.ai_max_tokens ?? 1000), 
+            deactivate_on_typing !== undefined ? (deactivate_on_typing ? 1 : 0) : existing.ai_deactivate_on_typing,
+            deactivate_on_read !== undefined ? (deactivate_on_read ? 1 : 0) : existing.ai_deactivate_on_read,
+            trigger_keywords !== undefined ? trigger_keywords : existing.ai_trigger_keywords,
             sessionId
         );
         return this.findById(sessionId);

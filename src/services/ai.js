@@ -81,22 +81,6 @@ class AIService {
                 return;
             }
 
-            // Increment received counter
-            Session.updateAIStats(sessionId, 'received');
-
-            const remoteJid = msg.key.remoteJid;
-            
-            // Handle group vs private messages
-            if (remoteJid.endsWith('@g.us')) {
-                if (!isGroupMode) {
-                    log(`Message de groupe ignoré par l'auto-répondeur IA personnel`, sessionId, { remoteJid }, 'DEBUG');
-                    return;
-                }
-            } else if (isGroupMode) {
-                // If in group mode but received a private message, skip (should not happen if called correctly)
-                return;
-            }
-
             // Extract the actual message content
             let messageContent = msg.message;
             if (messageContent?.ephemeralMessage) messageContent = messageContent.ephemeralMessage.message;
@@ -113,7 +97,36 @@ class AIService {
                                 messageContent?.listResponseMessage?.singleSelectReply?.selectedRowId;
 
             if (!messageText) {
-                log(`No text content found in message from ${remoteJid}`, sessionId, { event: 'ai-skip', reason: 'no-text' }, 'INFO');
+                log(`No text content found in message from ${msg.key.remoteJid}`, sessionId, { event: 'ai-skip', reason: 'no-text' }, 'INFO');
+                return;
+            }
+
+            // Trigger Keywords Check
+            if (session.ai_trigger_keywords) {
+                const keywords = session.ai_trigger_keywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+                if (keywords.length > 0) {
+                    const textLower = messageText.toLowerCase();
+                    const hasKeyword = keywords.some(k => textLower.includes(k));
+                    if (!hasKeyword) {
+                        log(`Message ignoré car ne contient aucun mot-clé déclencheur`, sessionId, { event: 'ai-skip', reason: 'no-keyword', text: messageText }, 'DEBUG');
+                        return;
+                    }
+                }
+            }
+
+            // Increment received counter
+            Session.updateAIStats(sessionId, 'received');
+
+            const remoteJid = msg.key.remoteJid;
+            
+            // Handle group vs private messages
+            if (remoteJid.endsWith('@g.us')) {
+                if (!isGroupMode) {
+                    log(`Message de groupe ignoré par l'auto-répondeur IA personnel`, sessionId, { remoteJid }, 'DEBUG');
+                    return;
+                }
+            } else if (isGroupMode) {
+                // If in group mode but received a private message, skip (should not happen if called correctly)
                 return;
             }
 

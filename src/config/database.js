@@ -194,7 +194,10 @@ function initializeSchema() {
         { name: 'ai_last_error', type: 'TEXT' },
         { name: 'ai_last_message_at', type: 'DATETIME' },
         { name: 'ai_temperature', type: 'REAL DEFAULT 0.7' },
-        { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' }
+        { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' },
+        { name: 'ai_deactivate_on_typing', type: 'INTEGER DEFAULT 0' },
+        { name: 'ai_deactivate_on_read', type: 'INTEGER DEFAULT 0' },
+        { name: 'ai_trigger_keywords', type: 'TEXT' }
     ];
 
     aiColumns.forEach(col => {

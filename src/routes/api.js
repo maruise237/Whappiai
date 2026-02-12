@@ -345,6 +345,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 mode: session.ai_mode || 'bot',
                 temperature: session.ai_temperature ?? 0.7,
                 max_tokens: session.ai_max_tokens ?? 1000,
+                deactivate_on_typing: !!session.ai_deactivate_on_typing,
+                deactivate_on_read: !!session.ai_deactivate_on_read,
+                trigger_keywords: session.ai_trigger_keywords || '',
                 stats: {
                     received: session.ai_messages_received || 0,
                     sent: session.ai_messages_sent || 0,

@@ -53,7 +53,10 @@ function AIConfigForm() {
     model: "deepseek-chat",
     endpoint: "",
     key: "",
-    prompt: ""
+    prompt: "",
+    deactivate_on_typing: false,
+    deactivate_on_read: false,
+    trigger_keywords: ""
   })
 
   React.useEffect(() => {
@@ -81,7 +84,10 @@ function AIConfigForm() {
           model: config.model || defaultModel?.id || "deepseek-chat",
           endpoint: config.endpoint || defaultModel?.endpoint || "",
           key: config.key || "",
-          prompt: config.prompt || "Tu es un assistant utile."
+          prompt: config.prompt || "Tu es un assistant utile.",
+          deactivate_on_typing: config.deactivate_on_typing ?? false,
+          deactivate_on_read: config.deactivate_on_read ?? false,
+          trigger_keywords: config.trigger_keywords || ""
         })
       } catch (error) {
         toast.error("Impossible de charger la configuration")
@@ -236,6 +242,62 @@ function AIConfigForm() {
                     </button>
                   ))}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Automatic Controls */}
+          <Card className="border border-slate-200 dark:border-primary/10 shadow-xl rounded-lg overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl">
+            <CardHeader className="p-8 border-b border-slate-100 dark:border-primary/5">
+              <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-4">
+                <Zap className="w-6 h-6 text-primary" />
+                Contrôle Automatique & Déclencheurs
+              </CardTitle>
+              <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Gérez l'activation et la désactivation intelligente de l'IA</CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between p-6 rounded-lg bg-slate-50/50 dark:bg-muted/20 border border-slate-100 dark:border-primary/5 transition-all hover:bg-slate-100 dark:hover:bg-muted/40 group shadow-sm duration-200">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Stop si j'écris</Label>
+                    <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Désactive l'IA quand vous commencez à taper</p>
+                  </div>
+                  <Switch 
+                    checked={formData.deactivate_on_typing}
+                    onCheckedChange={(c) => setFormData({...formData, deactivate_on_typing: c})}
+                    className="data-[state=checked]:bg-primary shadow-sm"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-6 rounded-lg bg-slate-50/50 dark:bg-muted/20 border border-slate-100 dark:border-primary/5 transition-all hover:bg-slate-100 dark:hover:bg-muted/40 group shadow-sm duration-200">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Stop si j'ai lu</Label>
+                    <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Désactive l'IA dès que vous lisez le message</p>
+                  </div>
+                  <Switch 
+                    checked={formData.deactivate_on_read}
+                    onCheckedChange={(c) => setFormData({...formData, deactivate_on_read: c})}
+                    className="data-[state=checked]:bg-primary shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
+                    <Bot className="w-4 h-4" /> Mots-clés Déclencheurs
+                  </Label>
+                  <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest bg-primary/5 border-primary/10 text-primary">Optionnel</Badge>
+                </div>
+                <Input 
+                  value={formData.trigger_keywords}
+                  onChange={(e) => setFormData({...formData, trigger_keywords: e.target.value})}
+                  placeholder="ia, robot, help (séparés par des virgules)"
+                  className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-14 rounded-lg font-medium text-xs shadow-inner transition-all duration-300"
+                />
+                <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest ml-2 italic">
+                  Si défini, l'IA ne répondra que si le message contient l'un de ces mots. Laissez vide pour répondre à tout.
+                </p>
               </div>
             </CardContent>
           </Card>

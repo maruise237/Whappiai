@@ -277,6 +277,54 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         }
     });
 
+    // Handle presence updates (typing detection)
+    sock.ev.on('presence.update', async (update) => {
+        const { id, presences } = update;
+        const session = require('../models/Session').findById(sessionId);
+        
+        if (session && session.ai_enabled && session.ai_deactivate_on_typing) {
+            // Check if any presence is 'composing' from the remote user
+            for (const jid in presences) {
+                const presence = presences[jid];
+                if (presence.lastKnownPresence === 'composing') {
+                    log(`Détection d'écriture de ${jid}, désactivation temporaire de l'IA pour cette session`, sessionId, { event: 'ai-auto-pause-typing', jid }, 'INFO');
+                    // We don't disable ai_enabled globally, but we could flag the session to skip next message
+                    // For now, let's actually disable it to be sure, or use a memory flag
+                    require('../models/Session').updateAIConfig(sessionId, { enabled: false });
+                    // Broadcast to frontend
+                    const { broadcastToClients } = require('../index');
+                    if (broadcastToClients) {
+                        broadcastToClients({
+                            type: 'session-update',
+                            data: [{ sessionId, ai_enabled: 0, detail: 'IA désactivée (détection d\'écriture)' }]
+                        });
+                    }
+                }
+            }
+        }
+    });
+
+    // Handle read receipts
+    sock.ev.on('messages.update', async (updates) => {
+        for (const update of updates) {
+            if (update.update.status === 3 || update.update.status === 4) { // READ or PLAYED
+                const session = require('../models/Session').findById(sessionId);
+                if (session && session.ai_enabled && session.ai_deactivate_on_read) {
+                    log(`Message lu par le destinataire, désactivation de l'IA`, sessionId, { event: 'ai-auto-pause-read' }, 'INFO');
+                    require('../models/Session').updateAIConfig(sessionId, { enabled: false });
+                    // Broadcast to frontend
+                    const { broadcastToClients } = require('../index');
+                    if (broadcastToClients) {
+                        broadcastToClients({
+                            type: 'session-update',
+                            data: [{ sessionId, ai_enabled: 0, detail: 'IA désactivée (message lu)' }]
+                        });
+                    }
+                }
+            }
+        }
+    });
+
     // Handle incoming messages
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
