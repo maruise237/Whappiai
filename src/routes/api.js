@@ -269,8 +269,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/sessions', checkSessionOrTokenAuth, (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl });
 
-        // By default, admins see ALL sessions. Regular users only see their own.
-        const showAll = req.currentUser.role === 'admin' || req.query.all === 'true';
+        // IMPORTANT: By default, everyone (including admin) only sees their own sessions
+        // If an admin wants to see ALL sessions, they could potentially use a query param
+        const showAll = req.query.all === 'true' && req.currentUser.role === 'admin';
         
         res.status(200).json(getSessionsDetails(req.currentUser.email, showAll));
     });
@@ -344,16 +345,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 mode: session.ai_mode || 'bot',
                 temperature: session.ai_temperature ?? 0.7,
                 max_tokens: session.ai_max_tokens ?? 1000,
-                ignore_if_user_typing: !!session.ai_ignore_if_user_typing,
-                ignore_if_user_replied: !!session.ai_ignore_if_user_replied,
-                whitelist: session.ai_whitelist || '',
-                blacklist: session.ai_blacklist || '',
-                keywords_trigger: session.ai_keywords_trigger || '',
-                keywords_ignore: session.ai_keywords_ignore || '',
-                schedule_enabled: !!session.ai_schedule_enabled,
-                schedule_config: session.ai_schedule_config || '',
-                typing_delay_min: session.ai_typing_delay_min ?? 2000,
-                typing_delay_max: session.ai_typing_delay_max ?? 5000,
                 stats: {
                     received: session.ai_messages_received || 0,
                     sent: session.ai_messages_sent || 0,

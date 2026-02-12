@@ -98,12 +98,10 @@ export default function DashboardPage() {
         const newSessions = [...prev]
         updates.forEach((update: any) => {
           const index = newSessions.findIndex(s => s.sessionId === update.sessionId)
-          const isConnected = update.status === 'CONNECTED'
-          
           if (index !== -1) {
             // Check if status changed to connected
             const oldStatus = newSessions[index].isConnected
-            const newStatus = isConnected
+            const newStatus = update.isConnected
             const statusDetail = update.detail || ""
             
             if (!oldStatus && newStatus) {
@@ -124,10 +122,9 @@ export default function DashboardPage() {
               })
             }
             
-            newSessions[index] = { ...newSessions[index], ...update, isConnected }
+            newSessions[index] = { ...newSessions[index], ...update }
           } else {
-            // Add new session if it doesn't exist in the list
-            newSessions.push({ ...update, isConnected })
+            newSessions.push(update)
           }
         })
         return newSessions
