@@ -56,7 +56,10 @@ function AIConfigForm() {
     prompt: "",
     deactivate_on_typing: false,
     deactivate_on_read: false,
-    trigger_keywords: ""
+    trigger_keywords: "",
+    reply_delay: 0,
+    read_on_reply: false,
+    reject_calls: false
   })
 
   React.useEffect(() => {
@@ -87,7 +90,10 @@ function AIConfigForm() {
           prompt: config.prompt || "Tu es un assistant utile.",
           deactivate_on_typing: config.deactivate_on_typing ?? false,
           deactivate_on_read: config.deactivate_on_read ?? false,
-          trigger_keywords: config.trigger_keywords || ""
+          trigger_keywords: config.trigger_keywords || "",
+          reply_delay: config.reply_delay || 0,
+          read_on_reply: config.read_on_reply ?? false,
+          reject_calls: config.reject_calls ?? false
         })
       } catch (error) {
         toast.error("Impossible de charger la configuration")
@@ -280,23 +286,80 @@ function AIConfigForm() {
                     className="data-[state=checked]:bg-primary shadow-sm"
                   />
                 </div>
+
+                <div className="flex items-center justify-between p-6 rounded-lg bg-slate-50/50 dark:bg-muted/20 border border-slate-100 dark:border-primary/5 transition-all hover:bg-slate-100 dark:hover:bg-muted/40 group shadow-sm duration-200">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Lu avant réponse</Label>
+                    <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Marque le message comme vu avant de répondre</p>
+                  </div>
+                  <Switch 
+                    checked={formData.read_on_reply}
+                    onCheckedChange={(c) => setFormData({...formData, read_on_reply: c})}
+                    className="data-[state=checked]:bg-primary shadow-sm"
+                  />
+                </div>
+
+                <div className={cn(
+                  "flex items-center justify-between p-6 rounded-lg border transition-all group shadow-sm duration-200",
+                  formData.reject_calls 
+                    ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-950/40" 
+                    : "bg-slate-50/50 dark:bg-muted/20 border-slate-100 dark:border-primary/5 hover:bg-slate-100 dark:hover:bg-muted/40"
+                )}>
+                  <div className="space-y-1">
+                    <Label className={cn(
+                      "text-[11px] font-black uppercase tracking-widest transition-colors",
+                      formData.reject_calls ? "text-red-600 dark:text-red-400" : "text-foreground group-hover:text-primary"
+                    )}>Rejet automatique d'appels</Label>
+                    <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Rejeter les appels WhatsApp entrants</p>
+                  </div>
+                  <Switch 
+                    checked={formData.reject_calls}
+                    onCheckedChange={(c) => setFormData({...formData, reject_calls: c})}
+                    className="data-[state=checked]:bg-red-600 shadow-sm"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
-                    <Bot className="w-4 h-4" /> Mots-clés Déclencheurs
-                  </Label>
-                  <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest bg-primary/5 border-primary/10 text-primary">Optionnel</Badge>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-primary/5">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
+                      <Zap className="w-4 h-4" /> Délai de réponse (s)
+                    </Label>
+                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest bg-primary/5 border-primary/10 text-primary">
+                      {formData.reply_delay}s
+                    </Badge>
+                  </div>
+                  <Input 
+                    type="number"
+                    min="0"
+                    max="60"
+                    value={formData.reply_delay}
+                    onChange={(e) => setFormData({...formData, reply_delay: parseInt(e.target.value) || 0})}
+                    placeholder="Délai en secondes"
+                    className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-14 rounded-lg font-medium text-xs shadow-inner transition-all duration-300"
+                  />
                 </div>
-                <Input 
-                  value={formData.trigger_keywords}
-                  onChange={(e) => setFormData({...formData, trigger_keywords: e.target.value})}
-                  placeholder="ia, robot, help (séparés par des virgules)"
-                  className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-14 rounded-lg font-medium text-xs shadow-inner transition-all duration-300"
-                />
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
+                      <Bot className="w-4 h-4" /> Mots-clés Déclencheurs
+                    </Label>
+                    <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest bg-primary/5 border-primary/10 text-primary">Optionnel</Badge>
+                  </div>
+                  <Input 
+                    value={formData.trigger_keywords}
+                    onChange={(e) => setFormData({...formData, trigger_keywords: e.target.value})}
+                    placeholder="ia, robot, help (séparés par des virgules)"
+                    className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-14 rounded-lg font-medium text-xs shadow-inner transition-all duration-300"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
                 <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest ml-2 italic">
-                  Si défini, l'IA ne répondra que si le message contient l'un de ces mots. Laissez vide pour répondre à tout.
+                  Note: Si les mots-clés sont définis, l'IA ne répondra que si le message en contient un.
                 </p>
               </div>
             </CardContent>

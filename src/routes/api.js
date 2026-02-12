@@ -348,6 +348,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 deactivate_on_typing: !!session.ai_deactivate_on_typing,
                 deactivate_on_read: !!session.ai_deactivate_on_read,
                 trigger_keywords: session.ai_trigger_keywords || '',
+                reply_delay: session.ai_reply_delay || 0,
+                read_on_reply: !!session.ai_read_on_reply,
+                reject_calls: !!session.ai_reject_calls,
                 stats: {
                     received: session.ai_messages_received || 0,
                     sent: session.ai_messages_sent || 0,

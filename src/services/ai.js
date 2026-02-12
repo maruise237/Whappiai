@@ -130,6 +130,13 @@ class AIService {
                 return;
             }
 
+            // Optional delay before processing (humanization)
+            if (session.ai_reply_delay && parseInt(session.ai_reply_delay) > 0) {
+                const delayMs = parseInt(session.ai_reply_delay) * 1000;
+                log(`Attente de ${session.ai_reply_delay}s avant de traiter le message (config reply_delay)`, sessionId, { event: 'ai-reply-delay', delay: delayMs }, 'INFO');
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+
             // Store user message in memory
             await this.storeMemory(sessionId, remoteJid, 'user', messageText);
 
@@ -180,6 +187,16 @@ class AIService {
                 remoteJid,
                 response
             }, 'INFO');
+
+            // Optional: Mark as read before responding
+            if (session.ai_read_on_reply === 1 || session.ai_read_on_reply === true) {
+                try {
+                    await sock.readMessages([msg.key]);
+                    log(`Message marqué comme lu avant réponse pour ${remoteJid}`, sessionId, { event: 'ai-read-receipt' }, 'DEBUG');
+                } catch (readError) {
+                    log(`Échec du marquage comme lu pour ${remoteJid}: ${readError.message}`, sessionId, { event: 'ai-read-error', error: readError.message }, 'WARN');
+                }
+            }
 
             // Default to 'bot' mode as per specs
             await this.sendAutoResponse(sock, remoteJid, response, sessionId);

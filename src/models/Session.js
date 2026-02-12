@@ -119,7 +119,8 @@ class Session {
     static updateAIConfig(sessionId, aiConfig) {
         const { 
             enabled, endpoint, key, model, prompt, mode, temperature, max_tokens,
-            deactivate_on_typing, deactivate_on_read, trigger_keywords
+            deactivate_on_typing, deactivate_on_read, trigger_keywords,
+            reply_delay, read_on_reply, reject_calls
         } = aiConfig;
         
         // Handle undefined values to prevent overwriting existing ones with null if not provided
@@ -131,6 +132,7 @@ class Session {
             SET ai_enabled = ?, ai_endpoint = ?, ai_key = ?, ai_model = ?, ai_prompt = ?, ai_mode = ?, 
                 ai_temperature = ?, ai_max_tokens = ?, 
                 ai_deactivate_on_typing = ?, ai_deactivate_on_read = ?, ai_trigger_keywords = ?,
+                ai_reply_delay = ?, ai_read_on_reply = ?, ai_reject_calls = ?,
                 updated_at = datetime('now')
             WHERE id = ?
         `);
@@ -147,6 +149,9 @@ class Session {
             deactivate_on_typing !== undefined ? (deactivate_on_typing ? 1 : 0) : existing.ai_deactivate_on_typing,
             deactivate_on_read !== undefined ? (deactivate_on_read ? 1 : 0) : existing.ai_deactivate_on_read,
             trigger_keywords !== undefined ? trigger_keywords : existing.ai_trigger_keywords,
+            reply_delay !== undefined ? reply_delay : existing.ai_reply_delay,
+            read_on_reply !== undefined ? (read_on_reply ? 1 : 0) : existing.ai_read_on_reply,
+            reject_calls !== undefined ? (reject_calls ? 1 : 0) : existing.ai_reject_calls,
             sessionId
         );
         return this.findById(sessionId);

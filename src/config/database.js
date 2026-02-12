@@ -197,7 +197,10 @@ function initializeSchema() {
         { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' },
         { name: 'ai_deactivate_on_typing', type: 'INTEGER DEFAULT 0' },
         { name: 'ai_deactivate_on_read', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_trigger_keywords', type: 'TEXT' }
+        { name: 'ai_trigger_keywords', type: 'TEXT' },
+        { name: 'ai_reply_delay', type: 'INTEGER DEFAULT 0' },
+        { name: 'ai_read_on_reply', type: 'INTEGER DEFAULT 0' },
+        { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' }
     ];
 
     aiColumns.forEach(col => {

@@ -267,6 +267,25 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         }
     });
 
+    // Handle incoming calls (Auto-reject if enabled)
+    sock.ev.on('call', async (calls) => {
+        try {
+            const Session = require('../models/Session');
+            const session = Session.findById(sessionId);
+            
+            if (session && (session.ai_reject_calls === 1 || session.ai_reject_calls === true)) {
+                for (const call of calls) {
+                    if (call.status === 'offer') {
+                        log(`Appel entrant détecté de ${call.from}, rejet automatique activé`, sessionId, { event: 'call-reject', from: call.from, callId: call.id }, 'INFO');
+                        await sock.rejectCall(call.id, call.from);
+                    }
+                }
+            }
+        } catch (err) {
+            log(`Erreur lors du traitement de l'appel pour ${sessionId}: ${err.message}`, sessionId, { event: 'call-reject-error', error: err.message }, 'ERROR');
+        }
+    });
+
     // Handle participant updates (moderation, welcome, etc.)
     sock.ev.on('group-participants.update', async (update) => {
         try {
