@@ -5,8 +5,6 @@
 ### ✨ Nouvelles Fonctionnalités
 - **Refonte UI complète**: Migration vers shadcn/ui (Next.js, Green+Neutral theme).
 - **Support Média complet**: Ajout du support pour les messages Image, Vidéo, Audio et PTT dans l'interface et l'API.
-- **Gestion des Campagnes**: Nouveau wizard en 4 étapes pour la création de campagnes bulk.
-- **Récupération des Échecs**: Ajout d'une fonctionnalité de "Retry" pour les messages ayant échoué dans une campagne.
 - **Référence API Dynamique**: Les exemples cURL se mettent à jour en temps réel selon l'onglet de message sélectionné.
 
 ### 🐛 Corrections de Bugs

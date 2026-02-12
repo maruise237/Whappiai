@@ -32,17 +32,6 @@ Le thème utilise une combinaison de **Green** (Primaire) et **Neutral** (Base).
   - **CONNECTED**: Badge vert (emerald) - Session active et prête.
   - **DISCONNECTED**: Badge rouge (destructive) - Session inactive.
   - **INITIALIZING**: Badge jaune (amber) - En cours de connexion.
-- **Campagnes**:
-  - **RUNNING**: Badge bleu (blue) - Envoi en cours.
-  - **PAUSED**: Badge jaune (amber) - Envoi suspendu.
-  - **COMPLETED**: Badge vert (emerald) - Envoi terminé avec succès.
-  - **FAILED**: Badge rouge (destructive) - Erreur lors de l'envoi.
-
-### Wizard de Campagne (Steppers)
-1. **Basic Info**: Nom de la campagne, session et planification.
-2. **Recipients**: Sélection des listes de contacts.
-3. **Message**: Composition du message (Texte ou Media).
-4. **Review**: Récapitulatif avant lancement.
 
 ## 🚀 Style "Vega" & Configuration
 Le style "Vega" se caractérise par :

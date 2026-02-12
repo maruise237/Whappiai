@@ -333,33 +333,6 @@ export function DocsContent() {
         </Endpoint>
       </section>
 
-      {/* Campaigns */}
-      <section id="campaigns" className="scroll-mt-24">
-        <div className="flex items-center gap-4 mb-10">
-          <div className="p-3 bg-primary/10 rounded-lg shadow-inner">
-            <Zap className="w-8 h-8 text-primary" />
-          </div>
-          <h2 className="text-3xl font-black tracking-tight uppercase">Campagnes</h2>
-        </div>
-
-        <Endpoint method="POST" path="/campaigns">
-          <h4 className="text-xl font-black uppercase tracking-tight mb-3">Créer une Campagne</h4>
-          <p className="text-muted-foreground text-[11px] font-bold uppercase tracking-widest opacity-70 mb-8 leading-relaxed">
-            Créez une campagne de messagerie en masse.
-          </p>
-          <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/campaigns' \\
--H 'Authorization: Bearer votre_token' \\
--H 'Content-Type: application/json' \\
--d '{
-  "name": "Promotion de Printemps",
-  "sessionId": "maSession",
-  "recipientListId": "list_123",
-  "message": "Découvrez notre nouvelle collection !",
-  "scheduledAt": "2024-06-01T10:00:00Z"
-}'`} />
-        </Endpoint>
-      </section>
-
       {/* Media Management */}
       <section id="media" className="scroll-mt-24">
         <div className="flex items-center gap-4 mb-10">
@@ -377,6 +350,47 @@ export function DocsContent() {
           <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/media/upload' \\
 -H 'Authorization: Bearer votre_token' \\
 -F 'file=@/chemin/vers/votre/fichier.jpg'`} lang="bash" />
+        </Endpoint>
+      </section>
+
+      {/* Recipient Lists */}
+      <section id="recipient-lists" className="scroll-mt-24">
+        <div className="flex items-center gap-4 mb-10">
+          <div className="p-3 bg-primary/10 rounded-lg shadow-inner">
+            <Share2 className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-3xl font-black tracking-tight uppercase">Listes de Destinataires</h2>
+        </div>
+
+        <Endpoint method="GET" path="/recipient-lists">
+          <h4 className="text-xl font-black uppercase tracking-tight mb-3">Lister les Listes</h4>
+          <p className="text-muted-foreground text-[11px] font-bold uppercase tracking-widest opacity-70 mb-8 leading-relaxed">
+            Récupère toutes les listes de destinataires créées par l'utilisateur ou toutes les listes pour les administrateurs.
+          </p>
+          <CodeBlock code={`curl -X GET 'http://localhost:3000/api/v1/recipient-lists' \\
+-H 'Authorization: Bearer votre_token'`} />
+        </Endpoint>
+
+        <Endpoint method="POST" path="/recipient-lists">
+          <h4 className="text-xl font-black uppercase tracking-tight mb-3">Créer une Liste</h4>
+          <p className="text-muted-foreground text-[11px] font-bold uppercase tracking-widest opacity-70 mb-8 leading-relaxed">
+            Crée une nouvelle liste de destinataires vide.
+          </p>
+          <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/recipient-lists' \\
+-H 'Authorization: Bearer votre_token' \\
+-H 'Content-Type: application/json' \\
+-d '{ "name": "Clients VIP" }'`} />
+        </Endpoint>
+
+        <Endpoint method="POST" path="/recipient-lists/:id/recipients">
+          <h4 className="text-xl font-black uppercase tracking-tight mb-3">Ajouter un Destinataire</h4>
+          <p className="text-muted-foreground text-[11px] font-bold uppercase tracking-widest opacity-70 mb-8 leading-relaxed">
+            Ajoute un nouveau destinataire à une liste existante.
+          </p>
+          <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/recipient-lists/LIST_ID/recipients' \\
+-H 'Authorization: Bearer votre_token' \\
+-H 'Content-Type: application/json' \\
+-d '{ "number": "6281234567890", "name": "John Doe" }'`} />
         </Endpoint>
       </section>
 

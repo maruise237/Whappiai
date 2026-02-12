@@ -5,16 +5,12 @@
 
 const User = require('./User');
 const Session = require('./Session');
-const Campaign = require('./Campaign');
-const Recipient = require('./Recipient');
 const ActivityLog = require('./ActivityLog');
 const AIModel = require('./AIModel');
 
 module.exports = {
     User,
     Session,
-    Campaign,
-    Recipient,
     ActivityLog,
     AIModel
 };

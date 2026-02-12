@@ -48,8 +48,6 @@ Les restrictions ne sont pas seulement visuelles mais appliquées strictement su
 | :--- | :---: | :---: |
 | Gérer ses sessions WhatsApp | ✅ | ✅ |
 | Envoyer des messages (IA/Manuel) | ✅ | ✅ |
-| Créer des campagnes | ✅ | ✅ |
-| Gérer les listes de diffusion | ✅ | ✅ |
 | Créer un nouvel admin | ✅ | ❌ |
 | Créer un collaborateur | ✅ | ✅ |
 | Voir les logs système | ✅ | ❌ |

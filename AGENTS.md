@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-Whappi is a WhatsApp API server built with Express.js and the `@whiskeysockets/baileys` library, paired with a Next.js 15 dashboard. It provides session management, messaging capabilities, campaign management, group moderation, and AI-powered auto-responders.
+Whappi is a WhatsApp API server built with Express.js and the `@whiskeysockets/baileys` library, paired with a Next.js 15 dashboard. It provides session management, messaging capabilities, group moderation, and AI-powered auto-responders.
 
 ## Commands
 
@@ -43,14 +43,13 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
 ### Backend (Express.js - Root)
 - **Entry point**: `index.js` - Server initialization, WebSocket setup, session management orchestration
 - **`src/config/`**: Database configuration (SQLite via better-sqlite3)
-- **`src/models/`**: Data models (User, Session, Campaign, Recipient, ActivityLog)
+- **`src/models/`**: Data models (User, Session, ActivityLog)
 - **`src/routes/`**: 
-  - `api.js` - Main API v1 router with campaigns, sessions, messaging, moderation endpoints
+  - `api.js` - Main API v1 router with sessions, messaging, moderation endpoints
   - `auth.js` - Authentication routes (login/logout)
   - `users.js` - User management routes
 - **`src/services/`**:
   - `whatsapp.js` - Baileys connection management, QR code generation, message handling
-  - `campaigns.js` & `campaign-sender.js` - Campaign orchestration and sending logic
   - `ai.js` - AI auto-responder integration (configurable endpoint/model)
   - `moderation.js` - Group moderation (blacklists, welcome messages)
   - `animator.js` - Scheduled group messaging tasks
@@ -68,8 +67,6 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
 - **SQLite**: `src/config/database.sqlite` - Users, sessions metadata, activity logs
 - **Filesystem**: 
   - `auth_info_baileys/<sessionId>/` - Baileys auth credentials per session
-  - `src/services/campaigns/` - Campaign JSON files
-  - `src/services/recipient_lists/` - Recipient list JSON files
   - `media/` - Uploaded media files
   - `sessions/` - Express session files (FileStore)
 
@@ -82,11 +79,6 @@ Sessions go through: `CONNECTING` → `GENERATING_QR` → `CONNECTED` (or `DISCO
 - Admin dashboard uses Express sessions with file-based storage
 - API endpoints use per-session tokens (stored in `sessionTokens` Map)
 - Master API key (`MASTER_API_KEY` env) for session creation without login
-
-### Campaign Flow
-1. Create campaign with recipients (manual or from recipient list)
-2. Status: `draft` → `ready` (when recipients added) → `running` → `completed`/`paused`
-3. Scheduled campaigns auto-start via `checkAndStartScheduledCampaigns()`
 
 ## Environment Variables (Critical)
 

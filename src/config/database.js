@@ -145,42 +145,6 @@ function initializeSchema() {
         } catch (e) {}
     });
 
-    // Campaigns table
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS campaigns (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            status TEXT DEFAULT 'draft' CHECK(status IN ('draft', 'ready', 'sending', 'paused', 'completed', 'cancelled')),
-            session_id TEXT REFERENCES whatsapp_sessions(id) ON DELETE SET NULL,
-            message_content TEXT,
-            message_type TEXT DEFAULT 'text',
-            media_url TEXT,
-            media_caption TEXT,
-            ptt INTEGER DEFAULT 0,
-            message_delay_min INTEGER DEFAULT 3,
-            message_delay_max INTEGER DEFAULT 8,
-            created_by TEXT REFERENCES users(email) ON DELETE SET NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            scheduled_at DATETIME,
-            started_at DATETIME,
-            completed_at DATETIME
-        )
-    `);
-
-    // Migration for existing databases: Add media_caption and ptt columns if they don't exist
-    try {
-        db.exec("ALTER TABLE campaigns ADD COLUMN media_caption TEXT");
-    } catch (e) {
-        // Column might already exist
-    }
-    try {
-        db.exec("ALTER TABLE campaigns ADD COLUMN ptt INTEGER DEFAULT 0");
-    } catch (e) {
-        // Column might already exist
-    }
-
     // Migration for AI columns in whatsapp_sessions
     const aiColumns = [
         { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
@@ -210,28 +174,6 @@ function initializeSchema() {
             // Column might already exist
         }
     });
-
-    // Campaign recipients table
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS campaign_recipients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
-            number TEXT NOT NULL,
-            name TEXT,
-            custom_fields TEXT,
-            status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'sent', 'failed', 'retry')),
-            sent_at DATETIME,
-            error TEXT,
-            retry_count INTEGER DEFAULT 0,
-            UNIQUE(campaign_id, number)
-        )
-    `);
-
-    // Create index for faster recipient lookups
-    db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_recipients_campaign_status 
-        ON campaign_recipients(campaign_id, status)
-    `);
 
     // Activity logs table
     db.exec(`

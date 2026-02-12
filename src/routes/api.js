@@ -71,7 +71,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Clerk Auth Middleware (now global in index.js)
     // router.use(ClerkExpressWithAuth());
 
-    // Middleware to check campaign or AI access (session-based OR token-based OR master key)
+    // Middleware to check AI access (session-based OR token-based OR master key)
     const checkSessionOrTokenAuth = async (req, res, next) => {
         // DEFINITIVE ADMIN EMAIL
         const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
@@ -297,35 +297,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    // Campaign Management Endpoints
-    const CampaignManager = require('../services/campaigns');
-    const CampaignSender = require('../services/campaign-sender');
+    // Recipient Management Endpoints
     const RecipientListManager = require('../services/recipient-lists');
 
-    // Initialize campaign manager and sender
-    const campaignManager = new CampaignManager(process.env.TOKEN_ENCRYPTION_KEY || 'default-key');
-    const campaignSender = new CampaignSender(campaignManager, sessions, activityLogger);
+    // Initialize recipient list manager
     const recipientListManager = new RecipientListManager(process.env.TOKEN_ENCRYPTION_KEY || 'default-key');
-
-    // Campaign routes
-    router.get('/campaigns', checkSessionOrTokenAuth, (req, res) => {
-        const campaigns = campaignManager.getAllCampaigns(
-            req.currentUser ? req.currentUser.email : null,
-            req.currentUser ? req.currentUser.role === 'admin' : true
-        );
-        res.json(campaigns);
-    });
-
-    router.get('/campaigns/overdue', checkSessionOrTokenAuth, requireAdmin, (req, res) => {
-        const campaigns = campaignManager.getAllCampaigns(null, true);
-        const now = new Date();
-        const overdue = campaigns.filter(c => 
-            c.status === 'scheduled' && 
-            c.scheduledAt && 
-            new Date(c.scheduledAt) <= now
-        );
-        res.json(overdue);
-    });
 
     // AI Configuration Endpoints
     router.get('/sessions/:sessionId/ai', checkSessionOrTokenAuth, (req, res) => {
@@ -636,241 +612,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    const checkAndStartScheduledCampaigns = async () => {
-        const campaigns = campaignManager.getAllCampaigns(null, true);
-        const now = new Date();
-        
-        for (const campaign of campaigns) {
-            if (campaign.status === 'scheduled' && campaign.scheduledAt) {
-                const scheduledDate = new Date(campaign.scheduledAt);
-                if (scheduledDate <= now) {
-                    log(`Starting scheduled campaign: ${campaign.name}`, 'SYSTEM', { campaignId: campaign.id });
-                    try {
-                        await campaignSender.startCampaign(campaign.id);
-                    } catch (error) {
-                        log(`Failed to start scheduled campaign: ${campaign.name}`, 'SYSTEM', { campaignId: campaign.id, error: error.message }, 'ERROR');
-                    }
-                }
-            }
-        }
-    };
-
-    // Scheduled task to check campaigns every minute
-    setInterval(checkAndStartScheduledCampaigns, 60 * 1000);
-
-    router.get('/campaigns/csv-template', checkSessionOrTokenAuth, (req, res) => {
-        const template = 'number,name,var1,var2\n+1234567890,John Doe,value1,value2';
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename="campaign_template.csv"');
-        res.send(template);
-    });
-
-    router.get('/campaigns/check-scheduled', checkSessionOrTokenAuth, async (req, res) => {
-        try {
-            await checkAndStartScheduledCampaigns();
-            res.json({ status: 'success', message: 'Checked and started scheduled campaigns' });
-        } catch (error) {
-            res.status(500).json({ status: 'error', message: error.message });
-        }
-    });
-
-
-    router.get('/campaigns/:id', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        const campaign = campaignManager.loadCampaign(req.params.id);
-        if (!campaign) {
-            return res.status(404).json({ status: 'error', message: 'Campaign not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && campaign.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        res.json(campaign);
-    });
-
-    router.post('/campaigns', checkSessionOrTokenAuth, async (req, res) => {
-        try {
-            const campaignData = {
-                ...req.body,
-                createdBy: req.currentUser.email
-            };
-
-            const campaign = campaignManager.createCampaign(campaignData);
-            res.status(201).json(campaign);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.put('/campaigns/:id', checkSessionOrTokenAuth, async (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        try {
-            const campaign = campaignManager.loadCampaign(req.params.id);
-            if (!campaign) {
-                return res.status(404).json({ status: 'error', message: 'Campaign not found' });
-            }
-
-            // Check access
-            if (req.currentUser.role !== 'admin' && campaign.createdBy !== req.currentUser.email) {
-                return res.status(403).json({ status: 'error', message: 'Access denied' });
-            }
-
-            const updated = campaignManager.updateCampaign(req.params.id, req.body);
-            res.json(updated);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.delete('/campaigns/:id', checkSessionOrTokenAuth, async (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        const campaign = campaignManager.loadCampaign(req.params.id);
-        if (!campaign) {
-            return res.status(404).json({ status: 'error', message: 'Campaign not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && campaign.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        const success = campaignManager.deleteCampaign(req.params.id);
-        if (success) {
-            res.json({ status: 'success', message: 'Campaign deleted' });
-        } else {
-            res.status(500).json({ status: 'error', message: 'Failed to delete campaign' });
-        }
-    });
-
-    router.post('/campaigns/:id/clone', checkSessionOrTokenAuth, async (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        try {
-            const cloned = campaignManager.cloneCampaign(req.params.id, req.currentUser.email, req.body.name);
-            res.status(201).json(cloned);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.post('/campaigns/:id/send', checkSessionOrTokenAuth, async (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        const campaign = campaignManager.loadCampaign(req.params.id);
-        if (!campaign) {
-            return res.status(404).json({ status: 'error', message: 'Campaign not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && campaign.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        try {
-            campaignSender.startCampaign(req.params.id);
-            res.json({ status: 'success', message: 'Campaign started' });
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.post('/campaigns/:id/pause', checkSessionOrTokenAuth, async (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        const campaign = campaignManager.loadCampaign(req.params.id);
-        if (!campaign) {
-            return res.status(404).json({ status: 'error', message: 'Campaign not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && campaign.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        try {
-            campaignSender.pauseCampaign(req.params.id);
-            res.json({ status: 'success', message: 'Campaign paused' });
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.post('/campaigns/:id/resume', checkSessionOrTokenAuth, async (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        const campaign = campaignManager.loadCampaign(req.params.id);
-        if (!campaign) {
-            return res.status(404).json({ status: 'error', message: 'Campaign not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && campaign.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        try {
-            campaignSender.resumeCampaign(req.params.id);
-            res.json({ status: 'success', message: 'Campaign resumed' });
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.post('/campaigns/:id/retry', checkSessionOrTokenAuth, async (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        try {
-            const result = await campaignSender.retryFailed(req.params.id, req.currentUser.email);
-            res.json(result);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.get('/campaigns/:id/status', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        const status = campaignSender.getCampaignStatus(req.params.id);
-        if (!status) {
-            return res.status(404).json({ status: 'error', message: 'Campaign not found' });
-        }
-        res.json(status);
-    });
-
-    router.get('/campaigns/:id/export', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid campaign ID format' });
-        }
-        const campaign = campaignManager.loadCampaign(req.params.id);
-        if (!campaign) {
-            return res.status(404).json({ status: 'error', message: 'Campaign not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && campaign.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        const csv = campaignManager.exportResults(req.params.id);
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="${campaign.name}_results.csv"`);
-        res.send(csv);
-    });
-
     // Admin AI Model Management Endpoints
     router.get('/admin/ai-models', checkSessionOrTokenAuth, requireAdmin, (req, res) => {
         try {
@@ -962,33 +703,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
-
-    router.post('/campaigns/preview-csv', checkSessionOrTokenAuth, upload.single('file'), (req, res) => {
-        if (!req.file) {
-            return res.status(400).json({ status: 'error', message: 'No file uploaded' });
-        }
-
-        try {
-            const csvContent = fs.readFileSync(req.file.path, 'utf-8');
-            const result = campaignManager.parseCSV(csvContent);
-
-            // Clean up uploaded file
-            fs.unlinkSync(req.file.path);
-
-            res.json(result);
-        } catch (error) {
-            // Clean up uploaded file
-            if (req.file && fs.existsSync(req.file.path)) {
-                fs.unlinkSync(req.file.path);
-            }
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-
-
-    // Export the function for use by the main scheduler
-    router.checkAndStartScheduledCampaigns = checkAndStartScheduledCampaigns;
 
     // Recipient List Management Endpoints (Session-based auth, not token-based)
 

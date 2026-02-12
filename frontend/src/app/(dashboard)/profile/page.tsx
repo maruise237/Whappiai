@@ -469,7 +469,7 @@ export default function ProfilePage() {
                       Zone de Danger
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
-                      Une fois supprimé, votre compte et toutes ses données associées (sessions, logs, campagnes) seront définitivement effacés.
+                      Une fois supprimé, votre compte et toutes ses données associées (sessions, logs) seront définitivement effacés.
                     </p>
                   </div>
                   

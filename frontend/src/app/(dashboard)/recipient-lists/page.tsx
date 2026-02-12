@@ -222,7 +222,7 @@ export default function RecipientListsPage() {
             </div>
           </div>
           <p className="text-muted-foreground text-sm font-medium max-w-md">
-            Gérez vos groupes de destinataires pour vos campagnes de diffusion.
+            Gérez vos groupes de destinataires pour vos envois.
           </p>
         </div>
         <div className="flex items-center gap-4 relative z-10">

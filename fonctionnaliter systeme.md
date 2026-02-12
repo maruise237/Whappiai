@@ -25,15 +25,11 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
   - **Hybride** : Réponse automatique avec un délai d'annulation pour intervention humaine.
 - **Humanisation** : Simulation du statut "en train d'écrire" avec délai basé sur la longueur du texte.
 
-### 📊 Gestion des Campagnes & Marketing
-- **Description** : Envoi massif de messages (texte et médias) à des listes de contacts.
-- **Options** : Délais aléatoires entre les messages (anti-ban), planification différée, et suivi de progression en temps réel.
-
 ### 👥 Gestion des Destinataires
 - **Description** : Importation et organisation des contacts en listes segmentées.
-- **Fonctions** : Support des champs personnalisés pour la personnalisation des messages de campagne.
+- **Fonctions** : Support de l'importation massive et organisation pour un accès rapide.
 
-### 📜 Monitoring & Audit
+###  Monitoring & Audit
 - **Description** : Journalisation détaillée de toutes les actions système et erreurs.
 - **Usage** : Debugging facilité et historique complet des interactions par session.
 
@@ -48,7 +44,6 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
   - **Dashboard** : Initialisation et connexion de session (QR Code).
   - **IA & Automatisation** : Configuration des prompts et des modèles.
   - **Modération de Groupe** (Audit 2024) : Guide pour la mise en place des règles et profils d'animation.
-  - **Campagnes & Marketing** (Audit 2024) : Aide à l'importation CSV et au paramétrage des délais anti-ban.
 - **Cohérence** : Utilisation systématique de `popoverClass: 'driverjs-theme'` pour une intégration visuelle fluide.
 
 ### ⏳ Indicateurs de Progression
@@ -59,7 +54,7 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
 ### 💬 Info-bulles & Tooltips (Standardisation)
 - **Outil** : Shadcn/UI Tooltip (basé sur `Radix UI`)
 - **Note Audit** : Migration effectuée de `tippy.js` vers Radix pour une meilleure accessibilité et intégration React.
-- **Usage** : Explications contextuelles sur les icônes d'action, les statuts de session complexes, et les paramètres techniques (ex: Température IA, Délais de campagne).
+- **Usage** : Explications contextuelles sur les icônes d'action, les statuts de session complexes, et les paramètres techniques (ex: Température IA).
 
 ### 🔔 Notifications & Alertes
 - **Outil** : `sonner` (Toasts)
@@ -72,9 +67,7 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
 - **Usage** : Célébrer des succès utilisateurs pour renforcer l'engagement.
 - **Triggers Identifiés (Audit 2024)** :
   - **Connexion Session** : Succès de l'appairage QR Code/Code.
-  - **Campagnes Terminées** : Fin d'un envoi massif sans erreur critique.
   - **Génération IA** : Création réussie d'un message d'animation de groupe complexe.
-  - **Importation Contacts** : Validation d'une liste de destinataires volumineuse.
 
 ### 🔍 Coloration Syntaxique
 - **Outil** : `prism.js`
@@ -84,7 +77,7 @@ Toutes les fonctionnalités et bibliothèques listées ici doivent impérativeme
 
 ## 🔮 Fonctionnalités Prévues (Roadmap)
 1. **Webhooks Sortants** : Notification en temps réel des systèmes tiers lors de la réception de messages.
-2. **Statistiques Avancées** : Tableaux de bord analytiques pour les campagnes et les performances de l'IA.
+2. **Statistiques Avancées** : Tableaux de bord analytiques pour les performances de l'IA.
 3. **Multi-utilisateurs** : Système de rôles et permissions pour une gestion collaborative.
 4. **Auto-répondeurs par Mots-clés** : Système de réponses automatiques basiques basé sur des déclencheurs textuels.
 

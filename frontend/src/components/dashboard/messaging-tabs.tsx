@@ -91,7 +91,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
   const [videoCaption, setVideoCaption] = React.useState("")
 
   // Combo State
-  const [campaign, setCampaign] = React.useState("Quick Campaign")
+  const [comboName, setComboName] = React.useState("Envoi Rapide")
   const [comboMessage, setComboMessage] = React.useState("")
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
@@ -270,7 +270,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
                   { value: "document", icon: FileText, label: "Doc", tooltip: "Envoyer un document (PDF, DOCX...)" },
                   { value: "audio", icon: Mic, label: "Audio", tooltip: "Envoyer un fichier audio ou PTT" },
                   { value: "video", icon: Video, label: "Vidéo", tooltip: "Envoyer une vidéo (mp4)" },
-                  { value: "combo", icon: Layers, label: "Combo", tooltip: "Envoi multiple / Campagne rapide" }
+                  { value: "combo", icon: Layers, label: "Combo", tooltip: "Envoi multiple / Mixte" }
                 ].map((tab) => (
                   <Tooltip key={tab.value}>
                     <TooltipTrigger asChild>
