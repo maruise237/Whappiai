@@ -65,8 +65,9 @@ class AIService {
      * @param {string} sessionId - Session ID (now userId)
      * @param {object} msg - Incoming message object
      * @param {boolean} isGroupMode - Whether it's called in group assistant mode
+     * @param {boolean} isOwnerTyping - Whether the owner is currently typing
      */
-    static async handleIncomingMessage(sock, sessionId, msg, isGroupMode = false) {
+    static async handleIncomingMessage(sock, sessionId, msg, isGroupMode = false, isOwnerTyping = false) {
         try {
             // Get session config from DB
             const session = Session.findById(sessionId);
@@ -81,20 +82,57 @@ class AIService {
                 return;
             }
 
-            // Increment received counter
-            Session.updateAIStats(sessionId, 'received');
-
             const remoteJid = msg.key.remoteJid;
             
-            // Handle group vs private messages
-            if (remoteJid.endsWith('@g.us')) {
-                if (!isGroupMode) {
-                    log(`Message de groupe ignoré par l'auto-répondeur IA personnel`, sessionId, { remoteJid }, 'DEBUG');
-                    return;
-                }
-            } else if (isGroupMode) {
-                // If in group mode but received a private message, skip (should not happen if called correctly)
+            // --- NEW RULES IMPLEMENTATION ---
+            
+            // 1. Check if owner is typing
+            if (!isGroupMode && parseInt(session.ai_ignore_if_user_typing) === 1 && isOwnerTyping) {
+                log(`IA ignorée: Le propriétaire est en train d'écrire dans ${remoteJid}`, sessionId, { event: 'ai-skip', reason: 'owner-typing' }, 'INFO');
                 return;
+            }
+
+            // 2. Check Whitelist/Blacklist
+            const cleanJid = remoteJid.split('@')[0];
+            if (!isGroupMode) {
+                if (session.ai_whitelist && session.ai_whitelist.trim().length > 0) {
+                    const whitelist = session.ai_whitelist.split(',').map(item => item.trim());
+                    if (!whitelist.includes(cleanJid) && !whitelist.includes(remoteJid)) {
+                        log(`IA ignorée: ${remoteJid} n'est pas dans la liste blanche`, sessionId, { event: 'ai-skip', reason: 'not-whitelisted' }, 'DEBUG');
+                        return;
+                    }
+                }
+                
+                if (session.ai_blacklist && session.ai_blacklist.trim().length > 0) {
+                    const blacklist = session.ai_blacklist.split(',').map(item => item.trim());
+                    if (blacklist.includes(cleanJid) || blacklist.includes(remoteJid)) {
+                        log(`IA ignorée: ${remoteJid} est dans la liste noire`, sessionId, { event: 'ai-skip', reason: 'blacklisted' }, 'DEBUG');
+                        return;
+                    }
+                }
+            }
+
+            // 3. Check Schedule
+            if (!isGroupMode && parseInt(session.ai_schedule_enabled) === 1 && session.ai_schedule_config) {
+                try {
+                    const schedule = JSON.parse(session.ai_schedule_config);
+                    const now = new Date();
+                    const day = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                    
+                    const dayConfig = schedule[day];
+                    if (dayConfig && dayConfig.enabled) {
+                        if (currentTime < dayConfig.start || currentTime > dayConfig.end) {
+                            log(`IA ignorée: Hors des horaires configurés pour ${day} (${currentTime})`, sessionId, { event: 'ai-skip', reason: 'outside-schedule' }, 'DEBUG');
+                            return;
+                        }
+                    } else if (dayConfig) {
+                        log(`IA ignorée: IA désactivée pour ${day}`, sessionId, { event: 'ai-skip', reason: 'day-disabled' }, 'DEBUG');
+                        return;
+                    }
+                } catch (e) {
+                    log(`Erreur lors de la vérification du planning: ${e.message}`, sessionId, { event: 'ai-schedule-error' }, 'ERROR');
+                }
             }
 
             // Extract the actual message content
@@ -117,9 +155,54 @@ class AIService {
                 return;
             }
 
-            // Store user message in memory
-            await this.storeMemory(sessionId, remoteJid, 'user', messageText);
+            // 4. Check Keywords Trigger/Ignore
+            if (!isGroupMode) {
+                if (session.ai_keywords_ignore && session.ai_keywords_ignore.trim().length > 0) {
+                    const ignoreKeywords = session.ai_keywords_ignore.split(',').map(item => item.trim().toLowerCase());
+                    if (ignoreKeywords.some(kw => messageText.toLowerCase().includes(kw))) {
+                        log(`IA ignorée: Mot-clé ignoré détecté dans le message`, sessionId, { event: 'ai-skip', reason: 'keyword-ignored' }, 'DEBUG');
+                        return;
+                    }
+                }
 
+                if (session.ai_keywords_trigger && session.ai_keywords_trigger.trim().length > 0) {
+                    const triggerKeywords = session.ai_keywords_trigger.split(',').map(item => item.trim().toLowerCase());
+                    if (!triggerKeywords.some(kw => messageText.toLowerCase().includes(kw))) {
+                        log(`IA ignorée: Aucun mot-clé déclencheur trouvé`, sessionId, { event: 'ai-skip', reason: 'no-trigger-keyword' }, 'DEBUG');
+                        return;
+                    }
+                }
+            }
+
+            // 5. Check if owner replied recently (last message BEFORE this one was from assistant/owner)
+            if (!isGroupMode && parseInt(session.ai_ignore_if_user_replied) === 1) {
+                const history = this.getMemory(sessionId, remoteJid, 2);
+                // history[0] is the current message (user), history[1] is the previous one
+                if (history.length > 1 && history[1].role === 'assistant') {
+                    log(`IA ignorée: Le propriétaire a déjà répondu en dernier à ${remoteJid}`, sessionId, { event: 'ai-skip', reason: 'owner-already-replied' }, 'INFO');
+                    return;
+                }
+            }
+
+            // --- END NEW RULES ---
+
+            // Increment received counter
+            Session.updateAIStats(sessionId, 'received');
+
+            // Handle group vs private messages
+            if (remoteJid.endsWith('@g.us')) {
+                if (!isGroupMode) {
+                    log(`Message de groupe ignoré par l'auto-répondeur IA personnel`, sessionId, { remoteJid }, 'DEBUG');
+                    return;
+                }
+            } else if (isGroupMode) {
+                // If in group mode but received a private message, skip (should not happen if called correctly)
+                return;
+            }
+
+            // Store user message in memory (already stored in whatsapp.js, but let's be sure or avoid duplicates)
+            // Actually, whatsapp.js now stores it before calling this. Let's just get the history.
+            
             log(`Processing AI message from ${remoteJid}: "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"`, sessionId, {
                 event: 'ai-processing',
                 remoteJid,
@@ -419,6 +502,9 @@ class AIService {
      */
     static async sendAutoResponse(sock, jid, text, sessionId) {
         try {
+            // Get session for custom delay settings
+            const session = Session.findById(sessionId);
+            
             // Format the text for WhatsApp before sending
             const formattedText = this.formatForWhatsApp(text);
             
@@ -432,8 +518,17 @@ class AIService {
                 log(`Échec de la mise à jour de présence pour ${jid}: ${pError.message}`, sessionId, { event: 'ai-presence-error', error: pError.message }, 'WARN');
             }
             
-            // Wait based on text length (simulating typing speed)
-            const typingDelay = Math.min(Math.max(formattedText.length * 50, 1000), 7000);
+            // Wait based on text length (simulating typing speed) or custom settings
+            let typingDelay;
+            if (session && session.ai_typing_delay_min !== undefined && session.ai_typing_delay_max !== undefined) {
+                const min = session.ai_typing_delay_min;
+                const max = session.ai_typing_delay_max;
+                typingDelay = Math.floor(Math.random() * (max - min + 1)) + min;
+            } else {
+                typingDelay = Math.min(Math.max(formattedText.length * 50, 1000), 7000);
+            }
+            
+            log(`Attente de simulation de frappe: ${typingDelay}ms`, sessionId, { event: 'ai-typing-delay', delay: typingDelay }, 'DEBUG');
             await new Promise(resolve => setTimeout(resolve, typingDelay));
 
             try {
@@ -447,7 +542,6 @@ class AIService {
                 Session.updateAIStats(sessionId, 'sent');
 
                 // Log to activity log if available
-                const session = Session.findById(sessionId);
                 if (ActivityLog && session) {
                     await ActivityLog.logMessageSend(
                         session.owner_email || 'ai-assistant',

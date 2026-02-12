@@ -117,7 +117,12 @@ class Session {
      * @returns {object} Updated session
      */
     static updateAIConfig(sessionId, aiConfig) {
-        const { enabled, endpoint, key, model, prompt, mode, temperature, max_tokens } = aiConfig;
+        const { 
+            enabled, endpoint, key, model, prompt, mode, temperature, max_tokens,
+            ignore_if_user_typing, ignore_if_user_replied, whitelist, blacklist,
+            keywords_trigger, keywords_ignore, schedule_enabled, schedule_config,
+            typing_delay_min, typing_delay_max
+        } = aiConfig;
         
         // Handle undefined values to prevent overwriting existing ones with null if not provided
         const existing = this.findById(sessionId);
@@ -126,7 +131,13 @@ class Session {
         const stmt = db.prepare(`
             UPDATE whatsapp_sessions 
             SET ai_enabled = ?, ai_endpoint = ?, ai_key = ?, ai_model = ?, ai_prompt = ?, ai_mode = ?, 
-                ai_temperature = ?, ai_max_tokens = ?, updated_at = datetime('now')
+                ai_temperature = ?, ai_max_tokens = ?, 
+                ai_ignore_if_user_typing = ?, ai_ignore_if_user_replied = ?,
+                ai_whitelist = ?, ai_blacklist = ?,
+                ai_keywords_trigger = ?, ai_keywords_ignore = ?,
+                ai_schedule_enabled = ?, ai_schedule_config = ?,
+                ai_typing_delay_min = ?, ai_typing_delay_max = ?,
+                updated_at = datetime('now')
             WHERE id = ?
         `);
         
@@ -138,7 +149,17 @@ class Session {
             prompt !== undefined ? prompt : existing.ai_prompt, 
             mode !== undefined ? mode : (existing.ai_mode || 'bot'), 
             temperature !== undefined ? temperature : (existing.ai_temperature ?? 0.7), 
-            max_tokens !== undefined ? max_tokens : (existing.ai_max_tokens ?? 1000), 
+            max_tokens !== undefined ? max_tokens : (existing.ai_max_tokens ?? 1000),
+            ignore_if_user_typing !== undefined ? (ignore_if_user_typing ? 1 : 0) : existing.ai_ignore_if_user_typing,
+            ignore_if_user_replied !== undefined ? (ignore_if_user_replied ? 1 : 0) : existing.ai_ignore_if_user_replied,
+            whitelist !== undefined ? whitelist : existing.ai_whitelist,
+            blacklist !== undefined ? blacklist : existing.ai_blacklist,
+            keywords_trigger !== undefined ? keywords_trigger : existing.ai_keywords_trigger,
+            keywords_ignore !== undefined ? keywords_ignore : existing.ai_keywords_ignore,
+            schedule_enabled !== undefined ? (schedule_enabled ? 1 : 0) : existing.ai_schedule_enabled,
+            schedule_config !== undefined ? schedule_config : existing.ai_schedule_config,
+            typing_delay_min !== undefined ? typing_delay_min : existing.ai_typing_delay_min,
+            typing_delay_max !== undefined ? typing_delay_max : existing.ai_typing_delay_max,
             sessionId
         );
         return this.findById(sessionId);

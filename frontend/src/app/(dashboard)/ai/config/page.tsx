@@ -13,7 +13,16 @@ import {
   KeyRound,
   Network,
   Zap,
-  HelpCircle
+  HelpCircle,
+  MessageSquareOff,
+  UserCheck,
+  Filter,
+  Clock,
+  Keyboard,
+  Settings2,
+  Key,
+  Globe,
+  Timer
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -53,7 +62,17 @@ function AIConfigForm() {
     model: "deepseek-chat",
     endpoint: "",
     key: "",
-    prompt: ""
+    prompt: "",
+    ignore_if_user_typing: true,
+    ignore_if_user_replied: true,
+    whitelist: "",
+    blacklist: "",
+    keywords_trigger: "",
+    keywords_ignore: "",
+    schedule_enabled: false,
+    schedule_config: "",
+    typing_delay_min: 2000,
+    typing_delay_max: 5000
   })
 
   React.useEffect(() => {
@@ -64,12 +83,10 @@ function AIConfigForm() {
       }
       try {
         const token = await getToken()
-        // Check if admin
         const user = await api.auth.check(token || undefined)
         const isUserAdmin = user?.role === 'admin' || clerkUser?.primaryEmailAddress?.emailAddress === 'maruise237@gmail.com'
         setIsAdmin(isUserAdmin)
 
-        // Get global models
         const models = await api.ai.listModels(token || undefined)
         setAvailableModels(models || [])
         const defaultModel = models?.find((m: any) => m.is_default) || models?.[0]
@@ -81,7 +98,17 @@ function AIConfigForm() {
           model: config.model || defaultModel?.id || "deepseek-chat",
           endpoint: config.endpoint || defaultModel?.endpoint || "",
           key: config.key || "",
-          prompt: config.prompt || "Tu es un assistant utile."
+          prompt: config.prompt || "Tu es un assistant utile.",
+          ignore_if_user_typing: config.ai_ignore_if_user_typing !== undefined ? Boolean(config.ai_ignore_if_user_typing) : true,
+          ignore_if_user_replied: config.ai_ignore_if_user_replied !== undefined ? Boolean(config.ai_ignore_if_user_replied) : true,
+          whitelist: config.ai_whitelist || "",
+          blacklist: config.ai_blacklist || "",
+          keywords_trigger: config.ai_keywords_trigger || "",
+          keywords_ignore: config.ai_keywords_ignore || "",
+          schedule_enabled: config.ai_schedule_enabled !== undefined ? Boolean(config.ai_schedule_enabled) : false,
+          schedule_config: config.ai_schedule_config || "",
+          typing_delay_min: config.ai_typing_delay_min || 2000,
+          typing_delay_max: config.ai_typing_delay_max || 5000
         })
       } catch (error) {
         toast.error("Impossible de charger la configuration")
@@ -125,8 +152,8 @@ function AIConfigForm() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-20 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
-      <AITour enabled={showTour} onExit={() => setShowTour(false)} isConfigPage={true} />
+    <div className="max-w-6xl mx-auto space-y-10 pt-10 pb-20 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
+      {showTour && <AITour enabled={showTour} onExit={() => setShowTour(false)} isConfigPage={true} />}
       
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-xl relative overflow-hidden group ai-config-header">
@@ -178,7 +205,6 @@ function AIConfigForm() {
           Enregistrer les changements
         </Button>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-7 space-y-10">
           {/* Status & Mode */}
@@ -266,109 +292,235 @@ function AIConfigForm() {
               </div>
             </CardContent>
           </Card>
+          {/* Auto-Deactivation Rules */}
+          <Card className="border border-slate-200 dark:border-primary/10 shadow-xl rounded-lg overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl">
+            <CardHeader className="p-8 border-b border-slate-100 dark:border-primary/5">
+              <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-4">
+                <ShieldAlert className="w-6 h-6 text-primary" />
+                Règles de Désactivation
+              </CardTitle>
+              <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Quand l'IA doit-elle s'arrêter ?</CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="flex items-center justify-between p-6 rounded-lg bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 group hover:border-primary/20 transition-all duration-200">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors">Si je suis en train d'écrire</Label>
+                  <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Désactive l'IA si vous tapez un message</p>
+                </div>
+                <Switch 
+                  checked={formData.ignore_if_user_typing}
+                  onCheckedChange={(c) => setFormData({...formData, ignore_if_user_typing: c})}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-6 rounded-lg bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 group hover:border-primary/20 transition-all duration-200">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors">Si j'ai déjà répondu</Label>
+                  <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Désactive l'IA si votre message est le dernier</p>
+                </div>
+                <Switch 
+                  checked={formData.ignore_if_user_replied}
+                  onCheckedChange={(c) => setFormData({...formData, ignore_if_user_replied: c})}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="lg:col-span-5 space-y-10">
-          {/* API Config */}
+          {/* Model & API */}
           <Card className="border border-slate-200 dark:border-primary/10 shadow-xl rounded-lg overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl">
             <CardHeader className="p-8 border-b border-slate-100 dark:border-primary/5">
-              <div className="flex items-center justify-between mb-2">
-                <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-4">
-                  <Network className="w-6 h-6 text-primary" />
-                  Moteur d'Intelligence
-                </CardTitle>
-                <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm border-primary/20 text-primary bg-primary/5">MODÈLE GLOBAL</Badge>
-              </div>
-              <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">
-                Sélectionnez le modèle configuré par l'administrateur
-              </CardDescription>
+              <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-4">
+                <Settings2 className="w-6 h-6 text-primary" />
+                Modèle & API
+              </CardTitle>
+              <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Configuration technique du cerveau IA</CardDescription>
             </CardHeader>
-            <CardContent className="p-8 space-y-10 ai-model-selector">
+            <CardContent className="p-8 space-y-8">
               <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
-                  <Cpu className="w-4 h-4" /> Modèle Sélectionné
-                </Label>
-                <Select 
-                  value={formData.model} 
-                  onValueChange={(v) => {
-                    const selectedModel = availableModels.find(m => m.id === v);
-                    if (selectedModel) {
-                      setFormData({
-                        ...formData,
-                        model: v,
-                        endpoint: selectedModel.endpoint
-                      });
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-14 border-2 border-slate-100 dark:border-primary/5 rounded-lg focus:ring-primary/20 font-bold text-[10px] uppercase tracking-widest bg-slate-50/50 dark:bg-muted/20 shadow-inner transition-all duration-300">
-                    <SelectValue placeholder="Choisir un modèle" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg border border-slate-200 dark:border-primary/10 shadow-2xl bg-white/95 dark:bg-card/95 backdrop-blur-xl p-2">
-                    {availableModels.length > 0 ? (
-                      availableModels.map((model) => (
-                        <SelectItem key={model.id} value={model.id} className="font-bold text-[10px] uppercase tracking-widest py-4 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors rounded-lg mb-1">
-                          {model.name} {model.is_default && <Badge className="ml-2 bg-primary/20 text-primary border-none text-[8px]">Par défaut</Badge>}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="p-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Aucun modèle disponible</div>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Modèle d'IA</Label>
+                <div className="grid grid-cols-2 gap-4 ai-model-selector">
+                  {[
+                    { id: 'deepseek-chat', name: 'DeepSeek', desc: 'Rapide & Pro' },
+                    { id: 'gpt-4o', name: 'GPT-4o', desc: 'Le plus intelligent' },
+                    { id: 'gpt-3.5-turbo', name: 'GPT-3.5', desc: 'Économique' },
+                    { id: 'custom', name: 'Custom', desc: 'Autre API' }
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setFormData({...formData, model: m.id})}
+                      className={cn(
+                        "p-5 rounded-lg border-2 transition-all duration-300 text-left group",
+                        formData.model === m.id 
+                          ? "border-primary bg-primary/5" 
+                          : "border-transparent bg-slate-50/50 dark:bg-muted/20 hover:bg-slate-100 dark:hover:bg-muted/40"
+                      )}
+                    >
+                      <div className="text-[11px] font-black uppercase tracking-tight group-hover:text-primary transition-colors">{m.name}</div>
+                      <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60 mt-1">{m.desc}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {isAdmin && (
-                <div className="space-y-10 pt-10 border-t border-slate-100 dark:border-primary/5">
-                  <div className="flex items-center gap-3 px-2">
-                    <ShieldAlert className="w-4 h-4 text-amber-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Accès Administrateur</span>
+              <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-primary/5">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Clé API</Label>
+                  <div className="relative group ai-api-key">
+                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <Input 
+                      type="password"
+                      value={formData.key}
+                      onChange={(e) => setFormData({...formData, key: e.target.value})}
+                      placeholder="sk-..."
+                      className="pl-12 bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg font-mono text-xs"
+                    />
                   </div>
-                  
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
-                      <Network className="w-4 h-4" /> Endpoint API (Custom)
-                    </Label>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Endpoint (Optionnel)</Label>
+                  <div className="relative group">
+                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     <Input 
                       value={formData.endpoint}
                       onChange={(e) => setFormData({...formData, endpoint: e.target.value})}
-                      placeholder="https://api.deepseek.com/v1"
-                      className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-16 rounded-lg font-mono text-[11px] shadow-inner transition-all duration-300"
+                      placeholder="https://api.openai.com/v1"
+                      className="pl-12 bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg text-xs"
                     />
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Typing Simulation */}
+          <Card className="border border-slate-200 dark:border-primary/10 shadow-xl rounded-lg overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl">
+            <CardHeader className="p-8 border-b border-slate-100 dark:border-primary/5">
+              <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-4">
+                <Timer className="w-6 h-6 text-primary" />
+                Simulation d'Écriture
+              </CardTitle>
+              <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Rendez l'IA plus humaine avec des délais</CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="grid grid-cols-2 gap-8 ai-typing-delays">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Délai Min (ms)</Label>
+                  <Input 
+                    type="number"
+                    value={formData.typing_delay_min}
+                    onChange={(e) => setFormData({...formData, typing_delay_min: parseInt(e.target.value)})}
+                    className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg font-bold"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Délai Max (ms)</Label>
+                  <Input 
+                    type="number"
+                    value={formData.typing_delay_max}
+                    onChange={(e) => setFormData({...formData, typing_delay_max: parseInt(e.target.value)})}
+                    className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg font-bold"
+                  />
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-relaxed opacity-60 bg-slate-100/50 dark:bg-muted/50 p-4 rounded-lg border border-slate-200 dark:border-primary/5">
+                L'IA affichera "En train d'écrire..." pendant un temps aléatoire entre ces deux valeurs avant d'envoyer sa réponse.
+              </p>
+            </CardContent>
+          </Card>
 
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
-                      <KeyRound className="w-4 h-4" /> Clé API (Custom)
-                    </Label>
-                    <div className="relative group">
-                      <Input 
-                        type="password"
-                        value={formData.key}
-                        onChange={(e) => setFormData({...formData, key: e.target.value})}
-                        placeholder="sk-................................"
-                        className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-16 rounded-lg pr-16 font-mono text-[11px] shadow-inner transition-all duration-300"
-                      />
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-6 text-slate-300 group-focus-within:text-primary transition-colors duration-200">
-                        <KeyRound className="w-6 h-6" />
+          {/* Filters & Schedule */}
+          <Card className="border border-slate-200 dark:border-primary/10 shadow-xl rounded-lg overflow-hidden bg-white/80 dark:bg-card/80 backdrop-blur-xl">
+            <CardHeader className="p-8 border-b border-slate-100 dark:border-primary/5">
+              <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-4">
+                <Filter className="w-6 h-6 text-primary" />
+                Filtres & Horaires
+              </CardTitle>
+              <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Contrôlez qui reçoit des réponses et quand</CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-10">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-6 rounded-lg bg-primary/5 border border-primary/10 group hover:bg-primary/10 transition-all duration-200 shadow-sm ai-schedule-toggle">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors">Activer le Planning</Label>
+                    <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">L'IA ne répondra que pendant les heures définies</p>
+                  </div>
+                  <Switch 
+                    checked={formData.schedule_enabled}
+                    onCheckedChange={(c) => setFormData({...formData, schedule_enabled: c})}
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </div>
+
+                {formData.schedule_enabled && (
+                  <div className="space-y-4 animate-in slide-in-from-top-4 duration-300">
+                    <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">Format JSON requis</span>
                       </div>
                     </div>
-                    <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest ml-2 italic">Laissez vide pour utiliser la clé globale du modèle.</p>
+                    <Textarea 
+                      value={formData.schedule_config}
+                      onChange={(e) => setFormData({...formData, schedule_config: e.target.value})}
+                      placeholder='{
+  "monday": {"enabled": true, "start": "09:00", "end": "18:00"},
+  "tuesday": {"enabled": true, "start": "09:00", "end": "18:00"}
+}'
+                      className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 font-mono text-xs rounded-lg min-h-[150px] p-4"
+                    />
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {!isAdmin && (
-                <div className="p-6 bg-slate-50/50 dark:bg-muted/10 rounded-lg border border-slate-100 dark:border-primary/5 shadow-inner">
-                  <div className="flex items-center gap-4 mb-3">
-                    <ShieldAlert className="w-5 h-5 text-slate-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sécurité des Clés</span>
+              <div className="space-y-6 pt-8 border-t border-slate-100 dark:border-primary/5 ai-filters-section">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Whitelist (N°)
+                    </Label>
+                    <Input 
+                      value={formData.whitelist}
+                      onChange={(e) => setFormData({...formData, whitelist: e.target.value})}
+                      placeholder="237..., 237..."
+                      className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg text-xs"
+                    />
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">
-                    Les clés API et endpoints sont gérés par l'administrateur. En tant qu'utilisateur, vous sélectionnez simplement le modèle souhaité.
-                  </p>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Blacklist (N°)
+                    </Label>
+                    <Input 
+                      value={formData.blacklist}
+                      onChange={(e) => setFormData({...formData, blacklist: e.target.value})}
+                      placeholder="237..., 237..."
+                      className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg text-xs"
+                    />
+                  </div>
                 </div>
-              )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Mots-clés Déclencheurs</Label>
+                    <Input 
+                      value={formData.keywords_trigger}
+                      onChange={(e) => setFormData({...formData, keywords_trigger: e.target.value})}
+                      placeholder="prix, commande, aide"
+                      className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-2 opacity-60">Mots-clés Ignorés</Label>
+                    <Input 
+                      value={formData.keywords_ignore}
+                      onChange={(e) => setFormData({...formData, keywords_ignore: e.target.value})}
+                      placeholder="stop, merci, aurevoir"
+                      className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-12 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
