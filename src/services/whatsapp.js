@@ -327,23 +327,41 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
     // Handle read receipts
     sock.ev.on('messages.update', async (updates) => {
         for (const update of updates) {
-            if (update.update.status === 3 || update.update.status === 4) { // READ or PLAYED
-                const session = require('../models/Session').findById(sessionId);
-                if (session && session.ai_enabled && session.ai_deactivate_on_read) {
-                    const jid = update.key.remoteJid;
-                    log(`Message lu par ${jid}, mise en pause temporaire de l'IA`, sessionId, { event: 'ai-auto-pause-read', jid }, 'INFO');
-                    
-                    const aiService = require('./ai');
-                    aiService.pauseForConversation(sessionId, jid);
-                    
-                    // Broadcast to frontend
-                    const { broadcastToClients } = require('../index');
-                    if (broadcastToClients) {
-                        broadcastToClients({
-                            type: 'session-update',
-                            data: [{ sessionId, ai_paused_jid: jid, detail: 'IA en pause (message lu)' }]
-                        });
-                    }
+            const session = require('../models/Session').findById(sessionId);
+            if (!session || !session.ai_enabled || !session.ai_deactivate_on_read) continue;
+
+            const jid = update.key.remoteJid;
+            
+            // Detection logic for "Owner read a message"
+            // 1. status 4 (READ) or 5 (PLAYED) for an incoming message
+            // 2. presence of 'read: true' in the update
+            const isReadByMe = !update.key.fromMe && (
+                update.update.status === 4 || 
+                update.update.status === 5 || 
+                update.update.read === true ||
+                update.update.read === 1
+            );
+
+            if (isReadByMe) {
+                 const aiService = require('./ai');
+                 
+                 // CRITICAL BUG FIX: Ignore read events triggered by the bot itself
+                 if (aiService.isReadByBot(sessionId, update.key.id)) {
+                     // log(`Read event ignoré car déclenché par le bot lui-même`, sessionId, { event: 'ai-ignore-self-read' }, 'DEBUG');
+                     continue;
+                 }
+
+                 log(`L'utilisateur (propriétaire) a lu un message de ${jid}. Mise en pause de l'IA.`, sessionId, { event: 'ai-auto-pause-read', jid, update: update.update }, 'INFO');
+                 
+                 aiService.pauseForConversation(sessionId, jid);
+                
+                // Broadcast to frontend
+                const { broadcastToClients } = require('../index');
+                if (broadcastToClients) {
+                    broadcastToClients({
+                        type: 'session-update',
+                        data: [{ sessionId, ai_paused_jid: jid, detail: 'IA en pause (vous avez lu le message)' }]
+                    });
                 }
             }
         }
@@ -352,8 +370,21 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
     // Handle incoming messages
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
-        if (!msg.key.fromMe && msg.message) {
-            const remoteJid = msg.key.remoteJid;
+        const remoteJid = msg.key.remoteJid;
+        
+        // If message is FROM ME, it means the owner is chatting.
+        // We should pause the AI to let the owner take over.
+        if (msg.key.fromMe) {
+            const session = require('../models/Session').findById(sessionId);
+            if (session && session.ai_enabled) {
+                log(`Message envoyé par le propriétaire vers ${remoteJid}. Mise en pause de l'IA.`, sessionId, { event: 'ai-auto-pause-sent', remoteJid }, 'INFO');
+                const aiService = require('./ai');
+                aiService.pauseForConversation(sessionId, remoteJid);
+            }
+            return; // Don't process AI for our own messages
+        }
+
+        if (msg.message) {
             const isGroup = remoteJid.endsWith('@g.us');
             
             log(`Message entrant de ${remoteJid} (${isGroup ? 'Groupe' : 'Direct'})`, sessionId, {

@@ -10,6 +10,7 @@ const { db } = require('../config/database');
 
 // Memory-only flags to temporarily pause AI for specific conversations
 const pausedConversations = new Map();
+const botReadHistory = new Set(); // Track messages read by the bot itself
 
 class AIService {
     /**
@@ -42,6 +43,29 @@ class AIService {
     static resumeForConversation(sessionId, remoteJid) {
         const key = `${sessionId}:${remoteJid}`;
         pausedConversations.delete(key);
+    }
+
+    /**
+     * Track that the bot is reading a specific message to avoid self-pausing
+     * @param {string} sessionId 
+     * @param {string} messageId 
+     */
+    static trackBotRead(sessionId, messageId) {
+        const key = `${sessionId}:${messageId}`;
+        botReadHistory.add(key);
+        // Clear after 10 seconds
+        setTimeout(() => botReadHistory.delete(key), 10000);
+    }
+
+    /**
+     * Check if a read event was triggered by the bot itself
+     * @param {string} sessionId 
+     * @param {string} messageId 
+     * @returns {boolean}
+     */
+    static isReadByBot(sessionId, messageId) {
+        const key = `${sessionId}:${messageId}`;
+        return botReadHistory.has(key);
     }
     /**
      * Store message in conversational memory
@@ -248,6 +272,8 @@ class AIService {
             // Optional: Mark as read before responding
             if (session.ai_read_on_reply === 1 || session.ai_read_on_reply === true) {
                 try {
+                    // Track this read event to avoid auto-pausing the AI
+                    this.trackBotRead(sessionId, msg.key.id);
                     await sock.readMessages([msg.key]);
                     log(`Message marqué comme lu avant réponse pour ${remoteJid}`, sessionId, { event: 'ai-read-receipt' }, 'DEBUG');
                 } catch (readError) {
