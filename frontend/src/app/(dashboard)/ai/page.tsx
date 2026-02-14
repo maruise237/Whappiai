@@ -222,48 +222,48 @@ export default function AIPage() {
       <AITour enabled={showTour} onExit={handleTourExit} />
       
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg relative overflow-hidden group ai-page-header">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-6 sm:p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-lg relative overflow-hidden group ai-page-header">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[100px] -mr-40 -mt-40 group-hover:bg-primary/10 transition-colors duration-200" />
         
-        <div className="space-y-4 relative z-10">
-          <div className="flex items-center gap-5 flex-wrap">
-            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 shadow-sm group-hover:scale-110 transition-transform duration-200">
-              <Bot className="w-8 h-8 text-primary" />
+        <div className="space-y-4 relative z-10 w-full lg:w-auto">
+          <div className="flex items-center gap-4 sm:gap-5 flex-wrap">
+            <div className="p-3 sm:p-4 bg-primary/10 rounded-lg border border-primary/20 shadow-sm group-hover:scale-110 transition-transform duration-200">
+              <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-4">
-                <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none uppercase">
+            <div className="space-y-0.5 sm:space-y-1">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <h1 className="text-2xl sm:text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none uppercase">
                   Assistant IA
                 </h1>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowTour(true)}
-                  className="rounded-full h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                  className="rounded-full h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
                   title="Démarrer le tour guidé"
                 >
-                  <HelpCircle className="w-5 h-5" />
+                  <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="outline" className="font-bold text-[10px] uppercase tracking-[0.2em] px-3 py-1 rounded-lg border-2 bg-background/50 border-primary/10 text-primary shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Badge variant="outline" className="font-bold text-[8px] sm:text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg border-2 bg-background/50 border-primary/10 text-primary shadow-sm">
                   Smart Automation
                 </Badge>
-                <div className="h-1.5 w-1.5 rounded-full bg-primary/30" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Gérez vos bots pour chaque session</span>
+                <div className="h-1 sm:h-1.5 w-1 sm:w-1.5 rounded-full bg-primary/30" />
+                <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Gérez vos bots</span>
               </div>
             </div>
           </div>
-          <p className="text-muted-foreground text-sm font-medium leading-relaxed max-w-xl opacity-80">
+          <p className="text-muted-foreground text-[10px] sm:text-sm font-medium leading-relaxed max-w-xl opacity-80 hidden sm:block">
             Transformez vos sessions WhatsApp en centres de support intelligents. Configurez et gérez vos assistants IA pour chaque numéro.
           </p>
         </div>
 
         {isAdmin && (
-          <div className="relative z-10">
+          <div className="relative z-10 w-full lg:w-auto">
             <Button 
               asChild
-              className="w-full lg:w-auto shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 transition-all duration-200 active:scale-95 rounded-lg font-bold uppercase tracking-widest text-[11px] px-8 h-12"
+              className="w-full lg:w-auto shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 transition-all duration-200 active:scale-95 rounded-lg font-bold uppercase tracking-widest text-[9px] sm:text-[11px] px-6 sm:px-8 h-10 sm:h-12"
             >
               <Link href="/ai-models">
                 <Settings2 className="w-4 h-4 mr-2" />
@@ -275,7 +275,7 @@ export default function AIPage() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8">
         {isLoading ? (
           [1, 2, 3].map((i) => (
             <Card key={i} className="h-80 animate-pulse bg-slate-50 dark:bg-muted/10 border border-slate-200 dark:border-primary/5 rounded-lg" />

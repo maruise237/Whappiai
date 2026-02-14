@@ -8,7 +8,13 @@ import { LogViewer } from "@/components/dashboard/log-viewer"
 import { ApiUsageCard } from "@/components/dashboard/api-usage-card"
 import { DashboardSkeleton, TableSkeleton, StatsSkeleton, ActivitySkeleton } from "@/components/dashboard/dashboard-skeleton"
 import { api } from "@/lib/api"
-import { Plus, History, ArrowRight, Activity, Terminal, Code2, Layers } from "lucide-react"
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion"
+import { Plus, History, ArrowRight, Activity, Terminal, Code2, Layers, ChevronDown } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -283,67 +289,113 @@ export default function DashboardPage() {
     <div className="space-y-6 sm:space-y-8 pb-12">
       <DashboardTour enabled={guideEnabled} onExit={handleGuideExit} />
 
-      {/* Hero Section */}
+      {/* Hero Section - Stats */}
       <div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-150">
+        <Accordion type="single" collapsible defaultValue="stats" className="sm:hidden border-none">
+          <AccordionItem value="stats" className="border-none">
+            <AccordionTrigger className="flex items-center gap-2 p-4 bg-white/50 dark:bg-card/50 rounded-xl border border-slate-200 dark:border-primary/5 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Aperçu de l'activité</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-4 pb-0">
+              <div className="grid grid-cols-2 gap-3">
+                {userRole === 'admin' && (
+                  <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg p-4 min-h-[100px] flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/60">Activités</div>
+                      <div className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">{summary.totalActivities}</div>
+                    </div>
+                    <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/40">7 jours</p>
+                  </Card>
+                )}
+                <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg p-4 min-h-[100px] flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/60">Succès</div>
+                    <div className="text-2xl font-black tracking-tighter text-emerald-500 leading-none">{summary.successRate}%</div>
+                  </div>
+                  <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/40">IA Active</p>
+                </Card>
+                <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg p-4 min-h-[100px] flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/60">Sessions</div>
+                    <div className="text-2xl font-black tracking-tighter text-blue-500 leading-none">{summary.activeSessions}</div>
+                  </div>
+                  <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/40">Connectées</p>
+                </Card>
+                <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg p-4 min-h-[100px] flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/60">Messages</div>
+                    <div className="text-2xl font-black tracking-tighter text-amber-500 leading-none">{summary.messagesSent}</div>
+                  </div>
+                  <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/40">Volume total</p>
+                </Card>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        {/* Desktop Stats Grid */}
         <div className={cn(
-          "grid gap-4 sm:gap-8 grid-cols-1 sm:grid-cols-2",
+          "hidden sm:grid gap-4 sm:gap-8 grid-cols-2",
           userRole === 'admin' ? "lg:grid-cols-4" : "lg:grid-cols-3"
         )}>
           {userRole === 'admin' && (
-            <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[130px] sm:min-h-[160px] flex flex-col justify-between">
+            <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[160px] flex flex-col justify-between">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-primary/10 transition-colors duration-300" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-4 relative z-10 p-4 sm:p-6">
-                <CardTitle className="text-[9px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Total Activités</CardTitle>
-                <div className="p-2 sm:p-3 bg-primary/10 rounded-xl border border-primary/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                  <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative z-10 p-6">
+                <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Total Activités</CardTitle>
+                <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                  <Activity className="h-5 w-5 text-primary" />
                 </div>
               </CardHeader>
-              <CardContent className="relative z-10 pb-4 sm:pb-6 px-4 sm:px-6">
-                <div className="text-3xl sm:text-5xl font-black tracking-tighter text-slate-900 dark:text-white mb-0.5 sm:mb-1 leading-none">{summary.totalActivities}</div>
-                <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">7 derniers jours</p>
+              <CardContent className="relative z-10 pb-6 px-6">
+                <div className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white mb-1 leading-none">{summary.totalActivities}</div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">7 derniers jours</p>
               </CardContent>
             </Card>
           )}
 
-          <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[130px] sm:min-h-[160px] flex flex-col justify-between">
+          <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[160px] flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-emerald-500/10 transition-colors duration-300" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-4 relative z-10 p-4 sm:p-6">
-              <CardTitle className="text-[9px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Taux de Succès</CardTitle>
-              <div className="p-2 sm:p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin-slow" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative z-10 p-6">
+              <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Taux de Succès</CardTitle>
+              <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                <div className="h-5 w-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin-slow" />
               </div>
             </CardHeader>
-            <CardContent className="relative z-10 pb-4 sm:pb-6 px-4 sm:px-6">
-              <div className="text-3xl sm:text-5xl font-black tracking-tighter text-emerald-500 mb-0.5 sm:mb-1 leading-none">{summary.successRate}%</div>
-              <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Optimisation IA active</p>
+            <CardContent className="relative z-10 pb-6 px-6">
+              <div className="text-5xl font-black tracking-tighter text-emerald-500 mb-1 leading-none">{summary.successRate}%</div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Optimisation IA active</p>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[130px] sm:min-h-[160px] flex flex-col justify-between">
+          <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[160px] flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-blue-500/10 transition-colors duration-300" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-4 relative z-10 p-4 sm:p-6">
-              <CardTitle className="text-[9px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Sessions Actives</CardTitle>
-              <div className="p-2 sm:p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                <Layers className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative z-10 p-6">
+              <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Sessions Actives</CardTitle>
+              <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                <Layers className="h-5 w-5 text-blue-500" />
               </div>
             </CardHeader>
-            <CardContent className="relative z-10 pb-4 sm:pb-6 px-4 sm:px-6">
-              <div className="text-3xl sm:text-5xl font-black tracking-tighter text-slate-900 dark:text-white mb-0.5 sm:mb-1 leading-none">{summary.activeSessions}</div>
-              <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Tunnels sécurisés</p>
+            <CardContent className="relative z-10 pb-6 px-6">
+              <div className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white mb-1 leading-none">{summary.activeSessions}</div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Tunnels sécurisés</p>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[130px] sm:min-h-[160px] flex flex-col justify-between">
+          <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[160px] flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-amber-500/10 transition-colors duration-300" />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-4 relative z-10 p-4 sm:p-6">
-              <CardTitle className="text-[9px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Messages Envoyés</CardTitle>
-              <div className="p-2 sm:p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative z-10 p-6">
+              <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Messages Envoyés</CardTitle>
+              <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                <Plus className="h-5 w-5 text-amber-500" />
               </div>
             </CardHeader>
-            <CardContent className="relative z-10 pb-4 sm:pb-6 px-4 sm:px-6">
-              <div className="text-3xl sm:text-5xl font-black tracking-tighter text-slate-900 dark:text-white mb-0.5 sm:mb-1 leading-none">{summary.messagesSent}</div>
-              <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Volume total</p>
+            <CardContent className="relative z-10 pb-6 px-6">
+              <div className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white mb-1 leading-none">{summary.messagesSent}</div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Volume total</p>
             </CardContent>
           </Card>
         </div>
@@ -422,7 +474,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-8 space-y-12">
           {/* Section 1: Session & Connection */}
           <section className="space-y-6">
-            <div className="flex items-center gap-4 px-2">
+            {/* Desktop Header */}
+            <div className="hidden sm:flex items-center gap-4 px-2">
               <div className="p-2.5 bg-primary/10 rounded-lg border border-primary/20">
                 <Layers className="w-5 h-5 text-primary" />
               </div>
@@ -431,7 +484,33 @@ export default function DashboardPage() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">Initialisez votre tunnel WhatsApp</p>
               </div>
             </div>
-            <div className="transition-all duration-200 hover:translate-y-[-4px]">
+
+            {/* Mobile Accordion */}
+            <Accordion type="single" collapsible className="sm:hidden border-none space-y-4">
+              <AccordionItem value="session" className="border-none">
+                <AccordionTrigger className="flex items-center gap-3 p-4 bg-white/50 dark:bg-card/50 rounded-xl border border-slate-200 dark:border-primary/5 hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Layers className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">1. Connexion & Session</div>
+                      <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40">Gérer votre tunnel</div>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 pb-0">
+                  <SessionCard 
+                    session={selectedSession} 
+                    onRefresh={fetchSessions} 
+                    onCreate={() => setIsCreateOpen(true)} 
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            {/* Desktop Content */}
+            <div className="hidden sm:block transition-all duration-200 hover:translate-y-[-4px]">
               <SessionCard 
                 session={selectedSession} 
                 onRefresh={fetchSessions} 
@@ -442,7 +521,8 @@ export default function DashboardPage() {
 
           {/* Section 2: Messaging */}
           <section className="space-y-6">
-            <div className="flex items-center gap-4 px-2">
+            {/* Desktop Header */}
+            <div className="hidden sm:flex items-center gap-4 px-2">
               <div className="p-2.5 bg-primary/10 rounded-lg border border-primary/20">
                 <Plus className="w-5 h-5 text-primary" />
               </div>
@@ -451,7 +531,34 @@ export default function DashboardPage() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">Testez vos automatisations manuellement</p>
               </div>
             </div>
-            <div className="transition-all duration-200 hover:translate-y-[-4px]">
+
+            {/* Mobile Accordion */}
+            <Accordion type="single" collapsible className="sm:hidden border-none space-y-4">
+              <AccordionItem value="messaging" className="border-none">
+                <AccordionTrigger className="flex items-center gap-3 p-4 bg-white/50 dark:bg-card/50 rounded-xl border border-slate-200 dark:border-primary/5 hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Plus className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">2. Envoi de Messages</div>
+                      <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40">Tests manuels</div>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 pb-0">
+                  <MessagingTabs 
+                    session={selectedSession} 
+                    sessions={sessions}
+                    onSessionChange={setSelectedSessionId}
+                    onTabChange={setActiveMessagingTab} 
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            {/* Desktop Content */}
+            <div className="hidden sm:block transition-all duration-200 hover:translate-y-[-4px]">
               <MessagingTabs 
                 session={selectedSession} 
                 sessions={sessions}
@@ -464,7 +571,8 @@ export default function DashboardPage() {
           {/* Section 3: Live Logs (Wide) - Admin only */}
           {userRole === 'admin' && (
             <section className="space-y-6">
-              <div className="flex items-center gap-4 px-2">
+              {/* Desktop Header */}
+              <div className="hidden sm:flex items-center gap-4 px-2">
                 <div className="p-2.5 bg-primary/10 rounded-lg border border-primary/20">
                   <Terminal className="w-5 h-5 text-primary" />
                 </div>
@@ -473,7 +581,29 @@ export default function DashboardPage() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">Monitorage en direct des événements</p>
                 </div>
               </div>
-              <div className="transition-all duration-200 hover:translate-y-[-4px]">
+
+              {/* Mobile Accordion */}
+              <Accordion type="single" collapsible className="sm:hidden border-none space-y-4">
+                <AccordionItem value="logs" className="border-none">
+                  <AccordionTrigger className="flex items-center gap-3 p-4 bg-white/50 dark:bg-card/50 rounded-xl border border-slate-200 dark:border-primary/5 hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Terminal className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">3. Flux en Temps Réel</div>
+                        <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40">Logs système</div>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 pb-0">
+                    <LogViewer />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Desktop Content */}
+              <div className="hidden sm:block transition-all duration-200 hover:translate-y-[-4px]">
                 <LogViewer />
               </div>
             </section>
@@ -485,7 +615,8 @@ export default function DashboardPage() {
           {/* Section 4: Activities - Admin only */}
           {userRole === 'admin' && (
             <section className="space-y-6">
-              <div className="flex items-center justify-between px-2">
+              {/* Desktop Header */}
+              <div className="hidden sm:flex items-center justify-between px-2">
                 <div className="flex items-center gap-4">
                   <div className="p-2.5 bg-amber-500/10 rounded-lg border border-amber-500/20">
                     <History className="w-5 h-5 text-amber-500" />
@@ -501,67 +632,144 @@ export default function DashboardPage() {
                   </Button>
                 </Link>
               </div>
-              
-              <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl rounded-lg border border-slate-200 dark:border-primary/10 overflow-hidden transition-all duration-200 hover:border-amber-500/20 group shadow-xl">
-                {activitiesLoading ? (
-                  <ActivitySkeleton count={5} />
-                ) : recentActivities.length === 0 ? (
-                  <div className="p-16 text-center space-y-4">
-                    <div className="w-16 h-16 bg-slate-50 dark:bg-muted/30 rounded-lg flex items-center justify-center mx-auto mb-2 border border-slate-100 dark:border-primary/5">
-                      <History className="w-8 h-8 text-muted-foreground/20" />
-                    </div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Aucune activité</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-slate-100 dark:divide-primary/5">
-                    {recentActivities.map((activity, i) => (
-                      <div key={i} className="p-5 flex items-start gap-4 hover:bg-amber-500/[0.02] transition-all duration-200 group/item">
-                        <div className={cn(
-                          "p-3 rounded-lg shrink-0 transition-all duration-200 group-hover/item:scale-110 shadow-sm border",
-                          activity.success 
-                            ? "bg-primary/10 text-primary border-primary/10" 
-                            : "bg-destructive/10 text-destructive border-destructive/10"
-                        )}>
-                          <Activity className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0 py-0.5">
-                          <div className="flex items-center justify-between gap-3 mb-1">
-                            <p className="text-xs font-black uppercase tracking-widest truncate text-slate-900 dark:text-slate-100">
-                              {activity.action.replace(/_/g, ' ')}
-                            </p>
-                            <span className="text-[9px] font-bold text-muted-foreground/40 whitespace-nowrap bg-slate-100 dark:bg-muted/30 px-2 py-0.5 rounded-lg transition-all duration-200">
-                              {mounted ? new Date(activity.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant="secondary" 
-                              className={cn(
-                                "text-[8px] font-bold uppercase tracking-tighter px-2 py-0 rounded-lg transition-all duration-200",
-                                activity.success 
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                                  : "bg-red-500/10 text-red-600 dark:text-red-400"
-                              )}
-                            >
-                              {activity.success ? 'Succès' : 'Erreur'}
-                            </Badge>
-                            <p className="text-[9px] text-muted-foreground/50 line-clamp-1 uppercase tracking-widest font-bold">
-                              {activity.resource}: <span className="text-primary/80">{activity.resourceId || activity.userEmail}</span>
-                            </p>
-                          </div>
-                        </div>
+
+              {/* Mobile Accordion */}
+              <Accordion type="single" collapsible className="sm:hidden border-none space-y-4">
+                <AccordionItem value="activities" className="border-none">
+                  <AccordionTrigger className="flex items-center justify-between p-4 bg-white/50 dark:bg-card/50 rounded-xl border border-slate-200 dark:border-primary/5 hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-amber-500/10 rounded-lg">
+                        <History className="w-4 h-4 text-amber-500" />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
+                      <div className="text-left">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-amber-500">Activités</div>
+                        <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40">Historique récent</div>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 pb-0">
+                    <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl rounded-lg border border-slate-200 dark:border-primary/10 overflow-hidden shadow-lg">
+                      {activitiesLoading ? (
+                        <ActivitySkeleton count={5} />
+                      ) : recentActivities.length === 0 ? (
+                        <div className="p-10 text-center space-y-4">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Aucune activité</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-primary/5">
+                          {recentActivities.map((activity, i) => (
+                            <div key={i} className="p-4 flex items-start gap-3 hover:bg-amber-500/[0.02] transition-all duration-200 group/item">
+                              <div className={cn(
+                                "p-2 rounded-lg shrink-0 border",
+                                activity.success 
+                                  ? "bg-primary/10 text-primary border-primary/10" 
+                                  : "bg-destructive/10 text-destructive border-destructive/10"
+                              )}>
+                                <Activity className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                  <p className="text-[10px] font-black uppercase tracking-widest truncate text-slate-900 dark:text-slate-100">
+                                    {activity.action.replace(/_/g, ' ')}
+                                  </p>
+                                  <span className="text-[8px] font-bold text-muted-foreground/40 whitespace-nowrap">
+                                    {mounted ? new Date(activity.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={cn(
+                                      "text-[7px] font-bold uppercase tracking-tighter px-1.5 py-0 rounded-md",
+                                      activity.success 
+                                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+                                        : "bg-red-500/10 text-red-600 dark:text-red-400"
+                                    )}
+                                  >
+                                    {activity.success ? 'Succès' : 'Erreur'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="p-3 border-t border-slate-100 dark:border-primary/5">
+                        <Link href="/activities" prefetch={false} className="block">
+                          <Button variant="ghost" size="sm" className="w-full h-8 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-amber-500/10 hover:text-amber-500 transition-all">
+                            Voir tout l'historique <ArrowRight className="ml-2 w-3 h-3" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Desktop Content */}
+              <div className="hidden sm:block transition-all duration-200 hover:translate-y-[-4px]">
+                <Card className="bg-white/80 dark:bg-card/80 backdrop-blur-xl rounded-lg border border-slate-200 dark:border-primary/10 overflow-hidden transition-all duration-200 hover:border-amber-500/20 group shadow-xl">
+                  {activitiesLoading ? (
+                    <ActivitySkeleton count={5} />
+                  ) : recentActivities.length === 0 ? (
+                    <div className="p-16 text-center space-y-4">
+                      <div className="w-16 h-16 bg-slate-50 dark:bg-muted/30 rounded-lg flex items-center justify-center mx-auto mb-2 border border-slate-100 dark:border-primary/5">
+                        <History className="w-8 h-8 text-muted-foreground/20" />
+                      </div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">Aucune activité</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 dark:divide-primary/5">
+                      {recentActivities.map((activity, i) => (
+                        <div key={i} className="p-5 flex items-start gap-4 hover:bg-amber-500/[0.02] transition-all duration-200 group/item">
+                          <div className={cn(
+                            "p-3 rounded-lg shrink-0 transition-all duration-200 group-hover/item:scale-110 shadow-sm border",
+                            activity.success 
+                              ? "bg-primary/10 text-primary border-primary/10" 
+                              : "bg-destructive/10 text-destructive border-destructive/10"
+                          )}>
+                            <Activity className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0 py-0.5">
+                            <div className="flex items-center justify-between gap-3 mb-1">
+                              <p className="text-xs font-black uppercase tracking-widest truncate text-slate-900 dark:text-slate-100">
+                                {activity.action.replace(/_/g, ' ')}
+                              </p>
+                              <span className="text-[9px] font-bold text-muted-foreground/40 whitespace-nowrap bg-slate-100 dark:bg-muted/30 px-2 py-0.5 rounded-lg transition-all duration-200">
+                                {mounted ? new Date(activity.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant="secondary" 
+                                className={cn(
+                                  "text-[8px] font-bold uppercase tracking-tighter px-2 py-0 rounded-lg transition-all duration-200",
+                                  activity.success 
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+                                    : "bg-red-500/10 text-red-600 dark:text-red-400"
+                                )}
+                              >
+                                {activity.success ? 'Succès' : 'Erreur'}
+                              </Badge>
+                              <p className="text-[9px] text-muted-foreground/50 line-clamp-1 uppercase tracking-widest font-bold">
+                                {activity.resource}: <span className="text-primary/80">{activity.resourceId || activity.userEmail}</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </div>
             </section>
           )}
 
           {/* Section 5: API Documentation - Admin only */}
           {userRole === 'admin' && (
             <section className="space-y-6">
-              <div className="flex items-center justify-between px-2">
+              {/* Desktop Header */}
+              <div className="hidden sm:flex items-center justify-between px-2">
                 <div className="flex items-center gap-4">
                   <div className="p-2.5 bg-primary/10 rounded-lg border border-primary/20">
                     <Code2 className="w-5 h-5 text-primary" />
@@ -577,21 +785,57 @@ export default function DashboardPage() {
                   </Button>
                 </Link>
               </div>
+
+              {/* Mobile Accordion */}
+              <Accordion type="single" collapsible className="sm:hidden border-none space-y-4">
+                <AccordionItem value="docs" className="border-none">
+                  <AccordionTrigger className="flex items-center gap-3 p-4 bg-white/50 dark:bg-card/50 rounded-xl border border-slate-200 dark:border-primary/5 hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Code2 className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Documentation</div>
+                        <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/40">API & Intégration</div>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 pb-0">
+                    <Card className="bg-primary/5 dark:bg-primary/5 backdrop-blur-xl rounded-lg border-2 border-dashed border-primary/20 p-6 text-center">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <Code2 className="w-5 h-5 text-primary" />
+                      </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-widest mb-1">Prêt pour l'intégration ?</h3>
+                      <p className="text-[8px] text-muted-foreground/60 font-bold uppercase tracking-widest leading-relaxed mb-4">
+                        Consultez notre documentation complète.
+                      </p>
+                      <Link href="/docs" prefetch={false}>
+                        <Button className="h-9 px-4 rounded-lg text-[8px] font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white w-full">
+                          Voir la Documentation
+                        </Button>
+                      </Link>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
               
-              <Card className="bg-primary/5 dark:bg-primary/5 backdrop-blur-xl rounded-lg border-2 border-dashed border-primary/20 p-8 text-center group hover:bg-primary/10 transition-all duration-300">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Code2 className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-sm font-black uppercase tracking-widest mb-2">Prêt pour l'intégration ?</h3>
-                <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest leading-relaxed mb-6">
-                  Consultez notre documentation complète pour intégrer Whappi à vos propres applications.
-                </p>
-                <Link href="/docs" prefetch={false}>
-                  <Button className="h-10 px-6 rounded-lg text-[10px] font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white">
-                    Voir la Documentation
-                  </Button>
-                </Link>
-              </Card>
+              {/* Desktop Content */}
+              <div className="hidden sm:block">
+                <Card className="bg-primary/5 dark:bg-primary/5 backdrop-blur-xl rounded-lg border-2 border-dashed border-primary/20 p-8 text-center group hover:bg-primary/10 transition-all duration-300">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <Code2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-sm font-black uppercase tracking-widest mb-2">Prêt pour l'intégration ?</h3>
+                  <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest leading-relaxed mb-6">
+                    Consultez notre documentation complète pour intégrer Whappi à vos propres applications.
+                  </p>
+                  <Link href="/docs" prefetch={false}>
+                    <Button className="h-10 px-6 rounded-lg text-[10px] font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white">
+                      Voir la Documentation
+                    </Button>
+                  </Link>
+                </Card>
+              </div>
             </section>
           )}
         </div>
