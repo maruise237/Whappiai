@@ -375,10 +375,13 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         // If message is FROM ME, it means the owner is chatting.
         // We should pause the AI to let the owner take over.
         if (msg.key.fromMe) {
+            const aiService = require('./ai');
+            // Record activity for Human Priority (Session Window)
+            aiService.recordOwnerActivity(sessionId, remoteJid);
+
             const session = require('../models/Session').findById(sessionId);
             if (session && session.ai_enabled) {
                 log(`Message envoyé par le propriétaire vers ${remoteJid}. Mise en pause de l'IA.`, sessionId, { event: 'ai-auto-pause-sent', remoteJid }, 'INFO');
-                const aiService = require('./ai');
                 aiService.pauseForConversation(sessionId, remoteJid);
             }
             return; // Don't process AI for our own messages

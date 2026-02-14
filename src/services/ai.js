@@ -11,8 +11,40 @@ const { db } = require('../config/database');
 // Memory-only flags to temporarily pause AI for specific conversations
 const pausedConversations = new Map();
 const botReadHistory = new Set(); // Track messages read by the bot itself
+const lastOwnerActivity = new Map(); // Track last activity from the owner per JID
 
 class AIService {
+    /**
+     * Record owner activity to prevent AI from interfering in a live conversation
+     * @param {string} sessionId 
+     * @param {string} remoteJid 
+     */
+    static recordOwnerActivity(sessionId, remoteJid) {
+        const key = `${sessionId}:${remoteJid}`;
+        lastOwnerActivity.set(key, Date.now());
+    }
+
+    /**
+     * Check if the owner was active recently in this conversation
+     * @param {string} sessionId 
+     * @param {string} remoteJid 
+     * @param {number} windowMinutes 
+     * @returns {boolean}
+     */
+    static isOwnerActive(sessionId, remoteJid, windowMinutes = 5) {
+        const key = `${sessionId}:${remoteJid}`;
+        const lastActivity = lastOwnerActivity.get(key);
+        if (!lastActivity) return false;
+
+        const now = Date.now();
+        const diffMinutes = (now - lastActivity) / (1000 * 60);
+        
+        const isActive = diffMinutes < windowMinutes;
+        if (isActive) {
+            log(`Priorité Humaine : L'utilisateur était actif il y a ${Math.round(diffMinutes * 10) / 10} min. IA en veille.`, sessionId, { event: 'ai-silence-window', remoteJid, diffMinutes }, 'INFO');
+        }
+        return isActive;
+    }
     /**
      * Temporarily pause AI for a specific conversation
      * @param {string} sessionId 
@@ -165,6 +197,14 @@ class AIService {
             if (this.isPaused(sessionId, remoteJid)) {
                 log(`Message de ${remoteJid} ignoré car l'IA est en pause temporaire pour cette conversation`, sessionId, { event: 'ai-skip', reason: 'temporary-pause' }, 'INFO');
                 this.resumeForConversation(sessionId, remoteJid); // Resume for next message
+                return;
+            }
+
+            // Check Human Priority (Session Window)
+            // If the owner sent a message within the window, skip AI
+            const windowMinutes = session.ai_session_window ?? 5;
+            if (this.isOwnerActive(sessionId, remoteJid, windowMinutes)) {
+                log(`Message de ${remoteJid} ignoré : Fenêtre de session active (${windowMinutes} min)`, sessionId, { event: 'ai-skip', reason: 'human-priority' }, 'INFO');
                 return;
             }
 
