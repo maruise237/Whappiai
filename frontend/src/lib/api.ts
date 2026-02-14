@@ -275,6 +275,9 @@ export const api = {
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
       }),
     },
+    getTemplates: (token?: string) => fetchApi("/api/v1/ai/templates", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   },
   activities: {
     list: (token?: string) => fetchApi("/api/v1/activities", {

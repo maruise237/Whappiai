@@ -164,8 +164,7 @@ function initializeSchema() {
         { name: 'ai_trigger_keywords', type: 'TEXT' },
         { name: 'ai_reply_delay', type: 'INTEGER DEFAULT 0' },
         { name: 'ai_read_on_reply', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_session_window', type: 'INTEGER DEFAULT 5' }
+        { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' }
     ];
 
     aiColumns.forEach(col => {

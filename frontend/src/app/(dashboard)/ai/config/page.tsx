@@ -44,6 +44,7 @@ function AIConfigForm() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
+  const [templates, setTemplates] = React.useState<any>({})
   const [isAdmin, setIsAdmin] = React.useState(false)
   const [showTour, setShowTour] = React.useState(false)
 
@@ -79,6 +80,14 @@ function AIConfigForm() {
         const models = await api.ai.listModels(token || undefined)
         setAvailableModels(models || [])
         const defaultModel = models?.find((m: any) => m.is_default) || models?.[0]
+
+        // Get AI templates
+        try {
+          const templatesData = await api.ai.getTemplates(token || undefined)
+          setTemplates(templatesData || {})
+        } catch (e) {
+          console.error("Failed to load templates", e)
+        }
 
         const config = await api.sessions.getAI(sessionId, token || undefined)
         setFormData({
@@ -385,13 +394,46 @@ function AIConfigForm() {
               </CardTitle>
               <CardDescription className="font-bold text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Personnalisez la personnalité de votre bot</CardDescription>
             </CardHeader>
-            <CardContent className="p-8 space-y-6 ai-prompt-area">
-              <Textarea 
-                value={formData.prompt}
-                onChange={(e) => setFormData({...formData, prompt: e.target.value})}
-                placeholder="Ex: Tu es un assistant commercial expert. Sois chaleureux, réponds toujours en français..."
-                className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 resize-none font-medium text-sm rounded-lg min-h-[350px] p-8 leading-relaxed shadow-inner transition-all duration-300"
-              />
+            <CardContent className="p-8 space-y-8 ai-prompt-area">
+              {/* Templates Selector */}
+              {Object.keys(templates).length > 0 && (
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
+                    <Sparkles className="w-4 h-4" /> Modèles de Personnalité Rapides
+                  </Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Object.values(templates).map((template: any) => (
+                      <button
+                        key={template.id}
+                        onClick={() => {
+                          setFormData({ ...formData, prompt: template.prompt });
+                          toast.success(`Modèle "${template.name}" appliqué`);
+                        }}
+                        className="flex flex-col items-start text-left p-4 rounded-lg border-2 border-slate-100 dark:border-primary/5 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 group relative overflow-hidden"
+                      >
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Zap className="w-3 h-3 text-primary" />
+                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-tight mb-1 group-hover:text-primary transition-colors">{template.name}</span>
+                        <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter opacity-60 leading-tight">{template.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-3 opacity-60 ml-2">
+                  <Cpu className="w-4 h-4" /> Éditeur de Prompt
+                </Label>
+                <Textarea 
+                  value={formData.prompt}
+                  onChange={(e) => setFormData({...formData, prompt: e.target.value})}
+                  placeholder="Ex: Tu es un assistant commercial expert. Sois chaleureux, réponds toujours en français..."
+                  className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 resize-none font-medium text-sm rounded-lg min-h-[300px] p-8 leading-relaxed shadow-inner transition-all duration-300"
+                />
+              </div>
+
               <div className="flex items-center gap-5 p-6 bg-primary/5 rounded-lg border border-primary/10 shadow-sm group hover:bg-primary/10 transition-colors duration-200">
                 <div className="p-3 bg-primary/10 rounded-lg shadow-inner group-hover:scale-110 transition-transform duration-200">
                   <Sparkles className="w-6 h-6 text-primary" />

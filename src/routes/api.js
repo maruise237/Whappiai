@@ -577,6 +577,12 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
+    // AI Personality Templates Endpoint
+    router.get('/ai/templates', checkSessionOrTokenAuth, (req, res) => {
+        const templates = require('../utils/ai-templates');
+        res.json({ status: 'success', data: templates });
+    });
+
     // Activity Log Endpoints
     router.get('/activities', checkSessionOrTokenAuth, async (req, res) => {
         try {
