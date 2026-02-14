@@ -27,8 +27,7 @@ import {
   LogOut,
   Trash2,
   AlertTriangle,
-  Code2,
-  ExternalLink
+  Code2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Textarea } from "@/components/ui/textarea"
@@ -308,15 +307,6 @@ export default function ProfilePage() {
               <div className="space-y-1 flex-1">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xl font-bold">Informations Personnelles</CardTitle>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-9 px-4 rounded-lg font-bold border-primary/20 text-primary hover:bg-primary/5 transition-all"
-                    onClick={() => window.open('https://accounts.clerk.com/user', '_blank')}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Gérer sur Clerk
-                  </Button>
                 </div>
                 <CardDescription>Vos informations sont synchronisées avec votre compte Clerk.</CardDescription>
               </div>
