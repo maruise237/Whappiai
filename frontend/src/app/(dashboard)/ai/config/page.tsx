@@ -65,9 +65,11 @@ function AIConfigForm() {
     deactivate_on_read: false,
     trigger_keywords: "",
     reply_delay: 0,
-    read_on_reply: false,
-    reject_calls: false
-  })
+      read_on_reply: false,
+      reject_calls: false,
+      random_protection_enabled: true,
+      random_protection_rate: 0.1
+    })
 
   React.useEffect(() => {
     const loadData = async () => {
@@ -108,7 +110,9 @@ function AIConfigForm() {
           trigger_keywords: config.trigger_keywords || "",
           reply_delay: config.reply_delay || 0,
           read_on_reply: config.read_on_reply ?? false,
-          reject_calls: config.reject_calls ?? false
+          reject_calls: config.reject_calls ?? false,
+          random_protection_enabled: config.random_protection_enabled ?? true,
+          random_protection_rate: config.random_protection_rate ?? 0.1
         })
 
         // Auto-start tour if first time on this config page
@@ -348,6 +352,53 @@ function AIConfigForm() {
                       onCheckedChange={(c) => setFormData({...formData, reject_calls: c})}
                       className="data-[state=checked]:bg-red-600 shadow-sm"
                     />
+                  </div>
+
+                  <div className={cn(
+                    "flex items-center justify-between p-4 sm:p-6 rounded-lg border transition-all group shadow-sm duration-200 col-span-1 md:col-span-2",
+                    formData.random_protection_enabled 
+                      ? "bg-primary/5 border-primary/20 hover:bg-primary/10" 
+                      : "bg-slate-50/50 dark:bg-muted/20 border-slate-100 dark:border-primary/5 hover:bg-slate-100 dark:hover:bg-muted/40"
+                  )}>
+                    <div className="flex-1 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5 sm:space-y-1">
+                          <Label className={cn(
+                            "text-[9px] sm:text-[11px] font-black uppercase tracking-widest transition-colors",
+                            formData.random_protection_enabled ? "text-primary" : "text-foreground group-hover:text-primary"
+                          )}>Protection Aléatoire (IA)</Label>
+                          <p className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Bloque aléatoirement des messages pour éviter les boucles et simuler un humain</p>
+                        </div>
+                        <Switch 
+                          checked={formData.random_protection_enabled}
+                          onCheckedChange={(c) => setFormData({...formData, random_protection_enabled: c})}
+                          className="data-[state=checked]:bg-primary shadow-sm"
+                        />
+                      </div>
+                      
+                      {formData.random_protection_enabled && (
+                        <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-[8px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] opacity-60">
+                              Taux de protection : {Math.round(formData.random_protection_rate * 100)}%
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-[10px] font-bold text-muted-foreground">0%</span>
+                            <input 
+                              type="range"
+                              min="0"
+                              max="1"
+                              step="0.05"
+                              value={formData.random_protection_rate}
+                              onChange={(e) => setFormData({...formData, random_protection_rate: parseFloat(e.target.value)})}
+                              className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                            />
+                            <span className="text-[10px] font-bold text-muted-foreground">100%</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 

@@ -12,6 +12,7 @@ const { db } = require('../config/database');
 const pausedConversations = new Map();
 const botReadHistory = new Set(); // Track messages read by the bot itself
 const lastOwnerActivity = new Map(); // Track last activity from the owner per JID
+const pendingRetries = new Map(); // Track messages ignored by random protection for later retry
 
 class AIService {
     /**
@@ -155,8 +156,9 @@ class AIService {
      * @param {string} sessionId - Session ID (now userId)
      * @param {object} msg - Incoming message object
      * @param {boolean} isGroupMode - Whether it's called in group assistant mode
+     * @param {boolean} isRetry - Whether this is a retry of a previously ignored message
      */
-    static async handleIncomingMessage(sock, sessionId, msg, isGroupMode = false) {
+    static async handleIncomingMessage(sock, sessionId, msg, isGroupMode = false, isRetry = false) {
         try {
             // Get session config from DB
             const session = Session.findById(sessionId);
@@ -193,7 +195,50 @@ class AIService {
 
             const remoteJid = msg.key.remoteJid;
 
-            // Check if AI is temporarily paused for this conversation (Bug Fix: Permanent Deactivation)
+            // 1. Random Protection System (Protection against spam/unpredictable AI behavior)
+            // If enabled, randomly ignore messages to simulate human inconsistency or prevent bot loops
+            const protectionEnabled = session.ai_random_protection_enabled ?? 1;
+            const protectionRate = session.ai_random_protection_rate ?? 0.1; // 10% chance to ignore
+
+            // If it's a retry, we bypass the random protection
+            if (!isRetry && protectionEnabled && Math.random() < protectionRate) {
+                const retryDelay = Math.floor(Math.random() * (300 - 60 + 1) + 60); // 60 to 300 seconds
+                log(`Système de Protection : Message de ${remoteJid} ignoré aléatoirement. Planifié pour traitement ultérieur dans ${retryDelay}s.`, sessionId, { event: 'ai-random-protection-block', remoteJid, rate: protectionRate, retryIn: retryDelay }, 'INFO');
+                
+                // Clear any existing retry for this conversation
+                const retryKey = `${sessionId}:${remoteJid}`;
+                if (pendingRetries.has(retryKey)) {
+                    clearTimeout(pendingRetries.get(retryKey));
+                }
+
+                // Schedule retry
+                const timeout = setTimeout(() => {
+                    pendingRetries.delete(retryKey);
+                    log(`Traitement du message ignoré précédemment pour ${remoteJid}`, sessionId, { event: 'ai-retry-ignored', remoteJid }, 'INFO');
+                    
+                    // Check if conversation still needs response (no new messages from AI or human since then)
+                    const history = this.getMemory(sessionId, remoteJid, 1);
+                    if (history.length > 0 && history[history.length - 1].role === 'user' && history[history.length - 1].content === messageText) {
+                        this.handleIncomingMessage(sock, sessionId, msg, isGroupMode, true).catch(err => {
+                            log(`Erreur lors du retry du message ignoré: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+                        });
+                    } else {
+                        log(`Annulation du retry pour ${remoteJid} : Nouveau message détecté dans l'historique`, sessionId, { event: 'ai-retry-cancelled' }, 'DEBUG');
+                    }
+                }, retryDelay * 1000);
+
+                pendingRetries.set(retryKey, timeout);
+                return;
+            }
+
+            // If we are processing (either normal or retry), clear any pending retry for this JID
+            const retryKey = `${sessionId}:${remoteJid}`;
+            if (pendingRetries.has(retryKey)) {
+                clearTimeout(pendingRetries.get(retryKey));
+                pendingRetries.delete(retryKey);
+            }
+
+            // 2. Check if AI is temporarily paused for this conversation (Bug Fix: Permanent Deactivation)
             if (this.isPaused(sessionId, remoteJid)) {
                 log(`Message de ${remoteJid} ignoré car l'IA est en pause temporaire pour cette conversation`, sessionId, { event: 'ai-skip', reason: 'temporary-pause' }, 'INFO');
                 this.resumeForConversation(sessionId, remoteJid); // Resume for next message
@@ -577,19 +622,26 @@ class AIService {
             
             log(`Envoi de la réponse automatique à ${jid} (Session: ${sessionId})`, sessionId, { event: 'ai-sending', jid }, 'INFO');
             
-            // Simulate "composing"
+            // Simulate "composing" (typing status)
             try {
+                // Ensure we are subscribed to presence to send updates
                 await sock.presenceSubscribe(jid);
                 await sock.sendPresenceUpdate('composing', jid);
+                log(`Simulation d'écriture en cours pour ${jid} (${formattedText.length} caractères)`, sessionId, { event: 'ai-typing-start', length: formattedText.length }, 'DEBUG');
             } catch (pError) {
                 log(`Échec de la mise à jour de présence pour ${jid}: ${pError.message}`, sessionId, { event: 'ai-presence-error', error: pError.message }, 'WARN');
             }
             
-            // Wait based on text length (simulating typing speed)
-            const typingDelay = Math.min(Math.max(formattedText.length * 50, 1000), 7000);
+            // Wait based on text length (simulating human typing speed: ~100ms per character)
+            // Min 1.5s, Max 15s to keep it realistic but not too slow for very long messages
+            const typingDelay = Math.min(Math.max(formattedText.length * 100, 1500), 15000);
+            
+            log(`Attente de simulation d'écriture : ${Math.round(typingDelay / 1000)}s pour ${formattedText.length} caractères`, sessionId, { event: 'ai-typing-delay', delayMs: typingDelay }, 'INFO');
+            
             await new Promise(resolve => setTimeout(resolve, typingDelay));
 
             try {
+                // Stop typing status before sending
                 await sock.sendPresenceUpdate('paused', jid);
             } catch (pError) {}
 

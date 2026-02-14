@@ -120,7 +120,8 @@ class Session {
         const { 
             enabled, endpoint, key, model, prompt, mode, temperature, max_tokens,
             deactivate_on_typing, deactivate_on_read, trigger_keywords,
-            reply_delay, read_on_reply, reject_calls
+            reply_delay, read_on_reply, reject_calls,
+            random_protection_enabled, random_protection_rate
         } = aiConfig;
         
         // Handle undefined values to prevent overwriting existing ones with null if not provided
@@ -133,6 +134,7 @@ class Session {
                 ai_temperature = ?, ai_max_tokens = ?, 
                 ai_deactivate_on_typing = ?, ai_deactivate_on_read = ?, ai_trigger_keywords = ?,
                 ai_reply_delay = ?, ai_read_on_reply = ?, ai_reject_calls = ?,
+                ai_random_protection_enabled = ?, ai_random_protection_rate = ?,
                 updated_at = datetime('now')
             WHERE id = ?
         `);
@@ -152,6 +154,8 @@ class Session {
             reply_delay !== undefined ? reply_delay : existing.ai_reply_delay,
             read_on_reply !== undefined ? (read_on_reply ? 1 : 0) : existing.ai_read_on_reply,
             reject_calls !== undefined ? (reject_calls ? 1 : 0) : existing.ai_reject_calls,
+            random_protection_enabled !== undefined ? (random_protection_enabled ? 1 : 0) : (existing.ai_random_protection_enabled ?? 1),
+            random_protection_rate !== undefined ? random_protection_rate : (existing.ai_random_protection_rate ?? 0.1),
             sessionId
         );
         return this.findById(sessionId);
