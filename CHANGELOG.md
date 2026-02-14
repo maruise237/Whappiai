@@ -8,6 +8,8 @@
 - **Référence API Dynamique**: Les exemples cURL se mettent à jour en temps réel selon l'onglet de message sélectionné.
 
 ### 🐛 Corrections de Bugs
+- **Désactivation Bot**: Correction du bug de désactivation permanente. L'IA se met désormais en pause temporaire pour un seul message lorsqu'une écriture ou une lecture est détectée, au lieu de se désactiver globalement dans la base de données.
+- **Mots-clés Multiples**: Correction du système de détection des mots-clés pour supporter plusieurs entrées séparées par des virgules, points-virgules ou barres verticales. Amélioration de la robustesse de la recherche (insensible à la casse et support des caractères spéciaux).
 - **Windows EPERM**: Ajout de mécanismes de retry (10-20 tentatives) pour la sauvegarde des sessions et des identifiants WhatsApp afin d'éviter les erreurs de verrouillage de fichiers sur Windows.
 - **Sessions Doublons**: Suppression des routes en double pour `/api/v1/sessions` et centralisation de la logique.
 - **Hydratation Next.js**: Correction des erreurs d'hydratation (mismatch) dans le layout et les dialogues.

@@ -8,7 +8,41 @@ const { User, Session, ActivityLog, AIModel } = require('../models');
 const { log } = require('../utils/logger');
 const { db } = require('../config/database');
 
+// Memory-only flags to temporarily pause AI for specific conversations
+const pausedConversations = new Map();
+
 class AIService {
+    /**
+     * Temporarily pause AI for a specific conversation
+     * @param {string} sessionId 
+     * @param {string} remoteJid 
+     */
+    static pauseForConversation(sessionId, remoteJid) {
+        const key = `${sessionId}:${remoteJid}`;
+        pausedConversations.set(key, true);
+        log(`IA mise en pause temporaire pour ${remoteJid}`, sessionId, { event: 'ai-pause' }, 'DEBUG');
+    }
+
+    /**
+     * Check if AI is paused for a specific conversation
+     * @param {string} sessionId 
+     * @param {string} remoteJid 
+     * @returns {boolean}
+     */
+    static isPaused(sessionId, remoteJid) {
+        const key = `${sessionId}:${remoteJid}`;
+        return pausedConversations.has(key);
+    }
+
+    /**
+     * Resume AI for a specific conversation
+     * @param {string} sessionId 
+     * @param {string} remoteJid 
+     */
+    static resumeForConversation(sessionId, remoteJid) {
+        const key = `${sessionId}:${remoteJid}`;
+        pausedConversations.delete(key);
+    }
     /**
      * Store message in conversational memory
      * @param {string} userId 
@@ -101,14 +135,39 @@ class AIService {
                 return;
             }
 
-            // Trigger Keywords Check
+            const remoteJid = msg.key.remoteJid;
+
+            // Check if AI is temporarily paused for this conversation (Bug Fix: Permanent Deactivation)
+            if (this.isPaused(sessionId, remoteJid)) {
+                log(`Message de ${remoteJid} ignoré car l'IA est en pause temporaire pour cette conversation`, sessionId, { event: 'ai-skip', reason: 'temporary-pause' }, 'INFO');
+                this.resumeForConversation(sessionId, remoteJid); // Resume for next message
+                return;
+            }
+
+            // Trigger Keywords Check (Bug Fix: Multiple Keywords support improved)
             if (session.ai_trigger_keywords) {
-                const keywords = session.ai_trigger_keywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+                // Support multiple separators: comma, semicolon, or pipe
+                const keywords = session.ai_trigger_keywords
+                    .split(/[;|,]/)
+                    .map(k => k.trim().toLowerCase())
+                    .filter(k => k);
+
                 if (keywords.length > 0) {
                     const textLower = messageText.toLowerCase();
-                    const hasKeyword = keywords.some(k => textLower.includes(k));
+                    
+                    // Improved matching: check if any keyword is present as a word or substring
+                    // Using word boundaries \b for more precise matching if preferred, 
+                    // but following original "includes" logic with better multiple support.
+                    const hasKeyword = keywords.some(k => {
+                        // Escape special characters for regex
+                        const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        // Match as a whole word or at least present in text
+                        const regex = new RegExp(escapedK, 'i');
+                        return regex.test(textLower);
+                    });
+
                     if (!hasKeyword) {
-                        log(`Message ignoré car ne contient aucun mot-clé déclencheur`, sessionId, { event: 'ai-skip', reason: 'no-keyword', text: messageText }, 'DEBUG');
+                        log(`Message ignoré car ne contient aucun mot-clé déclencheur parmi: ${keywords.join(', ')}`, sessionId, { event: 'ai-skip', reason: 'no-keyword', text: messageText }, 'DEBUG');
                         return;
                     }
                 }
@@ -116,8 +175,6 @@ class AIService {
 
             // Increment received counter
             Session.updateAIStats(sessionId, 'received');
-
-            const remoteJid = msg.key.remoteJid;
             
             // Handle group vs private messages
             if (remoteJid.endsWith('@g.us')) {

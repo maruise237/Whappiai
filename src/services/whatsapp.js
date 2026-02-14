@@ -306,16 +306,17 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             for (const jid in presences) {
                 const presence = presences[jid];
                 if (presence.lastKnownPresence === 'composing') {
-                    log(`Détection d'écriture de ${jid}, désactivation temporaire de l'IA pour cette session`, sessionId, { event: 'ai-auto-pause-typing', jid }, 'INFO');
-                    // We don't disable ai_enabled globally, but we could flag the session to skip next message
-                    // For now, let's actually disable it to be sure, or use a memory flag
-                    require('../models/Session').updateAIConfig(sessionId, { enabled: false });
-                    // Broadcast to frontend
+                    log(`Détection d'écriture de ${jid}, mise en pause temporaire de l'IA pour cette conversation`, sessionId, { event: 'ai-auto-pause-typing', jid }, 'INFO');
+                    
+                    const aiService = require('./ai');
+                    aiService.pauseForConversation(sessionId, jid);
+                    
+                    // Broadcast to frontend (optional: update to show "paused" status instead of "disabled")
                     const { broadcastToClients } = require('../index');
                     if (broadcastToClients) {
                         broadcastToClients({
                             type: 'session-update',
-                            data: [{ sessionId, ai_enabled: 0, detail: 'IA désactivée (détection d\'écriture)' }]
+                            data: [{ sessionId, ai_paused_jid: jid, detail: 'IA en pause (détection d\'écriture)' }]
                         });
                     }
                 }
@@ -329,14 +330,18 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             if (update.update.status === 3 || update.update.status === 4) { // READ or PLAYED
                 const session = require('../models/Session').findById(sessionId);
                 if (session && session.ai_enabled && session.ai_deactivate_on_read) {
-                    log(`Message lu par le destinataire, désactivation de l'IA`, sessionId, { event: 'ai-auto-pause-read' }, 'INFO');
-                    require('../models/Session').updateAIConfig(sessionId, { enabled: false });
+                    const jid = update.key.remoteJid;
+                    log(`Message lu par ${jid}, mise en pause temporaire de l'IA`, sessionId, { event: 'ai-auto-pause-read', jid }, 'INFO');
+                    
+                    const aiService = require('./ai');
+                    aiService.pauseForConversation(sessionId, jid);
+                    
                     // Broadcast to frontend
                     const { broadcastToClients } = require('../index');
                     if (broadcastToClients) {
                         broadcastToClients({
                             type: 'session-update',
-                            data: [{ sessionId, ai_enabled: 0, detail: 'IA désactivée (message lu)' }]
+                            data: [{ sessionId, ai_paused_jid: jid, detail: 'IA en pause (message lu)' }]
                         });
                     }
                 }
