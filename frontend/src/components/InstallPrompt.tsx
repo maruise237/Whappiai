@@ -2,16 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Share, PlusSquare } from "lucide-react";
+import { X, Share, PlusSquare, Download } from "lucide-react";
 import Image from "next/image";
 
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [showFab, setShowFab] = useState(false); // State for Floating Action Button
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Check if mobile
+    const checkMobile = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    };
+    setIsMobile(checkMobile());
+
     // Register Service Worker (Required for PWA installability)
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
@@ -32,6 +41,8 @@ export function InstallPrompt() {
       const dismissed = localStorage.getItem("install-prompt-dismissed");
       if (!dismissed) {
         setShowPrompt(true);
+      } else {
+        setShowFab(true); // Show FAB if prompt was dismissed
       }
     };
 
@@ -46,6 +57,8 @@ export function InstallPrompt() {
       const dismissed = localStorage.getItem("install-prompt-dismissed");
       if (!dismissed) {
         setShowPrompt(true);
+      } else {
+        setShowFab(true); // Show FAB if prompt was dismissed
       }
     }
 
@@ -75,22 +88,42 @@ export function InstallPrompt() {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    // Hide for a week? or just session? Let's hide for 7 days
-    // const now = new Date();
-    // const item = {
-    //   value: true,
-    //   expiry: now.getTime() + 7 * 24 * 60 * 60 * 1000,
-    // };
+    setShowFab(true); // Switch to FAB mode
     localStorage.setItem("install-prompt-dismissed", "true");
   };
 
-  if (isStandalone || !showPrompt) return null;
+  const handleFabClick = () => {
+    setShowPrompt(true);
+    setShowFab(false);
+  };
+
+  if (isStandalone) return null;
+  // Only render on mobile if requested
+  if (!isMobile) return null;
+
+  // Floating Action Button (only visible when prompt is hidden)
+  if (!showPrompt && showFab) {
+    return (
+      <Button
+        onClick={handleFabClick}
+        className="fixed bottom-20 right-4 z-50 rounded-full w-14 h-14 shadow-lg bg-[#25D366] hover:bg-[#128C7E] text-white p-0 flex items-center justify-center animate-in fade-in slide-in-from-bottom-5"
+        size="icon"
+      >
+        <Download size={24} />
+        <span className="sr-only">Installer l'application</span>
+      </Button>
+    );
+  }
+
+  if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-10 fade-in duration-500">
+    <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom-full fade-in duration-500 p-4 md:hidden">
       <div className="bg-background border border-border shadow-lg rounded-xl p-4 flex flex-col gap-4 relative max-w-md mx-auto">
         <button 
           onClick={handleDismiss}
+          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground p-1"
+        >
           className="absolute top-2 right-2 text-muted-foreground hover:text-foreground p-1"
         >
           <X size={20} />
