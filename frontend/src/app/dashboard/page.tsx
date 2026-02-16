@@ -626,7 +626,7 @@ export default function DashboardPage() {
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40">Historique</p>
                   </div>
                 </div>
-                <Link href="/activities" prefetch={false}>
+                <Link href="/dashboard/activities" prefetch={false}>
                   <Button variant="ghost" size="sm" className="h-10 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-amber-500/10 hover:text-amber-500 transition-all border border-transparent hover:border-amber-500/20">
                     Tout voir <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
@@ -695,7 +695,7 @@ export default function DashboardPage() {
                         </div>
                       )}
                       <div className="p-3 border-t border-slate-100 dark:border-primary/5">
-                        <Link href="/activities" prefetch={false} className="block">
+                        <Link href="/dashboard/activities" prefetch={false} className="block">
                           <Button variant="ghost" size="sm" className="w-full h-8 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-amber-500/10 hover:text-amber-500 transition-all">
                             Voir tout l'historique <ArrowRight className="ml-2 w-3 h-3" />
                           </Button>

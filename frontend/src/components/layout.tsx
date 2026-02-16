@@ -56,15 +56,15 @@ import {
 
 const mainNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Assistant IA", href: "/ai", icon: Bot },
-  { name: "Moderation", href: "/moderation", icon: Shield },
-  { name: "Activités", href: "/activities", icon: History, adminOnly: true },
-  { name: "Utilisateurs", href: "/users", icon: Users, adminOnly: true },
-  { name: "Configuration IA", href: "/ai-models", icon: Settings2, adminOnly: true },
+  { name: "Assistant IA", href: "/dashboard/ai", icon: Bot },
+  { name: "Moderation", href: "/dashboard/moderation", icon: Shield },
+  { name: "Activités", href: "/dashboard/activities", icon: History, adminOnly: true },
+  { name: "Utilisateurs", href: "/dashboard/users", icon: Users, adminOnly: true },
+  { name: "Configuration IA", href: "/dashboard/ai-models", icon: Settings2, adminOnly: true },
 ]
 
 const secondaryNavigation = [
-  { name: "Paramètres", href: "/profile", icon: Settings },
+  { name: "Paramètres", href: "/dashboard/profile", icon: Settings },
   { name: "API Docs", href: "/docs", icon: FileText },
 ]
 
