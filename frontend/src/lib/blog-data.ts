@@ -18,7 +18,7 @@ export const blogPosts: BlogPost[] = [
     slug: "automatiser-support-client-whatsapp",
     title: "Comment automatiser votre support client sur WhatsApp en 10 minutes",
     excerpt: "Découvrez comment configurer des réponses automatiques intelligentes et réduire votre temps de réponse de 80% sans coder.",
-    date: "16 Février 2026",
+    date: "2026-02-16",
     readTime: "5 min",
     category: "Tutoriel",
     author: {
