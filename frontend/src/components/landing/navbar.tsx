@@ -51,7 +51,7 @@ export function Navbar() {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl"
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%_-_2rem)] max-w-5xl"
     >
       <nav
         ref={navRef}
@@ -143,15 +143,9 @@ export function Navbar() {
                 </Link>
               ))}
               <hr className="border-border my-2" />
-              {isLoaded && isSignedIn ? (
-                <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
-                  <Link href="/dashboard">Dashboard</Link>
-                </Button>
-              ) : (
-                <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
-                  <Link href="/login">Connexion</Link>
-                </Button>
-              )}
+              <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
+                <Link href="/login">Connexion</Link>
+              </Button>
               <Button className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full w-full" asChild>
                 <Link href="/register">Essai Gratuit</Link>
               </Button>
