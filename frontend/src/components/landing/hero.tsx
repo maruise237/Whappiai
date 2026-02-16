@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 const avatars = [
   "/placeholder.svg",
@@ -101,7 +102,7 @@ export function Hero() {
             className="rounded-full px-8 h-12 text-base font-medium border-border text-muted-foreground hover:bg-card hover:text-foreground hover:border-primary bg-transparent"
             asChild
           >
-            <Link href="/#features">Voir la Démo</Link>
+            <Link href="#features">Voir Démo</Link>
           </Button>
         </motion.div>
 
