@@ -12,6 +12,13 @@ export function InstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // Register Service Worker (Required for PWA installability)
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => console.log('Service Worker registered', reg))
+        .catch((err) => console.log('Service Worker registration failed', err));
+    }
+
     // Check if already installed
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsStandalone(true);
@@ -42,8 +49,16 @@ export function InstallPrompt() {
       }
     }
 
+    // For debugging/development: Check if PWA criteria are met but event not fired
+    // const checkTimer = setTimeout(() => {
+    //    if (!showPrompt && !isStandalone && !localStorage.getItem("install-prompt-dismissed")) {
+    //      console.log("PWA Install Prompt: Event not fired yet. Ensure HTTPS and Service Worker.");
+    //    }
+    // }, 3000);
+
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      // clearTimeout(checkTimer);
     };
   }, []);
 
