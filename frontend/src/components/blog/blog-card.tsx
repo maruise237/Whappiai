@@ -22,7 +22,7 @@ export function BlogCard({ post }: BlogCardProps) {
         </CardTitle>
         <CardDescription className="flex items-center gap-4 mt-2 text-xs">
           <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> {post.date}
+            <Calendar className="w-3 h-3" /> {new Date(post.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
           </span>
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" /> {post.readTime}

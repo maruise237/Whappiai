@@ -115,7 +115,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4" />
-                {post.date}
+                {new Date(post.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="w-4 h-4" />

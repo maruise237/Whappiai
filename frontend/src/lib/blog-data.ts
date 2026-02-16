@@ -58,7 +58,7 @@ if (message.body.toLowerCase().includes('horaires')) {
     slug: "meilleures-pratiques-anti-spam-2026",
     title: "Les meilleures pratiques anti-spam WhatsApp pour 2026",
     excerpt: "WhatsApp renforce ses règles. Voici comment garder votre compte en bonne santé tout en engageant votre audience efficacement.",
-    date: "15 Février 2026",
+    date: "2026-02-15",
     readTime: "7 min",
     category: "Sécurité",
     author: {
@@ -86,7 +86,7 @@ if (message.body.toLowerCase().includes('horaires')) {
     slug: "etude-cas-engagement-ia",
     title: "Étude de cas : +300% d'engagement grâce à l'IA",
     excerpt: "Comment une communauté de e-commerce a utilisé l'intégration IA de Whappi pour personnaliser ses communications à grande échelle.",
-    date: "10 Février 2026",
+    date: "2026-02-10",
     readTime: "10 min",
     category: "Étude de Cas",
     author: {
