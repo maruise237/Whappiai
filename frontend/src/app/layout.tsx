@@ -5,6 +5,7 @@ import { frFR } from "@clerk/localizations";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import ProgressBar from "@/components/progress-bar";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -42,6 +43,7 @@ export default function RootLayout({
             <ProgressBar />
           </Suspense>
           {children}
+          <InstallPrompt />
           <Toaster />
         </ClerkProvider>
       </body>
