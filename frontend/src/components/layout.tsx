@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/tooltip"
 
 const mainNavigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Assistant IA", href: "/ai", icon: Bot },
   { name: "Moderation", href: "/moderation", icon: Shield },
   { name: "Activités", href: "/activities", icon: History, adminOnly: true },

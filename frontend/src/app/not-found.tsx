@@ -65,7 +65,7 @@ export default function NotFound() {
         >
             <p className="text-sm text-muted-foreground mb-4">Ou consultez nos ressources utiles :</p>
             <div className="flex justify-center gap-6">
-                <Link href="/dashboard/docs" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Link href="/docs" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
                     <FileText size={16} />
                     Documentation
                 </Link>

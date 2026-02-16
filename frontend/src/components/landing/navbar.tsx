@@ -5,15 +5,17 @@ import { motion } from "framer-motion"
 import { Menu, X, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
 
 const navItems = [
   { label: "Fonctionnalités", href: "/#features" },
   { label: "Tarifs", href: "/#pricing" },
   { label: "Témoignages", href: "/#testimonials" },
-  { label: "Documentation", href: "/dashboard/docs" },
+  { label: "Documentation", href: "/docs" },
 ]
 
 export function Navbar() {
+  const { isSignedIn, isLoaded } = useUser()
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isDark, setIsDark] = useState(true)
@@ -141,9 +143,15 @@ export function Navbar() {
                 </Link>
               ))}
               <hr className="border-border my-2" />
-              <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
-                <Link href="/login">Connexion</Link>
-              </Button>
+              {isLoaded && isSignedIn ? (
+                <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
+              ) : (
+                <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
+                  <Link href="/login">Connexion</Link>
+                </Button>
+              )}
               <Button className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full w-full" asChild>
                 <Link href="/register">Essai Gratuit</Link>
               </Button>

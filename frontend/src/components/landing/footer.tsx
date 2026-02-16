@@ -13,7 +13,7 @@ const footerLinks = {
     { label: "Inscription", href: "/register" },
   ],
   Ressources: [
-    { label: "Documentation", href: "/dashboard/docs" },
+    { label: "Documentation", href: "/docs" },
     { label: "Guides", href: "/blog" },
     { label: "Blog", href: "/blog" },
     { label: "Communauté", href: "/blog" },
