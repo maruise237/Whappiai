@@ -45,6 +45,7 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { WebSocketProvider } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
+import { InstallPrompt } from "@/components/InstallPrompt"
 
 import {
   Tooltip,
@@ -371,6 +372,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </Link>
             
             <div className="flex items-center gap-3">
+              <InstallPrompt variant="inline" />
               <Button 
                 variant="ghost" 
                 size="icon" 

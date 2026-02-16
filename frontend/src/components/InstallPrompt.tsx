@@ -4,8 +4,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Share, PlusSquare, Download } from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
-export function InstallPrompt() {
+interface InstallPromptProps {
+  className?: string;
+  variant?: "floating" | "inline";
+}
+
+export function InstallPrompt({ className, variant = "floating" }: InstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [showFab, setShowFab] = useState(false); 
@@ -25,6 +31,7 @@ export function InstallPrompt() {
     // Register Service Worker
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
+        .then((reg) => console.log('Service Worker registered', reg))
         .catch((err) => console.log('Service Worker registration failed', err));
     }
 
@@ -43,6 +50,7 @@ export function InstallPrompt() {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      console.log("beforeinstallprompt fired", e);
       // Ensure FAB is visible when event fires
       setShowFab(true);
     };
@@ -65,9 +73,11 @@ export function InstallPrompt() {
   }, []);
 
   const handleInstallClick = async () => {
+    console.log("Install clicked, deferredPrompt:", deferredPrompt);
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
+      console.log("User choice outcome:", outcome);
       if (outcome === "accepted") {
         setDeferredPrompt(null);
         setShowPrompt(false);
@@ -75,6 +85,9 @@ export function InstallPrompt() {
       }
     } else if (isIOS) {
         // For iOS, just showing instructions is handled by the dialog render
+    } else {
+      console.log("No deferredPrompt available");
+      // Fallback: show manual instructions if prompt fails
     }
   };
 
@@ -93,12 +106,44 @@ export function InstallPrompt() {
 
   // Discreet Install Button (Pill style)
   if (!showPrompt && showFab) {
+    if (variant === "inline") {
+      return (
+        <button
+          onClick={handleFabClick}
+          className={cn(
+            "flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-3 py-1.5 rounded-full text-xs font-medium border border-[#25D366]/20 transition-all animate-in fade-in whitespace-nowrap",
+            className
+          )}
+        >
+          <div className="relative w-4 h-4">
+             <Image 
+                src="/whappi-icon.svg" 
+                alt="Whappi" 
+                fill
+                className="object-contain"
+              />
+          </div>
+          Installer
+        </button>
+      );
+    }
+
     return (
       <button
         onClick={handleFabClick}
-        className="fixed top-4 right-16 z-50 flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-3 py-1.5 rounded-full text-xs font-medium border border-[#25D366]/20 backdrop-blur-sm transition-all animate-in fade-in"
+        className={cn(
+          "fixed top-4 right-16 z-50 flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-3 py-1.5 rounded-full text-xs font-medium border border-[#25D366]/20 backdrop-blur-sm transition-all animate-in fade-in",
+          className
+        )}
       >
-        <Download size={14} />
+        <div className="relative w-4 h-4">
+             <Image 
+                src="/whappi-icon.svg" 
+                alt="Whappi" 
+                fill
+                className="object-contain"
+              />
+          </div>
         Installer l'app
       </button>
     );
@@ -107,7 +152,7 @@ export function InstallPrompt() {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
       <div className="bg-background border border-border shadow-xl rounded-xl p-5 flex flex-col gap-4 relative w-full max-w-sm animate-in slide-in-from-bottom-10 zoom-in-95 duration-300">
         <button 
           onClick={handleDismiss}

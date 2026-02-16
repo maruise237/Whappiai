@@ -43,7 +43,7 @@ export default function RootLayout({
             <ProgressBar />
           </Suspense>
           {children}
-          <InstallPrompt />
+          {/* <InstallPrompt /> Moved to specific layouts */}
           <Toaster />
         </ClerkProvider>
       </body>

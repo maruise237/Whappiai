@@ -2,6 +2,7 @@
 
 import { SignIn } from "@clerk/nextjs"
 import { Logo } from "@/components/ui/logo"
+import { InstallPrompt } from "@/components/InstallPrompt"
 
 export default function LoginPage() {
   return (
@@ -41,6 +42,7 @@ export default function LoginPage() {
             }
           }}
         />
+        <InstallPrompt className="fixed bottom-4 right-4 top-auto" />
       </div>
     </div>
   )
