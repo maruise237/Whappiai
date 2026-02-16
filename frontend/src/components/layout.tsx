@@ -372,7 +372,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </Link>
             
             <div className="flex items-center gap-3">
-              <InstallPrompt variant="inline" />
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -398,6 +397,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </SheetHeader>
                   <ScrollArea className="flex-1 px-6">
                     <nav className="space-y-2 py-8">
+                      <div className="px-4 pb-6">
+                        <InstallPrompt variant="inline" className="w-full justify-center bg-primary/10 text-primary hover:bg-primary/20 h-12 rounded-xl text-sm font-bold uppercase tracking-widest border border-primary/20" />
+                      </div>
                       {filteredMainNavigation.map((item) => {
                         const Icon = item.icon
                         const isActive = pathname === item.href

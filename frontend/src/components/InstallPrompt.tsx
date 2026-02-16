@@ -88,6 +88,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
     } else {
       console.log("No deferredPrompt available");
       // Fallback: show manual instructions if prompt fails
+      // We will render a different UI state for this in the popup
     }
   };
 
@@ -115,15 +116,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
             className
           )}
         >
-          <div className="relative w-4 h-4">
-             <Image 
-                src="/whappi-icon.svg" 
-                alt="Whappi" 
-                fill
-                className="object-contain"
-              />
-          </div>
-          Installer
+           Installer
         </button>
       );
     }
@@ -136,20 +129,14 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
           className
         )}
       >
-        <div className="relative w-4 h-4">
-             <Image 
-                src="/whappi-icon.svg" 
-                alt="Whappi" 
-                fill
-                className="object-contain"
-              />
-          </div>
         Installer l'app
       </button>
     );
   }
 
   if (!showPrompt) return null;
+
+  const showManualInstructions = !deferredPrompt && !isIOS;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
@@ -187,6 +174,18 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
                 </p>
                 <p className="flex items-center gap-2">
                 2. Sélectionnez "Sur l'écran d'accueil" <PlusSquare size={16} />
+                </p>
+            </div>
+          </div>
+        ) : showManualInstructions ? (
+           <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-3 text-left">
+            <p className="font-medium text-foreground">Installation manuelle :</p>
+            <div className="space-y-2 text-muted-foreground">
+                <p className="flex items-center gap-2">
+                1. Ouvrez le menu du navigateur (3 points)
+                </p>
+                <p className="flex items-center gap-2">
+                2. Sélectionnez "Installer l'application" ou "Ajouter à l'écran d'accueil"
                 </p>
             </div>
           </div>
