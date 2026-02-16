@@ -26,7 +26,7 @@ export function FinalCTA() {
           Prêt à transformer votre Support?
         </h2>
         <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-          Rejoignez 1000+ Community Managers qui utilisent Whappi. Commencez gratuitement, aucune carte requise.
+          Rejoignez 1000+ Community Managers qui utilisent Whappi. Commencez votre essai gratuit de 14 jours, aucune carte requise.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -36,7 +36,7 @@ export function FinalCTA() {
             asChild
           >
             <Link href="/register">
-              Démarrer Gratuitement
+              Essayer Gratuitement
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
@@ -50,7 +50,7 @@ export function FinalCTA() {
           </Button>
         </div>
 
-        <p className="mt-8 text-sm text-muted-foreground">Gratuit pour toujours pour les petits groupes. Les plans Pro commencent à 49$/mois.</p>
+        <p className="mt-8 text-sm text-muted-foreground">Commencez dès maintenant avec notre plan Starter à 2 500 FCFA/mois. 14 jours d'essai offerts.</p>
       </motion.div>
     </section>
   )

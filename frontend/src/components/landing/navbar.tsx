@@ -99,7 +99,7 @@ export function Navbar() {
             <Link href="/login">Connexion</Link>
           </Button>
           <Button size="sm" className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full px-4" asChild>
-            <Link href="/login">Démarrer Gratuitement</Link>
+            <Link href="/register">Essai Gratuit</Link>
           </Button>
         </div>
 
@@ -145,7 +145,7 @@ export function Navbar() {
                 <Link href="/login">Connexion</Link>
               </Button>
               <Button className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full w-full" asChild>
-                <Link href="/login">Démarrer Gratuitement</Link>
+                <Link href="/register">Essai Gratuit</Link>
               </Button>
             </div>
           </motion.div>

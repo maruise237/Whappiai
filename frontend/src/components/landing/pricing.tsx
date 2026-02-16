@@ -8,43 +8,39 @@ import Link from "next/link"
 
 const plans = [
   {
-    name: "Gratuit",
-    description: "Parfait pour démarrer avec Whappi",
-    price: { monthly: 0, yearly: 0 },
-    features: ["1 groupe WhatsApp", "Réponses automatiques basiques", "Jusqu'à 100 messages/jour", "Support communautaire", "Analytics basiques"],
-    cta: "Démarrer Gratuitement",
+    name: "Starter",
+    description: "Pour débuter avec l'automatisation",
+    price: { monthly: "2 500 FCFA", yearly: "25 000 FCFA" },
+    features: ["500 messages IA / mois", "1 groupe WhatsApp", "Réponses automatiques", "Support standard"],
+    cta: "Essai gratuit 14 jours",
     highlighted: false,
   },
   {
     name: "Pro",
     description: "Pour les équipes en croissance",
-    price: { monthly: 49, yearly: 39 },
+    price: { monthly: "5 000 FCFA", yearly: "50 000 FCFA" },
     features: [
+      "2 000 messages IA / mois",
       "Groupes illimités",
-      "IA avancée multilingue",
-      "Anti-spam intégré",
+      "Anti-spam intelligent",
       "Support prioritaire",
-      "Analytics détaillés",
-      "Escalade automatique",
-      "Accès API",
+      "Analytics avancés",
     ],
-    cta: "Commencer l'Essai Gratuit",
+    cta: "Essai gratuit 14 jours",
     highlighted: true,
   },
   {
-    name: "Entreprise",
+    name: "Business",
     description: "Pour les grandes organisations",
-    price: { monthly: 199, yearly: 159 },
+    price: { monthly: "10 000 FCFA", yearly: "100 000 FCFA" },
     features: [
+      "10 000 messages IA / mois",
       "Tout en Pro",
-      "SSO & SAML",
-      "Support dédié",
-      "Garantie SLA 99.9%",
-      "Modération personnalisée",
-      "Intégrations custom",
-      "Audit logs complets",
+      "Support dédié 24/7",
+      "Intégrations personnalisées",
+      "Audit logs",
     ],
-    cta: "Contacter les Ventes",
+    cta: "Essai gratuit 14 jours",
     highlighted: false,
   },
 ]
@@ -158,11 +154,11 @@ export function Pricing() {
 
               <div className="mb-6">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-foreground">${plan.price[billingCycle]}</span>
-                  {plan.price.monthly > 0 && <span className="text-muted-foreground text-sm">/mois</span>}
+                  <span className="text-4xl font-bold text-foreground">{plan.price[billingCycle]}</span>
+                  <span className="text-muted-foreground text-sm">/mois</span>
                 </div>
-                {billingCycle === "yearly" && plan.price.yearly > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">Facturé annuellement (${plan.price.yearly * 12}/an)</p>
+                {billingCycle === "yearly" && (
+                  <p className="text-xs text-muted-foreground mt-1">Facturé annuellement</p>
                 )}
               </div>
 

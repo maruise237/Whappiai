@@ -5,12 +5,11 @@ import { useRef } from "react"
 
 const logos = [
   { name: "WhatsApp", width: 100 },
-  { name: "HubSpot", width: 100 },
-  { name: "Intercom", width: 70 },
-  { name: "Zendesk", width: 90 },
-  { name: "Shopify", width: 100 },
   { name: "OpenAI", width: 90 },
-  { name: "Stripe", width: 80 },
+  { name: "Orange Money", width: 120 },
+  { name: "MTN MoMo", width: 100 },
+  { name: "Wave", width: 80 },
+  { name: "Chariow", width: 100 },
 ]
 
 export function LogoMarquee() {

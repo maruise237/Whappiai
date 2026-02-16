@@ -92,7 +92,7 @@ export function Hero() {
             asChild
           >
             <Link href="/register">
-              Démarrer Gratuitement
+              Essai Gratuit 14 Jours
               <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
           </Button>
