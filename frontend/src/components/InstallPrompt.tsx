@@ -8,7 +8,7 @@ import Image from "next/image";
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [showFab, setShowFab] = useState(false); // State for Floating Action Button
+  const [showFab, setShowFab] = useState(false); 
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -19,31 +19,32 @@ export function InstallPrompt() {
       const userAgent = window.navigator.userAgent.toLowerCase();
       return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
     };
-    setIsMobile(checkMobile());
+    const mobile = checkMobile();
+    setIsMobile(mobile);
 
-    // Register Service Worker (Required for PWA installability)
+    // Register Service Worker
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
-        .then((reg) => console.log('Service Worker registered', reg))
         .catch((err) => console.log('Service Worker registration failed', err));
     }
 
     // Check if already installed
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsStandalone(true);
+      return;
+    }
+
+    // Default state: Show FAB initially on mobile if not installed (non-intrusive)
+    if (mobile && !window.matchMedia("(display-mode: standalone)").matches) {
+        setShowFab(true);
     }
 
     // Android / Desktop (Chrome)
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Check if not already dismissed recently (could use localStorage)
-      const dismissed = localStorage.getItem("install-prompt-dismissed");
-      if (!dismissed) {
-        setShowPrompt(true);
-      } else {
-        setShowFab(true); // Show FAB if prompt was dismissed
-      }
+      // Ensure FAB is visible when event fires
+      setShowFab(true);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -52,26 +53,14 @@ export function InstallPrompt() {
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     
-    if (isIosDevice && !window.matchMedia("(display-mode: standalone)").matches) {
+    if (isIosDevice) {
       setIsIOS(true);
-      const dismissed = localStorage.getItem("install-prompt-dismissed");
-      if (!dismissed) {
-        setShowPrompt(true);
-      } else {
-        setShowFab(true); // Show FAB if prompt was dismissed
-      }
+      // Ensure FAB is visible on iOS
+      setShowFab(true);
     }
-
-    // For debugging/development: Check if PWA criteria are met but event not fired
-    // const checkTimer = setTimeout(() => {
-    //    if (!showPrompt && !isStandalone && !localStorage.getItem("install-prompt-dismissed")) {
-    //      console.log("PWA Install Prompt: Event not fired yet. Ensure HTTPS and Service Worker.");
-    //    }
-    // }, 3000);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      // clearTimeout(checkTimer);
     };
   }, []);
 
@@ -82,14 +71,16 @@ export function InstallPrompt() {
       if (outcome === "accepted") {
         setDeferredPrompt(null);
         setShowPrompt(false);
+        setShowFab(false);
       }
+    } else if (isIOS) {
+        // For iOS, just showing instructions is handled by the dialog render
     }
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    setShowFab(true); // Switch to FAB mode
-    localStorage.setItem("install-prompt-dismissed", "true");
+    setShowFab(true); // Return to FAB mode
   };
 
   const handleFabClick = () => {
@@ -98,73 +89,69 @@ export function InstallPrompt() {
   };
 
   if (isStandalone) return null;
-  // Only render on mobile if requested
   if (!isMobile) return null;
 
-  // Floating Action Button (only visible when prompt is hidden)
+  // Discreet Install Button (Pill style)
   if (!showPrompt && showFab) {
     return (
-      <Button
+      <button
         onClick={handleFabClick}
-        className="fixed bottom-20 right-4 z-50 rounded-full w-14 h-14 shadow-lg bg-[#25D366] hover:bg-[#128C7E] text-white p-0 flex items-center justify-center animate-in fade-in slide-in-from-bottom-5"
-        size="icon"
+        className="fixed top-4 right-16 z-50 flex items-center gap-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 px-3 py-1.5 rounded-full text-xs font-medium border border-[#25D366]/20 backdrop-blur-sm transition-all animate-in fade-in"
       >
-        <Download size={24} />
-        <span className="sr-only">Installer l'application</span>
-      </Button>
+        <Download size={14} />
+        Installer l'app
+      </button>
     );
   }
 
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom-full fade-in duration-500 p-4 md:hidden">
-      <div className="bg-background border border-border shadow-lg rounded-xl p-4 flex flex-col gap-4 relative max-w-md mx-auto">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-background border border-border shadow-xl rounded-xl p-5 flex flex-col gap-4 relative w-full max-w-sm animate-in slide-in-from-bottom-10 zoom-in-95 duration-300">
         <button 
           onClick={handleDismiss}
-          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground p-1"
+          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-muted/50 transition-colors"
         >
-          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground p-1"
-        >
-          <X size={20} />
+          <X size={18} />
         </button>
 
-        <div className="flex items-start gap-4">
-          <div className="shrink-0 bg-primary/10 p-2 rounded-xl">
-            <Image 
-              src="/whappi-icon.svg" 
-              alt="Whappi Icon" 
-              width={48} 
-              height={48}
-              className="w-12 h-12"
-            />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-lg leading-tight mb-1">
-              Installer Whappi
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Ajoutez l'application à votre écran d'accueil pour une meilleure expérience.
-            </p>
-          </div>
+        <div className="flex flex-col items-center text-center gap-3 pt-2">
+            <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-md">
+                <Image 
+                src="/whappi-icon.svg" 
+                alt="Whappi Icon" 
+                fill
+                className="object-cover"
+                />
+            </div>
+            <div className="space-y-1">
+                <h3 className="font-semibold text-xl">Installer Whappi</h3>
+                <p className="text-sm text-muted-foreground">
+                Installez l'application pour un accès plus rapide et une meilleure expérience.
+                </p>
+            </div>
         </div>
 
         {isIOS ? (
-          <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2">
-            <p className="flex items-center gap-2">
-              1. Appuyez sur le bouton de partage <Share size={16} />
-            </p>
-            <p className="flex items-center gap-2">
-              2. Sélectionnez "Sur l'écran d'accueil" <PlusSquare size={16} />
-            </p>
+          <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-3 text-left">
+            <p className="font-medium text-foreground">Sur iOS :</p>
+            <div className="space-y-2 text-muted-foreground">
+                <p className="flex items-center gap-2">
+                1. Appuyez sur le bouton de partage <Share size={16} />
+                </p>
+                <p className="flex items-center gap-2">
+                2. Sélectionnez "Sur l'écran d'accueil" <PlusSquare size={16} />
+                </p>
+            </div>
           </div>
         ) : (
-          <div className="flex gap-2 justify-end mt-2">
-             <Button variant="ghost" onClick={handleDismiss} size="sm">
-              Plus tard
+          <div className="grid gap-2 mt-2">
+            <Button onClick={handleInstallClick} className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold h-11">
+              Installer maintenant
             </Button>
-            <Button onClick={handleInstallClick} size="sm" className="bg-[#25D366] hover:bg-[#128C7E] text-white">
-              Installer
+             <Button variant="ghost" onClick={handleDismiss} className="w-full">
+              Plus tard
             </Button>
           </div>
         )}
