@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { DocsContent } from "@/components/docs/docs-content"
-import { Navbar } from "@/components/landing/navbar"
+import { DocsBackButton } from "@/components/docs/back-button"
 import { Footer } from "@/components/landing/footer"
 import { SmoothScroll } from "@/components/landing/smooth-scroll"
 
@@ -22,8 +22,8 @@ export default function DocsPage() {
 
   return (
     <SmoothScroll>
-      <main className="min-h-screen bg-background flex flex-col">
-        <Navbar />
+      <main className="min-h-screen bg-background flex flex-col relative">
+        <DocsBackButton />
         
         <div className="flex-1 container mx-auto px-4 py-24 md:py-32">
           <div className="flex flex-col lg:flex-row gap-12 animate-in fade-in duration-200">
