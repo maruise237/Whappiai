@@ -32,9 +32,9 @@ export function Hero() {
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-card pointer-events-none" />
 
       {/* Subtle radial glow - Whappi green */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full max-w-[800px] h-[50vh] max-h-[600px] bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 max-w-5xl mx-auto text-center">
+      <div className="relative z-10 max-w-5xl mx-auto text-center px-4">
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -161,7 +161,7 @@ export function BentoGrid() {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {["Multilingue", "Escalade", "NLP", "24/7"].map((feature) => (
                 <div key={feature} className="text-center">
                   <div className="text-xs font-semibold text-primary mb-1">✓</div>

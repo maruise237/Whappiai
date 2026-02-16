@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <SmoothScroll>
-      <main className="min-h-screen bg-background dark">
+      <main className="min-h-screen bg-background">
         <Navbar />
         <Hero />
         <LogoMarquee />

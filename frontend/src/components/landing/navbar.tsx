@@ -20,19 +20,27 @@ export function Navbar() {
   const navRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const savedTheme = localStorage.getItem("theme")
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    setIsDark(prefersDark)
-    if (!prefersDark) {
+    const isDarkTheme = savedTheme === "dark" || (!savedTheme && prefersDark)
+    
+    setIsDark(isDarkTheme)
+    if (isDarkTheme) {
+      document.documentElement.classList.add("dark")
+    } else {
       document.documentElement.classList.remove("dark")
     }
   }, [])
 
   const toggleDarkMode = () => {
-    setIsDark(!isDark)
-    if (isDark) {
-      document.documentElement.classList.remove("dark")
-    } else {
+    const newIsDark = !isDark
+    setIsDark(newIsDark)
+    if (newIsDark) {
       document.documentElement.classList.add("dark")
+      localStorage.setItem("theme", "dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+      localStorage.setItem("theme", "light")
     }
   }
 
@@ -41,7 +49,7 @@ export function Navbar() {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl"
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl"
     >
       <nav
         ref={navRef}
@@ -58,7 +66,7 @@ export function Navbar() {
         {/* Desktop Nav Items */}
         <div className="hidden md:flex items-center gap-1 relative">
           {navItems.map((item, index) => (
-            <a
+            <Link
               key={item.label}
               href={item.href}
               className="relative px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -74,7 +82,7 @@ export function Navbar() {
                 />
               )}
               <span className="relative z-10">{item.label}</span>
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -112,37 +120,37 @@ export function Navbar() {
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
-      </nav>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          className="absolute top-full left-0 right-0 mt-2 p-4 rounded-2xl bg-background/95 backdrop-blur-md border border-border"
-        >
-          <div className="flex flex-col gap-2">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
-            <hr className="border-border my-2" />
-            <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground" asChild>
-              <a href="/login">Connexion</a>
-            </Button>
-            <Button className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full" asChild>
-              <a href="/login">Démarrer Gratuitement</a>
-            </Button>
-          </div>
-        </motion.div>
-      )}
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-full left-0 right-0 mt-2 p-4 rounded-2xl bg-background/95 backdrop-blur-md border border-border shadow-lg"
+          >
+            <div className="flex flex-col gap-2">
+              {navItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <hr className="border-border my-2" />
+              <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
+                <Link href="/login">Connexion</Link>
+              </Button>
+              <Button className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full w-full" asChild>
+                <Link href="/login">Démarrer Gratuitement</Link>
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </nav>
     </motion.header>
   )
 }

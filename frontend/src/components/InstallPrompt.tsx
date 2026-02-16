@@ -158,16 +158,16 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
                 />
             </div>
             <div className="space-y-1">
-                <h3 className="font-semibold text-xl">Installer l'App Whappi</h3>
+                <h3 className="font-semibold text-xl">Installer l'Application Whappi</h3>
                 <p className="text-sm text-muted-foreground">
-                Profitez d'une expérience fluide et native directement sur votre appareil.
+                Accédez à vos outils de modération plus rapidement avec l'application native.
                 </p>
             </div>
         </div>
 
         {isIOS ? (
           <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-3 text-left">
-            <p className="font-medium text-foreground">Sur iOS :</p>
+            <p className="font-medium text-foreground">Installation sur iOS :</p>
             <div className="space-y-2 text-muted-foreground">
                 <p className="flex items-center gap-2">
                 1. Appuyez sur Partager <Share size={16} />
@@ -179,7 +179,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
           </div>
         ) : showManualInstructions ? (
            <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-3 text-left">
-            <p className="font-medium text-foreground">Installation manuelle :</p>
+            <p className="font-medium text-foreground">Installation sur Android / Desktop :</p>
             <div className="space-y-2 text-muted-foreground">
                 <p className="flex items-center gap-2">
                 1. Ouvrez le menu du navigateur (3 points)

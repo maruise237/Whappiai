@@ -14,14 +14,14 @@ const footerLinks = {
   ],
   Ressources: [
     { label: "Documentation", href: "/dashboard/docs" },
-    { label: "Guides", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Communauté", href: "#" },
+    { label: "Guides", href: "/blog" },
+    { label: "Blog", href: "/blog" },
+    { label: "Communauté", href: "/blog" },
   ],
   Entreprise: [
-    { label: "À propos", href: "#" },
+    { label: "À propos", href: "/about" },
     { label: "Contact", href: "mailto:contact@whappi.com" },
-    { label: "Mentions Légales", href: "#" },
+    { label: "Mentions Légales", href: "/legal" },
   ],
 }
 
