@@ -130,7 +130,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const filteredMainNavigation = mainNavigation.filter(item => {
     if (item.adminOnly && userRole !== 'admin') return false;
     // Special case for activities which is also restricted to admin
-    if (item.href === "/activities" && userRole !== 'admin') return false;
+    if (item.href === "/dashboard/activities" && userRole !== 'admin') return false;
     return true;
   });
 
@@ -149,7 +149,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Sidebar Desktop - Minimalist Glassmorphism */}
         <aside className="hidden md:flex w-24 lg:w-72 flex-col bg-white/80 dark:bg-card/80 backdrop-blur-xl border-r border-slate-200 dark:border-primary/10 relative z-30 transition-all duration-200" suppressHydrationWarning>
           <div className="flex h-24 items-center justify-center lg:justify-start lg:px-8 shrink-0">
-            <Link href="/" className="flex items-center gap-3 group">
+            <Link href="/dashboard" className="flex items-center gap-3 group">
               <Logo size={42} orientation="horizontal" showText={false} className="lg:hidden" />
               <Logo size={42} orientation="horizontal" className="hidden lg:flex" />
             </Link>
@@ -367,7 +367,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Navigation - Modern Float */}
           <header className="flex md:hidden h-20 shrink-0 items-center justify-between px-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl z-50 sticky top-0 border-b border-slate-100 dark:border-primary/5">
-            <Link href="/" className="flex items-center gap-3 group">
+            <Link href="/dashboard" className="flex items-center gap-3 group">
               <Logo size={32} orientation="horizontal" />
             </Link>
             

@@ -15,10 +15,10 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center">
         <div className="flex flex-col items-center mb-8">
-          <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl shadow-primary/10 mb-4 border border-primary/5">
-            <Logo size={64} showText={false} />
-          </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Whappi</h1>
+            <a href="/" className="p-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl shadow-primary/10 mb-4 border border-primary/5 hover:scale-105 transition-transform duration-300">
+              <Logo size={64} showText={false} />
+            </a>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Whappi</h1>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50 mt-2">Passerelle API WhatsApp Business</p>
         </div>
 

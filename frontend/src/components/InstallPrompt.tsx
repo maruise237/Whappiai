@@ -158,9 +158,9 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
                 />
             </div>
             <div className="space-y-1">
-                <h3 className="font-semibold text-xl">Installer Whappi</h3>
+                <h3 className="font-semibold text-xl">Installer l'App Whappi</h3>
                 <p className="text-sm text-muted-foreground">
-                Installez l'application pour un accès plus rapide et une meilleure expérience.
+                Profitez d'une expérience fluide et native directement sur votre appareil.
                 </p>
             </div>
         </div>
@@ -170,10 +170,10 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
             <p className="font-medium text-foreground">Sur iOS :</p>
             <div className="space-y-2 text-muted-foreground">
                 <p className="flex items-center gap-2">
-                1. Appuyez sur le bouton de partage <Share size={16} />
+                1. Appuyez sur Partager <Share size={16} />
                 </p>
                 <p className="flex items-center gap-2">
-                2. Sélectionnez "Sur l'écran d'accueil" <PlusSquare size={16} />
+                2. Choisissez "Sur l'écran d'accueil" <PlusSquare size={16} />
                 </p>
             </div>
           </div>
@@ -195,7 +195,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
               Installer maintenant
             </Button>
              <Button variant="ghost" onClick={handleDismiss} className="w-full">
-              Plus tard
+              Pas maintenant
             </Button>
           </div>
         )}

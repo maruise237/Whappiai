@@ -440,7 +440,7 @@ export default function ProfilePage() {
                   Déconnecter
                 </Button>
 
-                <Link href="/docs">
+                <Link href="/dashboard/docs">
                    <Button 
                      variant="ghost"
                      className="h-12 px-6 rounded-lg font-bold text-slate-500 hover:text-primary transition-all duration-200"

@@ -809,7 +809,7 @@ export default function DashboardPage() {
                       <p className="text-[8px] text-muted-foreground/60 font-bold uppercase tracking-widest leading-relaxed mb-4">
                         Consultez notre documentation complète.
                       </p>
-                      <Link href="/docs" prefetch={false}>
+                      <Link href="/dashboard/docs" prefetch={false}>
                         <Button className="h-9 px-4 rounded-lg text-[8px] font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white w-full">
                           Voir la Documentation
                         </Button>
@@ -829,7 +829,7 @@ export default function DashboardPage() {
                   <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest leading-relaxed mb-6">
                     Consultez notre documentation complète pour intégrer Whappi à vos propres applications.
                   </p>
-                  <Link href="/docs" prefetch={false}>
+                  <Link href="/dashboard/docs" prefetch={false}>
                     <Button className="h-10 px-6 rounded-lg text-[10px] font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white">
                       Voir la Documentation
                     </Button>

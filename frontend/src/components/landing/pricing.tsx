@@ -1,0 +1,194 @@
+"use client"
+
+import { motion, useInView } from "framer-motion"
+import { useRef, useState } from "react"
+import { Check } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+
+const plans = [
+  {
+    name: "Gratuit",
+    description: "Parfait pour démarrer avec Whappi",
+    price: { monthly: 0, yearly: 0 },
+    features: ["1 groupe WhatsApp", "Réponses automatiques basiques", "Jusqu'à 100 messages/jour", "Support communautaire", "Analytics basiques"],
+    cta: "Démarrer Gratuitement",
+    highlighted: false,
+  },
+  {
+    name: "Pro",
+    description: "Pour les équipes en croissance",
+    price: { monthly: 49, yearly: 39 },
+    features: [
+      "Groupes illimités",
+      "IA avancée multilingue",
+      "Anti-spam intégré",
+      "Support prioritaire",
+      "Analytics détaillés",
+      "Escalade automatique",
+      "Accès API",
+    ],
+    cta: "Commencer l'Essai Gratuit",
+    highlighted: true,
+  },
+  {
+    name: "Entreprise",
+    description: "Pour les grandes organisations",
+    price: { monthly: 199, yearly: 159 },
+    features: [
+      "Tout en Pro",
+      "SSO & SAML",
+      "Support dédié",
+      "Garantie SLA 99.9%",
+      "Modération personnalisée",
+      "Intégrations custom",
+      "Audit logs complets",
+    ],
+    cta: "Contacter les Ventes",
+    highlighted: false,
+  },
+]
+
+function BorderBeam() {
+  return (
+    <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+      <div
+        className="absolute w-24 h-24 bg-white/20 blur-xl border-beam"
+        style={{
+          offsetPath: "rect(0 100% 100% 0 round 16px)",
+        }}
+      />
+    </div>
+  )
+}
+
+export function Pricing() {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
+
+  return (
+    <section id="pricing" className="py-24 px-4">
+      <div className="max-w-6xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <h2
+            className="text-3xl sm:text-4xl font-bold text-foreground mb-4"
+            style={{ fontFamily: "var(--font-instrument-sans)" }}
+          >
+            Tarification Simple et Transparente
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+            Commencez gratuitement, évoluez à votre rythme. Aucun frais caché, aucune surprise.
+          </p>
+
+          {/* Billing Toggle */}
+          <div className="inline-flex items-center p-1 rounded-full bg-card border border-border">
+            <button
+              onClick={() => setBillingCycle("monthly")}
+              className={`relative px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                billingCycle === "monthly" ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {billingCycle === "monthly" && (
+                <motion.div
+                  layoutId="billing-toggle"
+                  className="absolute inset-0 bg-muted rounded-full"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">Mensuel</span>
+            </button>
+            <button
+              onClick={() => setBillingCycle("yearly")}
+              className={`relative px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                billingCycle === "yearly" ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {billingCycle === "yearly" && (
+                <motion.div
+                  layoutId="billing-toggle"
+                  className="absolute inset-0 bg-muted rounded-full"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">Annuel</span>
+              <span className="relative z-10 ml-2 px-2 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
+                -20%
+              </span>
+            </button>
+          </div>
+        </motion.div>
+
+        <motion.div
+          ref={ref}
+          initial={{ opacity: 0, y: 40 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          {plans.map((plan, index) => (
+            <motion.div
+              key={plan.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.3 + index * 0.1 }}
+              className={`relative p-6 rounded-2xl border transition-all duration-300 hover:scale-[1.02] ${
+                plan.highlighted
+                  ? "bg-card border-primary"
+                  : "bg-card border-border hover:border-primary"
+              }`}
+            >
+              {plan.highlighted && <BorderBeam />}
+
+              {plan.highlighted && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full">
+                  Le Plus Populaire
+                </div>
+              )}
+
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-foreground mb-2">{plan.name}</h3>
+                <p className="text-muted-foreground text-sm">{plan.description}</p>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-foreground">${plan.price[billingCycle]}</span>
+                  {plan.price.monthly > 0 && <span className="text-muted-foreground text-sm">/mois</span>}
+                </div>
+                {billingCycle === "yearly" && plan.price.yearly > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Facturé annuellement (${plan.price.yearly * 12}/an)</p>
+                )}
+              </div>
+
+              <ul className="space-y-3 mb-8">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-center gap-3 text-sm text-foreground">
+                    <Check className="w-4 h-4 text-primary shrink-0" strokeWidth={1.5} />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                className={`w-full rounded-full ${
+                  plan.highlighted
+                    ? "shimmer-btn bg-primary text-primary-foreground hover:bg-secondary"
+                    : "bg-muted text-muted-foreground hover:bg-primary/10 border border-border"
+                }`}
+                asChild
+              >
+                <Link href="/register">{plan.cta}</Link>
+              </Button>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  )
+}

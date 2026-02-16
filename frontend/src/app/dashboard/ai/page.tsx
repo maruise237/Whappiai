@@ -265,7 +265,7 @@ export default function AIPage() {
               asChild
               className="w-full lg:w-auto shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 transition-all duration-200 active:scale-95 rounded-lg font-bold uppercase tracking-widest text-[9px] sm:text-[11px] px-6 sm:px-8 h-10 sm:h-12"
             >
-              <Link href="/ai-models">
+              <Link href="/dashboard/ai-models">
                 <Settings2 className="w-4 h-4 mr-2" />
                 Configuration Modèles
               </Link>
