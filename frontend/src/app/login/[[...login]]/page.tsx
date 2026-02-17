@@ -35,8 +35,8 @@ export default function LoginPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId })
-        // Add a small delay to ensure cookie propagation before redirecting
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Force refresh to update auth state then redirect
+        router.refresh()
         window.location.href = "/dashboard"
       } else {
         console.log(result)

@@ -63,8 +63,8 @@ export default function RegisterPage() {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId })
-        // Add a small delay to ensure cookie propagation before redirecting
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Force refresh to update auth state then redirect
+        router.refresh()
         window.location.href = "/dashboard"
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2))
