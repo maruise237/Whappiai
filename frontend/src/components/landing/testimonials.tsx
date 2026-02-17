@@ -10,8 +10,15 @@ import { Badge } from "@/components/ui/badge"
 // --- Data Generation ---
 const ROLES = ["Directeur Marketing", "Fondateur", "Service Client", "Développeur", "Community Manager", "Commercial", "Responsable Tech"]
 const COMPANIES = ["AfriTech Solutions", "Dakar Digital", "Abidjan Startups", "TechCamer", "Lagos Ventures", "Kinshasa Connect", "Bamako Innovations"]
-const NAMES = ["Amara", "Kwame", "Chioma", "Tunde", "Zainab", "Idrissa", "Fatou", "Kofi", "Nia", "Malik", "Awa", "Bakary", "Jelani", "Zola", "Oumar"]
-const LAST_NAMES = ["Diop", "Kone", "Sow", "Diallo", "Traore", "Kamara", "Mensah", "Okafor", "Ndiaye", "Cisse"]
+const NAMES = [
+  "Amara", "Kwame", "Chioma", "Tunde", "Zainab", "Idrissa", "Fatou", "Kofi", "Nia", "Malik", 
+  "Awa", "Bakary", "Jelani", "Zola", "Oumar", "Sekou", "Binta", "Moussa", "Aminata", "Cheikh", 
+  "Nneka", "Emeka", "Aisha", "Babacar", "Seda", "Kouamé", "Adama", "Saly", "Mamadou", "Fanta"
+]
+const LAST_NAMES = [
+  "Diop", "Kone", "Sow", "Diallo", "Traore", "Kamara", "Mensah", "Okafor", "Ndiaye", "Cisse",
+  "Fall", "Gueye", "Keita", "Sylla", "Ba", "Fofana", "Barry", "Toure", "Mbaye", "Sane"
+]
 
 const HUMAN_COMMENTS = [
   "Franchement, c'est du lourd. J'ai configuré mon bot en 10 minutes et ça tourne nickel.",
@@ -67,7 +74,30 @@ const CELINE = {
 const OTHER_AVATARS = [
   "https://i.ibb.co/zTL3Q6t9/Male-Professional-Headshot-East-African.jpg",
   "https://i.ibb.co/kg0ppRdz/Create-your-professional-DP-and-add-it-to-your.jpg",
-  "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg"
+  "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg",
+  // Diverse avatars to ensure uniqueness across 30+ testimonials
+  "https://randomuser.me/api/portraits/men/32.jpg",
+  "https://randomuser.me/api/portraits/women/44.jpg",
+  "https://randomuser.me/api/portraits/men/22.jpg",
+  "https://randomuser.me/api/portraits/women/24.jpg",
+  "https://randomuser.me/api/portraits/men/54.jpg",
+  "https://randomuser.me/api/portraits/women/65.jpg",
+  "https://randomuser.me/api/portraits/men/91.jpg",
+  "https://randomuser.me/api/portraits/women/79.jpg",
+  "https://randomuser.me/api/portraits/men/15.jpg",
+  "https://randomuser.me/api/portraits/women/90.jpg",
+  "https://randomuser.me/api/portraits/men/4.jpg",
+  "https://randomuser.me/api/portraits/women/12.jpg",
+  "https://randomuser.me/api/portraits/men/82.jpg",
+  "https://randomuser.me/api/portraits/women/51.jpg",
+  "https://randomuser.me/api/portraits/men/64.jpg",
+  "https://randomuser.me/api/portraits/women/2.jpg",
+  "https://randomuser.me/api/portraits/men/43.jpg",
+  "https://randomuser.me/api/portraits/women/33.jpg",
+  "https://randomuser.me/api/portraits/men/75.jpg",
+  "https://randomuser.me/api/portraits/women/5.jpg",
+  "https://randomuser.me/api/portraits/men/1.jpg",
+  "https://randomuser.me/api/portraits/women/9.jpg",
 ]
 
 const generateTestimonials = (count: number) => {
