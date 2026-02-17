@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 const avatars = [
-  "/placeholder.svg",
-  "/placeholder.svg",
-  "/placeholder.svg",
-  "/placeholder.svg",
-  "/placeholder.svg",
+  "https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png",
+  "https://i.ibb.co/hx78Kb9z/Annotation-2026-02-16-211337.png",
+  "https://i.ibb.co/zTL3Q6t9/Male-Professional-Headshot-East-African.jpg",
+  "https://i.ibb.co/kg0ppRdz/Create-your-professional-DP-and-add-it-to-your.jpg",
+  "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg",
 ]
 
 const textRevealVariants = {
