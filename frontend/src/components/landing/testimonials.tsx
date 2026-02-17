@@ -178,27 +178,17 @@ const ALL_TESTIMONIALS = [
    const isInView = useInView(containerRef, { once: true, margin: "-10%" })
  
    // Distribute testimonials
-   // We only have 9 unique testimonials now, so we need to distribute them across 3 columns
-   // Each column will get 3 unique testimonials, and the marquee will loop them
+   // Ensure Mariuse (ALL_TESTIMONIALS[0]) is in EVERY column
+   // We distribute the other 8 profiles around him
    
-   const col1 = [ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[3], ALL_TESTIMONIALS[6]] // Mariuse, African 1, Intl 1
-   const col2 = [ALL_TESTIMONIALS[1], ALL_TESTIMONIALS[4], ALL_TESTIMONIALS[7]] // Celine, African 2, Intl 2
-   const col3 = [ALL_TESTIMONIALS[2], ALL_TESTIMONIALS[5], ALL_TESTIMONIALS[8]] // African 3, Intl 3, Intl 4 (Wait, indices: 0,1,2,3,4,5,6,7,8)
+   // Column 1: Mariuse + Celine + Moussa + Thomas
+   const chunk1 = [ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[1], ALL_TESTIMONIALS[2], ALL_TESTIMONIALS[5]]
    
-   // Adjusting distribution to be more balanced if needed, but simple round-robin is fine.
-   // Indices:
-   // 0: Mariuse
-   // 1: Celine
-   // 2,3,4: African
-   // 5,6,7,8: International
+   // Column 2: Awa + Mariuse + Sarah + Lukas
+   const chunk2 = [ALL_TESTIMONIALS[3], ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[6], ALL_TESTIMONIALS[7]]
    
-   // Col 1: Mariuse (0), African 2 (3), Intl 2 (6)
-   // Col 2: Celine (1), African 3 (4), Intl 3 (7)
-   // Col 3: African 1 (2), Intl 1 (5), Intl 4 (8)
-   
-   const chunk1 = [ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[3], ALL_TESTIMONIALS[6]]
-   const chunk2 = [ALL_TESTIMONIALS[1], ALL_TESTIMONIALS[4], ALL_TESTIMONIALS[7]]
-   const chunk3 = [ALL_TESTIMONIALS[2], ALL_TESTIMONIALS[5], ALL_TESTIMONIALS[8]]
+   // Column 3: Kofi + Elena + Mariuse + Celine (Repeating Celine to fill 4th slot nicely)
+   const chunk3 = [ALL_TESTIMONIALS[4], ALL_TESTIMONIALS[8], ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[1]]
 
    return (
      <section 
