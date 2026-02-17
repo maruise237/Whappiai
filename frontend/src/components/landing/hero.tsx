@@ -25,6 +25,7 @@ const features = [
 
 const dynamicWords = [
   "Support Client",
+  "Modération",
   "Marketing",
   "Communauté",
   "Vente",
@@ -99,7 +100,7 @@ export function Hero() {
                   Automatisez votre
                 </motion.span>
               </span>
-              <span className="block overflow-hidden h-[1.2em] relative">
+              <span className="block overflow-hidden h-[1.3em] relative">
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={index}
@@ -109,7 +110,12 @@ export function Hero() {
                     exit={{ y: "-100%" }}
                     transition={{ duration: 0.5, ease: "easeInOut" }}
                   >
-                    {dynamicWords[index]}
+                    <span className="relative inline-block px-2">
+                      {dynamicWords[index]}
+                      {/* Modern Adaptive Underline */}
+                      <span className="absolute -bottom-2 left-0 w-full h-3 bg-primary/20 -rotate-1 rounded-full -z-10 blur-[1px]"></span>
+                      <span className="absolute -bottom-2 left-0 w-full h-[3px] bg-primary/80 -rotate-1 rounded-full z-10"></span>
+                    </span>
                   </motion.span>
                 </AnimatePresence>
                 {/* Invisible spacer to maintain width/height */}
@@ -124,7 +130,7 @@ export function Hero() {
                   viewport={{ once: false }}
                   custom={2}
                 >
-                  et Modération.
+                  avec Whappi AI
                 </motion.span>
               </span>
             </h1>
