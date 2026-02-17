@@ -17,6 +17,8 @@ const SCENARIOS = [
     messages: [
       { role: "system", content: "Alice a rejoint le groupe" },
       { role: "assistant", content: "Bienvenue Alice ! 👋 Voici les règles du groupe : pas de spam, respect mutuel." },
+      { role: "user", content: "Merci ! Est-ce que je peux poster des liens ?" },
+      { role: "assistant", content: "Seulement si c'est pertinent pour la communauté et sans pub ! 😉" },
     ] as Message[],
   },
   {
@@ -25,6 +27,8 @@ const SCENARIOS = [
       { role: "user", content: "Gagnez 1000€ ici: http://spam-link.com", isSpam: true },
       { role: "system", content: "Message supprimé par Whappi (Lien suspect)" },
       { role: "assistant", content: "⚠️ Attention, les liens non autorisés sont interdits." },
+      { role: "user", content: "Désolé, je ne savais pas." },
+      { role: "assistant", content: "Pas de souci, c'est noté. Merci de respecter les règles ! 🙏" },
     ] as Message[],
   },
   {
@@ -32,6 +36,8 @@ const SCENARIOS = [
     messages: [
       { role: "user", content: "Comment voir les tarifs ?" },
       { role: "assistant", content: "Vous pouvez consulter nos plans sur /pricing ou taper !tarifs" },
+      { role: "user", content: "Il y a un essai gratuit ?" },
+      { role: "assistant", content: "Oui ! 14 jours gratuits sans carte bancaire. Tapez !start pour commencer." },
     ] as Message[],
   },
 ]
