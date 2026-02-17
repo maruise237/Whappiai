@@ -63,7 +63,8 @@ export default function RegisterPage() {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId })
-        router.push("/dashboard")
+        // Force full page reload to ensure session cookies are recognized by middleware
+        window.location.href = "/dashboard"
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2))
         setError("Code de vérification invalide.")

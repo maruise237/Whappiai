@@ -35,7 +35,8 @@ export default function LoginPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId })
-        router.push("/dashboard")
+        // Force full page reload to ensure session cookies are recognized by middleware
+        window.location.href = "/dashboard"
       } else {
         console.log(result)
         setError("Une erreur est survenue. Veuillez vérifier vos identifiants.")
