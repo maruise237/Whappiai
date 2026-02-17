@@ -19,7 +19,8 @@ const isPublicRoute = createRouteMatcher([
   "/roadmap(.*)",
   "/integrations(.*)",
   "/enterprise(.*)",
-  "/careers(.*)"
+  "/careers(.*)",
+  "/features(.*)"
 ]);
 
 const isAuthRoute = createRouteMatcher([
