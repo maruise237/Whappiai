@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState, useRef } from "react"
-import { ArrowLeft, Video, Phone, MoreVertical, Mic, Plus, Camera, Smile } from "lucide-react"
+import { ArrowLeft, Video, Phone, MoreVertical, Mic, Plus, Camera, Smile, Ban } from "lucide-react"
 
 type Message = {
   id: string
@@ -41,14 +41,45 @@ const SCENARIOS = [
       { role: "assistant", content: "Oui ! 14 jours gratuits sans carte bancaire. Tapez !start pour commencer." },
     ] as Message[],
   },
+  {
+    name: "scheduling",
+    messages: [
+      { role: "user", content: "Je voudrais prendre rendez-vous." },
+      { role: "assistant", content: "Bien sûr ! Quel jour vous convient le mieux ? 📅" },
+      { role: "user", content: "Lundi prochain vers 14h." },
+      { role: "assistant", content: "C'est noté ! Je vous confirme le rendez-vous pour Lundi à 14h. ✅" },
+    ] as Message[],
+  },
 ]
 
-export function ChatPreview() {
+interface ChatPreviewProps {
+  onScenarioChange?: (index: number) => void
+  selectedIndex?: number
+}
+
+export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [scenarioIndex, setScenarioIndex] = useState(0)
   const [messageIndex, setMessageIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Sync with external selection (e.g. user clicked a feature card)
+  useEffect(() => {
+    if (selectedIndex !== undefined && selectedIndex !== scenarioIndex) {
+      setScenarioIndex(selectedIndex)
+      setMessages([])
+      setMessageIndex(0)
+      setIsTyping(false)
+    }
+  }, [selectedIndex])
+
+  // Notify parent of scenario change
+  useEffect(() => {
+    if (selectedIndex === undefined || selectedIndex === scenarioIndex) {
+      onScenarioChange?.(scenarioIndex)
+    }
+  }, [scenarioIndex, onScenarioChange, selectedIndex])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -176,7 +207,12 @@ export function ChatPreview() {
                           : "justify-start"
                     }`}
                   >
-                    {message.role === "system" ? (
+                    {message.isDeleted ? (
+                        <div className="flex items-center gap-1.5 text-[#8696a0] italic text-[11px] my-1 px-3 py-1.5 rounded-full bg-[#182229] border border-white/5 shadow-sm">
+                          <Ban className="w-3 h-3" />
+                          <span>{message.content}</span>
+                        </div>
+                      ) : message.role === "system" ? (
                       <div className="bg-[#182229] px-3 py-1 rounded-full text-[#8696a0] text-[10px] font-medium uppercase tracking-wide shadow-sm border border-white/5">
                         {message.content}
                       </div>

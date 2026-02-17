@@ -1,7 +1,8 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { Bot, FileText, Clock, Users, ArrowRight } from "lucide-react"
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Bot, ShieldCheck, Headphones, Calendar, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ChatPreview } from "@/components/landing/chat-preview"
@@ -9,27 +10,29 @@ import { ChatPreview } from "@/components/landing/chat-preview"
 const features = [
   {
     icon: Bot,
-    title: "Human-like Touch",
-    description: "Personnalisez votre Agent pour des conversations naturelles avec un langage simple et des emojis adaptés."
+    title: "Réponses Automatiques",
+    description: "Accueillez chaque nouvel utilisateur instantanément avec des messages personnalisés et engageants."
   },
   {
-    icon: FileText,
-    title: "Access chat logs",
-    description: "Consultez l'historique complet des conversations pour ne manquer aucun détail important."
+    icon: ShieldCheck,
+    title: "Modération Intelligente",
+    description: "Protégez votre communauté en filtrant automatiquement les spams et contenus indésirables."
   },
   {
-    icon: Clock,
-    title: "Réponse instantanée",
-    description: "Ne perdez plus de temps avec un temps de réponse de seulement 10 secondes pour chaque nouveau message."
+    icon: Headphones,
+    title: "Support Client 24/7",
+    description: "Répondez aux questions fréquentes à toute heure sans intervention humaine."
   },
   {
-    icon: Users,
-    title: "Large audience",
-    description: "Touchez plus de 2 milliards d'utilisateurs WhatsApp avec votre assistant disponible 24/7."
+    icon: Calendar,
+    title: "Réservations & Planning",
+    description: "Gérez les prises de rendez-vous directement depuis WhatsApp, sans quitter la conversation."
   }
 ]
 
 export function MainFeatures() {
+  const [activeFeature, setActiveFeature] = useState(0)
+
   return (
     <section className="py-24 px-4 bg-background overflow-hidden">
       <div className="container mx-auto max-w-6xl">
@@ -47,7 +50,7 @@ export function MainFeatures() {
 
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column: Features List */}
-          <div className="space-y-12">
+          <div className="space-y-6">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
@@ -55,18 +58,44 @@ export function MainFeatures() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: false }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="flex gap-4 sm:gap-6"
+                className={`relative group rounded-2xl p-6 transition-all duration-300 cursor-pointer border ${
+                  activeFeature === index 
+                    ? "bg-primary/5 border-primary/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]" 
+                    : "bg-card/50 border-transparent hover:bg-card hover:border-border/50"
+                }`}
+                onClick={() => setActiveFeature(index)}
               >
-                <div className="shrink-0">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                    <feature.icon className="w-6 h-6" />
+                {/* Active Indicator Line */}
+                {activeFeature === index && (
+                  <motion.div
+                    layoutId="activeFeatureLine"
+                    className="absolute left-0 top-6 bottom-6 w-1 bg-primary rounded-r-full"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+
+                <div className="flex gap-4 sm:gap-6 items-start">
+                  <div className="shrink-0 relative">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors duration-300 ${
+                      activeFeature === index ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                    }`}>
+                      <feature.icon className="w-6 h-6" />
+                    </div>
+                    {/* Icon Glow */}
+                    {activeFeature === index && (
+                      <div className="absolute inset-0 bg-primary/40 blur-xl rounded-full -z-10 animate-pulse" />
+                    )}
                   </div>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
+                  <div>
+                    <h3 className={`text-xl font-bold mb-2 transition-colors duration-300 ${
+                      activeFeature === index ? "text-primary" : "text-foreground"
+                    }`}>
+                      {feature.title}
+                    </h3>
+                    <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                      {feature.description}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -83,7 +112,10 @@ export function MainFeatures() {
             {/* Background Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-primary/20 rounded-full blur-[80px] -z-10" />
             
-            <ChatPreview />
+            <ChatPreview 
+              onScenarioChange={setActiveFeature} 
+              selectedIndex={activeFeature}
+            />
           </motion.div>
         </div>
 
