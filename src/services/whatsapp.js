@@ -79,12 +79,23 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
     // Wrapper for saveCreds with retry logic for Windows EPERM errors
     const saveCreds = async () => {
+        // Fast exit if session directory is gone (cleanup happened)
+        if (!fs.existsSync(sessionDir)) {
+            return;
+        }
+
         let retries = 10;
         while (retries > 0) {
             try {
                 await originalSaveCreds();
                 return;
             } catch (err) {
+                // Ignore ENOENT (directory deleted during save)
+                if (err.code === 'ENOENT') {
+                    log(`Sauvegarde ignorée: dossier de session supprimé`, sessionId, { event: 'auth-save-enoent' }, 'DEBUG');
+                    return;
+                }
+
                 retries--;
                 if (err.code === 'EPERM' && retries > 0) {
                     log(`Erreur EPERM lors de la sauvegarde des identifiants, tentative... (${retries} restantes)`, sessionId, { event: 'auth-save-retry', retries }, 'WARN');
