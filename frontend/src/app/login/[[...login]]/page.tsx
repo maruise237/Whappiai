@@ -73,7 +73,7 @@ export default function LoginPage() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 placeholder="Entrez votre email"
-                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-green-500 text-white placeholder:text-zinc-500 rounded-xl transition-colors"
+                className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                 required
               />
             </div>
@@ -84,13 +84,13 @@ export default function LoginPage() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="Mot de passe" 
-                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-green-500 text-white pr-10 placeholder:text-zinc-500 rounded-xl transition-colors"
+                className="h-12 bg-background border-input focus:border-green-500 text-foreground pr-10 placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -98,7 +98,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="text-red-400 text-sm text-center bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+            <div className="text-red-600 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-500/10 p-3 rounded-xl border border-red-200 dark:border-red-500/20">
               {error}
             </div>
           )}
@@ -106,18 +106,18 @@ export default function LoginPage() {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-zinc-800" />
+            <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase tracking-widest font-medium">
-            <span className="bg-[#0a0a0a] px-3 text-zinc-500">ou</span>
+            <span className="bg-background px-3 text-muted-foreground">ou</span>
           </div>
         </div>
 
         <SocialButtons mode="signin" />
 
-        <div className="mt-6 text-center text-sm text-zinc-500">
+        <div className="mt-6 text-center text-sm text-muted-foreground">
           Vous n'avez pas de compte ?{" "}
-          <Link href="/register" className="text-green-500 hover:text-green-400 font-semibold transition-colors hover:underline">
+          <Link href="/register" className="text-green-600 dark:text-green-500 hover:text-green-500 dark:hover:text-green-400 font-semibold transition-colors hover:underline">
             S'inscrire
           </Link>
         </div>
