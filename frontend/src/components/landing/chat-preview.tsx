@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState, useRef } from "react"
-import { Bot, Trash2, ShieldAlert, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Video, Phone, MoreVertical, Mic, Plus, Camera, Smile } from "lucide-react"
 
 type Message = {
   id: string
@@ -73,7 +73,6 @@ export function ChatPreview() {
       }
 
       const nextMessage = currentScenario.messages[messageIndex]
-      const isLastMessage = messageIndex === currentScenario.messages.length - 1
 
       // Handle message timing
       if (nextMessage.role === "assistant") {
@@ -98,105 +97,151 @@ export function ChatPreview() {
   }, [scenarioIndex, messageIndex])
 
   return (
-    <div className="w-full max-w-[350px] sm:max-w-md mx-auto bg-card border border-border/50 rounded-[2.5rem] shadow-2xl overflow-hidden relative border-[8px] border-zinc-900/10 dark:border-zinc-800/50 ring-1 ring-border/20">
-       {/* Fake Phone Notch/Header Area for PC feel */}
-       <div className="absolute top-0 left-0 right-0 h-7 bg-card/80 backdrop-blur-md z-20 flex items-center justify-center border-b border-border/10">
-          <div className="w-16 h-1 bg-foreground/10 rounded-full" />
-       </div>
+    <div className="relative mx-auto w-full max-w-[320px] lg:max-w-[350px]">
+      {/* Phone Frame */}
+      <div className="relative border-gray-900 bg-gray-900 border-[10px] rounded-[3rem] h-[600px] shadow-2xl overflow-hidden ring-1 ring-white/10">
+        
+        {/* Side Buttons */}
+        <div className="absolute top-24 -left-[14px] w-[4px] h-8 bg-gray-800 rounded-l-md"></div>
+        <div className="absolute top-36 -left-[14px] w-[4px] h-14 bg-gray-800 rounded-l-md"></div>
+        <div className="absolute top-36 -right-[14px] w-[4px] h-20 bg-gray-800 rounded-r-md"></div>
 
-      {/* Header */}
-      <div className="bg-muted/30 p-4 pt-10 flex items-center gap-3 border-b border-border/50 backdrop-blur-sm relative z-10">
-        <div className="relative">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
-            <Bot size={20} />
-          </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-background rounded-full flex items-center justify-center">
-             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
+        {/* Dynamic Island / Notch */}
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[100px] h-[28px] bg-black rounded-b-[1rem] z-30 flex justify-center items-center">
+          <div className="w-12 h-3 bg-gray-900/50 rounded-full" />
         </div>
-        <div>
-          <h3 className="font-semibold text-sm leading-tight">Whappi Assistant</h3>
-          <p className="text-[10px] text-muted-foreground font-medium">Toujours actif • Répond instantanément</p>
-        </div>
-      </div>
 
-      {/* Messages Area */}
-      <div 
-        ref={containerRef}
-        className="p-4 space-y-4 h-[400px] overflow-y-auto scrollbar-hide bg-gradient-to-b from-background/50 to-background/80 relative"
-      >
-        <AnimatePresence initial={false} mode="popLayout">
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              className={`flex w-full ${
-                message.role === "user" 
-                  ? "justify-end" 
-                  : message.role === "system" 
-                    ? "justify-center my-2" 
-                    : "justify-start"
-              }`}
-            >
-              {message.role === "system" ? (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-[10px] text-muted-foreground">
-                   {message.content.includes("supprimé") ? <Trash2 size={10} /> : <CheckCircle2 size={10} />}
-                   {message.content}
-                </div>
-              ) : (
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm relative group ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm"
-                      : "bg-muted text-foreground rounded-tl-sm border border-border/50"
-                  } ${message.isSpam ? "opacity-50 blur-[1px] grayscale transition-all duration-500" : ""}`}
-                >
-                  {message.content}
-                  {message.isSpam && (
-                     <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-2xl backdrop-blur-[1px] text-destructive font-bold text-xs gap-1">
-                        <ShieldAlert size={12} />
-                        SPAM DÉTECTÉ
-                     </div>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* Typing Indicator */}
-        <AnimatePresence>
-          {isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex justify-start w-full"
-            >
-              <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center w-fit border border-border/50">
-                <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+        {/* Screen Content */}
+        <div className="w-full h-full bg-[#0b141a] flex flex-col relative overflow-hidden rounded-[2.2rem]">
+          
+          {/* WhatsApp Header */}
+          <div className="bg-[#202c33] p-3 pt-10 flex items-center justify-between z-20 shadow-md">
+            <div className="flex items-center gap-2">
+              <ArrowLeft className="text-[#00a884] w-5 h-5 cursor-pointer" />
+              <div className="relative">
+                <img 
+                  src="https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png" 
+                  alt="Bot" 
+                  className="w-9 h-9 rounded-full object-cover"
+                />
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-[#202c33]"></div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      
-      {/* Input Fake Area */}
-      <div className="p-3 bg-card border-t border-border/50 flex items-center gap-2">
-         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-            <span className="text-lg">+</span>
-         </div>
-         <div className="h-9 flex-1 bg-muted/50 rounded-full px-4 flex items-center text-xs text-muted-foreground/50">
-            Écrivez un message...
-         </div>
-         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-         </div>
+              <div className="flex flex-col">
+                <span className="text-gray-100 text-sm font-semibold leading-tight">Whappi Assistant</span>
+                <span className="text-[#8696a0] text-[10px] font-medium">En ligne</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-[#00a884]">
+              <Video className="w-5 h-5" />
+              <Phone className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Chat Area */}
+          <div className="flex-1 relative bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat bg-opacity-5">
+            {/* Gradient Mask for Fade Effect at Bottom */}
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#0b141a] via-transparent to-transparent h-20 bottom-0 z-10" />
+
+            <div 
+              ref={containerRef}
+              className="h-full overflow-y-auto p-4 space-y-3 pb-20 scrollbar-hide"
+            >
+              {/* Encryption Notice */}
+              <div className="flex justify-center mb-6 mt-2">
+                <div className="bg-[#182229] px-3 py-1.5 rounded-lg shadow-sm max-w-[85%] text-center">
+                  <p className="text-[#8696a0] text-[10px] leading-3 flex items-center justify-center gap-1">
+                    🔒 Les messages sont chiffrés de bout en bout.
+                  </p>
+                </div>
+              </div>
+
+              <AnimatePresence initial={false} mode="popLayout">
+                {messages.map((message) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                    className={`flex w-full ${
+                      message.role === "user" 
+                        ? "justify-end" 
+                        : message.role === "system" 
+                          ? "justify-center my-4" 
+                          : "justify-start"
+                    }`}
+                  >
+                    {message.role === "system" ? (
+                      <div className="bg-[#182229] px-3 py-1 rounded-full text-[#8696a0] text-[10px] font-medium uppercase tracking-wide shadow-sm border border-white/5">
+                        {message.content}
+                      </div>
+                    ) : (
+                      <div
+                        className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] relative ${
+                          message.role === "user"
+                            ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none"
+                            : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
+                        } ${message.isSpam ? "opacity-50 blur-[0.5px]" : ""}`}
+                      >
+                        {message.content}
+                        <div className="text-[9px] text-right mt-1 opacity-60 flex justify-end items-center gap-1">
+                          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {message.role === "user" && (
+                            <span className="text-[#53bdeb]">✓✓</span>
+                          )}
+                        </div>
+                        
+                        {/* Triangle Tail */}
+                        <div className={`absolute top-0 w-0 h-0 border-[6px] border-transparent ${
+                          message.role === "user" 
+                            ? "-right-[6px] border-t-[#005c4b] border-l-[#005c4b]" 
+                            : "-left-[6px] border-t-[#202c33] border-r-[#202c33]"
+                        }`} />
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Typing Indicator */}
+              <AnimatePresence>
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex justify-start w-full"
+                  >
+                     <div className="bg-[#202c33] rounded-lg rounded-tl-none px-3 py-2 flex gap-1 items-center border-none shadow-sm relative ml-1">
+                        <div className="absolute top-0 -left-[6px] w-0 h-0 border-[6px] border-transparent border-t-[#202c33] border-r-[#202c33]" />
+                        <span className="w-1.5 h-1.5 bg-[#8696a0] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="w-1.5 h-1.5 bg-[#8696a0] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="w-1.5 h-1.5 bg-[#8696a0] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Input Area */}
+          <div className="bg-[#202c33] p-2 flex items-center gap-2 z-20">
+             <Plus className="text-[#8696a0] w-6 h-6" />
+             <div className="flex-1 bg-[#2a3942] rounded-lg h-9 flex items-center px-3 justify-between">
+                <span className="text-[#8696a0] text-sm">Message</span>
+                <Smile className="text-[#8696a0] w-5 h-5 opacity-70" />
+             </div>
+             <div className="flex gap-3 pr-1">
+                <Camera className="text-[#8696a0] w-5 h-5" />
+                <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center">
+                  <Mic className="text-white w-4 h-4" />
+                </div>
+             </div>
+          </div>
+
+          {/* Home Indicator */}
+          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-white/20 rounded-full z-30" />
+        </div>
       </div>
     </div>
   )
