@@ -29,11 +29,6 @@ export default function LoginPage() {
     }
   }, [isSignedIn, user, router])
 
-  // Préchargement de la page dashboard pour une navigation instantanée
-  useEffect(() => {
-    router.prefetch("/dashboard")
-  }, [router])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isLoaded) return
