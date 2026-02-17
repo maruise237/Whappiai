@@ -11,22 +11,26 @@ const features = [
   {
     icon: Bot,
     title: "Réponses Automatiques",
-    description: "Accueillez chaque nouvel utilisateur instantanément avec des messages personnalisés et engageants."
+    description: "Accueillez chaque nouvel utilisateur instantanément avec des messages personnalisés et engageants.",
+    href: "/features/auto-reply"
   },
   {
     icon: ShieldCheck,
     title: "Modération Intelligente",
-    description: "Protégez votre communauté en filtrant automatiquement les spams et contenus indésirables."
+    description: "Protégez votre communauté en filtrant automatiquement les spams et contenus indésirables.",
+    href: "/features/moderation"
   },
   {
     icon: Headphones,
     title: "Support Client 24/7",
-    description: "Répondez aux questions fréquentes à toute heure sans intervention humaine."
+    description: "Répondez aux questions fréquentes à toute heure sans intervention humaine.",
+    href: "/features/support"
   },
   {
     icon: Calendar,
     title: "Réservations & Planning",
-    description: "Gérez les prises de rendez-vous directement depuis WhatsApp, sans quitter la conversation."
+    description: "Gérez les prises de rendez-vous directement depuis WhatsApp, sans quitter la conversation.",
+    href: "/features/scheduling"
   }
 ]
 
@@ -34,7 +38,7 @@ export function MainFeatures() {
   const [activeFeature, setActiveFeature] = useState(0)
 
   return (
-    <section className="py-24 px-4 bg-background overflow-hidden">
+    <section id="features" className="py-24 px-4 bg-background overflow-hidden">
       <div className="container mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -86,15 +90,28 @@ export function MainFeatures() {
                       <div className="absolute inset-0 bg-primary/40 blur-xl rounded-full -z-10 animate-pulse" />
                     )}
                   </div>
-                  <div>
-                    <h3 className={`text-xl font-bold mb-2 transition-colors duration-300 ${
-                      activeFeature === index ? "text-primary" : "text-foreground"
-                    }`}>
-                      {feature.title}
-                    </h3>
-                    <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                        <h3 className={`text-xl font-bold mb-2 transition-colors duration-300 ${
+                        activeFeature === index ? "text-primary" : "text-foreground"
+                        }`}>
+                        {feature.title}
+                        </h3>
+                    </div>
+                    <p className="text-muted-foreground leading-relaxed text-sm sm:text-base mb-3">
                       {feature.description}
                     </p>
+                    <Button 
+                        variant="link" 
+                        className={`p-0 h-auto font-semibold group/btn ${activeFeature === index ? "text-primary" : "text-muted-foreground"}`}
+                        asChild
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <Link href={feature.href} className="flex items-center">
+                            En savoir plus 
+                            <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+                        </Link>
+                    </Button>
                   </div>
                 </div>
               </motion.div>

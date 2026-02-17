@@ -76,10 +76,8 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
 
   // Notify parent of scenario change
   useEffect(() => {
-    if (selectedIndex === undefined || selectedIndex === scenarioIndex) {
-      onScenarioChange?.(scenarioIndex)
-    }
-  }, [scenarioIndex, onScenarioChange, selectedIndex])
+    onScenarioChange?.(scenarioIndex)
+  }, [scenarioIndex, onScenarioChange])
 
   // Auto-scroll to bottom
   useEffect(() => {
