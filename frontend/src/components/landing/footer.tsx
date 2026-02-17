@@ -14,13 +14,13 @@ const footerLinks = {
   ],
   Ressources: [
     { label: "Documentation", href: "/docs" },
-    { label: "Guides", href: "/blog" },
+    { label: "Guides", href: "/guides" },
     { label: "Blog", href: "/blog" },
-    { label: "Communauté", href: "/blog" },
+    { label: "Communauté", href: "/community" },
   ],
   Entreprise: [
     { label: "À propos", href: "/about" },
-    { label: "Contact", href: "mailto:contact@whappi.com" },
+    { label: "Contact", href: "/contact" },
     { label: "Mentions Légales", href: "/legal" },
   ],
 }
@@ -61,9 +61,9 @@ export function Footer() {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <Link href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
