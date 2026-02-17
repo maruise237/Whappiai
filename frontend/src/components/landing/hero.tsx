@@ -1,9 +1,10 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useState, useEffect } from "react"
 
 import { ChatPreview } from "@/components/landing/chat-preview"
 
@@ -22,6 +23,14 @@ const features = [
   "Analyses Détaillées"
 ]
 
+const dynamicWords = [
+  "Support Client",
+  "Marketing",
+  "Communauté",
+  "Vente",
+  "Business"
+]
+
 const textRevealVariants = {
   hidden: { y: "100%" },
   visible: (i: number) => ({
@@ -35,6 +44,21 @@ const textRevealVariants = {
 }
 
 export function Hero() {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+    const animate = () => {
+      const randomDelay = Math.floor(Math.random() * 2000) + 2500 // 2.5s - 4.5s random delay
+      timeoutId = setTimeout(() => {
+        setIndex((prev) => (prev + 1) % dynamicWords.length)
+        animate()
+      }, randomDelay)
+    }
+    animate()
+    return () => clearTimeout(timeoutId)
+  }, [])
+
   return (
     <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20 pb-16 lg:pt-32">
       {/* Background gradient */}
@@ -52,7 +76,8 @@ export function Hero() {
             {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: false, amount: 0.5 }}
               transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm"
             >
@@ -63,17 +88,42 @@ export function Hero() {
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-foreground leading-[1.1]">
               <span className="block overflow-hidden">
-                <motion.span className="block" variants={textRevealVariants} initial="hidden" animate="visible" custom={0}>
+                <motion.span 
+                  className="block" 
+                  variants={textRevealVariants} 
+                  initial="hidden" 
+                  whileInView="visible"
+                  viewport={{ once: false }}
+                  custom={0}
+                >
                   Automatisez votre
                 </motion.span>
               </span>
-              <span className="block overflow-hidden">
-                <motion.span className="block text-primary" variants={textRevealVariants} initial="hidden" animate="visible" custom={1}>
-                  Support Client
-                </motion.span>
+              <span className="block overflow-hidden h-[1.2em] relative">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={index}
+                    className="block text-primary absolute top-0 left-0 w-full text-center lg:text-left"
+                    initial={{ y: "100%" }}
+                    animate={{ y: 0 }}
+                    exit={{ y: "-100%" }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  >
+                    {dynamicWords[index]}
+                  </motion.span>
+                </AnimatePresence>
+                {/* Invisible spacer to maintain width/height */}
+                <span className="invisible">{dynamicWords[0]}</span>
               </span>
               <span className="block overflow-hidden">
-                <motion.span className="block" variants={textRevealVariants} initial="hidden" animate="visible" custom={2}>
+                <motion.span 
+                  className="block" 
+                  variants={textRevealVariants} 
+                  initial="hidden" 
+                  whileInView="visible"
+                  viewport={{ once: false }}
+                  custom={2}
+                >
                   et Modération.
                 </motion.span>
               </span>
@@ -82,8 +132,9 @@ export function Hero() {
             {/* Subheadline */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: false }}
+              transition={{ duration: 0.5, delay: 0.2 }}
               className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-lg"
             >
               Engagez votre communauté 24/7 avec un assistant IA qui répond, modère et convertit. Sans code, prêt en 5 minutes.
@@ -92,8 +143,9 @@ export function Hero() {
             {/* Feature List (Desktop Only) */}
             <motion.div 
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: false }}
+              transition={{ delay: 0.3 }}
               className="hidden lg:flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
             >
               {features.map((feature, i) => (
@@ -107,8 +159,9 @@ export function Hero() {
             {/* CTAs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: false }}
+              transition={{ duration: 0.5, delay: 0.4 }}
               className="flex flex-col sm:flex-row w-full sm:w-auto gap-4 pt-2"
             >
               <Button
@@ -134,8 +187,9 @@ export function Hero() {
             {/* Social Proof */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: false }}
+              transition={{ duration: 0.8, delay: 0.5 }}
               className="flex items-center gap-4 pt-4"
             >
               <div className="flex items-center -space-x-4">
@@ -170,7 +224,8 @@ export function Hero() {
           {/* Right Column: Chat Preview */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8, x: 50 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
+            whileInView={{ opacity: 1, scale: 1, x: 0 }}
+            viewport={{ once: false }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative mx-auto lg:mr-0 lg:ml-auto w-full max-w-[400px] lg:max-w-[450px] perspective-1000"
           >
