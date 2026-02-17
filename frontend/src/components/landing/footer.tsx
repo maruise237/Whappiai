@@ -21,6 +21,8 @@ const footerLinks = {
   Entreprise: [
     { label: "À propos", href: "/about" },
     { label: "Contact", href: "/contact" },
+    { label: "Conditions Générales", href: "/terms" },
+    { label: "Confidentialité", href: "/privacy" },
     { label: "Mentions Légales", href: "/legal" },
   ],
 }
