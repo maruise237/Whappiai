@@ -2,35 +2,71 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Bot, ShieldCheck, Headphones, Calendar, ArrowRight } from "lucide-react"
+import { Bot, ShieldCheck, Headphones, Calendar, ArrowRight, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ChatPreview } from "@/components/landing/chat-preview"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 const features = [
   {
     icon: Bot,
     title: "Réponses Automatiques",
     description: "Accueillez chaque nouvel utilisateur instantanément avec des messages personnalisés et engageants.",
-    href: "/features/auto-reply"
+    href: "/features/auto-reply",
+    details: [
+      "Configurez des messages de bienvenue personnalisés.",
+      "Gérez les absences et les horaires d'ouverture.",
+      "Utilisez des variables dynamiques (nom, date, etc.).",
+      "Intégration facile avec vos outils CRM existants."
+    ],
+    cta: "Essayer l'automatisation"
   },
   {
     icon: ShieldCheck,
     title: "Modération Intelligente",
     description: "Protégez votre communauté en filtrant automatiquement les spams et contenus indésirables.",
-    href: "/features/moderation"
+    href: "/features/moderation",
+    details: [
+      "Détection et suppression automatique des liens de spam.",
+      "Filtrage des contenus inappropriés et haineux.",
+      "Avertissements automatiques aux utilisateurs.",
+      "Rapports d'activité détaillés pour les administrateurs."
+    ],
+    cta: "Activer la modération"
   },
   {
     icon: Headphones,
     title: "Support Client 24/7",
     description: "Répondez aux questions fréquentes à toute heure sans intervention humaine.",
-    href: "/features/support"
+    href: "/features/support",
+    details: [
+      "Base de connaissances intégrée pour les réponses fréquentes.",
+      "Escalade vers un agent humain si nécessaire.",
+      "Support multilingue automatique.",
+      "Analyse des sentiments des clients."
+    ],
+    cta: "Améliorer votre support"
   },
   {
     icon: Calendar,
     title: "Réservations & Planning",
     description: "Gérez les prises de rendez-vous directement depuis WhatsApp, sans quitter la conversation.",
-    href: "/features/scheduling"
+    href: "/features/scheduling",
+    details: [
+      "Synchronisation avec Google Calendar et Outlook.",
+      "Proposez des créneaux disponibles en temps réel.",
+      "Rappels automatiques de rendez-vous.",
+      "Gestion des annulations et reports."
+    ],
+    cta: "Configurer le planning"
   }
 ]
 
@@ -101,17 +137,50 @@ export function MainFeatures() {
                     <p className="text-muted-foreground leading-relaxed text-sm sm:text-base mb-3">
                       {feature.description}
                     </p>
-                    <Button 
-                        variant="link" 
-                        className={`p-0 h-auto font-semibold group/btn ${activeFeature === index ? "text-primary" : "text-muted-foreground"}`}
-                        asChild
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <Link href={feature.href} className="flex items-center">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                            variant="link" 
+                            className={`p-0 h-auto font-semibold group/btn ${activeFeature === index ? "text-primary" : "text-muted-foreground"}`}
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             En savoir plus 
                             <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-                        </Link>
-                    </Button>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[600px] border-border/50 bg-background/95 backdrop-blur-xl">
+                        <DialogHeader>
+                          <div className="flex items-center gap-4 mb-4">
+                             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                <feature.icon className="w-6 h-6" />
+                             </div>
+                             <DialogTitle className="text-2xl font-bold">{feature.title}</DialogTitle>
+                          </div>
+                          <DialogDescription className="text-base leading-relaxed">
+                            {feature.description}
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="grid gap-3 py-4">
+                           <h4 className="font-semibold text-foreground mb-2">Ce que vous pouvez faire :</h4>
+                           {feature.details?.map((detail, i) => (
+                             <div key={i} className="flex items-start gap-3">
+                                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                                <span className="text-muted-foreground">{detail}</span>
+                             </div>
+                           ))}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4 pt-4 border-t border-border/50">
+                            <Button variant="outline" asChild className="rounded-full">
+                                <Link href="/contact">Parler à un expert</Link>
+                            </Button>
+                            <Button asChild className="rounded-full">
+                                <Link href="/register">{feature.cta}</Link>
+                            </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </motion.div>
