@@ -20,39 +20,6 @@ const LAST_NAMES = [
   "Fall", "Gueye", "Keita", "Sylla", "Ba", "Fofana", "Barry", "Toure", "Mbaye", "Sane"
 ]
 
-const HUMAN_COMMENTS = [
-  "Franchement, c'est du lourd. J'ai configuré mon bot en 10 minutes et ça tourne nickel.",
-  "Le support est incroyable. J'avais un petit souci de webhook, ils m'ont réglé ça en deux temps trois mouvements.",
-  "Je ne pensais pas que ce serait aussi simple. L'interface est super propre, ça change des usines à gaz habituelles.",
-  "Pour le prix, c'est imbattable. On a économisé une fortune en passant chez Whappi.",
-  "L'API est super stable, on envoie des milliers de messages par jour sans aucun bug.",
-  "Enfin une solution WhatsApp qui pense aux développeurs ! La doc est claire et les exemples fonctionnent.",
-  "J'adore la fonction multi-agents, mon équipe gère les clients beaucoup plus rapidement maintenant.",
-  "C'est exactement ce qu'il nous fallait pour automatiser nos relances clients. Merci la team !",
-  "Une vraie pépite. Je recommande à tous mes collègues entrepreneurs.",
-  "Le système de templates est top, plus besoin de copier-coller des messages toute la journée.",
-  "On a vu une vraie différence sur notre taux de conversion depuis qu'on utilise Whappi.",
-  "Simple, efficace, pas cher. Que demander de plus ?",
-  "J'étais sceptique au début, mais après la période d'essai, je suis conquis.",
-  "L'intégration avec notre CRM s'est faite sans douleur. Bravo pour le boulot.",
-  "Le dashboard est super intuitif, même pour ceux qui ne sont pas techniques.",
-  "La mise en place a pris moins d'une heure, c'est impressionnant.",
-  "Nos clients apprécient vraiment la réactivité de notre bot WhatsApp.",
-  "Le rapport qualité-prix est imbattable sur le marché actuel.",
-  "Les fonctionnalités de diffusion sont parfaites pour nos campagnes marketing.",
-  "Aucune coupure de service depuis 6 mois, une fiabilité à toute épreuve.",
-  "L'équipe technique est très compétente et aide vraiment à l'intégration.",
-  "L'interface utilisateur est moderne et très agréable à utiliser au quotidien.",
-  "Whappi nous a permis de centraliser tous nos échanges WhatsApp.",
-  "La gestion des contacts est fluide et l'import/export fonctionne bien.",
-  "Les réponses automatiques sont très flexibles et personnalisables.",
-  "C'est l'outil qu'il manquait à notre stack technique.",
-  "La documentation API est l'une des meilleures que j'ai vues.",
-  "Le support multi-langues est un vrai plus pour notre activité internationale.",
-  "Les statistiques nous aident à mieux comprendre nos interactions clients."
-]
-
-// Specific Profiles
 const MARIUSE = {
   name: "Mariuse Kamta",
   role: "CEO & Founder",
@@ -71,71 +38,79 @@ const CELINE = {
   rating: 5
 }
 
-const OTHER_AVATARS = [
-  "https://i.ibb.co/zTL3Q6t9/Male-Professional-Headshot-East-African.jpg",
-  "https://i.ibb.co/kg0ppRdz/Create-your-professional-DP-and-add-it-to-your.jpg",
-  "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg",
-  // Diverse avatars to ensure uniqueness across 30+ testimonials
-  "https://randomuser.me/api/portraits/men/32.jpg",
-  "https://randomuser.me/api/portraits/women/44.jpg",
-  "https://randomuser.me/api/portraits/men/22.jpg",
-  "https://randomuser.me/api/portraits/women/24.jpg",
-  "https://randomuser.me/api/portraits/men/54.jpg",
-  "https://randomuser.me/api/portraits/women/65.jpg",
-  "https://randomuser.me/api/portraits/men/91.jpg",
-  "https://randomuser.me/api/portraits/women/79.jpg",
-  "https://randomuser.me/api/portraits/men/15.jpg",
-  "https://randomuser.me/api/portraits/women/90.jpg",
-  "https://randomuser.me/api/portraits/men/4.jpg",
-  "https://randomuser.me/api/portraits/women/12.jpg",
-  "https://randomuser.me/api/portraits/men/82.jpg",
-  "https://randomuser.me/api/portraits/women/51.jpg",
-  "https://randomuser.me/api/portraits/men/64.jpg",
-  "https://randomuser.me/api/portraits/women/2.jpg",
-  "https://randomuser.me/api/portraits/men/43.jpg",
-  "https://randomuser.me/api/portraits/women/33.jpg",
-  "https://randomuser.me/api/portraits/men/75.jpg",
-  "https://randomuser.me/api/portraits/women/5.jpg",
-  "https://randomuser.me/api/portraits/men/1.jpg",
-  "https://randomuser.me/api/portraits/women/9.jpg",
+// 3 African Profiles (Provided by User)
+const AFRICAN_PROFILES = [
+  {
+    name: "Moussa Diop",
+    role: "Directeur Commercial",
+    company: "Dakar Immo",
+    content: "L'outil idéal pour gérer nos leads immobiliers. Simple, rapide et efficace.",
+    avatar: "https://i.ibb.co/zTL3Q6t9/Male-Professional-Headshot-East-African.jpg",
+    rating: 5
+  },
+  {
+    name: "Awa Traoré",
+    role: "Fondatrice",
+    company: "Bamako Tech",
+    content: "Le service client est impeccable. Ils comprennent vraiment les besoins des entrepreneurs.",
+    avatar: "https://i.ibb.co/kg0ppRdz/Create-your-professional-DP-and-add-it-to-your.jpg",
+    rating: 5
+  },
+  {
+    name: "Kofi Mensah",
+    role: "Développeur Senior",
+    company: "Accra Soft",
+    content: "L'API est robuste et bien documentée. Une intégration sans douleur.",
+    avatar: "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg",
+    rating: 4
+  }
 ]
 
-const generateTestimonials = (count: number) => {
-  const testimonials = []
-  
-  // Generate random profiles
-  for (let i = 0; i < count; i++) {
-    const firstName = NAMES[i % NAMES.length]
-    const lastName = LAST_NAMES[i % LAST_NAMES.length]
-    testimonials.push({
-      id: i,
-      name: `${firstName} ${lastName}`,
-      role: ROLES[i % ROLES.length],
-      company: COMPANIES[i % COMPANIES.length],
-      content: HUMAN_COMMENTS[i % HUMAN_COMMENTS.length],
-      avatar: OTHER_AVATARS[i % OTHER_AVATARS.length],
-      rating: Math.random() > 0.3 ? 5 : 4
-    })
+// 4 International Profiles (White/Western)
+const INTERNATIONAL_PROFILES = [
+  {
+    name: "Thomas Dubois",
+    role: "Product Manager",
+    company: "Paris Solutions",
+    content: "A game changer for our customer engagement strategy. Highly recommended.",
+    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+    rating: 5
+  },
+  {
+    name: "Sarah Jenkins",
+    role: "Marketing Lead",
+    company: "London Agency",
+    content: "Finally, a WhatsApp tool that just works. The automation features are superb.",
+    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
+    rating: 5
+  },
+  {
+    name: "Lukas Weber",
+    role: "CTO",
+    company: "Berlin Startups",
+    content: "Great performance and reliability. We use it for all our notifications.",
+    avatar: "https://randomuser.me/api/portraits/men/22.jpg",
+    rating: 4
+  },
+  {
+    name: "Elena Rossi",
+    role: "Designer",
+    company: "Milano Creative",
+    content: "Beautiful interface and very easy to use. My team loves it.",
+    avatar: "https://randomuser.me/api/portraits/women/24.jpg",
+    rating: 5
   }
-  
-  return testimonials
-}
+]
 
-const GENERIC_TESTIMONIALS = generateTestimonials(30)
+const ALL_TESTIMONIALS = [
+  { id: 1, ...MARIUSE },
+  { id: 2, ...CELINE },
+  ...AFRICAN_PROFILES.map((p, i) => ({ id: 3 + i, ...p })),
+  ...INTERNATIONAL_PROFILES.map((p, i) => ({ id: 6 + i, ...p }))
+]
 
-// Helper to inject Mariuse/Celine into chunks
-const createChunk = (baseData: typeof GENERIC_TESTIMONIALS, includeMariuse: boolean, includeCeline: boolean, offset: number) => {
-    let chunk = [...baseData]
-    if (includeCeline) {
-        chunk.splice(2, 0, { id: 998, ...CELINE }) // Insert Celine at index 2
-    }
-    if (includeMariuse) {
-        chunk.splice(offset, 0, { id: 999, ...MARIUSE }) // Insert Mariuse at specific offset
-    }
-    return chunk
-}
  
- const TestimonialCard = ({ testimonial, className }: { testimonial: typeof GENERIC_TESTIMONIALS[0], className?: string }) => (
+  const TestimonialCard = ({ testimonial, className }: { testimonial: typeof ALL_TESTIMONIALS[0], className?: string }) => (
    <div className={cn(
      "relative bg-card p-6 rounded-2xl border border-border shadow-sm mb-6 break-inside-avoid hover:shadow-md transition-shadow duration-300",
      className
@@ -165,14 +140,14 @@ const createChunk = (baseData: typeof GENERIC_TESTIMONIALS, includeMariuse: bool
      </div>
    </div>
  )
- 
+
  const MarqueeColumn = ({ 
    testimonials, 
    duration = 40, 
    reverse = false,
    className 
  }: { 
-   testimonials: typeof GENERIC_TESTIMONIALS, 
+   testimonials: typeof ALL_TESTIMONIALS, 
    duration?: number, 
    reverse?: boolean,
    className?: string
@@ -190,7 +165,7 @@ const createChunk = (baseData: typeof GENERIC_TESTIMONIALS, includeMariuse: bool
          }}
          className="flex flex-col pb-6"
        >
-         {[...testimonials, ...testimonials].map((t, i) => (
+         {[...testimonials, ...testimonials, ...testimonials, ...testimonials].map((t, i) => (
            <TestimonialCard key={`${t.id}-${i}`} testimonial={t} />
          ))}
        </motion.div>
@@ -202,16 +177,29 @@ const createChunk = (baseData: typeof GENERIC_TESTIMONIALS, includeMariuse: bool
    const containerRef = useRef<HTMLDivElement>(null)
    const isInView = useInView(containerRef, { once: true, margin: "-10%" })
  
-   // Distribute testimonials and inject key profiles
-   // Chunk 1: Mariuse at top (index 0)
-   const chunk1 = createChunk(GENERIC_TESTIMONIALS.slice(0, 10), true, true, 0)
+   // Distribute testimonials
+   // We only have 9 unique testimonials now, so we need to distribute them across 3 columns
+   // Each column will get 3 unique testimonials, and the marquee will loop them
    
-   // Chunk 2: Mariuse in middle (index 5)
-   const chunk2 = createChunk(GENERIC_TESTIMONIALS.slice(10, 20), true, false, 5)
+   const col1 = [ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[3], ALL_TESTIMONIALS[6]] // Mariuse, African 1, Intl 1
+   const col2 = [ALL_TESTIMONIALS[1], ALL_TESTIMONIALS[4], ALL_TESTIMONIALS[7]] // Celine, African 2, Intl 2
+   const col3 = [ALL_TESTIMONIALS[2], ALL_TESTIMONIALS[5], ALL_TESTIMONIALS[8]] // African 3, Intl 3, Intl 4 (Wait, indices: 0,1,2,3,4,5,6,7,8)
    
-   // Chunk 3: Mariuse near end (index 8)
-   const chunk3 = createChunk(GENERIC_TESTIMONIALS.slice(20, 30), true, false, 8)
- 
+   // Adjusting distribution to be more balanced if needed, but simple round-robin is fine.
+   // Indices:
+   // 0: Mariuse
+   // 1: Celine
+   // 2,3,4: African
+   // 5,6,7,8: International
+   
+   // Col 1: Mariuse (0), African 2 (3), Intl 2 (6)
+   // Col 2: Celine (1), African 3 (4), Intl 3 (7)
+   // Col 3: African 1 (2), Intl 1 (5), Intl 4 (8)
+   
+   const chunk1 = [ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[3], ALL_TESTIMONIALS[6]]
+   const chunk2 = [ALL_TESTIMONIALS[1], ALL_TESTIMONIALS[4], ALL_TESTIMONIALS[7]]
+   const chunk3 = [ALL_TESTIMONIALS[2], ALL_TESTIMONIALS[5], ALL_TESTIMONIALS[8]]
+
    return (
      <section 
        ref={containerRef} 
