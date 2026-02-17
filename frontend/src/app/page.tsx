@@ -2,6 +2,7 @@ import { SmoothScroll } from "@/components/landing/smooth-scroll"
 import { Navbar } from "@/components/landing/navbar"
 import { Hero } from "@/components/landing/hero"
 import { LogoMarquee } from "@/components/landing/logo-marquee"
+import { ValueProposition } from "@/components/landing/value-proposition"
 import { MainFeatures } from "@/components/landing/main-features"
 import { Testimonials } from "@/components/landing/testimonials"
 import { Pricing } from "@/components/landing/pricing"
@@ -29,6 +30,7 @@ export default function Home() {
         <Navbar />
         <Hero />
         <LogoMarquee />
+        <ValueProposition />
         <MainFeatures />
         <Testimonials />
         <Pricing />
