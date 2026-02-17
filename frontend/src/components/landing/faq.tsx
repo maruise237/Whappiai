@@ -137,16 +137,16 @@ export function FAQ() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mt-16 text-center"
         >
-          <div className="inline-flex items-center p-1 bg-muted/50 rounded-full border border-border">
-            <div className="flex -space-x-2 px-4">
+          <div className="inline-flex flex-col md:flex-row items-center gap-4 md:gap-2 p-4 md:p-1 bg-muted/50 rounded-2xl md:rounded-full border border-border mx-auto">
+            <div className="flex -space-x-2 px-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="w-8 h-8 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground overflow-hidden">
                    <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="Support Agent" className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
-            <span className="text-sm font-medium mr-4">Notre équipe est là pour vous aider</span>
-            <Button size="sm" className="rounded-full" asChild>
+            <span className="text-sm font-medium text-center md:text-left md:mr-4">Notre équipe est là pour vous aider</span>
+            <Button size="sm" className="rounded-full w-full md:w-auto" asChild>
               <Link href="/contact">
                 Contacter le support <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
