@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useSignUp } from "@clerk/nextjs"
+import { useState, useEffect } from "react"
+import { useSignUp, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import { Eye, EyeOff, Loader2, ArrowLeft, Mail } from "lucide-react"
 
 export default function RegisterPage() {
   const { isLoaded, signUp, setActive } = useSignUp()
+  const { user, isSignedIn } = useUser()
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
@@ -25,6 +26,13 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
+
+  // Redirection automatique une fois l'utilisateur authentifié
+  useEffect(() => {
+    if (isSignedIn && user) {
+      router.push("/dashboard")
+    }
+  }, [isSignedIn, user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,17 +71,15 @@ export default function RegisterPage() {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId })
-        // Force refresh to update auth state then redirect
-        router.refresh()
-        window.location.href = "/dashboard"
+        // La redirection sera gérée par le useEffect
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2))
         setError("Code de vérification invalide.")
+        setLoading(false)
       }
     } catch (err: any) {
       console.error("Verification error:", err)
       setError(err.errors?.[0]?.longMessage || "Code invalide.")
-    } finally {
       setLoading(false)
     }
   }

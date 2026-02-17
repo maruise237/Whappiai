@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useSignIn } from "@clerk/nextjs"
+import { useState, useEffect } from "react"
+import { useSignIn, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,12 +14,20 @@ import { Eye, EyeOff, Loader2, Mail } from "lucide-react"
 
 export default function LoginPage() {
   const { isLoaded, signIn, setActive } = useSignIn()
+  const { user, isSignedIn } = useUser()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
+
+  // Redirection automatique une fois l'utilisateur authentifié
+  useEffect(() => {
+    if (isSignedIn && user) {
+      router.push("/dashboard")
+    }
+  }, [isSignedIn, user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,17 +43,15 @@ export default function LoginPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId })
-        // Force refresh to update auth state then redirect
-        router.refresh()
-        window.location.href = "/dashboard"
+        // La redirection sera gérée par le useEffect
       } else {
         console.log(result)
         setError("Une erreur est survenue. Veuillez vérifier vos identifiants.")
+        setLoading(false)
       }
     } catch (err: any) {
       console.error("Login error:", err)
       setError(err.errors?.[0]?.longMessage || "Identifiants invalides.")
-    } finally {
       setLoading(false)
     }
   }
