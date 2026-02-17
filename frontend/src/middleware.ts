@@ -14,7 +14,12 @@ const isPublicRoute = createRouteMatcher([
   "/contact(.*)",
   "/community(.*)",
   "/guides(.*)",
-  "/resources(.*)"
+  "/resources(.*)",
+  "/changelog(.*)",
+  "/roadmap(.*)",
+  "/integrations(.*)",
+  "/enterprise(.*)",
+  "/careers(.*)"
 ]);
 
 const isAuthRoute = createRouteMatcher([
