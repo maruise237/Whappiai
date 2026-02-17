@@ -9,6 +9,7 @@ type Message = {
   role: "user" | "assistant" | "system"
   content: string
   isSpam?: boolean
+  isDeleted?: boolean
 }
 
 const SCENARIOS = [
@@ -25,7 +26,7 @@ const SCENARIOS = [
     name: "moderation",
     messages: [
       { role: "user", content: "Gagnez 1000€ ici: http://spam-link.com", isSpam: true },
-      { role: "system", content: "Message supprimé par Whappi (Lien suspect)" },
+      { role: "system", content: "Ce message a été supprimé", isDeleted: true },
       { role: "assistant", content: "⚠️ Attention, les liens non autorisés sont interdits." },
       { role: "user", content: "Désolé, je ne savais pas." },
       { role: "assistant", content: "Pas de souci, c'est noté. Merci de respecter les règles ! 🙏" },

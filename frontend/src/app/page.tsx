@@ -29,6 +29,7 @@ export default function Home() {
         <Navbar />
         <Hero />
         <LogoMarquee />
+        <MainFeatures />
         <BentoGrid />
         <Testimonials />
         <Pricing />
