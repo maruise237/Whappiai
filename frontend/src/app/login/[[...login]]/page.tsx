@@ -29,6 +29,11 @@ export default function LoginPage() {
     }
   }, [isSignedIn, user, router])
 
+  // Préchargement de la page dashboard pour une navigation instantanée
+  useEffect(() => {
+    router.prefetch("/dashboard")
+  }, [router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isLoaded) return
@@ -43,7 +48,8 @@ export default function LoginPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId })
-        // La redirection sera gérée par le useEffect
+        // Redirection immédiate sans attendre le useEffect
+        router.push("/dashboard")
       } else {
         console.log(result)
         setError("Une erreur est survenue. Veuillez vérifier vos identifiants.")

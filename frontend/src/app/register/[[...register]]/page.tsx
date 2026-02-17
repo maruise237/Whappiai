@@ -34,6 +34,11 @@ export default function RegisterPage() {
     }
   }, [isSignedIn, user, router])
 
+  // Préchargement de la page dashboard pour une navigation instantanée
+  useEffect(() => {
+    router.prefetch("/dashboard")
+  }, [router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isLoaded) return
@@ -71,7 +76,8 @@ export default function RegisterPage() {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId })
-        // La redirection sera gérée par le useEffect
+        // Redirection immédiate sans attendre le useEffect
+        router.push("/dashboard")
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2))
         setError("Code de vérification invalide.")
