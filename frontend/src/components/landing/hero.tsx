@@ -113,7 +113,7 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.7 }}
           className="flex flex-col items-center gap-4"
         >
-          <div className="flex items-center -space-x-3">
+          <div className="flex items-center -space-x-4">
             {avatars.map((avatar, index) => (
               <motion.div
                 key={index}
@@ -125,7 +125,7 @@ export function Hero() {
                 <img
                   src={avatar || "/placeholder.svg"}
                   alt=""
-                  className="w-10 h-10 rounded-full border-2 border-background object-cover"
+                  className="w-12 h-12 rounded-full border-2 border-background object-cover"
                 />
               </motion.div>
             ))}
