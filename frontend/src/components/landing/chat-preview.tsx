@@ -99,7 +99,13 @@ export function ChatPreview() {
   return (
     <div className="relative mx-auto w-full max-w-[320px] lg:max-w-[350px]">
       {/* Phone Frame */}
-      <div className="relative border-gray-900 bg-gray-900 border-[10px] rounded-[3rem] h-[600px] shadow-2xl overflow-hidden ring-1 ring-white/10">
+      <div 
+        className="relative border-gray-900 bg-gray-900 border-[10px] rounded-[3rem] h-[580px] shadow-2xl overflow-hidden ring-1 ring-white/10"
+        style={{
+          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)"
+        }}
+      >
         
         {/* Side Buttons */}
         <div className="absolute top-24 -left-[14px] w-[4px] h-8 bg-gray-800 rounded-l-md"></div>
@@ -139,12 +145,10 @@ export function ChatPreview() {
 
           {/* Chat Area */}
           <div className="flex-1 relative bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat bg-opacity-5">
-            {/* Gradient Mask for Fade Effect at Bottom */}
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#0b141a] via-transparent to-transparent h-20 bottom-0 z-10" />
-
+            
             <div 
               ref={containerRef}
-              className="h-full overflow-y-auto p-4 space-y-3 pb-20 scrollbar-hide"
+              className="h-full overflow-y-auto p-4 space-y-3 pb-24 scrollbar-hide"
             >
               {/* Encryption Notice */}
               <div className="flex justify-center mb-6 mt-2">
