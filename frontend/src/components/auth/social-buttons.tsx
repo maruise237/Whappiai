@@ -24,22 +24,28 @@ export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" 
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 mb-6">
+    <div className="flex flex-col gap-3 w-full">
       <Button 
         variant="outline" 
         onClick={handleGoogleClick}
-        className="h-11 bg-background text-foreground hover:bg-muted border-input font-semibold text-xs"
+        className="w-full h-12 bg-white hover:bg-zinc-100 text-black border-transparent font-semibold text-[15px] relative overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] rounded-xl"
       >
-        <Chrome className="mr-2 h-4 w-4" />
-        Google
+        <div className="absolute left-4">
+           <Chrome className="w-5 h-5" />
+        </div>
+        Continuer avec Google
       </Button>
+      
+      {/* Example for Facebook (Disabled state kept for now, but styled to match) */}
       <Button 
         variant="outline" 
         disabled
-        className="h-11 bg-background text-foreground border-input hover:bg-muted font-semibold text-xs opacity-50 cursor-not-allowed"
+        className="w-full h-12 bg-[#1877F2] text-white border-transparent hover:bg-[#1864cc] font-semibold text-[15px] relative overflow-hidden transition-all duration-200 rounded-xl opacity-50 cursor-not-allowed"
       >
-        <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.39-1.09-.52-2.09-.48-3.24.02-1.44.62-2.2.44-3.06-.43C4.55 17.16 3.68 13.04 6.9 11.55c1.54-.71 2.8-.56 3.69-.02.8.48 1.62.66 2.52-.08.64-.52 1.5-.7 2.44-.22 2.7.97 3.28 3.17 3.32 3.25-.04.02-2 .77-2.38 3.14-.37 2.27 1.76 3.25 1.8 3.28-.56 1.73-1.42 2.68-2.34 3.79-.58.69-1.13 1.4-1.9 1.59zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-        Apple
+        <div className="absolute left-4">
+           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </div>
+        Continuer avec Facebook
       </Button>
     </div>
   )

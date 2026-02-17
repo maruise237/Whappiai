@@ -10,7 +10,7 @@ import { AuthLayout } from "@/components/auth/auth-layout"
 import { SocialButtons } from "@/components/auth/social-buttons"
 import { InstallPrompt } from "@/components/InstallPrompt"
 import Link from "next/link"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2, Mail } from "lucide-react"
 
 export default function LoginPage() {
   const { isLoaded, signIn, setActive } = useSignIn()
@@ -50,35 +50,32 @@ export default function LoginPage() {
 
   return (
     <>
-      <AuthLayout title="Bienvenue" subtitle="Connectez-vous à votre compte">
-        <SocialButtons mode="signin" />
+      <AuthLayout title="Connexion" subtitle="Connectez-vous ou créez un compte automatiquement">
         
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-            <span className="bg-card px-2 text-muted-foreground">ou avec email</span>
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Email</Label>
-            <Input 
-              id="email"
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              placeholder="nom@exemple.com"
-              className="bg-background border-input focus:border-primary text-foreground h-11 placeholder:text-muted-foreground/60"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Mot de passe</Label>
-              <Link href="/forgot-password" className="text-[10px] text-primary hover:text-primary/80 font-medium transition-colors">Oublié ?</Link>
+          <Button 
+            type="submit" 
+            className="w-full h-12 bg-green-500 hover:bg-green-400 text-black font-bold text-[15px] relative overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+            disabled={loading}
+          >
+            <div className="absolute left-4">
+              <Mail className="w-5 h-5" />
+            </div>
+            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Continuer avec Email"}
+          </Button>
+
+          {/* Email/Password Fields - Visually integrated to look like they expand or belong to the email flow */}
+          <div className="space-y-3 pt-2">
+            <div className="space-y-1">
+              <Input 
+                id="email"
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                placeholder="Entrez votre email"
+                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-green-500 text-white placeholder:text-zinc-500 rounded-xl transition-colors"
+                required
+              />
             </div>
             <div className="relative">
               <Input 
@@ -86,43 +83,50 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"} 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
-                placeholder="••••••••" 
-                className="bg-background border-input focus:border-primary text-foreground h-11 pr-10 placeholder:text-muted-foreground/60"
+                placeholder="Mot de passe" 
+                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-green-500 text-white pr-10 placeholder:text-zinc-500 rounded-xl transition-colors"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
+            </div>
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="text-xs text-zinc-400 hover:text-green-400 transition-colors">
+                Mot de passe oublié ?
+              </Link>
             </div>
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-md border border-red-500/20">
+            <div className="text-red-400 text-sm text-center bg-red-500/10 p-3 rounded-xl border border-red-500/20">
               {error}
             </div>
           )}
-
-          <Button 
-            type="submit" 
-            className="w-full h-11 font-bold tracking-wide uppercase text-white bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-500"
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Se connecter"}
-          </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-muted-foreground">
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-zinc-800" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase tracking-widest font-medium">
+            <span className="bg-[#0a0a0a] px-3 text-zinc-500">ou</span>
+          </div>
+        </div>
+
+        <SocialButtons mode="signin" />
+
+        <div className="mt-6 text-center text-sm text-zinc-500">
           Vous n'avez pas de compte ?{" "}
-          <Link href="/register" className="text-primary hover:text-primary/80 font-semibold transition-colors">
+          <Link href="/register" className="text-green-500 hover:text-green-400 font-semibold transition-colors hover:underline">
             S'inscrire
           </Link>
         </div>
       </AuthLayout>
-      <InstallPrompt className="fixed bottom-4 right-4 top-auto" />
     </>
   )
 }

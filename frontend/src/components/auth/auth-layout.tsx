@@ -9,44 +9,61 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden font-sans text-foreground transition-colors duration-300">
-      {/* Background Decorative Elements - Theme Aware */}
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-4 relative overflow-hidden font-sans text-white">
+      {/* Background Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full opacity-50 dark:opacity-30" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full opacity-50 dark:opacity-30" />
+        {/* Green glow effects */}
+        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-green-500/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-20%] right-[20%] w-[500px] h-[500px] bg-green-500/5 blur-[100px] rounded-full" />
+        
         {/* Grid Pattern */}
-        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" style={{ opacity: 0.05 }} />
+        <div 
+          className="absolute inset-0 opacity-[0.15]" 
+          style={{ 
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.15) 1px, transparent 0)`,
+            backgroundSize: '40px 40px' 
+          }} 
+        />
       </div>
 
-      <div className="w-full max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center relative z-10">
-        {/* Logo Header */}
-        <div className="flex flex-col items-center mb-8 text-center">
-          <Link href="/" className="group mb-6 relative">
-             <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-             <div className="relative bg-card/50 p-4 rounded-2xl border border-border shadow-sm backdrop-blur-sm group-hover:scale-105 transition-transform duration-300">
-                <Logo size={48} showText={false} />
-             </div>
+      <div className="w-full max-w-[420px] flex flex-col items-center relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* Header Section */}
+        <div className="flex flex-col items-center mb-10 text-center w-full">
+          <Link href="/" className="mb-8 hover:opacity-90 transition-opacity">
+            <Logo size={40} showText={true} textClassName="text-white tracking-wide" />
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-2">{title}</h1>
-          <p className="text-sm text-muted-foreground font-medium">{subtitle}</p>
+          
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-3 leading-tight">
+            Créez votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 relative inline-block">
+              Assistant IA
+              <svg className="absolute w-full h-2 -bottom-1 left-0 text-green-500" viewBox="0 0 100 10" preserveAspectRatio="none">
+                <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
+              </svg>
+            </span>
+            <br />en quelques minutes
+          </h1>
         </div>
 
-        {/* Card Content */}
-        <div className="w-full bg-card/80 backdrop-blur-xl border border-border rounded-2xl p-6 shadow-xl ring-1 ring-border/50">
+        {/* Card Content - Transparent/Minimalist */}
+        <div className="w-full space-y-6">
+          <div className="text-center space-y-1 mb-6">
+            <h2 className="text-xl font-semibold text-white/90">{title}</h2>
+            <p className="text-sm text-zinc-400">{subtitle}</p>
+          </div>
+          
           {children}
         </div>
 
         {/* Footer */}
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-            <span>Secured by</span>
-            <span className="flex items-center gap-1 text-foreground/80">
-               <svg viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3" aria-hidden="true"><path d="M8.76 5.8a2.97 2.97 0 0 0-3.69 2.15l-.06.27-.18 1.05h1.2l.14-.83a1.86 1.86 0 0 1 2.5-1.18 1.86 1.86 0 0 1 .53 2.92l-.65.65a.55.55 0 0 0-.16.39v.88h1.1v-.64a1.65 1.65 0 0 1 .49-1.17l.64-.64a2.95 2.95 0 0 0-1.86-3.8ZM12.03 0H3.97L0 3.3v9.4L3.97 16h8.06L16 12.7V3.3L12.03 0ZM11.1 14.9H4.9L1.1 11.8V4.2l3.8-3.1h6.2l3.8 3.1v7.6l-3.8 3.1Z"/></svg>
-               Clerk
+        <div className="mt-8 text-center space-y-4">
+          <div className="flex items-center justify-center gap-1 text-[10px] text-zinc-500 uppercase tracking-widest">
+            <span className="flex items-center gap-1.5">
+               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+               Secured by Clerk
             </span>
           </div>
-          <div className="text-[10px] text-muted-foreground/60">
-             Development mode
+          <div className="text-xs text-zinc-600 max-w-xs mx-auto leading-relaxed">
+             En vous inscrivant, vous acceptez nos <Link href="/terms" className="text-green-500 hover:underline">termes</Link> et <Link href="/privacy" className="text-green-500 hover:underline">politique de confidentialité</Link>.
           </div>
         </div>
       </div>
