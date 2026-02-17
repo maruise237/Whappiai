@@ -8,40 +8,80 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 
 // --- Data Generation ---
-const ROLES = ["CEO", "CTO", "Marketing Director", "Community Manager", "Product Owner", "Developer", "Support Lead"]
-const COMPANIES = ["TechFlow", "DataSystems", "CloudNine", "GrowthHacker", "DevCorp", "SoftSolutions", "EcoTech"]
-const NAMES = ["Alexandre", "Sarah", "Thomas", "Julie", "Kevin", "Laura", "David", "Emma", "Lucas", "Sophie"]
-const CONTENTS = [
-  "Whappi a révolutionné notre gestion client. L'IA est bluffante de précision.",
-  "Le gain de temps est phénoménal. On a divisé le temps de réponse par 3.",
-  "Intégration super simple, en 5 minutes tout était opérationnel. Bravo à l'équipe.",
-  "La modération automatique nous a sauvés d'une vague de spam massive.",
-  "Le support est réactif et à l'écoute. Une vraie relation de confiance.",
-  "Enfin une API WhatsApp qui ne coûte pas un bras et qui fonctionne vraiment.",
-  "Les webhooks sont ultra rapides, parfait pour nos automatisations.",
-  "J'adore l'interface, c'est propre, moderne et intuitif.",
-  "La fonctionnalité multi-agents est un game changer pour notre équipe support.",
-  "On a pu scaler notre acquisition sans recruter 10 personnes au support.",
-  "L'API est stable, la documentation est claire. Rien à redire.",
-  "Le meilleur investissement SaaS de l'année pour notre agence.",
-  "Les clients adorent la rapidité des réponses automatiques.",
-  "Un outil indispensable pour tout business qui utilise WhatsApp.",
-  "La gestion des templates est super fluide et bien pensée."
+const ROLES = ["Directeur Marketing", "Fondateur", "Service Client", "Développeur", "Community Manager", "Commercial", "Responsable Tech"]
+const COMPANIES = ["AfriTech Solutions", "Dakar Digital", "Abidjan Startups", "TechCamer", "Lagos Ventures", "Kinshasa Connect", "Bamako Innovations"]
+const NAMES = ["Amara", "Kwame", "Chioma", "Tunde", "Zainab", "Idrissa", "Fatou", "Kofi", "Nia", "Malik", "Awa", "Bakary", "Jelani", "Zola", "Oumar"]
+const LAST_NAMES = ["Diop", "Kone", "Sow", "Diallo", "Traore", "Kamara", "Mensah", "Okafor", "Ndiaye", "Cisse"]
+
+const HUMAN_COMMENTS = [
+  "Franchement, c'est du lourd. J'ai configuré mon bot en 10 minutes et ça tourne nickel.",
+  "Le support est incroyable. J'avais un petit souci de webhook, ils m'ont réglé ça en deux temps trois mouvements.",
+  "Je ne pensais pas que ce serait aussi simple. L'interface est super propre, ça change des usines à gaz habituelles.",
+  "Pour le prix, c'est imbattable. On a économisé une fortune en passant chez Whappi.",
+  "L'API est super stable, on envoie des milliers de messages par jour sans aucun bug.",
+  "Enfin une solution WhatsApp qui pense aux développeurs ! La doc est claire et les exemples fonctionnent.",
+  "J'adore la fonction multi-agents, mon équipe gère les clients beaucoup plus rapidement maintenant.",
+  "C'est exactement ce qu'il nous fallait pour automatiser nos relances clients. Merci la team !",
+  "Une vraie pépite. Je recommande à tous mes collègues entrepreneurs.",
+  "Le système de templates est top, plus besoin de copier-coller des messages toute la journée.",
+  "On a vu une vraie différence sur notre taux de conversion depuis qu'on utilise Whappi.",
+  "Simple, efficace, pas cher. Que demander de plus ?",
+  "J'étais sceptique au début, mais après la période d'essai, je suis conquis.",
+  "L'intégration avec notre CRM s'est faite sans douleur. Bravo pour le boulot.",
+  "Le dashboard est super intuitif, même pour ceux qui ne sont pas techniques."
+]
+
+// Specific Profiles
+const MARIUSE = {
+  name: "Mariuse Kamta",
+  role: "CEO & Founder",
+  company: "Whappi",
+  content: "Notre mission est de rendre l'automatisation WhatsApp accessible à toutes les entreprises africaines, sans compromis sur la qualité.",
+  avatar: "https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png",
+  rating: 5
+}
+
+const CELINE = {
+  name: "Celine M.",
+  role: "Responsable Service Client",
+  company: "InnovCorp",
+  content: "Whappi a transformé notre façon de gérer le support. Nos clients sont ravis de la réactivité, et mon équipe est moins stressée.",
+  avatar: "https://i.ibb.co/hx78Kb9z/Annotation-2026-02-16-211337.png",
+  rating: 5
+}
+
+const OTHER_AVATARS = [
+  "https://i.ibb.co/zTL3Q6t9/Male-Professional-Headshot-East-African.jpg",
+  "https://i.ibb.co/kg0ppRdz/Create-your-professional-DP-and-add-it-to-your.jpg",
+  "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg"
 ]
 
 const generateTestimonials = (count: number) => {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    name: `${NAMES[i % NAMES.length]} ${String.fromCharCode(65 + (i % 26))}.`,
-    role: ROLES[i % ROLES.length],
-    company: COMPANIES[i % COMPANIES.length],
-    content: CONTENTS[i % CONTENTS.length],
-    avatar: `https://i.pravatar.cc/150?u=${i + 10}`,
-    rating: 5
-  }))
+  const testimonials = []
+  
+  // Add Specific Profiles first
+  testimonials.push({ id: 0, ...MARIUSE })
+  testimonials.push({ id: 1, ...CELINE })
+
+  // Generate random profiles for the rest
+  for (let i = 2; i < count; i++) {
+    const firstName = NAMES[i % NAMES.length]
+    const lastName = LAST_NAMES[i % LAST_NAMES.length]
+    testimonials.push({
+      id: i,
+      name: `${firstName} ${lastName}`,
+      role: ROLES[i % ROLES.length],
+      company: COMPANIES[i % COMPANIES.length],
+      content: HUMAN_COMMENTS[i % HUMAN_COMMENTS.length],
+      avatar: OTHER_AVATARS[i % OTHER_AVATARS.length],
+      rating: Math.random() > 0.3 ? 5 : 4 // Mostly 5 stars, some 4
+    })
+  }
+  
+  return testimonials
 }
 
-const TESTIMONIALS = generateTestimonials(30) // Generate enough for 3 columns
+const TESTIMONIALS = generateTestimonials(30)
 
 const TestimonialCard = ({ testimonial, className }: { testimonial: typeof TESTIMONIALS[0], className?: string }) => (
   <div className={cn(
@@ -50,7 +90,12 @@ const TestimonialCard = ({ testimonial, className }: { testimonial: typeof TESTI
   )}>
     <div className="flex items-center gap-1 mb-4 text-yellow-500">
       {[...Array(5)].map((_, i) => (
-        <Star key={i} size={14} fill="currentColor" className="opacity-80" />
+        <Star 
+          key={i} 
+          size={14} 
+          fill={i < testimonial.rating ? "currentColor" : "none"} 
+          className={cn("opacity-80", i >= testimonial.rating && "text-muted-foreground opacity-30")} 
+        />
       ))}
     </div>
     <p className="text-muted-foreground text-sm leading-relaxed mb-6">
