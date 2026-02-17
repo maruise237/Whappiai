@@ -35,7 +35,8 @@ export default function LoginPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId })
-        // Force full page reload to ensure session cookies are recognized by middleware
+        // Add a small delay to ensure cookie propagation before redirecting
+        await new Promise(resolve => setTimeout(resolve, 500))
         window.location.href = "/dashboard"
       } else {
         console.log(result)
