@@ -20,7 +20,9 @@ const isPublicRoute = createRouteMatcher([
   "/integrations(.*)",
   "/enterprise(.*)",
   "/careers(.*)",
-  "/features(.*)"
+  "/features(.*)",
+  "/terms(.*)",
+  "/privacy(.*)"
 ]);
 
 const isAuthRoute = createRouteMatcher([
