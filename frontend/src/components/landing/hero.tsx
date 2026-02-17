@@ -5,6 +5,8 @@ import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
+import { ChatPreview } from "@/components/landing/chat-preview"
+
 const avatars = [
   "https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png",
   "https://i.ibb.co/hx78Kb9z/Annotation-2026-02-16-211337.png",
@@ -133,6 +135,19 @@ export function Hero() {
           <p className="text-sm text-muted-foreground">
             Utilisé par <span className="text-foreground font-medium">1000+</span> Community Managers
           </p>
+        </motion.div>
+
+        {/* Chat Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1 }}
+          className="mt-16 w-full max-w-sm sm:max-w-md relative z-20 mx-auto"
+        >
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur opacity-30 animate-pulse" />
+          <div className="relative">
+            <ChatPreview />
+          </div>
         </motion.div>
       </div>
     </section>
