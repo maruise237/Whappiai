@@ -11,7 +11,7 @@ import { SocialButtons } from "@/components/auth/social-buttons"
 import { InstallPrompt } from "@/components/InstallPrompt"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import Link from "next/link"
-import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react"
+import { Eye, EyeOff, Loader2, ArrowLeft, Mail } from "lucide-react"
 
 export default function RegisterPage() {
   const { isLoaded, signUp, setActive } = useSignUp()
