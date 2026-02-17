@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { Menu, X, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 import { useUser } from "@clerk/nextjs"
 
 const navItems = [
@@ -59,9 +60,7 @@ export function Navbar() {
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">W</span>
-          </div>
+          <Image src="/icon.png" width={32} height={32} alt="Whappi Logo" className="object-contain" />
           <span className="font-semibold text-foreground hidden sm:block">Whappi</span>
         </Link>
 

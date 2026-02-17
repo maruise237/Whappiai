@@ -3,6 +3,7 @@
 import { motion, useInView } from "framer-motion"
 import { useRef } from "react"
 import Link from "next/link"
+import Image from "next/image"
 
 const footerLinks = {
   Produit: [
@@ -43,9 +44,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">W</span>
-              </div>
+              <Image src="/icon.png" width={32} height={32} alt="Whappi Logo" className="object-contain" />
               <span className="font-semibold text-foreground">Whappi</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-4">Plateforme d'automatisation WhatsApp avec IA.</p>
