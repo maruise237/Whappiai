@@ -28,7 +28,21 @@ const HUMAN_COMMENTS = [
   "Simple, efficace, pas cher. Que demander de plus ?",
   "J'étais sceptique au début, mais après la période d'essai, je suis conquis.",
   "L'intégration avec notre CRM s'est faite sans douleur. Bravo pour le boulot.",
-  "Le dashboard est super intuitif, même pour ceux qui ne sont pas techniques."
+  "Le dashboard est super intuitif, même pour ceux qui ne sont pas techniques.",
+  "La mise en place a pris moins d'une heure, c'est impressionnant.",
+  "Nos clients apprécient vraiment la réactivité de notre bot WhatsApp.",
+  "Le rapport qualité-prix est imbattable sur le marché actuel.",
+  "Les fonctionnalités de diffusion sont parfaites pour nos campagnes marketing.",
+  "Aucune coupure de service depuis 6 mois, une fiabilité à toute épreuve.",
+  "L'équipe technique est très compétente et aide vraiment à l'intégration.",
+  "L'interface utilisateur est moderne et très agréable à utiliser au quotidien.",
+  "Whappi nous a permis de centraliser tous nos échanges WhatsApp.",
+  "La gestion des contacts est fluide et l'import/export fonctionne bien.",
+  "Les réponses automatiques sont très flexibles et personnalisables.",
+  "C'est l'outil qu'il manquait à notre stack technique.",
+  "La documentation API est l'une des meilleures que j'ai vues.",
+  "Le support multi-langues est un vrai plus pour notre activité internationale.",
+  "Les statistiques nous aident à mieux comprendre nos interactions clients."
 ]
 
 // Specific Profiles
@@ -59,12 +73,8 @@ const OTHER_AVATARS = [
 const generateTestimonials = (count: number) => {
   const testimonials = []
   
-  // Add Specific Profiles first
-  testimonials.push({ id: 0, ...MARIUSE })
-  testimonials.push({ id: 1, ...CELINE })
-
-  // Generate random profiles for the rest
-  for (let i = 2; i < count; i++) {
+  // Generate random profiles
+  for (let i = 0; i < count; i++) {
     const firstName = NAMES[i % NAMES.length]
     const lastName = LAST_NAMES[i % LAST_NAMES.length]
     testimonials.push({
@@ -74,93 +84,110 @@ const generateTestimonials = (count: number) => {
       company: COMPANIES[i % COMPANIES.length],
       content: HUMAN_COMMENTS[i % HUMAN_COMMENTS.length],
       avatar: OTHER_AVATARS[i % OTHER_AVATARS.length],
-      rating: Math.random() > 0.3 ? 5 : 4 // Mostly 5 stars, some 4
+      rating: Math.random() > 0.3 ? 5 : 4
     })
   }
   
   return testimonials
 }
 
-const TESTIMONIALS = generateTestimonials(30)
+const GENERIC_TESTIMONIALS = generateTestimonials(30)
 
-const TestimonialCard = ({ testimonial, className }: { testimonial: typeof TESTIMONIALS[0], className?: string }) => (
-  <div className={cn(
-    "relative bg-card p-6 rounded-2xl border border-border shadow-sm mb-6 break-inside-avoid hover:shadow-md transition-shadow duration-300",
-    className
-  )}>
-    <div className="flex items-center gap-1 mb-4 text-yellow-500">
-      {[...Array(5)].map((_, i) => (
-        <Star 
-          key={i} 
-          size={14} 
-          fill={i < testimonial.rating ? "currentColor" : "none"} 
-          className={cn("opacity-80", i >= testimonial.rating && "text-muted-foreground opacity-30")} 
-        />
-      ))}
-    </div>
-    <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-      "{testimonial.content}"
-    </p>
-    <div className="flex items-center gap-3">
-      <Avatar className="h-10 w-10 border border-border">
-        <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-        <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
-      </Avatar>
-      <div>
-        <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
-        <p className="text-xs text-muted-foreground">{testimonial.role} @ {testimonial.company}</p>
-      </div>
-    </div>
-  </div>
-)
-
-const MarqueeColumn = ({ 
-  testimonials, 
-  duration = 40, 
-  reverse = false,
-  className 
-}: { 
-  testimonials: typeof TESTIMONIALS, 
-  duration?: number, 
-  reverse?: boolean,
-  className?: string
-}) => {
-  return (
-    <div className={cn("relative flex flex-col overflow-hidden h-[800px]", className)}>
-      <motion.div
-        initial={{ y: reverse ? "-50%" : "0%" }}
-        animate={{ y: reverse ? "0%" : "-50%" }}
-        transition={{
-          duration: duration,
-          repeat: Infinity,
-          ease: "linear",
-          repeatType: "loop"
-        }}
-        className="flex flex-col pb-6"
-      >
-        {[...testimonials, ...testimonials].map((t, i) => (
-          <TestimonialCard key={`${t.id}-${i}`} testimonial={t} />
-        ))}
-      </motion.div>
-    </div>
-  )
+// Helper to inject Mariuse/Celine into chunks
+const createChunk = (baseData: typeof GENERIC_TESTIMONIALS, includeMariuse: boolean, includeCeline: boolean, offset: number) => {
+    let chunk = [...baseData]
+    if (includeCeline) {
+        chunk.splice(2, 0, { id: 998, ...CELINE }) // Insert Celine at index 2
+    }
+    if (includeMariuse) {
+        chunk.splice(offset, 0, { id: 999, ...MARIUSE }) // Insert Mariuse at specific offset
+    }
+    return chunk
 }
-
-export function Testimonials() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const isInView = useInView(containerRef, { once: true, margin: "-10%" })
-
-  // Split testimonials into 3 chunks
-  const chunk1 = TESTIMONIALS.slice(0, 10)
-  const chunk2 = TESTIMONIALS.slice(10, 20)
-  const chunk3 = TESTIMONIALS.slice(20, 30)
-
-  return (
-    <section 
-      ref={containerRef} 
-      className="py-24 relative overflow-hidden bg-background"
-      aria-label="Témoignages clients"
-    >
+ 
+ const TestimonialCard = ({ testimonial, className }: { testimonial: typeof GENERIC_TESTIMONIALS[0], className?: string }) => (
+   <div className={cn(
+     "relative bg-card p-6 rounded-2xl border border-border shadow-sm mb-6 break-inside-avoid hover:shadow-md transition-shadow duration-300",
+     className
+   )}>
+     <div className="flex items-center gap-1 mb-4 text-yellow-500">
+       {[...Array(5)].map((_, i) => (
+         <Star 
+           key={i} 
+           size={14} 
+           fill={i < testimonial.rating ? "currentColor" : "none"} 
+           className={cn("opacity-80", i >= testimonial.rating && "text-muted-foreground opacity-30")} 
+         />
+       ))}
+     </div>
+     <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+       "{testimonial.content}"
+     </p>
+     <div className="flex items-center gap-3">
+       <Avatar className="h-10 w-10 border border-border">
+         <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+         <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
+       </Avatar>
+       <div>
+         <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
+         <p className="text-xs text-muted-foreground">{testimonial.role} @ {testimonial.company}</p>
+       </div>
+     </div>
+   </div>
+ )
+ 
+ const MarqueeColumn = ({ 
+   testimonials, 
+   duration = 40, 
+   reverse = false,
+   className 
+ }: { 
+   testimonials: typeof GENERIC_TESTIMONIALS, 
+   duration?: number, 
+   reverse?: boolean,
+   className?: string
+ }) => {
+   return (
+     <div className={cn("relative flex flex-col overflow-hidden h-[800px]", className)}>
+       <motion.div
+         initial={{ y: reverse ? "-50%" : "0%" }}
+         animate={{ y: reverse ? "0%" : "-50%" }}
+         transition={{
+           duration: duration,
+           repeat: Infinity,
+           ease: "linear",
+           repeatType: "loop"
+         }}
+         className="flex flex-col pb-6"
+       >
+         {[...testimonials, ...testimonials].map((t, i) => (
+           <TestimonialCard key={`${t.id}-${i}`} testimonial={t} />
+         ))}
+       </motion.div>
+     </div>
+   )
+ }
+ 
+ export function Testimonials() {
+   const containerRef = useRef<HTMLDivElement>(null)
+   const isInView = useInView(containerRef, { once: true, margin: "-10%" })
+ 
+   // Distribute testimonials and inject key profiles
+   // Chunk 1: Mariuse at top (index 0)
+   const chunk1 = createChunk(GENERIC_TESTIMONIALS.slice(0, 10), true, true, 0)
+   
+   // Chunk 2: Mariuse in middle (index 5)
+   const chunk2 = createChunk(GENERIC_TESTIMONIALS.slice(10, 20), true, false, 5)
+   
+   // Chunk 3: Mariuse near end (index 8)
+   const chunk3 = createChunk(GENERIC_TESTIMONIALS.slice(20, 30), true, false, 8)
+ 
+   return (
+     <section 
+       ref={containerRef} 
+       className="py-24 relative overflow-hidden bg-background"
+       aria-label="Témoignages clients"
+     >
       <div className="container px-4 mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-16 space-y-4">
