@@ -80,8 +80,8 @@ export default function RegisterPage() {
     return (
       <AuthLayout title="Vérification" subtitle="Entrez le code reçu par email">
         <form onSubmit={handleVerify} className="space-y-6 flex flex-col items-center">
-          <div className="text-center text-sm text-zinc-400 mb-2">
-            Un code a été envoyé à <span className="text-white font-medium">{email}</span>
+          <div className="text-center text-sm text-muted-foreground mb-2">
+            Un code a été envoyé à <span className="text-foreground font-medium">{email}</span>
           </div>
           
           <InputOTP
@@ -90,36 +90,39 @@ export default function RegisterPage() {
             onChange={(value) => setCode(value)}
           >
             <InputOTPGroup>
-              <InputOTPSlot index={0} className="w-10 h-12 text-lg bg-zinc-950/50 border-zinc-800 text-white" />
-              <InputOTPSlot index={1} className="w-10 h-12 text-lg bg-zinc-950/50 border-zinc-800 text-white" />
-              <InputOTPSlot index={2} className="w-10 h-12 text-lg bg-zinc-950/50 border-zinc-800 text-white" />
-              <InputOTPSlot index={3} className="w-10 h-12 text-lg bg-zinc-950/50 border-zinc-800 text-white" />
-              <InputOTPSlot index={4} className="w-10 h-12 text-lg bg-zinc-950/50 border-zinc-800 text-white" />
-              <InputOTPSlot index={5} className="w-10 h-12 text-lg bg-zinc-950/50 border-zinc-800 text-white" />
+              <InputOTPSlot index={0} className="w-10 h-12 text-lg bg-background border-input text-foreground" />
+              <InputOTPSlot index={1} className="w-10 h-12 text-lg bg-background border-input text-foreground" />
+              <InputOTPSlot index={2} className="w-10 h-12 text-lg bg-background border-input text-foreground" />
+              <InputOTPSlot index={3} className="w-10 h-12 text-lg bg-background border-input text-foreground" />
+              <InputOTPSlot index={4} className="w-10 h-12 text-lg bg-background border-input text-foreground" />
+              <InputOTPSlot index={5} className="w-10 h-12 text-lg bg-background border-input text-foreground" />
             </InputOTPGroup>
           </InputOTP>
 
           {error && (
-            <div className="text-red-400 text-xs text-center font-medium bg-red-500/10 p-2.5 rounded-lg border border-red-500/20 w-full animate-in fade-in slide-in-from-top-1">
+            <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-md border border-red-500/20">
               {error}
             </div>
           )}
 
-          <Button 
-            type="submit" 
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-widest h-11 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30"
-            disabled={loading || code.length < 6}
-          >
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Vérifier"}
-          </Button>
-          
-          <button 
-            type="button" 
-            onClick={() => setVerifying(false)}
-            className="text-xs text-zinc-500 hover:text-white flex items-center gap-1 transition-colors"
-          >
-            <ArrowLeft size={12} /> Retour
-          </button>
+          <div className="flex gap-2 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 h-11"
+              onClick={() => setVerifying(false)}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour
+            </Button>
+            <Button 
+              type="submit" 
+              className="flex-[2] h-11 font-bold tracking-wide uppercase text-white bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-500"
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Vérifier"}
+            </Button>
+          </div>
         </form>
       </AuthLayout>
     )
@@ -132,54 +135,54 @@ export default function RegisterPage() {
         
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-zinc-800" />
+            <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-            <span className="bg-zinc-900/40 backdrop-blur-xl px-2 text-zinc-500">ou avec email</span>
+            <span className="bg-card px-2 text-muted-foreground">ou avec email</span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName" className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Prénom</Label>
+              <Label htmlFor="firstName" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Prénom</Label>
               <Input 
                 id="firstName"
                 value={firstName} 
                 onChange={(e) => setFirstName(e.target.value)} 
                 placeholder="Jean"
-                className="bg-zinc-950/50 border-zinc-800 focus:border-primary text-white h-11 placeholder:text-zinc-600"
+                className="bg-background border-input focus:border-primary text-foreground h-11 placeholder:text-muted-foreground/60"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Nom</Label>
+              <Label htmlFor="lastName" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Nom</Label>
               <Input 
                 id="lastName"
                 value={lastName} 
                 onChange={(e) => setLastName(e.target.value)} 
                 placeholder="Dupont"
-                className="bg-zinc-950/50 border-zinc-800 focus:border-primary text-white h-11 placeholder:text-zinc-600"
+                className="bg-background border-input focus:border-primary text-foreground h-11 placeholder:text-muted-foreground/60"
                 required
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Email</Label>
+            <Label htmlFor="email" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Email</Label>
             <Input 
               id="email"
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               placeholder="nom@exemple.com"
-              className="bg-zinc-950/50 border-zinc-800 focus:border-primary text-white h-11 placeholder:text-zinc-600"
+              className="bg-background border-input focus:border-primary text-foreground h-11 placeholder:text-muted-foreground/60"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Mot de passe</Label>
+            <Label htmlFor="password" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Mot de passe</Label>
             <div className="relative">
               <Input 
                 id="password"
@@ -187,14 +190,14 @@ export default function RegisterPage() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="••••••••" 
-                className="bg-zinc-950/50 border-zinc-800 focus:border-primary text-white h-11 pr-10 placeholder:text-zinc-600"
+                className="bg-background border-input focus:border-primary text-foreground h-11 pr-10 placeholder:text-muted-foreground/60"
                 required
                 minLength={8}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -202,26 +205,26 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div className="text-red-400 text-xs text-center font-medium bg-red-500/10 p-2.5 rounded-lg border border-red-500/20 animate-in fade-in slide-in-from-top-1">
+            <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded-md border border-red-500/20">
               {error}
             </div>
           )}
 
           <Button 
             type="submit" 
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-widest h-11 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30"
+            className="w-full h-11 font-bold tracking-wide uppercase text-white bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-500"
             disabled={loading}
           >
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Continuer"}
           </Button>
-        </form>
 
-        <div className="mt-6 text-center text-xs text-zinc-500">
-          Vous avez déjà un compte ?{" "}
-          <Link href="/login" className="text-primary hover:text-primary/80 font-bold transition-colors">
-            Se connecter
-          </Link>
-        </div>
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            Vous avez déjà un compte ?{" "}
+            <Link href="/login" className="text-primary hover:text-primary/80 font-semibold transition-colors">
+              Se connecter
+            </Link>
+          </div>
+        </form>
       </AuthLayout>
       <InstallPrompt className="fixed bottom-4 right-4 top-auto" />
     </>

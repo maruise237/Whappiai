@@ -57,13 +57,13 @@ export const Logo: React.FC<LogoProps> = ({
           width="80"
           height="80"
           rx="12"
-          fill="hsl(var(--primary))"
+          fill="var(--primary)"
         />
         {/* Stylized 'W' composed of 4 geometric lines */}
         <path
           className="logo-w-path"
           d="M25 35L37.5 65L50 45L62.5 65L75 35"
-          stroke="white"
+          stroke="var(--primary-foreground)"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -71,7 +71,7 @@ export const Logo: React.FC<LogoProps> = ({
       </svg>
       {showText && (
         <span className={cn(
-          "font-bold text-lg tracking-tight text-[hsl(var(--foreground))] transition-all duration-200 group-hover:opacity-80 uppercase",
+          "font-bold text-lg tracking-tight text-foreground transition-all duration-200 group-hover:opacity-80 uppercase",
           orientation === 'horizontal' && "leading-none",
           textClassName
         )}>
