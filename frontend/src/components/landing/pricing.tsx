@@ -10,20 +10,26 @@ import { cn } from "@/lib/utils"
 const plans = [
   {
     name: "Starter",
-    description: "Pour débuter avec l'automatisation",
+    description: "Licence Standard : L'essentiel pour démarrer. Idéale pour les freelances et les tests d'automatisation sur un numéro unique.",
     price: { 
       monthly: "2 500 FCFA", 
       yearly: "25 000 FCFA",
       monthlyValue: 2500,
       yearlyValue: 25000
     },
-    features: ["500 messages IA / mois", "1 groupe WhatsApp", "Réponses automatiques", "Support standard"],
+    features: [
+      "500 messages IA / mois",
+      "1 numéro WhatsApp connecté",
+      "Réponses automatiques 24/7",
+      "Support technique par email",
+      "Accès aux mises à jour"
+    ],
     cta: "Commencer gratuitement",
     highlighted: false,
   },
   {
     name: "Pro",
-    description: "Pour les équipes en croissance",
+    description: "Licence Commerciale : La puissance de l'IA pour votre croissance. Gestion multi-groupes et analyses détaillées pour les PME.",
     price: { 
       monthly: "5 000 FCFA", 
       yearly: "50 000 FCFA",
@@ -32,18 +38,19 @@ const plans = [
     },
     features: [
       "2 000 messages IA / mois",
-      "Groupes illimités",
+      "Groupes WhatsApp illimités",
+      "Tableau de bord Analytics",
       "Anti-spam intelligent",
       "Support prioritaire",
-      "Analytics avancés",
+      "Export des données"
     ],
-    cta: "Commencer",
+    cta: "Choisir le plan Pro",
     highlighted: true,
     popular: true,
   },
   {
     name: "Business",
-    description: "Pour les grandes organisations",
+    description: "Licence Entreprise : Performance maximale sans compromis. Infrastructure dédiée et accompagnement sur mesure pour les grands comptes.",
     price: { 
       monthly: "10 000 FCFA", 
       yearly: "100 000 FCFA",
@@ -54,10 +61,11 @@ const plans = [
       "10 000 messages IA / mois",
       "Tout en Pro",
       "Support dédié 24/7",
-      "Intégrations personnalisées",
-      "Audit logs",
+      "Intégrations API sur mesure",
+      "Audit logs & Sécurité",
+      "Formation des équipes"
     ],
-    cta: "Commencer",
+    cta: "Contacter les ventes",
     highlighted: false,
   },
 ]
