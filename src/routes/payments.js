@@ -28,20 +28,6 @@ router.post('/checkout', ClerkExpressWithAuth(), async (req, res) => {
     }
 });
 
-// POST /api/v1/payments/webhook
-router.post('/webhook', express.json(), async (req, res) => {
-    const signature = req.headers['x-chariow-signature']; // À adapter selon la doc Chariow
-    const payload = req.body;
-
-    try {
-        await handleWebhook(payload, signature);
-        res.status(200).send('OK');
-    } catch (error) {
-        log('Erreur webhook', 'PAYMENT', { error: error.message }, 'ERROR');
-        res.status(500).send('Webhook Error');
-    }
-});
-
 // GET /api/v1/payments/plans
 router.get('/plans', (req, res) => {
     res.json(PLANS);

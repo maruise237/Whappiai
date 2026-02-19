@@ -140,7 +140,16 @@ app.use((req, res, next) => {
     }
     next();
 });
-app.use(express.json({ limit: '1mb' }));
+
+// JSON Body Parser with exception for Clerk Webhook (needs raw body)
+app.use((req, res, next) => {
+    if (req.originalUrl === '/webhooks/clerk') {
+        next();
+    } else {
+        express.json({ limit: '1mb' })(req, res, next);
+    }
+});
+
 app.use(express.urlencoded({ extended: true }));
 
 // Dynamic session cookie security upgrade for HTTPS/ngrok (MUST BE BEFORE SESSION MIDDLEWARE)

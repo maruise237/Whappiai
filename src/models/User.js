@@ -98,15 +98,54 @@ class User {
      * @param {object} aiConfig - AI configuration object
      * @returns {object} Updated user
      */
-    static updateAIConfig(id, aiConfig) {
-        const { enabled, prompt, model } = aiConfig;
+    static updateAIConfig(id, { enabled, prompt, model }) {
+        if (!id) return null;
+        
         const stmt = db.prepare(`
             UPDATE users 
             SET ai_enabled = ?, ai_prompt = ?, ai_model = ?
             WHERE id = ?
         `);
+        
         stmt.run(enabled ? 1 : 0, prompt, model, id);
         return this.findById(id);
+    }
+
+    /**
+     * Update user subscription
+     * @param {string} email - User email
+     * @param {object} subscriptionData - Subscription details
+     * @returns {object} Updated user
+     */
+    static updateSubscription(email, { planId, status, licenseKey, expiry, messageLimit }) {
+        if (!email) return null;
+
+        // Map generic plan statuses to our internal status
+        const validStatuses = ['active', 'expired', 'revoked', 'trial'];
+        const finalStatus = validStatuses.includes(status) ? status : 'active';
+
+        // Set message limits based on plan if not provided
+        if (messageLimit === undefined || messageLimit === null) {
+            messageLimit = 100; // Free/Default
+            if (planId === 'starter') messageLimit = 2000;
+            if (planId === 'pro') messageLimit = 10000;
+            if (planId === 'business') messageLimit = 100000;
+        }
+
+        const stmt = db.prepare(`
+            UPDATE users 
+            SET plan_id = ?, 
+                plan_status = ?, 
+                chariow_license_key = ?, 
+                subscription_expiry = ?,
+                message_limit = ?
+            WHERE email = ?
+        `);
+
+        stmt.run(planId, finalStatus, licenseKey, expiry, messageLimit, email.toLowerCase());
+        
+        log(`Updated subscription for ${email}: ${planId} (${finalStatus})`, 'AUTH');
+        return this.findByEmail(email);
     }
 
     /**

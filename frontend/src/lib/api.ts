@@ -257,6 +257,16 @@ export const api = {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
   },
+  payments: {
+    getPlans: (token?: string) => fetchApi("/api/v1/payments/plans", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    checkout: (planId: string, token?: string) => fetchApi("/api/v1/payments/checkout", {
+      method: "POST",
+      body: JSON.stringify({ planId }),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+  },
   ai: {
     listModels: (token?: string) => fetchApi("/api/v1/ai-models", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},

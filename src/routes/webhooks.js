@@ -9,6 +9,7 @@ const { Webhook } = require('svix');
 const User = require('../models/User');
 const ActivityLog = require('../models/ActivityLog');
 const { log } = require('../utils/logger');
+const paymentService = require('../services/payment');
 
 router.post('/clerk', express.raw({ type: 'application/json' }), async (req, res) => {
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -93,6 +94,53 @@ router.post('/clerk', express.raw({ type: 'application/json' }), async (req, res
     }
 
     return res.status(200).json({ success: true });
+});
+
+/**
+ * Chariow Webhook Handler
+ * Handles license events (issued, expired, revoked)
+ */
+router.post('/chariow', async (req, res) => {
+    // 1. Security Check: Validate Webhook Secret if configured
+    // Chariow allows adding query params to the webhook URL.
+    // Configure your webhook URL in Chariow as: https://your-api.com/webhooks/chariow?secret=YOUR_SECRET
+    const configuredSecret = process.env.CHARIOW_WEBHOOK_SECRET;
+    const incomingSecret = req.query.secret;
+
+    if (configuredSecret && configuredSecret !== incomingSecret) {
+        log('Chariow Webhook rejected: Invalid secret', 'SYSTEM', { 
+            expected: '***', 
+            received: incomingSecret ? '***' : 'null' 
+        }, 'WARN');
+        return res.status(403).json({ error: 'Forbidden: Invalid webhook secret' });
+    }
+
+    // 2. Log the incoming webhook for debugging
+    log(`Chariow Webhook received`, 'SYSTEM', { 
+        headers: req.headers,
+        body: req.body 
+    }, 'DEBUG');
+
+    const { event, payload } = req.body;
+
+    if (!event || !payload) {
+        log('Invalid Chariow webhook format', 'SYSTEM', null, 'WARN');
+        return res.status(400).json({ error: 'Invalid payload' });
+    }
+
+    try {
+        // All logic (including logging) is now handled in paymentService
+        const result = await paymentService.handleLicenseEvent(event, payload);
+        
+        if (result.success) {
+            res.json({ success: true });
+        } else {
+            res.status(400).json({ error: result.error });
+        }
+    } catch (error) {
+        log(`Error processing Chariow webhook: ${error.message}`, 'SYSTEM', null, 'ERROR');
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 module.exports = router;
