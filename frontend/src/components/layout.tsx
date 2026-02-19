@@ -289,7 +289,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-slate-100 dark:bg-primary/5 mx-2" />
                 <DropdownMenuItem 
-                  onClick={() => router.push('/profile')}
+                  onClick={() => router.push('/dashboard/profile')}
                   className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-primary/5 hover:text-primary transition-all duration-200 cursor-pointer group"
                 >
                   <UserCircle className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />

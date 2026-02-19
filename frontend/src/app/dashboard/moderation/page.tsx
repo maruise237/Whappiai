@@ -220,7 +220,7 @@ export default function ModerationSessionsPage() {
                 <Button 
                   className="w-full h-11 font-bold uppercase tracking-widest text-[10px] rounded-lg shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all duration-200 active:scale-95" 
                   disabled={!session.isConnected}
-                  onClick={() => router.push(`/moderation/groups/moderation?session=${session.sessionId}`)}
+                  onClick={() => router.push(`/dashboard/moderation/groups/moderation?session=${session.sessionId}`)}
                 >
                   Modération
                 </Button>
@@ -228,7 +228,7 @@ export default function ModerationSessionsPage() {
                   variant="outline"
                   className="w-full h-11 font-bold uppercase tracking-widest text-[10px] rounded-lg border border-slate-200 dark:border-primary/20 hover:bg-primary/5 transition-all duration-200 active:scale-95" 
                   disabled={!session.isConnected}
-                  onClick={() => router.push(`/moderation/groups/animation?session=${session.sessionId}`)}
+                  onClick={() => router.push(`/dashboard/moderation/groups/animation?session=${session.sessionId}`)}
                 >
                   Animation
                 </Button>

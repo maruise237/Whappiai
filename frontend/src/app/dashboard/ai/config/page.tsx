@@ -161,7 +161,7 @@ function AIConfigForm() {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-black uppercase tracking-tighter">Session non spécifiée</h2>
-        <Button variant="link" onClick={() => router.push('/ai')} className="text-primary font-bold uppercase tracking-widest text-xs">Retour à la liste</Button>
+        <Button variant="link" onClick={() => router.push('/dashboard/ai')} className="text-primary font-bold uppercase tracking-widest text-xs">Retour à la liste</Button>
       </div>
     )
   }
@@ -178,7 +178,7 @@ function AIConfigForm() {
           <Button 
             variant="outline" 
             size="icon" 
-            onClick={() => router.push('/ai')} 
+            onClick={() => router.push('/dashboard/ai')} 
             className="h-10 w-10 sm:h-14 sm:w-14 rounded-lg border-2 hover:bg-primary/5 hover:text-primary transition-all duration-200 shadow-sm"
           >
             <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7" />

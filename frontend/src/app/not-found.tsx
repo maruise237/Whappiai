@@ -3,9 +3,12 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
-import { Home, ArrowRight, MessageSquare, FileText } from "lucide-react"
+import { Home, ArrowRight, MessageSquare, FileText, LayoutDashboard } from "lucide-react"
+import { useUser } from "@clerk/nextjs"
 
 export default function NotFound() {
+  const { isSignedIn, isLoaded } = useUser()
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-2xl w-full text-center space-y-8">
@@ -43,10 +46,10 @@ export default function NotFound() {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="grid gap-4 sm:grid-cols-2 max-w-lg mx-auto"
         >
-          <Button asChild size="lg" className="w-full gap-2">
-            <Link href="/">
-              <Home size={18} />
-              Retour à l'accueil
+          <Button asChild size="lg" className="w-full gap-2" disabled={!isLoaded}>
+            <Link href={!isLoaded ? "#" : (isSignedIn ? "/dashboard" : "/")}>
+              {isSignedIn ? <LayoutDashboard size={18} /> : <Home size={18} />}
+              {isSignedIn ? "Tableau de bord" : "Retour à l'accueil"}
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="w-full gap-2">

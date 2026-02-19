@@ -341,7 +341,7 @@ export default function AIPage() {
                       <span className="font-bold uppercase tracking-widest text-[10px]">Réglages Rapides</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className={cn("cursor-pointer rounded-lg p-3 focus:bg-amber-500/10 focus:text-amber-500 transition-colors duration-200", index === 0 && "ai-advanced-config")}>
-                       <Link href={`/ai/config?session=${item.sessionId}`} className="flex items-center w-full" prefetch={false}>
+                       <Link href={`/dashboard/ai/config?session=${item.sessionId}`} className="flex items-center w-full" prefetch={false}>
                         <Zap className="w-4 h-4 mr-3 text-amber-500" />
                         <span className="font-bold uppercase tracking-widest text-[10px]">Configuration IA</span>
                        </Link>
@@ -478,7 +478,7 @@ export default function AIPage() {
           </div>
           <DialogFooter className="p-8 bg-slate-50/50 dark:bg-muted/5 border-t border-slate-100 dark:border-primary/5 flex flex-col sm:flex-row gap-4">
              <Button variant="outline" asChild className="w-full sm:flex-1 h-14 font-black uppercase tracking-widest text-[10px] rounded-lg border-2 border-slate-200 dark:border-primary/20 hover:bg-primary/5 transition-all duration-200 shadow-sm">
-                <Link href={`/ai/config?session=${formData.sessionId}`} className="flex items-center justify-center gap-3" prefetch={false}>
+                <Link href={`/dashboard/ai/config?session=${formData.sessionId}`} className="flex items-center justify-center gap-3" prefetch={false}>
                   <Zap className="w-4 h-4 text-amber-500" />
                   Configuration Avancée
                 </Link>
