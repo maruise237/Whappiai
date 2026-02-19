@@ -33,13 +33,12 @@ const SCENARIOS = [
     ] as Message[],
   },
   {
-    name: "licenses",
+    name: "support",
     messages: [
-      { role: "user", content: "Quels sont vos différents packs ?" },
-      { role: "assistant", content: "Voici le détail de nos 3 licences :" },
-      { role: "assistant", content: "🔹 Starter : Licence Standard idéale pour les freelances." },
-      { role: "assistant", content: "🚀 Pro : Licence Commerciale pour la croissance des PME." },
-      { role: "assistant", content: "🏢 Business : Licence Entreprise avec infrastructure dédiée." },
+      { role: "user", content: "Comment voir les tarifs ?" },
+      { role: "assistant", content: "Vous pouvez consulter nos plans sur /pricing ou taper !tarifs" },
+      { role: "user", content: "Il y a un essai gratuit ?" },
+      { role: "assistant", content: "Oui ! 14 jours gratuits sans carte bancaire. Tapez !start pour commencer." },
     ] as Message[],
   },
   {

@@ -14,7 +14,16 @@ import {
   AccordionItem, 
   AccordionTrigger 
 } from "@/components/ui/accordion"
-import { Plus, History, ArrowRight, Activity, Terminal, Code2, Layers, ChevronDown } from "lucide-react"
+import { Plus, History, ArrowRight, Activity, Terminal, Code2, Layers, ChevronDown, Coins } from "lucide-react"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -53,6 +62,12 @@ export default function DashboardPage() {
     activeSessions: 0,
     messagesSent: 0
   })
+  const [credits, setCredits] = React.useState<{
+    balance: number,
+    used: number,
+    plan: string,
+    history: any[]
+  } | null>(null)
 
   const [mounted, setMounted] = React.useState(false)
   const [userRole, setUserRole] = React.useState<string | null>(null)
@@ -228,6 +243,18 @@ export default function DashboardPage() {
     }
   }
 
+  const fetchCredits = async () => {
+    try {
+      const token = await getToken()
+      const response = await api.credits.get(token || undefined)
+      if (response && response.data) {
+        setCredits(response.data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch credits:", error)
+    }
+  }
+
   const handleCreateSession = async () => {
     if (!newSessionId) return
     
@@ -265,6 +292,7 @@ export default function DashboardPage() {
     const init = async () => {
       const data = await fetchSessions()
       fetchRecentActivities(data)
+      fetchCredits()
     }
     
     init()
@@ -274,6 +302,7 @@ export default function DashboardPage() {
       console.log("[Dashboard] Polling for updates...")
       const data = await fetchSessions()
       fetchRecentActivities(data)
+      fetchCredits()
     }, 30000)
 
     return () => clearInterval(interval)
@@ -310,6 +339,72 @@ export default function DashboardPage() {
                     <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/40">7 jours</p>
                   </Card>
                 )}
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg p-4 min-h-[100px] flex flex-col justify-between active:scale-95 transition-transform cursor-pointer">
+                      <div className="space-y-1">
+                        <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/60">Crédits</div>
+                        <div className="text-2xl font-black tracking-tighter text-yellow-500 leading-none">{userRole === 'admin' ? '∞' : (credits?.balance || 0)}</div>
+                      </div>
+                      <p className="text-[7px] font-bold uppercase tracking-widest text-muted-foreground/40">Restants</p>
+                    </Card>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-[80vh]">
+                    <SheetHeader>
+                      <SheetTitle className="text-xl font-bold">Historique des Crédits</SheetTitle>
+                      <SheetDescription>
+                        Suivez vos recharges et votre consommation.
+                      </SheetDescription>
+                    </SheetHeader>
+                    <ScrollArea className="h-full mt-6 pr-4 pb-12">
+                      <div className="space-y-4">
+                        {credits?.history && credits.history.length > 0 ? (
+                          credits.history.map((item: any, i: number) => (
+                            <div key={i} className="flex flex-col gap-2 p-4 rounded-xl border border-slate-200 dark:border-primary/10 bg-slate-50/50 dark:bg-card/50">
+                              <div className="flex items-center justify-between">
+                          <span className={cn(
+                            "text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-md",
+                            item.type === 'debit'
+                              ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          )}>
+                            {item.type === 'debit' ? 'Débit' : 'Crédit'}
+                          </span>
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            {new Date(item.created_at).toLocaleString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                            {item.description || (item.type === 'debit' ? 'Utilisation' : 'Recharge')}
+                          </p>
+                          <span className={cn(
+                            "text-lg font-black tracking-tight",
+                            item.type === 'debit' ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+                          )}>
+                            {item.type === 'debit' ? '-' : '+'}{item.amount}
+                          </span>
+                        </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                            <div className="p-4 bg-slate-100 dark:bg-card/50 rounded-full">
+                              <History className="w-8 h-8 text-muted-foreground/40" />
+                            </div>
+                            <p className="text-sm font-medium text-muted-foreground">Aucun historique disponible</p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </SheetContent>
+                </Sheet>
                 <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-lg p-4 min-h-[100px] flex flex-col justify-between">
                   <div className="space-y-1">
                     <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/60">Succès</div>
@@ -339,7 +434,7 @@ export default function DashboardPage() {
         {/* Desktop Stats Grid */}
         <div className={cn(
           "hidden sm:grid gap-4 sm:gap-8 grid-cols-2",
-          userRole === 'admin' ? "lg:grid-cols-4" : "lg:grid-cols-3"
+          userRole === 'admin' ? "lg:grid-cols-5" : "lg:grid-cols-4"
         )}>
           {userRole === 'admin' && (
             <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[160px] flex flex-col justify-between">
@@ -356,6 +451,83 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           )}
+
+          <Sheet>
+            <SheetTrigger asChild>
+              <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[160px] flex flex-col justify-between cursor-pointer">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-yellow-500/10 transition-colors duration-300" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 relative z-10 p-6">
+                  <CardTitle className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Solde Crédits</CardTitle>
+                  <div className="p-3 bg-yellow-500/10 rounded-xl border border-yellow-500/20 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                    <Coins className="h-5 w-5 text-yellow-500" />
+                  </div>
+                </CardHeader>
+                <CardContent className="relative z-10 pb-6 px-6">
+                  <div className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white mb-1 leading-none">
+                    {userRole === 'admin' ? '∞' : (credits?.balance || 0)}
+                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                    {userRole === 'admin' ? 'Illimité' : 'Messages restants'}
+                  </p>
+                </CardContent>
+              </Card>
+            </SheetTrigger>
+            <SheetContent className="w-[400px] sm:w-[540px]">
+              <SheetHeader>
+                <SheetTitle className="text-xl font-bold">Historique des Crédits</SheetTitle>
+                <SheetDescription>
+                  Suivez vos recharges et votre consommation de messages.
+                </SheetDescription>
+              </SheetHeader>
+              <ScrollArea className="h-[calc(100vh-8rem)] mt-6 pr-4">
+                <div className="space-y-4">
+                  {credits?.history && credits.history.length > 0 ? (
+                    credits.history.map((item: any, i: number) => (
+                      <div key={i} className="flex flex-col gap-2 p-4 rounded-xl border border-slate-200 dark:border-primary/10 bg-slate-50/50 dark:bg-card/50">
+                        <div className="flex items-center justify-between">
+                          <span className={cn(
+                            "text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-md",
+                            item.type === 'debit'
+                              ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          )}>
+                            {item.type === 'debit' ? 'Débit' : 'Crédit'}
+                          </span>
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            {new Date(item.created_at).toLocaleString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                            {item.description || (item.type === 'debit' ? 'Utilisation' : 'Recharge')}
+                          </p>
+                          <span className={cn(
+                            "text-lg font-black tracking-tight",
+                            item.type === 'debit' ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+                          )}>
+                            {item.type === 'debit' ? '-' : '+'}{item.amount}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                      <div className="p-4 bg-slate-100 dark:bg-card/50 rounded-full">
+                        <History className="w-8 h-8 text-muted-foreground/40" />
+                      </div>
+                      <p className="text-sm font-medium text-muted-foreground">Aucun historique disponible</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
 
           <Card className="rounded-xl border border-slate-200 dark:border-primary/5 bg-white/80 dark:bg-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300 group overflow-hidden relative hover:-translate-y-1 min-h-[160px] flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-emerald-500/10 transition-colors duration-300" />

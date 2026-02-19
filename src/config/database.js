@@ -70,7 +70,14 @@ function initializeSchema() {
         { name: 'verification_token_expires', type: 'DATETIME' },
         { name: 'reset_token', type: 'TEXT' },
         { name: 'reset_token_expires', type: 'DATETIME' },
-        { name: 'image_url', type: 'TEXT' }
+        { name: 'image_url', type: 'TEXT' },
+        // Payment & Subscription fields
+        { name: 'plan_id', type: "TEXT DEFAULT 'free'" },
+        { name: 'plan_status', type: "TEXT DEFAULT 'active'" }, // active, trialing, expired, cancelled
+        { name: 'message_limit', type: 'INTEGER DEFAULT 100' }, // Free tier limit
+        { name: 'message_used', type: 'INTEGER DEFAULT 0' },
+        { name: 'subscription_expiry', type: 'DATETIME' },
+        { name: 'chariow_license_key', type: 'TEXT' }
     ];
 
     userColumns.forEach(col => {
@@ -92,6 +99,18 @@ function initializeSchema() {
             pairing_code TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Credit History table
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS credit_history (
+            id TEXT PRIMARY KEY,
+            user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+            amount INTEGER NOT NULL,
+            type TEXT CHECK(type IN ('credit', 'debit', 'bonus', 'purchase')),
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
 

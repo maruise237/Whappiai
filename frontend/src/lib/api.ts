@@ -104,6 +104,11 @@ export const api = {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
   },
+  credits: {
+    get: (token?: string) => fetchApi("/api/v1/credits", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+  },
   sessions: {
     list: (token?: string) => fetchApi("/api/v1/sessions", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},

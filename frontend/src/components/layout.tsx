@@ -25,7 +25,8 @@ import {
   Settings2,
   HelpCircle,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  CreditCard
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -64,6 +65,7 @@ const mainNavigation = [
 ]
 
 const secondaryNavigation = [
+  { name: "Abonnement", href: "/dashboard/billing", icon: CreditCard },
   { name: "Paramètres", href: "/dashboard/profile", icon: Settings },
   { name: "API Docs", href: "/docs", icon: FileText },
 ]

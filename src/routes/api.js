@@ -1097,6 +1097,29 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         });
     });
 
+    // Get credit history
+    router.get('/credits', checkSessionOrTokenAuth, (req, res) => {
+        try {
+            const user = User.findById(req.currentUser.id);
+            if (!user) {
+                return res.status(404).json({ status: 'error', message: 'Utilisateur non trouvé' });
+            }
+
+            const history = User.getCreditHistory(req.currentUser.id);
+            res.json({
+                status: 'success',
+                data: {
+                    balance: user.message_limit,
+                    used: user.message_used,
+                    plan: user.plan_id,
+                    history: history
+                }
+            });
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
     // Main message sending endpoint
     router.post('/messages', checkSessionOrTokenAuth, async (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, query: req.query });
@@ -1146,7 +1169,18 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 continue;
             }
 
+            // Credit Check & Deduction
+            let creditDeducted = false;
             try {
+                if (req.currentUser && req.currentUser.role !== 'admin') {
+                    const hasCredit = User.deductCredits(req.currentUser.id, 1, `Envoi message vers ${to}`);
+                    if (!hasCredit) {
+                        results.push({ status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' });
+                        continue;
+                    }
+                    creditDeducted = true;
+                }
+
                 let result;
                 if (type === 'text') {
                     result = await sendMessage(session.sock, to, { text: text }, sessionId, req);
@@ -1161,8 +1195,16 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 } else {
                     result = { status: 'error', message: `Unsupported message type: ${type}` };
                 }
+
+                if (result.status === 'error' && creditDeducted) {
+                    User.refundCredits(req.currentUser.id, 1, `Remboursement: échec envoi vers ${to}`);
+                }
+
                 results.push(result);
             } catch (error) {
+                if (creditDeducted) {
+                    User.refundCredits(req.currentUser.id, 1, `Remboursement: erreur système vers ${to}`);
+                }
                 results.push({ status: 'error', message: error.message });
             }
         }

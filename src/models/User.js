@@ -38,12 +38,26 @@ class User {
         const stmt = db.prepare(`
             INSERT INTO users (
                 id, email, name, password, role, image_url, created_by, created_at, 
-                is_active, is_verified
+                is_active, is_verified,
+                plan_id, plan_status, message_limit, message_used, subscription_expiry
             )
-            VALUES (?, ?, ?, 'CLERK_EXTERNAL_AUTH', ?, ?, ?, datetime('now'), 1, 1)
+            VALUES (?, ?, ?, 'CLERK_EXTERNAL_AUTH', ?, ?, ?, datetime('now'), 1, 1,
+                'trial', 'active', 60, 0, datetime('now', '+15 days')
+            )
         `);
 
         stmt.run(userId, normalizedEmail, name, targetRole, imageUrl, createdBy);
+
+        // Add initial credit history
+        try {
+            const creditStmt = db.prepare(`
+                INSERT INTO credit_history (id, user_id, amount, type, description)
+                VALUES (?, ?, ?, ?, ?)
+            `);
+            creditStmt.run(crypto.randomUUID(), userId, 60, 'bonus', 'Crédits de bienvenue (Inscription)');
+        } catch (e) {
+            log(`Error adding initial credits history: ${e.message}`, 'AUTH', null, 'ERROR');
+        }
 
         return this.findById(userId);
     }
@@ -191,6 +205,90 @@ class User {
             `);
             stmt.run(id, adminEmail, hashedPassword);
             log('Utilisateur admin par défaut créé (Legacy)', 'AUTH', { email: adminEmail }, 'INFO');
+        }
+    }
+
+    /**
+     * Get user credit history
+     * @param {string} userId - User ID
+     * @returns {Array} Credit history records
+     */
+    static getCreditHistory(userId) {
+        const stmt = db.prepare('SELECT * FROM credit_history WHERE user_id = ? ORDER BY created_at DESC');
+        return stmt.all(userId);
+    }
+
+    /**
+     * Deduct credits from user
+     * @param {string} userId - User ID
+     * @param {number} amount - Amount to deduct
+     * @param {string} description - Description for history
+     * @returns {boolean} True if successful, false if insufficient funds
+     */
+    static deductCredits(userId, amount, description) {
+        const user = this.findById(userId);
+        if (!user) return false;
+
+        // Admins have unlimited credits
+        if (user.role === 'admin') return true;
+
+        if (user.message_limit < amount) return false;
+
+        const stmt = db.prepare(`
+            UPDATE users 
+            SET message_limit = message_limit - ?, message_used = message_used + ?
+            WHERE id = ?
+        `);
+        
+        try {
+            const historyStmt = db.prepare(`
+                INSERT INTO credit_history (id, user_id, amount, type, description)
+                VALUES (?, ?, ?, 'debit', ?)
+            `);
+
+            // Use db.transaction to ensure atomicity
+            const transaction = db.transaction((uid, amt, desc) => {
+                stmt.run(amt, amt, uid);
+                historyStmt.run(crypto.randomUUID(), uid, amt, desc);
+            });
+
+            transaction(userId, amount, description);
+            return true;
+        } catch (error) {
+            log(`Failed to deduct credits: ${error.message}`, 'DB', { userId, amount }, 'ERROR');
+            return false;
+        }
+    }
+
+    /**
+     * Refund credits to user (e.g. failed message)
+     * @param {string} userId - User ID
+     * @param {number} amount - Amount to refund
+     * @param {string} description - Description
+     */
+    static refundCredits(userId, amount, description) {
+        const stmt = db.prepare(`
+            UPDATE users 
+            SET message_limit = message_limit + ?, message_used = message_used - ?
+            WHERE id = ?
+        `);
+        
+        try {
+            const historyStmt = db.prepare(`
+                INSERT INTO credit_history (id, user_id, amount, type, description)
+                VALUES (?, ?, ?, 'credit', ?)
+            `);
+
+            const transaction = db.transaction((uid, amt, desc) => {
+                stmt.run(amt, amt, uid);
+                historyStmt.run(crypto.randomUUID(), uid, amt, desc);
+            });
+
+            transaction(userId, amount, description);
+            return true;
+        } catch (error) {
+            log(`Failed to refund credits: ${error.message}`, 'DB', { userId, amount }, 'ERROR');
+            return false;
         }
     }
 }

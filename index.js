@@ -40,6 +40,7 @@ const whatsappService = require('./src/services/whatsapp');
 const animatorService = require('./src/services/animator');
 const userRoutes = require('./src/routes/users');
 const webhookRoutes = require('./src/routes/webhooks');
+const paymentRoutes = require('./src/routes/payments');
 const { log, setBroadcastFn } = require('./src/utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middleware/errorHandler');
 
@@ -486,7 +487,7 @@ const apiRouter = initializeApi(
 // Mount routes
 app.use('/webhooks', webhookRoutes);
 app.use('/admin/users', userRoutes);
-
+app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1', apiRouter);
 
 // Serve modern UI
