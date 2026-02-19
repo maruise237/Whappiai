@@ -10,7 +10,7 @@ import { AuthLayout } from "@/components/auth/auth-layout"
 import { SocialButtons } from "@/components/auth/social-buttons"
 import { InstallPrompt } from "@/components/InstallPrompt"
 import Link from "next/link"
-import { Eye, EyeOff, Loader2, Mail } from "lucide-react"
+import { Eye, EyeOff, Loader2, Mail, Sparkles, ArrowRight } from "lucide-react"
 
 export default function LoginPage() {
   const { isLoaded, signIn, setActive } = useSignIn()
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <AuthLayout title="Connexion" subtitle="Connectez-vous ou créez un compte automatiquement">
+      <AuthLayout title="Bon retour parmi nous" subtitle="Accédez à votre espace de travail">
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <Button 
@@ -70,7 +70,7 @@ export default function LoginPage() {
             <div className="absolute left-4">
               <Mail className="w-5 h-5" />
             </div>
-            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Continuer avec Email"}
+            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Se connecter avec Email"}
           </Button>
 
           {/* Email/Password Fields - Visually integrated to look like they expand or belong to the email flow */}
@@ -118,17 +118,36 @@ export default function LoginPage() {
             <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase tracking-widest font-medium">
-            <span className="bg-background px-3 text-muted-foreground">ou</span>
+            <span className="bg-background px-3 text-muted-foreground">ou continuer avec</span>
           </div>
         </div>
 
         <SocialButtons mode="signin" />
 
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          Vous n'avez pas de compte ?{" "}
-          <Link href="/register" className="text-green-600 dark:text-green-500 hover:text-green-500 dark:hover:text-green-400 font-semibold transition-colors hover:underline">
-            S'inscrire
-          </Link>
+        {/* Section Nouveau Compte - SaaS 2026 Best Practice */}
+        <div className="mt-8 pt-6 border-t border-dashed border-border/60">
+          <div className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-2xl p-5 border border-green-500/10 hover:border-green-500/20 transition-colors group">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-green-500/10 rounded-lg text-green-600 dark:text-green-400 mt-0.5 group-hover:scale-110 transition-transform duration-300">
+                <Sparkles size={18} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-semibold text-sm text-foreground">Pas encore de compte ?</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Rejoignez les entreprises qui automatisent leur support client. Essai gratuit sans carte bancaire.
+                </p>
+              </div>
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              className="w-full mt-4 h-10 border border-green-500/20 hover:border-green-500/40 hover:bg-green-500/10 text-green-700 dark:text-green-300 transition-all text-xs uppercase tracking-wide font-bold flex items-center justify-between px-4 group/btn"
+              onClick={() => router.push('/register')}
+            >
+              <span>Commencer l'inscription</span>
+              <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+            </Button>
+          </div>
         </div>
       </AuthLayout>
     </>
