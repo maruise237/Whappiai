@@ -13,6 +13,8 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import Link from "next/link"
 import { Eye, EyeOff, Loader2, ArrowLeft, Mail } from "lucide-react"
 
+import { ConversionModal } from "@/components/auth/conversion-modal"
+
 export default function RegisterPage() {
   const { isLoaded, signUp, setActive } = useSignUp()
   const { user, isSignedIn } = useUser()
@@ -30,6 +32,11 @@ export default function RegisterPage() {
   // Redirection automatique une fois l'utilisateur authentifié
   useEffect(() => {
     if (isSignedIn && user) {
+      // Si on vient du flux de conversion, on laisse la modale gérer la redirection
+      const params = new URLSearchParams(window.location.search)
+      if (params.get("intent") === "signup") {
+        return
+      }
       router.push("/dashboard")
     }
   }, [isSignedIn, user, router])
@@ -140,6 +147,7 @@ export default function RegisterPage() {
   return (
     <>
       <AuthLayout title="Créer un compte" subtitle="Commencez votre essai gratuit">
+        <ConversionModal />
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <Button 

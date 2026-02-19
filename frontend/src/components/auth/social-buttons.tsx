@@ -1,27 +1,46 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useSignIn } from "@clerk/nextjs"
+import { useSignIn, useSignUp } from "@clerk/nextjs"
 
 export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" }) {
-  const { signIn, isLoaded } = useSignIn()
+  const { signIn, isLoaded: isSignInLoaded } = useSignIn()
+  const { signUp, isLoaded: isSignUpLoaded } = useSignUp()
+  
+  const isLoaded = mode === "signin" ? isSignInLoaded : isSignUpLoaded
 
   if (!isLoaded) return null
 
   const handleGoogleClick = () => {
-    signIn.authenticateWithRedirect({
-      strategy: "oauth_google",
-      redirectUrl: "/sso-callback",
-      redirectUrlComplete: "/dashboard",
-    })
+    if (mode === "signin") {
+      signIn.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/dashboard",
+      })
+    } else {
+      signUp.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/dashboard",
+      })
+    }
   }
 
   const handleAppleClick = () => {
-    signIn.authenticateWithRedirect({
-      strategy: "oauth_apple",
-      redirectUrl: "/sso-callback",
-      redirectUrlComplete: "/dashboard",
-    })
+    if (mode === "signin") {
+      signIn.authenticateWithRedirect({
+        strategy: "oauth_apple",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/dashboard",
+      })
+    } else {
+      signUp.authenticateWithRedirect({
+        strategy: "oauth_apple",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/dashboard",
+      })
+    }
   }
 
   return (

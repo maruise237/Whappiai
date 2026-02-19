@@ -39,6 +39,10 @@ export default clerkMiddleware(async (auth, request) => {
 
   // Redirect authenticated users from auth pages to dashboard
   if (isAuthRoute(request) && userId) {
+    const { searchParams } = new URL(request.url);
+    if (searchParams.get('intent') === 'signup') {
+      return NextResponse.next();
+    }
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
