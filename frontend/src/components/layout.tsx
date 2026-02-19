@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useUser, SignOutButton, UserButton, useClerk } from "@clerk/nextjs"
+import { useUser, SignOutButton, UserButton, useClerk, useAuth } from "@clerk/nextjs"
 import { 
   MessageSquare, 
   LayoutDashboard, 
@@ -75,6 +75,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
+  const { getToken } = useAuth()
   const [isDarkMode, setIsDarkMode] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
 
@@ -85,6 +86,27 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   if (userEmail && userEmail.toLowerCase() === 'maruise237@gmail.com') {
     userRole = 'admin'
   }
+
+  React.useEffect(() => {
+    const checkUserSync = async () => {
+      if (!isLoaded || !user) return;
+      
+      try {
+        const token = await getToken();
+        // Check if user exists in local DB
+        // We catch the error if it returns 404 (User not found)
+        await api.auth.check(token || undefined);
+      } catch (error: any) {
+        // If 404 or specific error code, redirect to conversion
+        if (error.message && (error.message.includes('404') || error.message.includes('User not found') || error.message.includes('USER_NOT_FOUND_LOCAL'))) {
+           console.log("User not found in local DB, redirecting to conversion...");
+           router.push('/register?conversion=true');
+        }
+      }
+    };
+    
+    checkUserSync();
+  }, [isLoaded, user, getToken, router]);
 
   React.useEffect(() => {
     setMounted(true)

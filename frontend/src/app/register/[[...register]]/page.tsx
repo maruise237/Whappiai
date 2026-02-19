@@ -34,7 +34,7 @@ export default function RegisterPage() {
     if (isSignedIn && user) {
       // Si on vient du flux de conversion, on laisse la modale gérer la redirection
       const params = new URLSearchParams(window.location.search)
-      if (params.get("intent") === "signup") {
+      if (params.get("intent") === "signup" || params.get("conversion") === "true") {
         return
       }
       router.push("/dashboard")

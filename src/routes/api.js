@@ -105,8 +105,22 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 
                 log(`Authenticated user: ${finalEmail} (role: ${role})`, 'AUTH', { email: finalEmail, role }, 'INFO');
 
-                // Ensure user exists and has correct role in local DB
-                if (!user || user.role !== role) {
+                // Ensure user exists locally
+                if (!user) {
+                    // Special case: Allow /users/sync to proceed even if user doesn't exist locally
+                    // This allows the frontend to call the sync endpoint to create the user
+                    if (req.path === '/users/sync' && req.method === 'POST') {
+                        return next();
+                    }
+                    
+                    log(`User ${finalEmail} not found in local DB (auto-create disabled)`, 'AUTH');
+                    return res.status(404).json({ 
+                        status: 'error', 
+                        message: 'User not found in local database. Please complete registration.',
+                        code: 'USER_NOT_FOUND_LOCAL'
+                    });
+                } else if (user.role !== role) {
+                    // Update role if mismatch
                     log(`Syncing local user role for ${finalEmail} to ${role}`, 'AUTH');
                     User.create({
                         id: req.auth.userId,
@@ -211,6 +225,30 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Auth info endpoint
     router.get('/me', checkSessionOrTokenAuth, (req, res) => {
         res.json({ status: 'success', data: req.currentUser });
+    });
+
+    // User Sync Endpoint - Explicitly creates/syncs user from Clerk
+    router.post('/users/sync', checkSessionOrTokenAuth, async (req, res) => {
+        try {
+            const { email, id, role } = req.currentUser;
+            const name = req.body.name || req.auth.sessionClaims?.name || email.split('@')[0];
+            const imageUrl = req.body.imageUrl || req.auth.sessionClaims?.image_url;
+
+            log(`Syncing user ${email} (ID: ${id})`, 'AUTH');
+
+            const user = await User.create({
+                id,
+                email,
+                name,
+                role,
+                imageUrl
+            });
+
+            res.json({ status: 'success', data: user });
+        } catch (err) {
+            log(`Sync failed: ${err.message}`, 'AUTH', null, 'ERROR');
+            res.status(500).json({ status: 'error', message: 'Failed to sync user' });
+        }
     });
 
     // WS token endpoint (generates a temporary token for WebSocket auth)

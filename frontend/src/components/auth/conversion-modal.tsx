@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useUser, useSignUp } from "@clerk/nextjs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { useUser, useSignUp, useAuth } from "@clerk/nextjs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Check, Shield, Lock, ArrowRight, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import { API_BASE_URL } from "@/lib/api"
 
 export function ConversionModal() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user, isSignedIn } = useUser()
+  const { getToken } = useAuth()
   const { signUp, isLoaded } = useSignUp()
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -18,26 +21,57 @@ export function ConversionModal() {
   useEffect(() => {
     const from = searchParams.get("from")
     const intent = searchParams.get("intent")
+    const conversion = searchParams.get("conversion")
     
-    if (from === "google_login" && intent === "signup") {
+    if ((from === "google_login" && intent === "signup") || conversion === "true") {
       setIsOpen(true)
-      // Tracking placeholder
-      console.log("View conversion modal", { from, intent })
+      // Tracking analytics
+      console.log("Conversion Modal Viewed", { 
+        source: from || 'direct_conversion',
+        email: user?.primaryEmailAddress?.emailAddress 
+      })
     }
-  }, [searchParams])
+  }, [searchParams, user])
 
   const handleCreateAccount = async () => {
     setLoading(true)
-    // Tracking placeholder
-    console.log("Click create account from modal")
+    console.log("Conversion Action: Create Account Clicked")
     
-    // Si l'utilisateur est déjà connecté (créé automatiquement par le callback), on redirige vers le dashboard
+    // Case 1: User is already authenticated with Clerk (e.g. Google Login) but missing local account
     if (isSignedIn && user) {
-      router.push("/dashboard")
+      try {
+        const token = await getToken()
+        const response = await fetch(`${API_BASE_URL}/api/v1/users/sync`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+             name: user.fullName,
+             imageUrl: user.imageUrl
+          })
+        })
+
+        if (response.ok) {
+          toast.success("Compte créé avec succès !")
+          // Analytics event: Conversion Success
+          console.log("Conversion Success: Account Synced")
+          router.push("/dashboard")
+          setIsOpen(false)
+        } else {
+          throw new Error("Failed to create account")
+        }
+      } catch (err) {
+        console.error("Sync error:", err)
+        toast.error("Erreur lors de la création du compte. Veuillez réessayer.")
+      } finally {
+        setLoading(false)
+      }
       return
     }
 
-    // Sinon, on relance le processus d'inscription Google
+    // Case 2: User is NOT authenticated (should not happen in this specific flow but good fallback)
     if (!isLoaded) return
 
     try {
@@ -52,39 +86,40 @@ export function ConversionModal() {
     }
   }
 
-  const handleLoginRedirect = () => {
+  const handleCancel = () => {
+    console.log("Conversion Action: Cancelled")
+    // Redirect to login if they cancel the creation process
     router.push("/login")
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl p-0 gap-0 overflow-hidden border-none shadow-2xl">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) handleCancel()
+    }}>
+      <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl p-0 gap-0 overflow-hidden border-none shadow-2xl" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <div className="bg-gradient-to-br from-green-500/10 via-background to-background p-6 sm:p-8">
           <DialogHeader className="mb-6">
             <DialogTitle className="text-2xl sm:text-3xl font-bold text-center mb-2">
-              Bienvenue ! 👋
+              Finalisation de votre compte
             </DialogTitle>
             <DialogDescription className="text-center text-base sm:text-lg text-foreground/80">
-              Vous êtes à quelques secondes de rejoindre notre communauté.
+              Nous n'avons pas trouvé de compte associé à cette adresse email Google.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
             <div className="bg-card/50 backdrop-blur-sm border rounded-xl p-4 text-sm text-muted-foreground">
-              <p className="mb-2 font-medium text-foreground">
-                Nous avons détecté que vous n'avez pas encore de compte.
-              </p>
-              <p>
-                L'inscription est gratuite et prend moins de 30 secondes.
+              <p className="mb-2 font-medium text-foreground text-center text-lg">
+                Créez votre compte en 30 secondes pour accéder à toutes les fonctionnalités.
               </p>
             </div>
 
             <div className="space-y-3">
               {[
-                "Personnalisation avancée de votre expérience",
-                "Sauvegarde sécurisée de vos données",
-                "Accès aux fonctionnalités premium",
-                "Support prioritaire 24/7"
+                "Accès complet au Dashboard",
+                "Configuration de vos assistants IA",
+                "Gestion des groupes et modération",
+                "Statistiques détaillées"
               ].map((benefit, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
@@ -106,7 +141,7 @@ export function ConversionModal() {
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
                   <>
-                    Créer mon compte gratuitement
+                    Créer mon compte
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </>
                 )}
@@ -115,9 +150,10 @@ export function ConversionModal() {
               <Button 
                 variant="ghost" 
                 className="w-full text-muted-foreground hover:text-foreground"
-                onClick={handleLoginRedirect}
+                onClick={handleCancel}
+                disabled={loading}
               >
-                J'ai déjà un compte
+                Annuler
               </Button>
             </div>
           </div>
@@ -127,11 +163,11 @@ export function ConversionModal() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5" />
-              <span>100% Sécurisé</span>
+              <span>RGPD Compliant</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Lock className="w-3.5 h-3.5" />
-              <span>Données chiffrées</span>
+              <span>Données sécurisées</span>
             </div>
           </div>
           <a href="/privacy" className="hover:underline hover:text-foreground transition-colors">
