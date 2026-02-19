@@ -93,10 +93,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       
       try {
         const token = await getToken();
+        console.log("Checking user sync...", { hasToken: !!token });
         // Check if user exists in local DB
         // We catch the error if it returns 404 (User not found)
         await api.auth.check(token || undefined);
+        console.log("User sync check passed (User exists in DB)");
       } catch (error: any) {
+        console.error("User sync check failed:", error);
         // If 404 or specific error code, redirect to conversion
         if (error.message && (error.message.includes('404') || error.message.includes('User not found') || error.message.includes('USER_NOT_FOUND_LOCAL'))) {
            console.log("User not found in local DB, redirecting to conversion...");
