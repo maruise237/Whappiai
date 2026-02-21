@@ -101,7 +101,7 @@ export function LogViewer() {
         return (
           <div className="relative group/msg">
             <pre className={cn(
-              "mt-1 p-2 sm:p-3 rounded-lg bg-black/50 overflow-x-auto border border-white/5 font-mono text-[9px] sm:text-[10px]",
+              "mt-1 p-2 sm:p-3 rounded-lg bg-black/50 overflow-x-auto border border-white/5 font-mono text-[9px] sm:text-[10px] font-medium",
               !isExpanded && isLong && "max-h-[80px] sm:max-h-[100px] overflow-hidden"
             )}>
               <code
@@ -175,7 +175,7 @@ export function LogViewer() {
 
       return (
         <div className="flex flex-col gap-1.5">
-          <span className="text-slate-300 break-words whitespace-pre-wrap font-mono text-[10px] sm:text-[11px] leading-relaxed">
+          <span className="text-foreground/90 break-words whitespace-pre-wrap font-mono text-[10px] sm:text-[11px] leading-relaxed font-medium">
             {displayText}
           </span>
           {isLongText && (
@@ -195,7 +195,7 @@ export function LogViewer() {
         </div>
       )
     } catch (e) {
-      return <span className="text-slate-300 break-all text-[10px] sm:text-[11px]">{String(message)}</span>
+      return <span className="text-foreground/80 break-all text-[10px] sm:text-[11px] font-medium">{String(message)}</span>
     }
   }
 
@@ -296,11 +296,11 @@ export function LogViewer() {
             ) : (
               filteredLogs.map((log, i) => (
                 <div key={i} className="group flex items-start gap-2.5 sm:gap-4 text-[9px] sm:text-[11px] leading-relaxed py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg hover:bg-white/[0.03] transition-all duration-200 border-l-2 sm:border-l-4 border-transparent hover:border-primary/50 overflow-hidden">
-                  <span className="text-slate-600 shrink-0 select-none min-w-[30px] sm:min-w-[40px] font-mono opacity-50 text-[8px] sm:text-[10px] mt-0.5">{String(i + 1).padStart(3, '0')}</span>
+                  <span className="text-muted-foreground/60 shrink-0 select-none min-w-[30px] sm:min-w-[40px] font-mono text-[8px] sm:text-[10px] mt-0.5 font-medium">{String(i + 1).padStart(3, '0')}</span>
 
                   <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-slate-500 shrink-0 font-bold select-none opacity-80 whitespace-nowrap">
+                      <span className="text-muted-foreground/80 shrink-0 font-bold select-none whitespace-nowrap">
                         [{new Date().toLocaleTimeString([], { hour12: false })}]
                       </span>
                       <span className={cn(
