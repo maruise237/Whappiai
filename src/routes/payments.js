@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
-const { createCheckoutSession, handleWebhook, PLANS } = require('../services/payment');
+const { createCheckoutSession } = require('../services/payment');
+const PricingService = require('../services/PricingService');
 const { log } = require('../utils/logger');
 
 // POST /api/v1/payments/checkout
@@ -30,7 +31,27 @@ router.post('/checkout', ClerkExpressWithAuth(), async (req, res) => {
 
 // GET /api/v1/payments/plans
 router.get('/plans', (req, res) => {
-    res.json(PLANS);
+    try {
+        const plans = PricingService.getActivePlans();
+        res.json(plans);
+    } catch (error) {
+        log('Erreur lors de la récupération des plans', 'PAYMENT', { error: error.message }, 'ERROR');
+        res.status(500).json({ error: 'Impossible de récupérer les plans' });
+    }
+});
+
+// POST /api/v1/payments/webhook
+router.post('/webhook', express.json(), async (req, res) => {
+    const signature = req.headers['x-chariow-signature']; 
+    const payload = req.body;
+
+    try {
+        await handleWebhook(req.headers['x-chariow-event'] || 'unknown', payload);
+        res.status(200).send('OK');
+    } catch (error) {
+        log('Erreur webhook', 'PAYMENT', { error: error.message }, 'ERROR');
+        res.status(500).send('Webhook Error');
+    }
 });
 
 module.exports = router;

@@ -514,6 +514,81 @@ function initializeSchema() {
         db.exec("ALTER TABLE ai_models ADD COLUMN max_tokens INTEGER DEFAULT 2000");
     } catch (e) {}
 
+    // --- SaaS Extensions (2026) ---
+
+    // Pricing Plans (Historical & Versioned)
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS pricing_plans (
+            id TEXT PRIMARY KEY,
+            code TEXT NOT NULL, -- starter, pro, business
+            name TEXT NOT NULL,
+            price INTEGER NOT NULL,
+            currency TEXT DEFAULT 'XAF',
+            message_limit INTEGER,
+            interval TEXT DEFAULT 'month', -- month, year
+            is_active INTEGER DEFAULT 1,
+            version INTEGER DEFAULT 1,
+            chariow_product_id TEXT,
+            payment_url TEXT,
+            features TEXT, -- JSON
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Migration for pricing_plans: Add chariow columns if missing
+    try {
+        db.exec("ALTER TABLE pricing_plans ADD COLUMN chariow_product_id TEXT");
+    } catch (e) {}
+    try {
+        db.exec("ALTER TABLE pricing_plans ADD COLUMN payment_url TEXT");
+    } catch (e) {}
+
+    // Subscriptions (Full Lifecycle)
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT REFERENCES users(id),
+            plan_id TEXT REFERENCES pricing_plans(id),
+            status TEXT, -- active, past_due, canceled, incomplete, trialing
+            current_period_start DATETIME,
+            current_period_end DATETIME,
+            cancel_at_period_end INTEGER DEFAULT 0,
+            chariow_subscription_id TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Notifications (Alerts System)
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_notifications (
+            id TEXT PRIMARY KEY,
+            user_id TEXT REFERENCES users(id),
+            type TEXT, -- credit_low, subscription_expiring, system_update, payment_failed
+            title TEXT,
+            message TEXT,
+            is_read INTEGER DEFAULT 0,
+            metadata TEXT, -- JSON
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Initialize default plans if empty
+    const count = db.prepare('SELECT count(*) as count FROM pricing_plans').get();
+    if (count.count === 0) {
+        const insertPlan = db.prepare(`
+            INSERT INTO pricing_plans (id, code, name, price, message_limit, interval, version, chariow_product_id, payment_url, features)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        // Starter
+        insertPlan.run('plan_starter_v1', 'starter', 'Starter', 2500, 2000, 'month', 1, 'prd_jx0jkk', 'https://esaystor.online/prd_jx0jkk', JSON.stringify({ support: 'email' }));
+        // Pro
+        insertPlan.run('plan_pro_v1', 'pro', 'Pro', 5000, 10000, 'month', 1, 'prd_l2es24', 'https://esaystor.online/prd_l2es24', JSON.stringify({ support: 'priority' }));
+        // Business
+        insertPlan.run('plan_business_v1', 'business', 'Business', 10000, 100000, 'month', 1, 'prd_twafj6', 'https://esaystor.online/prd_twafj6', JSON.stringify({ support: 'dedicated' }));
+    }
+
     log('Schéma de la base de données initialisé avec succès', 'SYSTEM', { event: 'db-schema-init' }, 'INFO');
 }
 

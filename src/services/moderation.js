@@ -1,8 +1,9 @@
 const { db } = require('../config/database');
 const { jidNormalizedUser } = require('@whiskeysockets/baileys');
-const { Session, ActivityLog } = require('../models');
+const { Session, ActivityLog, User } = require('../models');
 const { log } = require('../utils/logger');
 const aiService = require('./ai');
+const CreditService = require('./CreditService');
 
 /**
  * Moderation Service
@@ -235,8 +236,27 @@ async function handleParticipantUpdate(sock, sessionId, update) {
         const groupService = require('./groups');
         const profile = groupService.getProfile(sessionId, groupId);
         const links = groupService.getProductLinks(sessionId, groupId);
+        
+        // Check Credits
+        const session = Session.findById(sessionId);
+        let user = null;
+        if (session && session.owner_email) {
+            user = User.findByEmail(session.owner_email);
+        }
 
         for (const jid of participants) {
+            let creditDeducted = false;
+            if (user) {
+                const hasCredit = CreditService.deduct(user.id, 1, `Moderation: Welcome message to ${jid}`);
+                if (!hasCredit) {
+                    log(`Insufficient credits for welcome message to ${jid} (Session: ${sessionId})`, sessionId, { event: 'moderation-insufficient-credits' }, 'WARN');
+                    continue; // Skip this user
+                }
+                creditDeducted = true;
+            } else {
+                log(`User not found for session ${sessionId} - Skipping credit check for welcome`, sessionId, null, 'WARN');
+            }
+
             let message = settings.welcome_template;
             
             // Basic variables
@@ -255,27 +275,35 @@ async function handleParticipantUpdate(sock, sessionId, update) {
                 message += linksText;
             }
 
-            await sock.sendMessage(groupId, { 
-                text: aiService.formatForWhatsApp(message),
-                mentions: [jid]
-            });
-            
-            // Log activity
-            const session = Session.findById(sessionId);
-            if (ActivityLog && session) {
-                await ActivityLog.logMessageSend(
-                    session.owner_email || 'moderation-system',
-                    sessionId,
-                    groupId,
-                    'text',
-                    '127.0.0.1',
-                    'Moderation (Welcome)'
-                );
+            try {
+                await sock.sendMessage(groupId, { 
+                    text: aiService.formatForWhatsApp(message),
+                    mentions: [jid]
+                });
+                
+                // Log activity
+                const session = Session.findById(sessionId);
+                if (ActivityLog && session) {
+                    await ActivityLog.logMessageSend(
+                        session.owner_email || 'moderation-system',
+                        sessionId,
+                        groupId,
+                        'text',
+                        '127.0.0.1',
+                        'Moderation (Welcome)'
+                    );
+                }
+                // Update stats
+                Session.updateAIStats(sessionId, 'sent');
+                
+                log(`[Bienvenue] Message envoyé à ${jid} dans ${groupId}`, sessionId, { event: 'moderation-welcome-sent' }, 'INFO');
+            } catch (sendErr) {
+                log(`Failed to send welcome message to ${jid}: ${sendErr.message}`, sessionId, { event: 'moderation-welcome-send-error', error: sendErr.message }, 'ERROR');
+                // Refund if failed
+                if (creditDeducted && user) {
+                    CreditService.add(user.id, 1, 'credit', `Remboursement: échec bienvenue ${jid}`);
+                }
             }
-            // Update stats
-            Session.updateAIStats(sessionId, 'sent');
-            
-            log(`[Bienvenue] Message envoyé à ${jid} dans ${groupId}`, sessionId, { event: 'moderation-welcome-sent' }, 'INFO');
         }
     } catch (err) {
         log(`Erreur lors de l'envoi du message de bienvenue: ${err.message}`, sessionId, { event: 'moderation-welcome-error', error: err.message }, 'ERROR');
@@ -325,6 +353,13 @@ async function handleIncomingMessage(sock, sessionId, msg) {
     // 3. Moderation Logic
     if (!settings || !settings.is_active) {
         return false;
+    }
+
+    // Get User for Credit Check
+    const session = Session.findById(sessionId);
+    let user = null;
+    if (session && session.owner_email) {
+        user = User.findByEmail(session.owner_email);
     }
 
     log(`[Modération] Vérification pour ${senderJid} dans ${groupId}`, sessionId, { event: 'moderation-check' }, 'INFO');
@@ -382,87 +417,104 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                 log(`[Modération] Violation détectée mais le bot n'est pas admin dans ${groupId}. Action impossible.`, sessionId, { event: 'moderation-no-admin-privilege' }, 'WARN');
                 return false;
             }
-            
-            // 1. Delete Message
-            await sock.sendMessage(groupId, { delete: msg.key });
-            
-            // 2. Increment Warnings
-            // Note: session_id est requis pour la PK et la contrainte
-            const warningInfo = db.prepare(`
-                INSERT INTO user_warnings (group_id, session_id, user_id, count, last_warning_at)
-                VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
-                ON CONFLICT(group_id, session_id, user_id) DO UPDATE SET
-                count = count + 1,
-                last_warning_at = CURRENT_TIMESTAMP
-                RETURNING count
-            `).get(groupId, sessionId, senderJid);
-            
-            const currentCount = warningInfo.count;
-            const maxWarnings = settings.max_warnings || 5;
-            
-            // 3. Kick if max reached
-            if (currentCount >= maxWarnings) {
-                log(`User ${senderJid} kicked from ${groupId} after ${currentCount} warnings`, sessionId, {
-                    event: 'moderation-kick',
-                    groupId,
-                    senderJid,
-                    warnings: currentCount
-                }, 'ERROR');
-                await sock.groupParticipantsUpdate(groupId, [senderJid], 'remove');
-                await sock.sendMessage(groupId, { 
-                    text: `@${senderJid.split('@')[0]} a été exclu après ${currentCount} avertissements.`,
-                    mentions: [senderJid]
-                });
 
-                // Log activity
-                const session = Session.findById(sessionId);
-                if (ActivityLog && session) {
-                    await ActivityLog.logMessageSend(
-                        session.owner_email || 'moderation-system',
-                        sessionId,
-                        groupId,
-                        'text',
-                        '127.0.0.1',
-                        'Moderation (Kick)'
-                    );
+            // CREDIT DEDUCTION
+            let creditDeducted = false;
+            if (user) {
+                const hasCredit = CreditService.deduct(user.id, 1, `Moderation: Action on ${senderJid} in ${groupId}`);
+                if (!hasCredit) {
+                    log(`Insufficient credits for moderation action on ${senderJid} (Session: ${sessionId})`, sessionId, { event: 'moderation-insufficient-credits' }, 'WARN');
+                    return false; // Stop moderation
                 }
-                // Update stats
-                Session.updateAIStats(sessionId, 'sent');
-            } else {
-                // 4. Send Warning
-                let template = settings.warning_template || 'Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.';
+                creditDeducted = true;
+            }
+            
+            try {
+                // 1. Delete Message
+                await sock.sendMessage(groupId, { delete: msg.key });
                 
-                // Replace variables
-                // Note: We don't have the user's display name easily without fetching it, so we use the number or @mention
-            const warningMsg = template
-                .replace(/{{name}}/g, `@${senderJid.split('@')[0]}`)
-                .replace(/{{count}}/g, currentCount)
-                .replace(/{{max}}/g, maxWarnings)
-                .replace(/{{reason}}/g, violation);
-            
-            // Fix double @ if template already has it
-            const cleanWarningMsg = warningMsg.replace(/@@/g, '@');
-            
-            await sock.sendMessage(groupId, { 
-                text: aiService.formatForWhatsApp(cleanWarningMsg),
-                mentions: [senderJid]
-            });
+                // 2. Increment Warnings
+                // Note: session_id est requis pour la PK et la contrainte
+                const warningInfo = db.prepare(`
+                    INSERT INTO user_warnings (group_id, session_id, user_id, count, last_warning_at)
+                    VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+                    ON CONFLICT(group_id, session_id, user_id) DO UPDATE SET
+                    count = count + 1,
+                    last_warning_at = CURRENT_TIMESTAMP
+                    RETURNING count
+                `).get(groupId, sessionId, senderJid);
+                
+                const currentCount = warningInfo.count;
+                const maxWarnings = settings.max_warnings || 5;
+                
+                // 3. Kick if max reached
+                if (currentCount >= maxWarnings) {
+                    log(`User ${senderJid} kicked from ${groupId} after ${currentCount} warnings`, sessionId, {
+                        event: 'moderation-kick',
+                        groupId,
+                        senderJid,
+                        warnings: currentCount
+                    }, 'ERROR');
+                    await sock.groupParticipantsUpdate(groupId, [senderJid], 'remove');
+                    await sock.sendMessage(groupId, { 
+                        text: `@${senderJid.split('@')[0]} a été exclu après ${currentCount} avertissements.`,
+                        mentions: [senderJid]
+                    });
 
-            // Log activity
-            const session = Session.findById(sessionId);
-            if (ActivityLog && session) {
-                await ActivityLog.logMessageSend(
-                    session.owner_email || 'moderation-system',
-                    sessionId,
-                    groupId,
-                    'text',
-                    '127.0.0.1',
-                    'Moderation (Warning)'
-                );
+                    // Log activity
+                    const session = Session.findById(sessionId);
+                    if (ActivityLog && session) {
+                        await ActivityLog.logMessageSend(
+                            session.owner_email || 'moderation-system',
+                            sessionId,
+                            groupId,
+                            'text',
+                            '127.0.0.1',
+                            'Moderation (Kick)'
+                        );
+                    }
+                    // Update stats
+                    Session.updateAIStats(sessionId, 'sent');
+                } else {
+                    // 4. Send Warning
+                    let template = settings.warning_template || 'Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.';
+                    
+                    // Replace variables
+                    const warningMsg = template
+                        .replace(/{{name}}/g, `@${senderJid.split('@')[0]}`)
+                        .replace(/{{count}}/g, currentCount)
+                        .replace(/{{max}}/g, maxWarnings)
+                        .replace(/{{reason}}/g, violation);
+
+                    await sock.sendMessage(groupId, { 
+                        text: aiService.formatForWhatsApp(warningMsg),
+                        mentions: [senderJid]
+                    });
+                    
+                    // Log activity
+                    const session = Session.findById(sessionId);
+                    if (ActivityLog && session) {
+                        await ActivityLog.logMessageSend(
+                            session.owner_email || 'moderation-system',
+                            sessionId,
+                            groupId,
+                            'text',
+                            '127.0.0.1',
+                            'Moderation (Warning)'
+                        );
+                    }
+                    // Update stats
+                    Session.updateAIStats(sessionId, 'sent');
+                }
+            } catch (err) {
+                log(`Erreur lors de l'action de modération: ${err.message}`, sessionId, { event: 'moderation-action-error', error: err.message }, 'ERROR');
+                
+                // Refund if failed
+                if (creditDeducted && user) {
+                    CreditService.add(user.id, 1, 'credit', `Remboursement: échec modération ${groupId}`);
+                }
             }
-            // Update stats
-            Session.updateAIStats(sessionId, 'sent');
-            }
+
             
             return true; // Message handled
         }

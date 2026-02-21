@@ -41,6 +41,9 @@ const animatorService = require('./src/services/animator');
 const userRoutes = require('./src/routes/users');
 const webhookRoutes = require('./src/routes/webhooks');
 const paymentRoutes = require('./src/routes/payments');
+const subscriptionRoutes = require('./src/routes/subscriptions');
+const creditRoutes = require('./src/routes/credits');
+const notificationRoutes = require('./src/routes/notifications');
 const { log, setBroadcastFn } = require('./src/utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middleware/errorHandler');
 
@@ -497,6 +500,9 @@ const apiRouter = initializeApi(
 app.use('/webhooks', webhookRoutes);
 app.use('/admin/users', userRoutes);
 app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/subscriptions', subscriptionRoutes);
+app.use('/api/v1/credits', creditRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1', apiRouter);
 
 // Serve modern UI
@@ -546,38 +552,47 @@ User.ensureAdmin(process.env.ADMIN_DASHBOARD_PASSWORD);
 AIModel.ensureDefaultDeepSeek();
 
 // Initialize existing sessions on startup
-(async () => {
-    // Sync sessions from disk to DB
-    Session.syncWithFilesystem();
+if (require.main === module) {
+    (async () => {
+        // Sync sessions from disk to DB
+        Session.syncWithFilesystem();
 
-    const existingSessions = Session.getAll();
-    log(`Trouvé ${existingSessions.length} session(s) existante(s)`, 'SYSTEM', { count: existingSessions.length }, 'INFO');
+        const existingSessions = Session.getAll();
+        log(`Trouvé ${existingSessions.length} session(s) existante(s)`, 'SYSTEM', { count: existingSessions.length }, 'INFO');
 
-    for (const session of existingSessions) {
-        // Populate sessionTokens
-        if (session.token) {
-            sessionTokens.set(session.id, session.token);
+        for (const session of existingSessions) {
+            // Populate sessionTokens
+            if (session.token) {
+                sessionTokens.set(session.id, session.token);
+            }
+
+            // Re-initialize any session that was previously connected, disconnected, or stuck in connecting/generating QR
+            const statusesToReinit = ['CONNECTED', 'DISCONNECTED', 'CONNECTING', 'INITIALIZING', 'GENERATING_QR'];
+            if (statusesToReinit.includes(session.status)) {
+                log(`Réinitialisation de la session: ${session.id} (dernier statut: ${session.status})`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
+
+                whatsappService.connect(session.id, broadcastSessionUpdate, null);
+            }
         }
 
-        // Re-initialize any session that was previously connected, disconnected, or stuck in connecting/generating QR
-        const statusesToReinit = ['CONNECTED', 'DISCONNECTED', 'CONNECTING', 'INITIALIZING', 'GENERATING_QR'];
-        if (statusesToReinit.includes(session.status)) {
-            log(`Réinitialisation de la session: ${session.id} (dernier statut: ${session.status})`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
+        // Start animator service
+        animatorService.start();
 
-            whatsappService.connect(session.id, broadcastSessionUpdate, null);
-        }
-    }
-
-    // Start animator service
-    animatorService.start();
-})();
+        // Start SaaS Scheduler
+        const scheduler = require('./src/cron/scheduler');
+        scheduler.start();
+    })();
+}
 
 // Start server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    log(`Serveur en cours d'exécution sur le port ${PORT}`, 'SYSTEM', { port: PORT }, 'INFO');
-    log(`Tableau de bord: http://localhost:${PORT}`, 'SYSTEM', { url: `http://localhost:${PORT}` }, 'INFO');
-});
+
+if (require.main === module) {
+    server.listen(PORT, () => {
+        log(`Serveur en cours d'exécution sur le port ${PORT}`, 'SYSTEM', { port: PORT }, 'INFO');
+        log(`Tableau de bord: http://localhost:${PORT}`, 'SYSTEM', { url: `http://localhost:${PORT}` }, 'INFO');
+    });
+}
 
 // Graceful shutdown
 process.on('SIGINT', () => {

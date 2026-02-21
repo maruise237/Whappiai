@@ -5,6 +5,7 @@
  */
 
 const { User, Session, ActivityLog, AIModel } = require('../models');
+const CreditService = require('./CreditService');
 const { log } = require('../utils/logger');
 const { db } = require('../config/database');
 
@@ -616,7 +617,29 @@ class AIService {
      * Sends the response with human-like simulation
      */
     static async sendAutoResponse(sock, jid, text, sessionId) {
+        let userId = null;
+        let creditDeducted = false;
+
         try {
+            // Check Credits before sending
+            const session = Session.findById(sessionId);
+            if (session && session.owner_email) {
+                const user = User.findByEmail(session.owner_email);
+                if (user) {
+                    userId = user.id;
+                    const hasCredit = CreditService.deduct(userId, 1, `AI Auto-Response to ${jid}`);
+                    if (!hasCredit) {
+                        log(`Insufficient credits for AI response to ${jid} (Session: ${sessionId})`, sessionId, { event: 'ai-insufficient-credits' }, 'WARN');
+                        return; // Stop sending
+                    }
+                    creditDeducted = true;
+                } else {
+                    log(`User not found for session ${sessionId} (email: ${session.owner_email}) - Skipping credit check`, sessionId, null, 'WARN');
+                }
+            } else {
+                log(`Session or owner not found for ${sessionId} - Skipping credit check`, sessionId, null, 'WARN');
+            }
+
             // Format the text for WhatsApp before sending
             const formattedText = this.formatForWhatsApp(text);
             
@@ -666,10 +689,20 @@ class AIService {
             } else {
                 log(`sock.sendMessage a retourné null pour ${jid}`, sessionId, { event: 'ai-send-failed', jid }, 'WARN');
                 Session.updateAIStats(sessionId, 'error', 'Message sending failed (null result)');
+                
+                // Refund if credit deducted but send failed
+                if (creditDeducted && userId) {
+                    CreditService.add(userId, 1, 'credit', `Remboursement: échec envoi IA vers ${jid}`);
+                }
             }
         } catch (error) {
             log(`Échec de l'envoi du message à ${jid}: ${error.message}`, sessionId, { event: 'ai-send-error', error: error.message }, 'ERROR');
             Session.updateAIStats(sessionId, 'error', `Send error: ${error.message}`);
+
+            // Refund if credit deducted but send failed with error
+            if (creditDeducted && userId) {
+                CreditService.add(userId, 1, 'credit', `Remboursement: erreur envoi IA vers ${jid}`);
+            }
         }
     }
 }

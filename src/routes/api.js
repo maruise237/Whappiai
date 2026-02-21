@@ -13,6 +13,7 @@ const User = require('../models/User');
 const Session = require('../models/Session');
 const AIModel = require('../models/AIModel');
 const ActivityLog = require('../models/ActivityLog');
+const CreditService = require('../services/CreditService');
 // Security: csurf removed (deprecated) - use modern CSRF protection if needed
 
 const router = express.Router();
@@ -148,9 +149,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             const sessionEmail = (req.session.userEmail || '').toLowerCase();
             const sessionRole = sessionEmail === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin' : (req.session.userRole || 'user');
             
+            // Try to resolve user ID from DB
+            const user = User.findByEmail(sessionEmail);
+
             req.currentUser = {
                 email: sessionEmail,
-                role: sessionRole
+                role: sessionRole,
+                id: user?.id
             };
             return next();
         }
@@ -158,7 +163,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         // 3. Try Master Key (Higher priority than token for administrative API calls)
         const masterKey = req.headers['x-master-key'];
         if (masterKey && masterKey === process.env.MASTER_API_KEY) {
-            req.currentUser = { email: 'master-api', role: 'admin' };
+            req.currentUser = { email: 'master-api', role: 'admin', id: 'master-key-admin' };
             return next();
         }
 
@@ -173,9 +178,26 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         if (token && sessionId) {
             const expectedToken = sessionTokens.get(sessionId);
             if (expectedToken && token === expectedToken) {
-                // For token-based auth, we don't have a currentUser object in the same way,
-                // but we set a specific role 'api' to distinguish it from UI users
-                req.currentUser = { email: `api-${sessionId}`, role: 'api' };
+                // Resolve session owner
+                let userId = null;
+                let userRole = 'api';
+                
+                // We need to find the session owner
+                const session = sessions.get(sessionId) || Session.findById(sessionId);
+                
+                if (session && session.owner_email) {
+                    const user = User.findByEmail(session.owner_email);
+                    if (user) {
+                        userId = user.id;
+                        userRole = user.role;
+                    }
+                }
+
+                req.currentUser = { 
+                    email: `api-${sessionId}`, 
+                    role: userRole,
+                    id: userId
+                };
                 return next();
             }
         }
@@ -1209,18 +1231,34 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             // Credit Check & Deduction
             let creditDeducted = false;
-            try {
-                if (req.currentUser && req.currentUser.role !== 'admin') {
-                    const hasCredit = User.deductCredits(req.currentUser.id, 1, `Envoi message vers ${to}`);
+            const isAdmin = req.currentUser.role === 'admin';
+
+            if (isAdmin) {
+                // Admin bypass - no deduction, just log
+            } else {
+                if (!req.currentUser.id) {
+                     results.push({ status: 'error', message: 'User account required for credit deduction.' });
+                     continue;
+                }
+
+                try {
+                    const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
+                    
                     if (!hasCredit) {
                         results.push({ status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' });
                         continue;
                     }
                     creditDeducted = true;
+                } catch (err) {
+                     results.push({ status: 'error', message: `Credit error: ${err.message}` });
+                     continue;
                 }
+            }
 
+            try {
                 let result;
                 if (type === 'text') {
+                    // ... existing logic ...
                     result = await sendMessage(session.sock, to, { text: text }, sessionId, req);
                 } else if (type === 'image') {
                     result = await sendMessage(session.sock, to, { image: { url: msgImage.url }, caption: msgImage.caption }, sessionId, req);
@@ -1235,13 +1273,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 }
 
                 if (result.status === 'error' && creditDeducted) {
-                    User.refundCredits(req.currentUser.id, 1, `Remboursement: échec envoi vers ${to}`);
+                    CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
                 }
 
                 results.push(result);
             } catch (error) {
                 if (creditDeducted) {
-                    User.refundCredits(req.currentUser.id, 1, `Remboursement: erreur système vers ${to}`);
+                    CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
                 }
                 results.push({ status: 'error', message: error.message });
             }

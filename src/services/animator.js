@@ -1,6 +1,8 @@
 const { db } = require('../config/database');
 const { log } = require('../utils/logger');
 const { Session, ActivityLog } = require('../models');
+const User = require('../models/User');
+const CreditService = require('./CreditService');
 const whatsappService = require('./whatsapp');
 const aiService = require('./ai');
 
@@ -92,6 +94,9 @@ class AnimatorService {
     async executeTask(task) {
         const { id, group_id, session_id, message_content, media_url, media_type, recurrence } = task;
         
+        let creditDeducted = false;
+        let sessionOwnerId = null;
+
         try {
             log(`Tentative d'envoi du message programmé ${id}`, session_id, { event: 'animator-exec-start', taskId: id, scheduled_at: task.scheduled_at }, 'INFO');
             
@@ -102,6 +107,21 @@ class AnimatorService {
                 throw new Error('Session non active ou non connectée. Tâche remise en attente.');
             }
             
+            // Vérification et déduction des crédits
+            const session = Session.findById(session_id);
+            if (session && session.owner_email) {
+                const user = User.findByEmail(session.owner_email);
+                if (user) {
+                    sessionOwnerId = user.id;
+                    // On ne déduit pas pour les admins (géré dans CreditService.deduct, mais on vérifie le retour)
+                    const hasCredit = CreditService.deduct(user.id, 1, `Envoi message programmé vers ${group_id}`);
+                    if (!hasCredit) {
+                        throw new Error('Crédits insuffisants pour envoyer le message programmé.');
+                    }
+                    creditDeducted = true;
+                }
+            }
+
             // Envoi du message
             if (media_url && ['image', 'video', 'audio'].includes(media_type)) {
                 const messageOptions = {};
@@ -185,6 +205,12 @@ class AnimatorService {
             log(`Message programmé ${id} envoyé avec succès`, session_id, { event: 'animator-exec-success', taskId: id }, 'INFO');
 
         } catch (err) {
+            // Remboursement automatique en cas d'échec
+            if (creditDeducted && sessionOwnerId) {
+                CreditService.add(sessionOwnerId, 1, 'credit', `Remboursement: échec envoi programmé vers ${group_id}`);
+                log(`Remboursement effectué pour la tâche ${id} suite à une erreur`, session_id, { taskId: id }, 'INFO');
+            }
+
             log(`Échec d'envoi pour la tâche ${id}: ${err.message}`, session_id, { event: 'animator-exec-error', taskId: id, error: err.message }, 'ERROR');
             
             // Si c'est une erreur de session, on a déjà remis en pending. Sinon on marque en failed.
