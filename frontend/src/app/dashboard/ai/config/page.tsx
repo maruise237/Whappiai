@@ -3,12 +3,12 @@
 import * as React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { AITour } from "@/components/dashboard/ai-tour"
-import { 
-  ArrowLeft, 
-  Save, 
-  Bot, 
-  Cpu, 
-  Sparkles, 
+import {
+  ArrowLeft,
+  Save,
+  Bot,
+  Cpu,
+  Sparkles,
   ShieldAlert,
   KeyRound,
   Network,
@@ -21,24 +21,30 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select"
-import { 
-  Accordion, 
-  AccordionContent, 
-  AccordionItem, 
-  AccordionTrigger 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
 } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, getFriendlyErrorMessage } from "@/lib/utils"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 function AIConfigForm() {
   const searchParams = useSearchParams()
@@ -65,11 +71,11 @@ function AIConfigForm() {
     deactivate_on_read: false,
     trigger_keywords: "",
     reply_delay: 0,
-      read_on_reply: false,
-      reject_calls: false,
-      random_protection_enabled: true,
-      random_protection_rate: 0.1
-    })
+    read_on_reply: false,
+    reject_calls: false,
+    random_protection_enabled: true,
+    random_protection_rate: 0.1
+  })
 
   React.useEffect(() => {
     const loadData = async () => {
@@ -136,14 +142,14 @@ function AIConfigForm() {
 
   const handleSave = async () => {
     if (!sessionId) return
-    
+
     setIsSaving(true)
     try {
       const token = await getToken()
       await api.sessions.updateAI(sessionId, formData, token || undefined)
       toast.success("Configuration avancée enregistrée")
     } catch (error: any) {
-      toast.error(error.message || "Erreur lors de l'enregistrement")
+      toast.error(getFriendlyErrorMessage(error))
     } finally {
       setIsSaving(false)
     }
@@ -169,16 +175,16 @@ function AIConfigForm() {
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-20 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-300">
       <AITour enabled={showTour} onExit={handleTourExit} isConfigPage={true} />
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 sm:gap-8 bg-white/80 dark:bg-card/80 backdrop-blur-xl p-6 sm:p-8 rounded-lg border border-slate-200 dark:border-primary/10 shadow-xl relative overflow-hidden group ai-config-header">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[100px] -mr-40 -mt-40 group-hover:bg-primary/10 transition-colors duration-200" />
-        
+
         <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full sm:w-auto">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => router.push('/dashboard/ai')} 
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.push('/dashboard/ai')}
             className="h-10 w-10 sm:h-14 sm:w-14 rounded-lg border-2 hover:bg-primary/5 hover:text-primary transition-all duration-200 shadow-sm"
           >
             <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7" />
@@ -207,8 +213,8 @@ function AIConfigForm() {
             </div>
           </div>
         </div>
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={isSaving}
           className="w-full md:w-auto shadow-xl shadow-primary/20 h-12 sm:h-16 px-6 sm:px-10 font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] rounded-lg transition-all duration-200 gap-2 sm:gap-3 bg-primary hover:bg-primary/90 text-white relative z-10 ai-save-button"
         >
@@ -230,55 +236,76 @@ function AIConfigForm() {
                 <div className="flex items-center gap-3 sm:gap-4">
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                   <div className="text-left">
-                    <div className="text-sm sm:text-base font-black uppercase tracking-widest">Statut & Mode</div>
-                    <div className="font-bold text-[8px] sm:text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Définissez l'interaction</div>
+                    <div className="text-sm sm:text-base font-black uppercase tracking-widest">Status & Mode</div>
+                    <div className="font-bold text-[8px] sm:text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Define AI interaction logic</div>
                   </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="p-4 sm:p-8 pt-0 space-y-6 sm:space-y-10 ai-model-selector border-t border-slate-100 dark:border-primary/5">
                 <div className="flex items-center justify-between p-4 sm:p-6 rounded-lg bg-primary/5 border border-primary/10 transition-all hover:bg-primary/10 group shadow-inner duration-200">
                   <div className="space-y-0.5 sm:space-y-1">
-                    <Label className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Activer l'Assistant</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Activer l'Assistant</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Enable or disable automatic AI responses for this session.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <p className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Réponses automatiques</p>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={formData.enabled}
-                    onCheckedChange={(c) => setFormData({...formData, enabled: c})}
+                    onCheckedChange={(c) => setFormData({ ...formData, enabled: c })}
                     className="data-[state=checked]:bg-primary shadow-sm scale-110 sm:scale-125"
                   />
                 </div>
 
                 <div className="space-y-4 sm:space-y-6">
                   <Label className="text-[8px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 sm:gap-3 opacity-60 ml-1 sm:ml-2">
-                    <Cpu className="w-3 h-3 sm:w-4 sm:h-4" /> Mode de Fonctionnement
+                    <Cpu className="w-3 h-3 sm:w-4 sm:h-4" /> Operating Mode
                   </Label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 ai-mode-selector">
                     {[
-                      { id: 'bot', name: 'Robot', icon: Bot, desc: '100% Auto', color: 'bg-primary' },
-                      { id: 'hybrid', name: 'Hybride', icon: Cpu, desc: 'Délai 5s', color: 'bg-amber-500' },
-                      { id: 'human', name: 'Humain', icon: Sparkles, desc: 'Suggestions', color: 'bg-emerald-500' }
+                      { id: 'bot', name: 'Bot', icon: Bot, desc: '100% Automated', help: 'Ideal for 24/7 customer service. The AI handles everything.', color: 'bg-primary' },
+                      { id: 'hybrid', name: 'Hybrid', icon: Cpu, desc: '5s Reply Delay', help: 'The AI waits 5 seconds, giving you a chance to intervene.', color: 'bg-amber-500' },
+                      { id: 'human', name: 'Human', icon: Sparkles, desc: 'Draft Suggestions', help: 'The AI prepares a response but YOU must click send.', color: 'bg-emerald-500' }
                     ].map((m) => (
-                      <button
-                        key={m.id}
-                        onClick={() => setFormData({...formData, mode: m.id})}
-                        className={cn(
-                          "flex flex-row sm:flex-col items-center gap-4 sm:gap-5 p-4 sm:p-6 rounded-lg border-2 transition-all duration-300 text-left sm:text-center group relative overflow-hidden",
-                          formData.mode === m.id 
-                            ? "border-primary bg-primary/5 shadow-inner" 
-                            : "border-transparent bg-slate-50/50 dark:bg-muted/20 hover:bg-slate-100 dark:hover:bg-muted/40"
-                        )}
-                      >
-                        <div className={cn(
-                          "p-3 sm:p-4 rounded-lg transition-all duration-300 group-hover:scale-110 shadow-sm",
-                          formData.mode === m.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-200/50 text-slate-400 dark:bg-muted dark:text-muted-foreground/40"
-                        )}>
-                          <m.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                        </div>
-                        <div className="space-y-1 sm:space-y-1.5">
-                          <div className="text-[9px] sm:text-[11px] font-black tracking-tight group-hover:text-primary transition-colors uppercase">{m.name}</div>
-                          <div className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60 leading-none">{m.desc}</div>
-                        </div>
-                      </button>
+                      <TooltipProvider key={m.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              key={m.id}
+                              onClick={() => setFormData({ ...formData, mode: m.id })}
+                              className={cn(
+                                "flex flex-row sm:flex-col items-center gap-4 sm:gap-5 p-4 sm:p-6 rounded-lg border-2 transition-all duration-300 text-left sm:text-center group relative overflow-hidden",
+                                formData.mode === m.id
+                                  ? "border-primary bg-primary/5 shadow-inner"
+                                  : "border-transparent bg-slate-50/50 dark:bg-muted/20 hover:bg-slate-100 dark:hover:bg-muted/40"
+                              )}
+                            >
+                              <div className={cn(
+                                "p-3 sm:p-4 rounded-lg transition-all duration-300 group-hover:scale-110 shadow-sm",
+                                formData.mode === m.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-200/50 text-slate-400 dark:bg-muted dark:text-muted-foreground/40"
+                              )}>
+                                <m.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                              </div>
+                              <div className="space-y-1 sm:space-y-1.5">
+                                <div className="text-[9px] sm:text-[11px] font-black tracking-tight group-hover:text-primary transition-colors uppercase">{m.name}</div>
+                                <div className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60 leading-none">{m.desc}</div>
+                              </div>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-[200px] text-center">
+                            <p>{m.help}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     ))}
                   </div>
                 </div>
@@ -291,8 +318,8 @@ function AIConfigForm() {
                 <div className="flex items-center gap-3 sm:gap-4">
                   <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                   <div className="text-left">
-                    <div className="text-sm sm:text-base font-black uppercase tracking-widest">Contrôle Automatique</div>
-                    <div className="font-bold text-[8px] sm:text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Gérez l'activation intelligente</div>
+                    <div className="text-sm sm:text-base font-black uppercase tracking-widest">Auto Control</div>
+                    <div className="font-bold text-[8px] sm:text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Manage intelligent activation triggers</div>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -300,12 +327,24 @@ function AIConfigForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 pt-4 sm:pt-6">
                   <div className="flex items-center justify-between p-4 sm:p-6 rounded-lg bg-slate-50/50 dark:bg-muted/20 border border-slate-100 dark:border-primary/5 transition-all hover:bg-slate-100 dark:hover:bg-muted/40 group shadow-sm duration-200">
                     <div className="space-y-0.5 sm:space-y-1">
-                      <Label className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Stop si j'écris</Label>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Stop si j'écris</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Automatically turn off the AI when you start typing in the chat.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <p className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Désactive l'IA au tapage</p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={formData.deactivate_on_typing}
-                      onCheckedChange={(c) => setFormData({...formData, deactivate_on_typing: c})}
+                      onCheckedChange={(c) => setFormData({ ...formData, deactivate_on_typing: c })}
                       className="data-[state=checked]:bg-primary shadow-sm"
                     />
                   </div>
@@ -315,9 +354,9 @@ function AIConfigForm() {
                       <Label className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Stop si j'ai lu</Label>
                       <p className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Désactive l'IA à la lecture</p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={formData.deactivate_on_read}
-                      onCheckedChange={(c) => setFormData({...formData, deactivate_on_read: c})}
+                      onCheckedChange={(c) => setFormData({ ...formData, deactivate_on_read: c })}
                       className="data-[state=checked]:bg-primary shadow-sm"
                     />
                   </div>
@@ -327,17 +366,17 @@ function AIConfigForm() {
                       <Label className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest group-hover:text-primary transition-colors text-foreground">Lu avant réponse</Label>
                       <p className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Marque comme vu</p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={formData.read_on_reply}
-                      onCheckedChange={(c) => setFormData({...formData, read_on_reply: c})}
+                      onCheckedChange={(c) => setFormData({ ...formData, read_on_reply: c })}
                       className="data-[state=checked]:bg-primary shadow-sm"
                     />
                   </div>
 
                   <div className={cn(
                     "flex items-center justify-between p-4 sm:p-6 rounded-lg border transition-all group shadow-sm duration-200",
-                    formData.reject_calls 
-                      ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-950/40" 
+                    formData.reject_calls
+                      ? "bg-red-50/50 dark:bg-red-950/20 border-red-100 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-950/40"
                       : "bg-slate-50/50 dark:bg-muted/20 border-slate-100 dark:border-primary/5 hover:bg-slate-100 dark:hover:bg-muted/40"
                   )}>
                     <div className="space-y-0.5 sm:space-y-1">
@@ -347,17 +386,17 @@ function AIConfigForm() {
                       )}>Rejet d'appels</Label>
                       <p className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Rejeter les appels entrants</p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={formData.reject_calls}
-                      onCheckedChange={(c) => setFormData({...formData, reject_calls: c})}
+                      onCheckedChange={(c) => setFormData({ ...formData, reject_calls: c })}
                       className="data-[state=checked]:bg-red-600 shadow-sm"
                     />
                   </div>
 
                   <div className={cn(
                     "flex items-center justify-between p-4 sm:p-6 rounded-lg border transition-all group shadow-sm duration-200 col-span-1 md:col-span-2",
-                    formData.random_protection_enabled 
-                      ? "bg-primary/5 border-primary/20 hover:bg-primary/10" 
+                    formData.random_protection_enabled
+                      ? "bg-primary/5 border-primary/20 hover:bg-primary/10"
                       : "bg-slate-50/50 dark:bg-muted/20 border-slate-100 dark:border-primary/5 hover:bg-slate-100 dark:hover:bg-muted/40"
                   )}>
                     <div className="flex-1 space-y-4">
@@ -369,13 +408,13 @@ function AIConfigForm() {
                           )}>Protection Aléatoire (IA)</Label>
                           <p className="text-[7px] sm:text-[9px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Bloque aléatoirement des messages pour éviter les boucles et simuler un humain</p>
                         </div>
-                        <Switch 
+                        <Switch
                           checked={formData.random_protection_enabled}
-                          onCheckedChange={(c) => setFormData({...formData, random_protection_enabled: c})}
+                          onCheckedChange={(c) => setFormData({ ...formData, random_protection_enabled: c })}
                           className="data-[state=checked]:bg-primary shadow-sm"
                         />
                       </div>
-                      
+
                       {formData.random_protection_enabled && (
                         <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
                           <div className="flex items-center justify-between">
@@ -385,13 +424,13 @@ function AIConfigForm() {
                           </div>
                           <div className="flex items-center gap-4">
                             <span className="text-[10px] font-bold text-muted-foreground">0%</span>
-                            <input 
+                            <input
                               type="range"
                               min="0"
                               max="1"
                               step="0.05"
                               value={formData.random_protection_rate}
-                              onChange={(e) => setFormData({...formData, random_protection_rate: parseFloat(e.target.value)})}
+                              onChange={(e) => setFormData({ ...formData, random_protection_rate: parseFloat(e.target.value) })}
                               className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
                             />
                             <span className="text-[10px] font-bold text-muted-foreground">100%</span>
@@ -405,19 +444,31 @@ function AIConfigForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-4 border-t border-slate-100 dark:border-primary/5">
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="text-[8px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 sm:gap-3 opacity-60 ml-1 sm:ml-2">
-                        <Zap className="w-3 h-3 sm:w-4 sm:h-4" /> Délai (s)
-                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[8px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 sm:gap-3 opacity-60 ml-1 sm:ml-2">
+                          <Zap className="w-3 h-3 sm:w-4 sm:h-4" /> Délai (s)
+                        </Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Seconds to wait before the AI sends its response. Simulates human thinking time.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <Badge variant="outline" className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest bg-primary/5 border-primary/10 text-primary">
                         {formData.reply_delay}s
                       </Badge>
                     </div>
-                    <Input 
+                    <Input
                       type="number"
                       min="0"
                       max="60"
                       value={formData.reply_delay}
-                      onChange={(e) => setFormData({...formData, reply_delay: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setFormData({ ...formData, reply_delay: parseInt(e.target.value) || 0 })}
                       placeholder="Délai"
                       className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-10 sm:h-14 rounded-lg font-medium text-[11px] sm:text-xs shadow-inner transition-all duration-300"
                     />
@@ -430,9 +481,9 @@ function AIConfigForm() {
                       </Label>
                       <Badge variant="outline" className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest bg-primary/5 border-primary/10 text-primary">Optionnel</Badge>
                     </div>
-                    <Input 
+                    <Input
                       value={formData.trigger_keywords}
-                      onChange={(e) => setFormData({...formData, trigger_keywords: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, trigger_keywords: e.target.value })}
                       placeholder="ia, help..."
                       className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-10 sm:h-14 rounded-lg font-medium text-[11px] sm:text-xs shadow-inner transition-all duration-300"
                     />
@@ -447,8 +498,8 @@ function AIConfigForm() {
                 <div className="flex items-center gap-3 sm:gap-4">
                   <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                   <div className="text-left">
-                    <div className="text-sm sm:text-base font-black uppercase tracking-widest">Instructions (Prompt)</div>
-                    <div className="font-bold text-[8px] sm:text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Personnalisez la personnalité</div>
+                    <div className="text-sm sm:text-base font-black uppercase tracking-widest">AI Personality (Prompt)</div>
+                    <div className="font-bold text-[8px] sm:text-[10px] uppercase tracking-wider text-muted-foreground opacity-60">Define custom behavior and tone</div>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -486,9 +537,9 @@ function AIConfigForm() {
                     <Label className="text-[8px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 sm:gap-3 opacity-60 ml-1 sm:ml-2">
                       <Cpu className="w-3 h-3 sm:w-4 sm:h-4" /> Éditeur de Prompt
                     </Label>
-                    <Textarea 
+                    <Textarea
                       value={formData.prompt}
-                      onChange={(e) => setFormData({...formData, prompt: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                       placeholder="Ex: Tu es un assistant commercial expert..."
                       className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 resize-none font-medium text-[11px] sm:text-sm rounded-lg min-h-[200px] sm:min-h-[300px] p-4 sm:p-8 leading-relaxed shadow-inner transition-all duration-300"
                     />
@@ -523,8 +574,8 @@ function AIConfigForm() {
                     <Label className="text-[8px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 sm:gap-3 opacity-60 ml-1 sm:ml-2">
                       <Cpu className="w-3 h-3 sm:w-4 sm:h-4" /> Modèle Sélectionné
                     </Label>
-                    <Select 
-                      value={formData.model} 
+                    <Select
+                      value={formData.model}
                       onValueChange={(v) => {
                         const selectedModel = availableModels.find(m => m.id === v);
                         if (selectedModel) {
@@ -543,11 +594,11 @@ function AIConfigForm() {
                         {availableModels.length > 0 ? (
                           availableModels.map((model) => (
                             <SelectItem key={model.id} value={model.id} className="font-bold text-[9px] sm:text-[10px] uppercase tracking-widest py-3 sm:py-4 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors rounded-lg mb-1">
-                              {model.name} {model.is_default && <Badge className="ml-2 bg-primary/20 text-primary border-none text-[7px] sm:text-[8px]">Défaut</Badge>}
+                              {model.name} {model.is_default && <Badge className="ml-2 bg-primary/20 text-primary border-none text-[7px] sm:text-[8px]">Default</Badge>}
                             </SelectItem>
                           ))
                         ) : (
-                          <div className="p-4 text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Aucun modèle</div>
+                          <div className="p-4 text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">No models available</div>
                         )}
                       </SelectContent>
                     </Select>
@@ -559,14 +610,14 @@ function AIConfigForm() {
                         <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
                         <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-amber-500">Admin</span>
                       </div>
-                      
+
                       <div className="space-y-3 sm:space-y-4">
                         <Label className="text-[8px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 sm:gap-3 opacity-60 ml-1 sm:ml-2">
                           <Network className="w-3 h-3 sm:w-4 sm:h-4" /> Endpoint
                         </Label>
-                        <Input 
+                        <Input
                           value={formData.endpoint}
-                          onChange={(e) => setFormData({...formData, endpoint: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
                           placeholder="https://..."
                           className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-10 sm:h-16 rounded-lg font-mono text-[10px] sm:text-[11px] shadow-inner transition-all duration-300"
                         />
@@ -577,10 +628,10 @@ function AIConfigForm() {
                           <KeyRound className="w-3 h-3 sm:w-4 sm:h-4" /> Clé API
                         </Label>
                         <div className="relative group">
-                          <Input 
+                          <Input
                             type="password"
                             value={formData.key}
-                            onChange={(e) => setFormData({...formData, key: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, key: e.target.value })}
                             placeholder="sk-..."
                             className="bg-slate-50/50 dark:bg-muted/20 border-2 border-slate-100 dark:border-primary/5 focus-visible:ring-primary/20 h-10 sm:h-16 rounded-lg pr-12 sm:pr-16 font-mono text-[10px] sm:text-[11px] shadow-inner transition-all duration-300"
                           />

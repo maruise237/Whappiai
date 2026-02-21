@@ -42,7 +42,15 @@ import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { DashboardTour } from "@/components/dashboard/dashboard-tour"
 import { usePristine } from "@/hooks/use-pristine"
-import { cn } from "@/lib/utils"
+import { cn, getFriendlyErrorMessage } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { HelpCircle } from "lucide-react"
 
 export default function DashboardPage() {
   const [sessions, setSessions] = React.useState<any[]>([])
@@ -116,40 +124,40 @@ export default function DashboardPage() {
     if (lastMessage.type === 'session-update') {
       const updates = lastMessage.data
       setSessions(prev => {
-        const newSessions = [...prev]
+        const sessionsMap = new Map(prev.map(s => [s.sessionId, s]));
+        let changed = false;
+
         updates.forEach((update: any) => {
-          const index = newSessions.findIndex(s => s.sessionId === update.sessionId)
-          if (index !== -1) {
-            // Check if status changed to connected
-            const oldStatus = newSessions[index].isConnected
-            const newStatus = update.isConnected
-            const statusDetail = update.detail || ""
+          const existing = sessionsMap.get(update.sessionId);
+          if (existing) {
+            const oldStatus = existing.isConnected;
+            const newStatus = update.isConnected;
+            const statusDetail = update.detail || "";
 
             if (!oldStatus && newStatus) {
-              toast.success(`Session ${update.sessionId} connectée avec succès !`)
+              toast.success(`Session ${update.sessionId} connected successfully!`);
               confetti({
                 particleCount: 150,
                 spread: 70,
                 origin: { y: 0.6 },
                 colors: ['#10b981', '#34d399', '#6ee7b7', '#ffffff']
-              })
+              });
             } else if (oldStatus && !newStatus && statusDetail.toLowerCase().includes("disconnect")) {
-              toast.error(`Session ${update.sessionId} déconnectée`, {
+              toast.error(`Session ${update.sessionId} disconnected`, {
                 description: statusDetail
-              })
-            } else if (update.status === 'GENERATING_CODE' && update.pairingCode) {
-              toast.info("Code d'appairage généré !", {
-                description: `Le code pour ${update.sessionId} est disponible.`
-              })
+              });
             }
 
-            newSessions[index] = { ...newSessions[index], ...update }
+            sessionsMap.set(update.sessionId, { ...existing, ...update });
+            changed = true;
           } else {
-            newSessions.push(update)
+            sessionsMap.set(update.sessionId, update);
+            changed = true;
           }
-        })
-        return newSessions
-      })
+        });
+
+        return changed ? Array.from(sessionsMap.values()) : prev;
+      });
     } else if (lastMessage.type === 'session-deleted') {
       const { sessionId } = lastMessage.data
       setSessions(prev => prev.filter(s => s.sessionId !== sessionId))
@@ -279,9 +287,9 @@ export default function DashboardPage() {
         origin: { y: 0.6 }
       })
     } catch (error: any) {
-      toast.error("Échec de la création", {
+      toast.error("Creation failed", {
         id: toastId,
-        description: error.message || "Impossible de créer la session"
+        description: getFriendlyErrorMessage(error)
       })
     } finally {
       setCreating(false)
@@ -426,20 +434,22 @@ export default function DashboardPage() {
 
           <section id="usage" className="scroll-mt-24 space-y-4">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">API Usage</h3>
-            <div className="p-4 rounded-md border border-border bg-card shadow-sm space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-muted-foreground">Requests</span>
-                  <span>{userRole === 'admin' ? '∞' : '75%'}</span>
+            {!credits ? <StatsSkeleton /> : (
+              <div className="p-4 rounded-md border border-border bg-card shadow-sm space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-muted-foreground">Requests</span>
+                    <span>{userRole === 'admin' ? '∞' : `${Math.round((credits.used / (credits.balance + credits.used)) * 100)}%`}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-primary" style={{ width: userRole === 'admin' ? '100%' : `${Math.min(100, (credits.used / (credits.balance + credits.used)) * 100)}%` }} />
+                  </div>
                 </div>
-                <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-[75%]" />
-                </div>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Refreshes monthly. Current plan: <span className="font-semibold text-foreground uppercase">{credits.plan || (userRole === 'admin' ? 'ENTERPRISE' : 'FREE')}</span>
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground text-center">
-                Refreshes in 12 days. Current plan: <span className="font-semibold text-foreground">{userRole === 'admin' ? 'ENTERPRISE' : 'FREE'}</span>
-              </p>
-            </div>
+            )}
           </section>
         </div>
       </div>
@@ -455,15 +465,52 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Session ID</label>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Session ID</label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Unique name for your instance. Use alphanumeric characters and hyphens only.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 placeholder="e.g. marketing-dept"
                 value={newSessionId}
-                onChange={(e) => setNewSessionId(e.target.value)}
+                onChange={(e) => setNewSessionId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
               />
+              {!newSessionId && (
+                <div className="flex flex-wrap gap-2">
+                  {['marketing', 'support', 'alerts'].map(suggestion => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setNewSessionId(`${suggestion}-${Math.floor(Math.random() * 900) + 100}`)}
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground hover:bg-primary/20 transition-colors"
+                    >
+                      + {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Phone Number (Optional)</label>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Phone Number (Optional)</label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Number to pre-fill for pairing. Include country code (e.g. 237...).</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 placeholder="237..."
                 value={phoneNumber}
@@ -472,7 +519,11 @@ export default function DashboardPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => {
+              setIsCreateOpen(false);
+              setNewSessionId("");
+              setPhoneNumber("");
+            }}>Cancel</Button>
             <Button onClick={handleCreateSession} disabled={creating || !newSessionId}>
               {creating ? "Creating..." : "Create Session"}
             </Button>
@@ -510,33 +561,41 @@ function SessionSelect({ sessions, selectedId, onSelect }: {
 }
 
 function ActivityCard({ activities, loading }: { activities: any[], loading: boolean }) {
-  if (loading) return <div className="p-8 text-center text-xs text-muted-foreground">Loading activity...</div>;
-  if (activities.length === 0) return <div className="p-8 text-center text-xs text-muted-foreground">No recent activity</div>;
+  if (loading) return <ActivitySkeleton count={3} />;
+
+  if (!activities || activities.length === 0) return (
+    <div className="p-8 text-center border border-dashed border-border rounded-lg bg-card/50">
+      <div className="flex flex-col items-center gap-2">
+        <Activity className="w-6 h-6 text-muted-foreground/20" />
+        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">No recent activity</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="rounded-md border border-border bg-card shadow-sm overflow-hidden">
       <div className="divide-y divide-border">
         {activities.slice(0, 5).map((activity, i) => (
-          <div key={i} className="p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors">
+          <div key={i} className="p-3 flex items-start gap-4 hover:bg-muted/30 transition-all duration-200 border-l-2 border-transparent hover:border-primary">
             <div className={cn(
-              "p-1.5 rounded-md border",
+              "w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-sm",
               activity.success ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-red-500/10 text-red-600 border-red-500/20"
             )}>
-              <Activity className="w-3.5 h-3.5" />
+              <Activity className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center mb-0.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wider truncate">{activity.action.replace(/_/g, ' ')}</span>
-                <span className="text-[9px] text-muted-foreground/60">{new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-[10px] font-black uppercase tracking-tight truncate group-hover:text-primary transition-colors">{activity.action.replace(/_/g, ' ')}</span>
+                <span className="text-[9px] text-muted-foreground/60 font-medium">{new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
-              <p className="text-[10px] text-muted-foreground/60 truncate italic">{activity.resourceId || activity.userEmail}</p>
+              <p className="text-[10px] text-muted-foreground/40 truncate font-bold uppercase tracking-widest">{activity.sessionId || activity.resourceId || 'System'}</p>
             </div>
           </div>
         ))}
       </div>
       <Link href="/dashboard/activities">
-        <Button variant="ghost" className="w-full rounded-none border-t border-border h-8 text-[10px] font-medium text-muted-foreground hover:text-foreground">
-          View All History
+        <Button variant="ghost" className="w-full rounded-none border-t border-border h-9 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all">
+          View Full History
         </Button>
       </Link>
     </div>
