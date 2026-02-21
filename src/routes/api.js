@@ -619,12 +619,25 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.post('/sessions/:sessionId/groups/:groupId/ai-generate', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
+            // Credit Check & Deduction
+            if (req.currentUser.role !== 'admin') {
+                if (!req.currentUser.id) {
+                    return res.status(400).json({ status: 'error', message: 'User account required for credit deduction.' });
+                }
+
+                const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Génération IA pour groupe ${groupId}`);
+                if (!hasCredit) {
+                    return res.status(402).json({ status: 'error', message: 'Crédits insuffisants.' });
+                }
+            }
+
             const aiService = require('../services/ai');
             const rawMessage = await aiService.generateGroupMessage(sessionId, groupId, req.body);
             // Format for WhatsApp before returning so user sees the final version
             const message = aiService.formatForWhatsApp(rawMessage);
             res.json({ status: 'success', data: { message } });
         } catch (err) {
+            log(`Erreur génération IA groupe ${groupId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });

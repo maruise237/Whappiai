@@ -7,6 +7,7 @@ import { MessagingTabs } from "@/components/dashboard/messaging-tabs"
 import { LogViewer } from "@/components/dashboard/log-viewer"
 import { ApiUsageCard } from "@/components/dashboard/api-usage-card"
 import { DashboardSkeleton, TableSkeleton, StatsSkeleton, ActivitySkeleton } from "@/components/dashboard/dashboard-skeleton"
+import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
 import { api } from "@/lib/api"
 import {
   Accordion,
@@ -434,22 +435,9 @@ export default function DashboardPage() {
           )}
 
           <section id="usage" className="scroll-mt-24 space-y-4">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">API Usage</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan & Crédits</h3>
             {!credits ? <StatsSkeleton /> : (
-              <div className="p-4 rounded-md border border-border bg-card shadow-sm space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-muted-foreground">Requests</span>
-                    <span>{userRole === 'admin' ? '∞' : `${Math.round((credits.used / (credits.balance + credits.used)) * 100)}%`}</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: userRole === 'admin' ? '100%' : `${Math.min(100, (credits.used / (credits.balance + credits.used)) * 100)}%` }} />
-                  </div>
-                </div>
-                <p className="text-[10px] text-muted-foreground text-center">
-                  Refreshes monthly. Current plan: <span className="font-semibold text-foreground uppercase">{credits.plan || (userRole === 'admin' ? 'ENTERPRISE' : 'FREE')}</span>
-                </p>
-              </div>
+              <CreditCardUI credits={credits} userRole={userRole} />
             )}
           </section>
         </div>
