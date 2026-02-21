@@ -83,60 +83,53 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
   }
 
   return (
-    <Card className="overflow-hidden bg-white dark:bg-card border border-slate-200 dark:border-primary/10 rounded-lg shadow-lg group relative">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-primary/10 transition-colors duration-200" />
-      
-      <CardHeader className="bg-primary/5 p-6 sm:p-8 border-b border-slate-100 dark:border-primary/5 relative z-10">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <Card className="overflow-hidden bg-card border border-border rounded-lg shadow-sm group">
+      <CardHeader className="bg-muted/30 p-6 border-b border-border relative z-10">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-primary/10 text-primary border border-primary/20 group-hover:scale-110 transition-transform duration-200">
-              <Terminal className="w-6 h-6" />
+            <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <Terminal className="w-5 h-5" />
             </div>
-            <div className="space-y-1">
-              <CardTitle className="text-xl font-bold text-primary uppercase">Référence API</CardTitle>
-              <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Exemple de requête cURL</CardDescription>
+            <div className="space-y-0.5">
+              <CardTitle className="text-lg font-semibold tracking-tight">API Interface</CardTitle>
+              <CardDescription className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Reference cURL implementation</CardDescription>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className={cn(
-              "gap-3 h-12 px-6 rounded-lg transition-all w-full sm:w-auto",
-              copied 
-                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-sm" 
-                : "bg-white/50 dark:bg-background/40 backdrop-blur-sm hover:bg-primary/10 hover:text-primary border-slate-200 dark:border-primary/20"
+              "gap-2.5 h-9 px-4 rounded-md transition-all w-full sm:w-auto text-xs font-medium",
+              copied
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                : "border-border hover:bg-muted"
             )}
             onClick={copyToClipboard}
           >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            <span className="text-[11px] font-bold uppercase tracking-widest">{copied ? "Copié" : "Copier"}</span>
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? "Copied" : "Copy Code"}</span>
           </Button>
         </div>
       </CardHeader>
-      
-      <CardContent className="p-6 sm:p-8 relative z-10">
+
+      <CardContent className="p-6 relative z-10">
         <div className="relative group/code">
-          <div className="relative">
-            <ScrollArea className="h-[300px] w-full bg-slate-950 rounded-lg border border-slate-800 p-6 shadow-xl overflow-hidden group-hover/code:border-primary/20 transition-colors duration-200">
-              <pre className="font-mono text-[13px] text-slate-300 whitespace-pre-wrap leading-relaxed selection:bg-primary/30">
-                <code 
-                  className="language-bash"
-                  dangerouslySetInnerHTML={{ 
-                    __html: Prism.highlight(curlExample, Prism.languages.bash, 'bash') 
-                  }}
-                />
-              </pre>
-            </ScrollArea>
-          </div>
+          <ScrollArea className="h-[280px] w-full bg-slate-950 rounded-md border border-border p-5 shadow-inner">
+            <pre className="font-mono text-[12px] text-slate-300 whitespace-pre-wrap leading-relaxed">
+              <code
+                className="language-bash"
+                dangerouslySetInnerHTML={{
+                  __html: Prism.highlight(curlExample, Prism.languages.bash, 'bash')
+                }}
+              />
+            </pre>
+          </ScrollArea>
         </div>
-        <div className="mt-6 flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-2">
-          <div className="relative">
-            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            <div className="absolute inset-0 w-2 h-2 rounded-full bg-primary animate-ping opacity-40" />
-          </div>
+        <div className="mt-6 flex items-center gap-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 px-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm" />
           <span className="flex items-center gap-2">
-            Endpoint: <span className="text-primary font-bold">POST</span>
-            <span className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary/60 border border-primary/10">/api/v1/messages</span>
+            Active Endpoint: <span className="text-primary font-semibold">POST</span>
+            <span className="px-2 py-0.5 rounded bg-primary/5 text-primary/70 border border-primary/10 font-mono">/api/v1/messages</span>
           </span>
         </div>
       </CardContent>

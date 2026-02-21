@@ -13,54 +13,54 @@ const plans = [
   {
     id: "starter",
     name: "Starter",
-    price: { 
-      monthly: "2 500 FCFA", 
+    price: {
+      monthly: "2,500 FCFA",
       monthlyValue: 2500,
     },
     features: [
-      "500 messages IA / mois",
-      "1 numéro WhatsApp connecté",
-      "Réponses automatiques 24/7",
-      "Support technique par email",
-      "Accès aux mises à jour"
+      "500 AI messages / month",
+      "1 WhatsApp session connected",
+      "24/7 Smart auto-responses",
+      "Email technical support",
+      "Standard API access"
     ],
-    cta: "Choisir Starter",
+    cta: "Choose Starter",
     highlighted: false,
   },
   {
     id: "pro",
     name: "Pro",
-    price: { 
-      monthly: "5 000 FCFA", 
+    price: {
+      monthly: "5,000 FCFA",
       monthlyValue: 5000,
     },
     features: [
-      "2 000 messages IA / mois",
-      "Groupes WhatsApp illimités",
-      "Tableau de bord Analytics",
-      "Anti-spam intelligent",
-      "Support prioritaire",
-      "Export des données"
+      "2,000 AI messages / month",
+      "Unlimited WhatsApp groups",
+      "Advanced Analytics dashboard",
+      "Intelligent anti-spam",
+      "Priority customer support",
+      "Data export (CSV/JSON)"
     ],
-    cta: "Choisir Pro",
+    cta: "Choose Pro",
     highlighted: true,
   },
   {
     id: "business",
     name: "Business",
-    price: { 
-      monthly: "10 000 FCFA", 
+    price: {
+      monthly: "10,000 FCFA",
       monthlyValue: 10000,
     },
     features: [
-      "10 000 messages IA / mois",
-      "Tout en Pro",
-      "Support dédié 24/7",
-      "Intégrations API sur mesure",
-      "Audit logs & Sécurité",
-      "Formation des équipes"
+      "10,000 AI messages / month",
+      "Everything in Pro",
+      "Dedicated 24/7 account manager",
+      "Custom API integrations",
+      "Audit logs & Security",
+      "Team training sessions"
     ],
-    cta: "Choisir Business",
+    cta: "Choose Business",
     highlighted: false,
   },
 ]
@@ -73,7 +73,7 @@ export function BillingPlans() {
     try {
       setLoading(planId)
       const token = await getToken()
-      
+
       const response = await fetchApi('/api/v1/payments/checkout', {
         method: 'POST',
         body: JSON.stringify({ planId }),
@@ -83,11 +83,11 @@ export function BillingPlans() {
       if (response.url) {
         window.location.href = response.url
       } else {
-        toast.error("Impossible d'initialiser le paiement")
+        toast.error("Unable to initialize payment")
       }
     } catch (error) {
       console.error(error)
-      toast.error("Une erreur est survenue")
+      toast.error("An unexpected error occurred")
     } finally {
       setLoading(null)
     }
@@ -98,53 +98,53 @@ export function BillingPlans() {
       {plans.map((plan, index) => (
         <motion.div
           key={plan.id}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
+          transition={{ duration: 0.4, delay: index * 0.1 }}
           className={cn(
-            "relative rounded-3xl p-8 transition-all duration-300 bg-card border",
-            plan.highlighted 
-              ? "border-primary shadow-2xl scale-105 z-10" 
-              : "border-border hover:border-primary/50 hover:bg-accent/50 z-0 mt-4"
+            "relative rounded-lg p-8 transition-all duration-200 bg-card border shadow-sm",
+            plan.highlighted
+              ? "border-primary shadow-md z-10 scale-[1.02]"
+              : "border-border hover:border-border/80 z-0"
           )}
         >
           {plan.highlighted && (
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-1 whitespace-nowrap">
-              Populaire
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded text-[10px] font-bold tracking-wider uppercase shadow-sm whitespace-nowrap">
+              Most Popular
             </div>
           )}
 
           <div className="mb-8">
-            <h3 className={cn("text-xl font-semibold mb-2", plan.highlighted ? "text-primary" : "text-foreground")}>
+            <h3 className={cn("text-lg font-bold tracking-tight mb-2", plan.highlighted ? "text-primary uppercase" : "text-foreground")}>
               {plan.name}
             </h3>
             <div className="flex items-baseline gap-1 mb-2">
-              <span className="text-4xl font-bold text-foreground">
+              <span className="text-3xl font-bold tracking-tighter text-foreground">
                 {plan.price.monthly}
               </span>
-              <span className="text-muted-foreground text-sm">
-                /mois
+              <span className="text-muted-foreground text-xs font-medium">
+                /month
               </span>
             </div>
           </div>
 
-          <div className="space-y-4 mb-8">
+          <div className="space-y-3.5 mb-8">
             {plan.features.map((feature, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div className={cn(
-                  "mt-1 p-0.5 rounded-full shrink-0", 
-                  plan.highlighted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  "mt-1 p-0.5 rounded-full shrink-0",
+                  plan.highlighted ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                 )}>
-                  <Check className="w-3 h-3" strokeWidth={3} />
+                  <Check className="w-2.5 h-2.5" strokeWidth={3} />
                 </div>
-                <span className="text-sm text-foreground/90 leading-tight">{feature}</span>
+                <span className="text-xs text-muted-foreground font-medium leading-tight">{feature}</span>
               </div>
             ))}
           </div>
 
           <Button
             className={cn(
-              "w-full h-12 rounded-xl text-base font-semibold transition-all duration-200",
+              "w-full h-10 rounded-md text-sm font-semibold transition-all duration-200",
               plan.highlighted
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -155,7 +155,7 @@ export function BillingPlans() {
             {loading === plan.id ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Chargement...
+                Processing...
               </>
             ) : (
               plan.cta

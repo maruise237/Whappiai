@@ -47,11 +47,11 @@ export function Footer() {
               <Image src="/icon.png" width={32} height={32} alt="Whappi Logo" className="object-contain" />
               <span className="font-semibold text-foreground">Whappi</span>
             </Link>
-            <p className="text-sm text-muted-foreground mb-4">Plateforme d'automatisation WhatsApp avec IA.</p>
+            <p className="text-sm text-muted-foreground mb-4">Enterprise-grade WhatsApp automation powered by AI.</p>
             {/* System Status */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
-              <span className="w-2 h-2 rounded-full bg-primary pulse-glow" />
-              <span className="text-xs text-muted-foreground">Tous les systèmes opérationnels</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/20 border border-border">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">All systems operational</span>
             </div>
           </div>
 
