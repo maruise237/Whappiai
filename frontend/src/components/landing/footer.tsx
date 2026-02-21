@@ -33,7 +33,7 @@ export function Footer() {
   const isInView = useInView(ref, { once: true, margin: "-50px" })
 
   return (
-    <footer ref={ref} className="border-t border-zinc-800 bg-zinc-950">
+    <footer ref={ref} className="border-t border-border bg-background">
       <div className="max-w-6xl mx-auto px-4 py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -79,7 +79,7 @@ export function Footer() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4"
         >
-          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Whappi, Inc. Tous droits réservés.</p>
+          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Whappi, Inc. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Twitter
