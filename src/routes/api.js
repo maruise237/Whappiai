@@ -69,6 +69,45 @@ const upload = multer({
 function initializeApi(sessions, sessionTokens, createSession, getSessionsDetails, deleteSession, log, userManager, activityLogger, triggerQR) {
     const { isValidId, sanitizeId, validateAIModel } = require('../utils/validation');
 
+    // Middleware to ensure current user owns the session
+    const ensureOwnership = async (req, res, next) => {
+        const sessionId = req.params.sessionId || req.query.sessionId || req.body.sessionId;
+
+        if (!sessionId) {
+            return res.status(400).json({ status: 'error', message: 'Session ID is required' });
+        }
+
+        if (!isValidId(sessionId)) {
+            return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
+        }
+
+        // Admin bypass
+        if (req.currentUser.role === 'admin') {
+            return next();
+        }
+
+        // Token-based auth (api role) bypass if token matches session
+        if (req.currentUser.role === 'api') {
+            if (req.currentUser.email && req.currentUser.email.endsWith(sessionId)) {
+                return next();
+            }
+            return res.status(403).json({ status: 'error', message: 'Token does not match session' });
+        }
+
+        // User ownership check
+        const sessionOwner = userManager.getSessionOwner(sessionId);
+        if (!sessionOwner) {
+            return res.status(404).json({ status: 'error', message: 'Session not found' });
+        }
+
+        if (sessionOwner.email !== req.currentUser.email) {
+            log(`Blocked cross-session access: ${req.currentUser.email} tried to access ${sessionId} (owned by ${sessionOwner.email})`, 'AUTH');
+            return res.status(403).json({ status: 'error', message: 'Access denied: You do not own this session' });
+        }
+
+        next();
+    };
+
     // Clerk Auth Middleware (now global in index.js)
     // router.use(ClerkExpressWithAuth());
 
@@ -379,45 +418,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     const recipientListManager = new RecipientListManager(process.env.TOKEN_ENCRYPTION_KEY || 'default-key');
 
     // AI Configuration Endpoints
-    // Middleware to ensure current user owns the session
-    const ensureOwnership = async (req, res, next) => {
-        const sessionId = req.params.sessionId || req.query.sessionId || req.body.sessionId;
-
-        if (!sessionId) {
-            return res.status(400).json({ status: 'error', message: 'Session ID is required' });
-        }
-
-        if (!isValidId(sessionId)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
-        }
-
-        // Admin bypass
-        if (req.currentUser.role === 'admin') {
-            return next();
-        }
-
-        // Token-based auth (api role) bypass if token matches session
-        if (req.currentUser.role === 'api') {
-            if (req.currentUser.email && req.currentUser.email.endsWith(sessionId)) {
-                return next();
-            }
-            return res.status(403).json({ status: 'error', message: 'Token does not match session' });
-        }
-
-        // User ownership check
-        const sessionOwner = userManager.getSessionOwner(sessionId);
-        if (!sessionOwner) {
-            return res.status(404).json({ status: 'error', message: 'Session not found' });
-        }
-
-        if (sessionOwner.email !== req.currentUser.email) {
-            log(`Blocked cross-session access: ${req.currentUser.email} tried to access ${sessionId} (owned by ${sessionOwner.email})`, 'AUTH');
-            return res.status(403).json({ status: 'error', message: 'Access denied: You do not own this session' });
-        }
-
-        next();
-    };
-
     router.get('/sessions/:sessionId/ai', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
         const { sessionId } = req.params;
         const session = Session.findById(sessionId);
