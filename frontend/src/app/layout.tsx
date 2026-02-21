@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { ClerkProvider } from "@clerk/nextjs";
 import { frFR } from "@clerk/localizations";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import ProgressBar from "@/components/progress-bar";
-import { InstallPrompt } from "@/components/InstallPrompt";
 import { Suspense } from "react";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "Whappi | Passerelle WhatsApp",
@@ -26,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -42,13 +40,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+      <body className={`${GeistSans.className} antialiased`} suppressHydrationWarning>
         <ClerkProvider localization={frFR}>
           <Suspense fallback={null}>
             <ProgressBar />
           </Suspense>
           {children}
-          {/* <InstallPrompt /> Moved to specific layouts */}
           <Toaster />
         </ClerkProvider>
       </body>

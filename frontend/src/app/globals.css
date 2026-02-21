@@ -14,55 +14,64 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.12 0.01 214);
-  /* Darker foreground for better contrast */
+  --background: oklch(0.99 0.005 214);
+  --foreground: oklch(0.15 0.02 214);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0.01 214);
+  --card-foreground: oklch(0.15 0.02 214);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0.01 214);
-  /* Darkened primary from 0.627 to 0.45 for >4.5:1 contrast on white */
-  --primary: oklch(0.45 0.16 149.214);
-  --primary-foreground: oklch(0.985 0.001 106.423);
-  --secondary: oklch(0.96 0.003 264.542);
-  --secondary-foreground: oklch(0.12 0.01 214);
-  --muted: oklch(0.96 0.003 264.542);
-  /* Darkened muted-foreground from 0.552 to 0.38 for legibility */
-  --muted-foreground: oklch(0.38 0.016 285.938);
-  --accent: oklch(0.96 0.003 264.542);
-  --accent-foreground: oklch(0.12 0.01 214);
-  --destructive: oklch(0.5 0.2 27.325);
-  --destructive-foreground: oklch(0.985 0.001 106.423);
-  --border: oklch(0.9 0.004 286.32);
-  --input: oklch(0.9 0.004 286.32);
-  --ring: oklch(0.45 0.16 149.214);
-  --radius: 0.5rem;
+  --popover-foreground: oklch(0.15 0.02 214);
+  --primary: oklch(0.55 0.2 250);
+  /* Cobalt Blue inspired action color */
+  --primary-foreground: oklch(0.99 0.005 214);
+  --secondary: oklch(0.92 0.01 214);
+  --secondary-foreground: oklch(0.15 0.02 214);
+  --muted: oklch(0.95 0.01 214);
+  --muted-foreground: oklch(0.45 0.02 214);
+  --accent: oklch(0.92 0.01 214);
+  --accent-foreground: oklch(0.15 0.02 214);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 214);
+  --border: oklch(0.88 0.01 214);
+  --input: oklch(0.88 0.01 214);
+  --ring: oklch(0.55 0.2 250);
+  --radius: 0.75rem;
+
+  /* Glass effects */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.05);
 }
 
 .dark {
-  --background: oklch(0.12 0.01 214);
-  --foreground: oklch(0.985 0.001 106.423);
-  --card: oklch(0.14 0.01 214);
-  --card-foreground: oklch(0.985 0.001 106.423);
-  --popover: oklch(0.14 0.01 214);
-  --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: oklch(0.627 0.194 149.214);
-  --primary-foreground: oklch(0.12 0.01 214);
-  --secondary: oklch(0.22 0.006 209.539);
-  --secondary-foreground: oklch(0.985 0.001 106.423);
-  --muted: oklch(0.22 0.006 209.539);
-  --muted-foreground: oklch(0.75 0.01 106.423);
-  --accent: oklch(0.22 0.006 209.539);
-  --accent-foreground: oklch(0.985 0.001 106.423);
-  --destructive: oklch(0.45 0.15 25.723);
-  --destructive-foreground: oklch(0.985 0.001 106.423);
-  --border: oklch(0.22 0.006 209.539);
-  --input: oklch(0.22 0.006 209.539);
-  --ring: oklch(0.627 0.194 149.214);
+  --background: oklch(0.12 0.015 214);
+  --foreground: oklch(0.92 0.01 214);
+  --card: oklch(0.15 0.02 214);
+  --card-foreground: oklch(0.92 0.01 214);
+  --popover: oklch(0.15 0.02 214);
+  --popover-foreground: oklch(0.92 0.01 214);
+  --primary: oklch(0.6 0.18 250);
+  /* Bright Cobalt */
+  --primary-foreground: oklch(0.12 0.015 214);
+  --secondary: oklch(0.2 0.02 214);
+  --secondary-foreground: oklch(0.92 0.01 214);
+  --muted: oklch(0.18 0.02 214);
+  --muted-foreground: oklch(0.65 0.02 214);
+  --accent: oklch(0.2 0.02 214);
+  --accent-foreground: oklch(0.92 0.01 214);
+  --destructive: oklch(0.45 0.18 25);
+  --destructive-foreground: oklch(0.92 0.01 214);
+  --border: oklch(0.22 0.02 214);
+  --input: oklch(0.22 0.02 214);
+  --ring: oklch(0.6 0.18 250);
+
+  /* Glass effects */
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.05);
 }
 
 @theme inline {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -94,20 +103,175 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground;
+    font-family: var(--font-geist-sans, var(--font-sans));
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Typography scale */
+  h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.4;
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.5;
+  }
+
+  p {
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 }
 
-/* Custom Utilities for Professional Look */
+/* ——— Custom Scrollbar ——— */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ——— Glass / Frosted ——— */
 .glass {
-  @apply bg-background/80 backdrop-blur-md border border-border;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid var(--glass-border);
 }
 
+/* ——— Cards elevation ——— */
+.card-elevated {
+  box-shadow: 0 0 0 1px var(--border), 0 2px 8px -2px rgb(0 0 0 / 0.08);
+  transition: box-shadow 200ms ease;
+}
+
+.card-elevated:hover {
+  box-shadow: 0 0 0 1px var(--border), 0 4px 16px -4px rgb(0 0 0 / 0.12);
+}
+
+.dark .card-elevated {
+  box-shadow: 0 0 0 1px var(--border), 0 2px 8px -2px rgb(0 0 0 / 0.3);
+}
+
+.dark .card-elevated:hover {
+  box-shadow: 0 0 0 1px var(--border), 0 4px 16px -4px rgb(0 0 0 / 0.4);
+}
+
+/* ——— Subtle shadow ——— */
 .subtle-shadow {
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
 }
 
+/* ——— Card hover ——— */
 .card-hover {
-  @apply transition-all duration-200 hover:border-border/80 hover:bg-muted/30;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  background-color: color-mix(in oklch, var(--muted) 50%, transparent);
+  border-color: color-mix(in oklch, var(--border) 80%, var(--primary));
+}
+
+/* ——— Loading animation ——— */
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  50% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ——— Fade + slide in ——— */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ——— Stat badge pulse ——— */
+.badge-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: var(--primary);
+  opacity: 0;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.3;
+    transform: scale(1.1);
+  }
 }
