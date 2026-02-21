@@ -82,7 +82,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             try {
                 // Get user from local DB to get their role
                 let user = User.findById(req.auth.userId);
-                
+
                 // Fallback to find by email if ID sync is pending
                 if (!user && req.auth.sessionClaims?.email) {
                     user = User.findByEmail(req.auth.sessionClaims.email);
@@ -91,7 +91,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 const emailFromClerk = req.auth.sessionClaims?.email;
                 const emailFromDB = user?.email;
                 const finalEmail = (emailFromClerk || emailFromDB || `clerk-${req.auth.userId}`).toLowerCase();
-                
+
                 // DEFINITIVE ROLE PROMOTION: If email matches MASTER_ADMIN_EMAIL, they are ALWAYS admin
                 let role = user?.role || req.auth.sessionClaims?.publicMetadata?.role || 'user';
                 if (finalEmail === MASTER_ADMIN_EMAIL.toLowerCase()) {
@@ -103,7 +103,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     role: role,
                     id: user?.id || req.auth.userId
                 };
-                
+
                 log(`Authenticated user: ${finalEmail} (role: ${role})`, 'AUTH', { email: finalEmail, role }, 'INFO');
 
                 // Ensure user exists locally
@@ -113,10 +113,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     if (req.path === '/users/sync' && req.method === 'POST') {
                         return next();
                     }
-                    
+
                     log(`User ${finalEmail} not found in local DB (auto-create disabled)`, 'AUTH');
-                    return res.status(404).json({ 
-                        status: 'error', 
+                    return res.status(404).json({
+                        status: 'error',
                         message: 'User not found in local database. Please complete registration.',
                         code: 'USER_NOT_FOUND_LOCAL'
                     });
@@ -148,7 +148,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         if (req.session && req.session.adminAuthed) {
             const sessionEmail = (req.session.userEmail || '').toLowerCase();
             const sessionRole = sessionEmail === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin' : (req.session.userRole || 'user');
-            
+
             // Try to resolve user ID from DB
             const user = User.findByEmail(sessionEmail);
 
@@ -170,10 +170,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         // 4. Try token-based auth (Per-session API access)
         const authHeader = req.headers['authorization'];
         const token = authHeader ? authHeader.split(' ')[1] : req.query.token;
-        
+
         // Use a more generic way to get sessionId from different possible locations
-        const sessionId = req.params.sessionId ? decodeURIComponent(req.params.sessionId) : 
-                        (req.body.sessionId || req.query.sessionId);
+        const sessionId = req.params.sessionId ? decodeURIComponent(req.params.sessionId) :
+            (req.body.sessionId || req.query.sessionId);
 
         if (token && sessionId) {
             const expectedToken = sessionTokens.get(sessionId);
@@ -181,10 +181,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 // Resolve session owner
                 let userId = null;
                 let userRole = 'api';
-                
+
                 // We need to find the session owner
                 const session = sessions.get(sessionId) || Session.findById(sessionId);
-                
+
                 if (session && session.owner_email) {
                     const user = User.findByEmail(session.owner_email);
                     if (user) {
@@ -193,8 +193,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     }
                 }
 
-                req.currentUser = { 
-                    email: `api-${sessionId}`, 
+                req.currentUser = {
+                    email: `api-${sessionId}`,
                     role: userRole,
                     id: userId
                 };
@@ -209,12 +209,12 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             return next();
         }
 
-        log(`Accès refusé: Authentification échouée pour ${req.originalUrl}`, 'SYSTEM', { 
-            event: 'auth-failed', 
+        log(`Accès refusé: Authentification échouée pour ${req.originalUrl}`, 'SYSTEM', {
+            event: 'auth-failed',
             endpoint: req.originalUrl,
             sessionId
         }, 'WARN');
-        
+
         return res.status(401).json({ status: 'error', message: 'Authentication required' });
     };
 
@@ -332,11 +332,26 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         // IMPORTANT: By default, everyone (including admin) only sees their own sessions
         // If an admin wants to see ALL sessions, they could potentially use a query param
         const showAll = req.query.all === 'true' && req.currentUser.role === 'admin';
-        
+
         res.status(200).json(getSessionsDetails(req.currentUser.email, showAll));
     });
 
-    router.get('/sessions/:sessionId/qr', checkSessionOrTokenAuth, (req, res) => {
+    router.post('/sessions/:sessionId/mark-used', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
+        const { sessionId } = req.params;
+        if (!isValidId(sessionId)) {
+            return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
+        }
+
+        const session = Session.findById(sessionId);
+        if (session) {
+            session.markUsed();
+            res.json({ status: 'success', message: 'Session marked as used' });
+        } else {
+            res.status(404).json({ status: 'error', message: 'Session not found' });
+        }
+    });
+
+    router.get('/sessions/:sessionId/qr', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
         const { sessionId } = req.params;
         if (!isValidId(sessionId)) {
             return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
@@ -364,11 +379,50 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     const recipientListManager = new RecipientListManager(process.env.TOKEN_ENCRYPTION_KEY || 'default-key');
 
     // AI Configuration Endpoints
-    router.get('/sessions/:sessionId/ai', checkSessionOrTokenAuth, (req, res) => {
+    // Middleware to ensure current user owns the session
+    const ensureOwnership = async (req, res, next) => {
+        const sessionId = req.params.sessionId || req.query.sessionId || req.body.sessionId;
+
+        if (!sessionId) {
+            return res.status(400).json({ status: 'error', message: 'Session ID is required' });
+        }
+
+        if (!isValidId(sessionId)) {
+            return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
+        }
+
+        // Admin bypass
+        if (req.currentUser.role === 'admin') {
+            return next();
+        }
+
+        // Token-based auth (api role) bypass if token matches session
+        if (req.currentUser.role === 'api') {
+            if (req.currentUser.email && req.currentUser.email.endsWith(sessionId)) {
+                return next();
+            }
+            return res.status(403).json({ status: 'error', message: 'Token does not match session' });
+        }
+
+        // User ownership check
+        const sessionOwner = userManager.getSessionOwner(sessionId);
+        if (!sessionOwner) {
+            return res.status(404).json({ status: 'error', message: 'Session not found' });
+        }
+
+        if (sessionOwner.email !== req.currentUser.email) {
+            log(`Blocked cross-session access: ${req.currentUser.email} tried to access ${sessionId} (owned by ${sessionOwner.email})`, 'AUTH');
+            return res.status(403).json({ status: 'error', message: 'Access denied: You do not own this session' });
+        }
+
+        next();
+    };
+
+    router.get('/sessions/:sessionId/ai', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
         const { sessionId } = req.params;
         const session = Session.findById(sessionId);
         if (!session) return res.status(404).json({ status: 'error', message: 'Session not found' });
-        
+
         // Return only AI related fields
         res.json({
             status: 'success',
@@ -397,14 +451,14 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         });
     });
 
-    router.post('/sessions/:sessionId/ai', checkSessionOrTokenAuth, async (req, res) => {
+    router.post('/sessions/:sessionId/ai', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
         try {
             // Validate sessionId first to ensure it's safe and exists
             if (!isValidId(sessionId)) {
                 return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
             }
-            
+
             // Check if session exists in DB
             const session = Session.findById(sessionId);
             if (!session) {
@@ -418,7 +472,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 delete aiConfig.key;
                 delete aiConfig.ai_endpoint;
                 delete aiConfig.ai_key;
-                
+
                 // If the model is not a global model (UUID), and the user is not admin,
                 // we should probably force them to use a global model or at least 
                 // prevent them from using custom models if they don't have an endpoint/key.
@@ -433,13 +487,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.post('/sessions/:sessionId/ai/test', checkSessionOrTokenAuth, async (req, res) => {
+    router.post('/sessions/:sessionId/ai/test', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
         const aiService = require('../services/ai');
         try {
             // Get session config from DB if body is empty
             let config = { ...req.body };
-            
+
             // Security: Non-admins cannot provide custom credentials for testing
             if (req.currentUser.role !== 'admin') {
                 delete config.endpoint;
@@ -462,7 +516,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     };
                 }
             }
-            
+
             // Normalize config for callAI
             const callConfig = {
                 id: sessionId,
@@ -486,14 +540,14 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Group Moderation Endpoints
-    router.get('/sessions/:sessionId/moderation/groups', checkSessionOrTokenAuth, async (req, res) => {
+    router.get('/sessions/:sessionId/moderation/groups', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
         const sessionData = sessions.get(sessionId);
-        
+
         if (!sessionData || !sessionData.sock) {
-             return res.status(400).json({ status: 'error', message: 'Session not connected' });
+            return res.status(400).json({ status: 'error', message: 'Session not connected' });
         }
-        
+
         try {
             const moderationService = require('../services/moderation');
             const groups = await moderationService.getAdminGroups(sessionData.sock, sessionId);
@@ -504,7 +558,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.post('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, async (req, res) => {
+    router.post('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const moderationService = require('../services/moderation');
@@ -517,7 +571,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Group Profiles & Links
-    router.get('/sessions/:sessionId/groups/:groupId/profile', checkSessionOrTokenAuth, async (req, res) => {
+    router.get('/sessions/:sessionId/groups/:groupId/profile', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const groupService = require('../services/groups');
@@ -528,7 +582,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.post('/sessions/:sessionId/groups/:groupId/profile', checkSessionOrTokenAuth, async (req, res) => {
+    router.post('/sessions/:sessionId/groups/:groupId/profile', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const groupService = require('../services/groups');
@@ -539,7 +593,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.get('/sessions/:sessionId/groups/:groupId/links', checkSessionOrTokenAuth, async (req, res) => {
+    router.get('/sessions/:sessionId/groups/:groupId/links', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const groupService = require('../services/groups');
@@ -550,7 +604,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.post('/sessions/:sessionId/groups/:groupId/links', checkSessionOrTokenAuth, async (req, res) => {
+    router.post('/sessions/:sessionId/groups/:groupId/links', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const groupService = require('../services/groups');
@@ -562,7 +616,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // AI Group Message Generation
-    router.post('/sessions/:sessionId/groups/:groupId/ai-generate', checkSessionOrTokenAuth, async (req, res) => {
+    router.post('/sessions/:sessionId/groups/:groupId/ai-generate', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const aiService = require('../services/ai');
@@ -576,7 +630,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Group Animator Endpoints
-    router.get('/sessions/:sessionId/moderation/groups/:groupId/animator', checkSessionOrTokenAuth, async (req, res) => {
+    router.get('/sessions/:sessionId/moderation/groups/:groupId/animator', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const animatorService = require('../services/animator');
@@ -587,7 +641,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.post('/sessions/:sessionId/moderation/groups/:groupId/animator', checkSessionOrTokenAuth, async (req, res) => {
+    router.post('/sessions/:sessionId/moderation/groups/:groupId/animator', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const animatorService = require('../services/animator');
@@ -626,7 +680,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Filterable task history endpoint
-    router.get('/sessions/:sessionId/moderation/groups/:groupId/animator/history', checkSessionOrTokenAuth, async (req, res) => {
+    router.get('/sessions/:sessionId/moderation/groups/:groupId/animator/history', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
             const animatorService = require('../services/animator');
@@ -647,17 +701,17 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/activities', checkSessionOrTokenAuth, async (req, res) => {
         try {
             if (!activityLogger) return res.status(501).json({ status: 'error', message: 'Activity logger not initialized' });
-            
+
             const limit = parseInt(req.query.limit) || 100;
             const offset = parseInt(req.query.offset) || 0;
-            
+
             let logs;
             if (req.currentUser.role === 'admin') {
                 logs = await activityLogger.getLogs(limit, offset);
             } else {
                 logs = await activityLogger.getUserLogs(req.currentUser.email, limit, offset);
             }
-            
+
             res.json({ status: 'success', data: logs });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -667,11 +721,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/activities/summary', checkSessionOrTokenAuth, async (req, res) => {
         try {
             if (!activityLogger) return res.status(501).json({ status: 'error', message: 'Activity logger not initialized' });
-            
+
             // If admin, show global summary, else show user-specific summary
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
             const summary = await activityLogger.getSummary(userEmail);
-            
+
             res.json({ status: 'success', data: summary });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -694,10 +748,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         try {
             const validation = validateAIModel(req.body);
             if (!validation.isValid) {
-                return res.status(422).json({ 
-                    status: 'error', 
-                    message: 'Validation failed', 
-                    details: { errors: validation.errors } 
+                return res.status(422).json({
+                    status: 'error',
+                    message: 'Validation failed',
+                    details: { errors: validation.errors }
                 });
             }
 
@@ -720,16 +774,16 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             if (req.body.api_key === "" || req.body.api_key === undefined) {
                 updatedData.api_key = existing.api_key;
             }
-            
+
             const validation = validateAIModel(updatedData);
             if (!validation.isValid) {
-                return res.status(422).json({ 
-                    status: 'error', 
-                    message: 'Validation failed', 
-                    details: { errors: validation.errors } 
+                return res.status(422).json({
+                    status: 'error',
+                    message: 'Validation failed',
+                    details: { errors: validation.errors }
                 });
             }
-            
+
             const modelUpdate = { ...req.body };
             if (modelUpdate.api_key === "" || modelUpdate.api_key === undefined) {
                 delete modelUpdate.api_key;
@@ -1010,7 +1064,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // Check ownership if user is authenticated
             if (req.currentUser) {
                 log(`Delete session attempt: ${sessionId} by ${req.currentUser.email} (role: ${req.currentUser.role})`, 'AUTH');
-                
+
                 // Admin can delete everything
                 if (req.currentUser.role === 'admin') {
                     log(`Admin ${req.currentUser.email} allowed to delete session ${sessionId}`, 'AUTH');
@@ -1058,18 +1112,18 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         try {
             // Robust JID handling: only normalize if it's a user JID, otherwise use as is
             const jid = to.endsWith('@g.us') ? to : jidNormalizedUser(to);
-            
+
             if (!jid) {
                 throw new Error(`Invalid JID: ${to}`);
             }
 
             log(`[API] Tentative d'envoi de message vers ${jid}`, 'SYSTEM', { to: jid }, 'DEBUG');
-            
+
             // Log message structure for debugging
             log(`[API] Structure du message: ${JSON.stringify(message)}`, 'SYSTEM', { message }, 'DEBUG');
 
             const result = await sock.sendMessage(jid, message);
-            
+
             if (!result) {
                 throw new Error('Baileys a retourné un résultat vide');
             }
@@ -1077,7 +1131,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // Log to activity log
             if (activityLogger) {
                 const userEmail = req.currentUser ? req.currentUser.email : (req.session?.userEmail || 'api-key');
-                
+
                 await activityLogger.logMessageSend(
                     userEmail,
                     sessionId,
@@ -1089,18 +1143,18 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             }
 
             log(`[API] Message envoyé avec succès à ${jid}, ID: ${result.key.id}`, 'SYSTEM', { to: jid, messageId: result.key.id }, 'INFO');
-            return { 
-                status: 'success', 
-                message: `Message envoyé à ${to}`, 
+            return {
+                status: 'success',
+                message: `Message envoyé à ${to}`,
                 messageId: result.key.id,
-                result: result 
+                result: result
             };
         } catch (error) {
             log(`[API] Échec de l'envoi du message à ${to}: ${error.message}`, 'SYSTEM', { to, error: error.message }, 'ERROR');
             // Check for specific Baileys error types if possible
             const errorDetail = error.stack || error.message;
-            return { 
-                status: 'error', 
+            return {
+                status: 'error',
                 message: `Failed to send message to ${to}. Reason: ${error.message}`,
                 detail: errorDetail
             };
@@ -1108,7 +1162,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     }
 
     // Webhook setup endpoint
-    router.post('/webhook', checkSessionOrTokenAuth, (req, res) => {
+    router.post('/webhook', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
         const { url, sessionId } = req.body;
         if (!url || !sessionId) {
@@ -1121,7 +1175,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Add GET and DELETE endpoints for webhook management
-    router.get('/webhook', checkSessionOrTokenAuth, (req, res) => {
+    router.get('/webhook', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
         const { sessionId } = req.query;
         if (!sessionId) {
             return res.status(400).json({ status: 'error', message: 'sessionId is required.' });
@@ -1130,7 +1184,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         res.status(200).json({ status: 'success', sessionId, url });
     });
 
-    router.delete('/webhook', checkSessionOrTokenAuth, (req, res) => {
+    router.delete('/webhook', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
         const { sessionId } = req.body;
         if (!sessionId) {
             return res.status(400).json({ status: 'error', message: 'sessionId is required.' });
@@ -1181,7 +1235,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Main message sending endpoint
-    router.post('/messages', checkSessionOrTokenAuth, async (req, res) => {
+    router.post('/messages', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, query: req.query });
         const { sessionId } = req.query;
         if (!sessionId) {
@@ -1197,16 +1251,16 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }, 'DEBUG');
 
         if (!session || !session.sock || session.status !== 'CONNECTED') {
-            log('API error', 'SYSTEM', { 
-                event: 'api-error', 
+            log('API error', 'SYSTEM', {
+                event: 'api-error',
                 error: `Session ${sessionId} not found or not connected.`,
                 sessionExists: !!session,
                 sessionStatus: session?.status,
                 hasSock: !!session?.sock,
-                endpoint: req.originalUrl 
+                endpoint: req.originalUrl
             });
-            return res.status(404).json({ 
-                status: 'error', 
+            return res.status(404).json({
+                status: 'error',
                 message: `Session ${sessionId} not found or not connected.`,
                 detail: !session ? 'Session does not exist' : (!session.sock ? 'Socket connection missing' : `Session status is ${session.status}`)
             });
@@ -1237,21 +1291,21 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 // Admin bypass - no deduction, just log
             } else {
                 if (!req.currentUser.id) {
-                     results.push({ status: 'error', message: 'User account required for credit deduction.' });
-                     continue;
+                    results.push({ status: 'error', message: 'User account required for credit deduction.' });
+                    continue;
                 }
 
                 try {
                     const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
-                    
+
                     if (!hasCredit) {
                         results.push({ status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' });
                         continue;
                     }
                     creditDeducted = true;
                 } catch (err) {
-                     results.push({ status: 'error', message: `Credit error: ${err.message}` });
-                     continue;
+                    results.push({ status: 'error', message: `Credit error: ${err.message}` });
+                    continue;
                 }
             }
 

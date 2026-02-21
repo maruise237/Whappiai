@@ -254,7 +254,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="px-6 py-4 bg-muted/10 border-b border-border">
             <TooltipProvider delayDuration={300}>
-              <TabsList className="flex w-full h-10 p-1 bg-muted/50 border border-border rounded-md justify-start gap-1 overflow-x-auto no-scrollbar">
+              <TabsList className="flex w-full h-10 p-1 bg-muted/50 border border-border rounded-md justify-start gap-1 overflow-x-auto no-scrollbar snap-x touch-pan-x">
                 {[
                   { value: "text", icon: Type, label: "Text", tooltip: "Send simple text" },
                   { value: "image", icon: ImageIcon, label: "Image", tooltip: "Send image with caption" },
@@ -267,7 +267,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
                     <TooltipTrigger asChild>
                       <TabsTrigger
                         value={tab.value}
-                        className="flex-1 py-1 px-3 rounded-sm font-semibold uppercase tracking-widest text-[9px] h-full data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200"
+                        className="flex-none sm:flex-1 py-1 px-4 sm:px-3 rounded-sm font-semibold uppercase tracking-widest text-[9px] h-full data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-sm transition-all duration-200 snap-center"
                       >
                         <tab.icon className="w-3.5 h-3.5 mr-2" />
                         <span className="hidden sm:inline">{tab.label}</span>
@@ -283,7 +283,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
           </div>
 
           <div className="p-8">
-            <div className="min-h-[400px] flex flex-col relative overflow-hidden">
+            <div className="min-h-[350px] sm:min-h-[400px] flex flex-col relative overflow-hidden">
               <TabsContent value="text" className="mt-0 flex-1 flex flex-col space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between px-1">
@@ -292,7 +292,7 @@ export function MessagingTabs({ session, sessions, onSessionChange, onTabChange 
                   </div>
                   <Textarea
                     placeholder="Type your message here..."
-                    className="min-h-[250px] resize-none bg-muted/20 border-border focus-visible:ring-1 p-6 text-sm leading-relaxed"
+                    className="min-h-[200px] sm:min-h-[250px] resize-none bg-muted/20 border-border focus-visible:ring-1 p-4 sm:p-6 text-sm leading-relaxed"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                   />

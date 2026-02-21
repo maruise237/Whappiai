@@ -174,9 +174,9 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               )}
             </div>
             {session && (
-              <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-mono">
-                <div className="flex items-center gap-1 group/id">
-                  <span>ID: {session.sessionId}</span>
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-[10px] text-muted-foreground font-mono">
+                <div className="flex items-center gap-1 group/id max-w-full">
+                  <span className="truncate max-w-[120px] sm:max-w-none">ID: {session.sessionId}</span>
                   <button onClick={() => copyToClipboard(session.sessionId, 'id')} className="opacity-0 group-hover/id:opacity-100 transition-opacity">
                     {copiedId ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
                   </button>
@@ -228,7 +228,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
           status === 'connected' ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
         )}>
           <div className="overflow-hidden">
-            <div className="p-4 sm:p-6 lg:p-8">
+            <div className="p-4 sm:p-6 lg:p-10">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-8 h-10 bg-muted/50 p-1 border border-border">
                   <TabsTrigger value="qr" className="text-xs font-semibold uppercase tracking-widest gap-2">
@@ -298,9 +298,9 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                         <div className="space-y-6 pt-4">
                           <div className="space-y-3">
                             <label className="text-[10px] font-bold uppercase tracking-widest text-primary text-center block">Your Pairing Code</label>
-                            <div className="flex justify-center gap-2 group/code">
+                            <div className="flex flex-wrap justify-center gap-2 group/code">
                               {pairingCodeValue.split('').map((char: string, i: number) => (
-                                <div key={i} className="w-8 h-10 border border-border bg-card rounded flex items-center justify-center text-lg font-bold text-primary shadow-sm">
+                                <div key={i} className="w-7 h-9 sm:w-8 sm:h-10 border border-border bg-card rounded flex items-center justify-center text-sm sm:text-lg font-bold text-primary shadow-sm">
                                   {char}
                                 </div>
                               ))}

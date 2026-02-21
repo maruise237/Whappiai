@@ -67,7 +67,7 @@ app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
-        
+
         const url = new URL(origin);
         const hostname = url.hostname;
 
@@ -85,7 +85,7 @@ app.use(cors({
         if (hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io')) {
             return callback(null, true);
         }
-        
+
         // Allow the configured domains
         if (process.env.FRONTEND_DOMAIN && hostname === process.env.FRONTEND_DOMAIN) {
             return callback(null, true);
@@ -160,7 +160,7 @@ app.use((req, res, next) => {
     const isProxySecure = req.headers['x-forwarded-proto'] === 'https' || req.secure;
     if (isProxySecure) {
         // Force secure and none for ngrok
-        req.app.set('trust proxy', 1); 
+        req.app.set('trust proxy', 1);
     }
     next();
 });
@@ -186,7 +186,7 @@ app.use(session({
     saveUninitialized: false,
     rolling: true,
     name: 'whatsapp_api_session',
-    proxy: true, 
+    proxy: true,
     cookie: {
         httpOnly: true,
         secure: 'auto', // Will be true if connection is secure
@@ -199,7 +199,7 @@ app.use(session({
 app.use((req, res, next) => {
     const isProxySecure = req.headers['x-forwarded-proto'] === 'https' || req.secure;
     const hostname = req.hostname;
-    
+
     if (req.session && req.session.cookie) {
         if (isProxySecure) {
             // HTTPS (Ngrok) - Needs SameSite: None and Secure: True
@@ -272,17 +272,17 @@ wss.on('connection', async (ws, req) => {
 
             // Get local user info for role
             const localUser = User.findById(clerkUser.id) || User.findByEmail(email);
-            
+
             userInfo = {
                 id: clerkUser.id,
                 email: email,
                 role: localUser?.role || targetRole
             };
-            
+
             log(`Client WebSocket connecté (Clerk): ${email}`, 'SYSTEM', { email, role: userInfo.role }, 'INFO');
         } catch (err) {
             log(`Échec de validation Clerk pour WebSocket: ${err.message}`, 'SYSTEM', null, 'ERROR');
-            
+
             // Check if it's a token expiration error
             if (err.message.includes('expired') || err.message.includes('Gone')) {
                 ws.close(4001, 'Token expired');
@@ -308,21 +308,61 @@ wss.on('close', () => {
     clearInterval(heartbeat);
 });
 
-// Broadcast to WebSocket clients with role-based filtering
+// Broadcast to WebSocket clients with role-based filtering and session isolation
 function broadcastToClients(data) {
-    const message = JSON.stringify(data);
     for (const [client, userInfo] of wsClients) {
         if (client.readyState === 1) {
-            // Role-based filtering: technical logs are only for admins
+            // 1. Technical logs: only for admins
             if (data.type === 'log') {
                 if (userInfo && userInfo.role === 'admin') {
-                    client.send(message);
+                    client.send(JSON.stringify(data));
                 }
-            } else {
-                // Other messages (like session updates) are sent to everyone
-                // (Optional: filter session updates based on ownership if needed)
-                client.send(message);
+                continue;
             }
+
+            // 2. Session isolation for updates
+            if (data.type === 'session-update') {
+                const updates = Array.isArray(data.data) ? data.data : [data.data];
+
+                // Admin sees all updates
+                if (userInfo && userInfo.role === 'admin') {
+                    client.send(JSON.stringify({ ...data, data: updates }));
+                    continue;
+                }
+
+                // Regular users only see updates for sessions they own
+                const filteredUpdates = updates.filter(update => {
+                    const sessionId = update.sessionId;
+                    if (!sessionId) return false;
+                    const owner = userManager.getSessionOwner(sessionId);
+                    return owner && owner.email === userInfo?.email;
+                });
+
+                if (filteredUpdates.length > 0) {
+                    client.send(JSON.stringify({ ...data, data: filteredUpdates }));
+                }
+                continue;
+            }
+
+            // 3. Session isolation for deletions
+            if (data.type === 'session-deleted') {
+                if (userInfo && userInfo.role === 'admin') {
+                    client.send(JSON.stringify(data));
+                    continue;
+                }
+
+                const sessionId = data.data?.sessionId;
+                if (sessionId) {
+                    const owner = userManager.getSessionOwner(sessionId);
+                    if (owner && owner.email === userInfo?.email) {
+                        client.send(JSON.stringify(data));
+                    }
+                }
+                continue;
+            }
+
+            // 4. Fallback: Broadcast other messages normally
+            client.send(JSON.stringify(data));
         }
     }
 }
@@ -345,13 +385,13 @@ const sessionTokens = new Map();
 const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     const isPairingCode = status === 'GENERATING_CODE';
     Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : null);
-    
+
     broadcastToClients({
         type: 'session-update',
-        data: [{ 
-            sessionId: id, 
-            status, 
-            detail, 
+        data: [{
+            sessionId: id,
+            status,
+            detail,
             qr: status === 'GENERATING_QR' ? qrOrCode : null,
             pairingCode: isPairingCode ? qrOrCode : null,
             token: Session.findById(id)?.token
@@ -362,7 +402,7 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
 const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
     const session = Session.create(sessionId, email);
     await whatsappService.connect(sessionId, broadcastSessionUpdate, null, phoneNumber);
-    
+
     if (session.token) {
         sessionTokens.set(sessionId, session.token);
     }
@@ -372,16 +412,16 @@ const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
 const deleteSessionWrapper = async (sessionId) => {
     // 1. Force disconnect and stop reconnection loops
     whatsappService.disconnect(sessionId);
-    
+
     // 2. Clear tokens
     sessionTokens.delete(sessionId);
-    
+
     // 3. Delete metadata from Database
     Session.delete(sessionId);
-    
+
     // 4. Delete physical files from disk (Important to prevent syncWithFilesystem from restoring it)
     whatsappService.deleteSessionData(sessionId);
-    
+
     // 5. Broadcast deletion to all clients
     broadcastToClients({
         type: 'session-deleted',
@@ -392,12 +432,12 @@ const deleteSessionWrapper = async (sessionId) => {
 const getSessionsDetailsWrapper = (email, isAdmin) => {
     const sessions = Session.getAll(email, isAdmin);
     const activeSockets = whatsappService.getActiveSessions();
-    
+
     return sessions.map(s => {
         const hasSocket = activeSockets.has(s.id);
         const sock = hasSocket ? activeSockets.get(s.id) : null;
         const isConnected = hasSocket && sock?.user != null;
-        
+
         // If DB says CONNECTED but socket is missing or not authenticated, it's actually not connected
         let currentStatus = s.status;
         if (currentStatus === 'CONNECTED' && !isConnected) {
@@ -405,7 +445,7 @@ const getSessionsDetailsWrapper = (email, isAdmin) => {
             // We don't update DB here to avoid race conditions during server restart
             // The background connect() process will update it back to CONNECTED when ready
         }
-        
+
         return {
             ...s,
             status: currentStatus,
@@ -418,7 +458,7 @@ const getSessionsDetailsWrapper = (email, isAdmin) => {
 const triggerQRWrapper = async (sessionId) => {
     const session = Session.findById(sessionId);
     if (!session) return false;
-    
+
     // Check if session is already connected
     const activeSockets = whatsappService.getActiveSessions();
     const hasSocket = activeSockets.has(sessionId);
@@ -430,7 +470,7 @@ const triggerQRWrapper = async (sessionId) => {
         broadcastSessionUpdate(sessionId, 'CONNECTED', 'Déjà connecté');
         return true;
     }
-    
+
     whatsappService.connect(sessionId, broadcastSessionUpdate, null);
     return true;
 };
@@ -440,7 +480,7 @@ const sessionsProxy = {
     get: (sessionId) => {
         const sock = whatsappService.getSocket(sessionId);
         const session = Session.findById(sessionId);
-        
+
         if (sock) {
             return {
                 sock: sock,
@@ -448,7 +488,7 @@ const sessionsProxy = {
                 token: session?.token
             };
         }
-        
+
         // If no socket but session exists in DB, return its status
         if (session) {
             return {
@@ -458,7 +498,7 @@ const sessionsProxy = {
                 detail: session.detail
             };
         }
-        
+
         return null;
     },
     has: (sessionId) => {
@@ -533,8 +573,8 @@ if (fs.existsSync(frontendPath)) {
     });
 } else {
     app.get('/', (req, res) => {
-        res.status(200).json({ 
-            status: 'online', 
+        res.status(200).json({
+            status: 'online',
             message: 'Whappi API Server is running.',
             frontend: 'Not found in /frontend/out. Please build it with "npm run build".'
         });
