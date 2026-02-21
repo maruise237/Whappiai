@@ -174,20 +174,20 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               )}
             </div>
             {session && (
-              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-[10px] text-muted-foreground font-mono">
-                <div className="flex items-center gap-1 group/id max-w-full">
-                  <span className="truncate max-w-[120px] sm:max-w-none">ID: {session.sessionId}</span>
+              <div className="flex items-center gap-x-4 w-full overflow-x-auto no-scrollbar scroll-smooth py-1">
+                <div className="flex items-center gap-1 group/id border border-border/50 bg-secondary/30 px-2 py-1 rounded shrink-0">
+                  <span className="whitespace-nowrap">ID: {session.sessionId}</span>
                   <button onClick={() => copyToClipboard(session.sessionId, 'id')} className="opacity-0 group-hover/id:opacity-100 transition-opacity">
                     {copiedId ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
                   </button>
                 </div>
                 {session?.token && (
-                  <div className="flex items-center gap-1 group/token">
-                    <span>TOKEN: {showToken ? session.token : "••••••••"}</span>
-                    <button onClick={() => setShowToken(!showToken)} className="opacity-40 hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 group/token border border-border/50 bg-secondary/30 px-2 py-1 rounded shrink-0">
+                    <span className="whitespace-nowrap">TOKEN: {showToken ? session.token : "••••••••"}</span>
+                    <button onClick={() => setShowToken(!showToken)} className="opacity-40 hover:opacity-100 transition-opacity p-1">
                       {showToken ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
                     </button>
-                    <button onClick={() => copyToClipboard(session.token, 'token')} className="opacity-0 group-hover/token:opacity-100 transition-opacity">
+                    <button onClick={() => copyToClipboard(session.token, 'token')} className="opacity-0 group-hover/token:opacity-100 transition-opacity p-1">
                       {copiedToken ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
                     </button>
                   </div>
@@ -204,19 +204,19 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               size="sm"
               onClick={handleRefresh}
               disabled={loading}
-              className="h-8 text-xs font-medium gap-2 border-border"
+              className="h-10 sm:h-8 text-xs font-bold uppercase tracking-widest gap-2 border-border"
             >
-              <RefreshCw className={cn("w-3 h-3", loading && "animate-spin")} />
-              {status === 'connected' ? 'Sync' : 'Retry'}
+              <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
+              <span className="hidden sm:inline">{status === 'connected' ? 'Sync' : 'Retry'}</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={handleDelete}
               disabled={loading}
-              className="h-8 text-xs font-medium gap-2 border-destructive/20 text-destructive hover:bg-destructive/10"
+              className="h-10 sm:h-8 px-3 text-xs font-medium gap-2 border-destructive/20 text-destructive hover:bg-destructive/10"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
         )}
@@ -298,9 +298,9 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                         <div className="space-y-6 pt-4">
                           <div className="space-y-3">
                             <label className="text-[10px] font-bold uppercase tracking-widest text-primary text-center block">Your Pairing Code</label>
-                            <div className="flex flex-wrap justify-center gap-2 group/code">
+                            <div className="flex flex-wrap justify-center gap-2 group/code w-full py-2">
                               {pairingCodeValue.split('').map((char: string, i: number) => (
-                                <div key={i} className="w-7 h-9 sm:w-8 sm:h-10 border border-border bg-card rounded flex items-center justify-center text-sm sm:text-lg font-bold text-primary shadow-sm">
+                                <div key={i} className="flex-1 min-w-[32px] max-w-[40px] h-10 sm:h-12 border border-border bg-card rounded flex items-center justify-center text-sm sm:text-lg font-black text-primary shadow-sm hover:border-primary/30 transition-colors">
                                   {char}
                                 </div>
                               ))}

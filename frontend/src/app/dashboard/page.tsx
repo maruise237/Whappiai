@@ -14,7 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger
 } from "@/components/ui/accordion"
-import { Plus, History, ArrowRight, Activity, Terminal, Code2, Layers, ChevronDown, Coins } from "lucide-react"
+import { Plus, History, ArrowRight, Activity, Terminal, Code2, Layers, ChevronDown, Coins, LogOut, Smartphone, Scan, Zap } from "lucide-react"
 import {
   Sheet,
   SheetContent,
@@ -22,9 +22,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetFooter,
 } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -324,10 +325,10 @@ export default function DashboardPage() {
   const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
 
   return (
-    <div className="space-y-8 sm:space-y-12 pb-12">
+    <div className="flex-1 space-y-8 p-4 sm:p-6 lg:p-10 pt-6">
       <DashboardTour enabled={guideEnabled} onExit={handleGuideExit} />
 
-      {/* Modern Dashboard Header */}
+      {/* Header & Main Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Overview</h1>
@@ -390,8 +391,8 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Main Content Sections - 2 Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Main Content Sections - Mobile-First Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         {/* Left Section - Operations (8/12) */}
         <div className="lg:col-span-8 space-y-10">
           <section id="connection" className="scroll-mt-24 space-y-4">
@@ -454,26 +455,26 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Create Session Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[425px] border-border bg-card">
-          <DialogHeader>
-            <DialogTitle>New WhatsApp Session</DialogTitle>
-            <DialogDescription>
+      {/* Create Session Sheet */}
+      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-[450px] border-l border-border bg-card p-0 flex flex-col">
+          <SheetHeader className="p-8 pb-4 space-y-2">
+            <SheetTitle className="text-2xl font-black tracking-tight uppercase">New WhatsApp Session</SheetTitle>
+            <SheetDescription className="text-xs font-bold uppercase tracking-widest opacity-40">
               Create a new instance to start sending messages.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-auto px-8 py-4 space-y-8">
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Session ID</label>
+                <label className="text-[10px] font-black uppercase tracking-widest opacity-60">Session ID</label>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Unique name for your instance. Use alphanumeric characters and hyphens only.</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest">Unique name for your instance. Use alphanumeric characters and hyphens only.</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -482,6 +483,7 @@ export default function DashboardPage() {
                 placeholder="e.g. marketing-dept"
                 value={newSessionId}
                 onChange={(e) => setNewSessionId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                className="h-12 text-sm font-medium border-border shadow-none focus-visible:ring-1"
               />
               {!newSessionId && (
                 <div className="flex flex-wrap gap-2">
@@ -489,7 +491,7 @@ export default function DashboardPage() {
                     <button
                       key={suggestion}
                       onClick={() => setNewSessionId(`${suggestion}-${Math.floor(Math.random() * 900) + 100}`)}
-                      className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground hover:bg-primary/20 transition-colors"
+                      className="text-[9px] px-3 py-1 rounded-full bg-secondary/50 text-secondary-foreground hover:bg-primary/20 transition-colors font-bold uppercase tracking-widest border border-border/50"
                     >
                       + {suggestion}
                     </button>
@@ -497,16 +499,16 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Phone Number (Optional)</label>
+                <label className="text-[10px] font-black uppercase tracking-widest opacity-60">Phone Number (Optional)</label>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Number to pre-fill for pairing. Include country code (e.g. 237...).</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest">Number to pre-fill for pairing. Include country code (e.g. 237...).</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -515,21 +517,32 @@ export default function DashboardPage() {
                 placeholder="237..."
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
+                className="h-12 text-sm font-medium border-border shadow-none focus-visible:ring-1"
               />
             </div>
+
+            <div className="p-6 rounded-lg bg-primary/5 border border-primary/10 space-y-3">
+              <div className="flex items-center gap-2">
+                <Zap className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Pro Tip</span>
+              </div>
+              <p className="text-[10px] leading-relaxed font-bold uppercase tracking-tight opacity-60">
+                Identifiers are permanent. Choose a clear name like <span className="text-primary italic">"support-camera"</span> if you plan to use multiple devices.
+              </p>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+          <SheetFooter className="p-8 border-t border-border bg-muted/20">
+            <Button variant="ghost" onClick={() => {
               setIsCreateOpen(false);
               setNewSessionId("");
               setPhoneNumber("");
-            }}>Cancel</Button>
-            <Button onClick={handleCreateSession} disabled={creating || !newSessionId}>
+            }} className="flex-1 h-12 text-[10px] font-black uppercase tracking-widest">Cancel</Button>
+            <Button onClick={handleCreateSession} disabled={creating || !newSessionId} className="flex-1 h-12 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20">
               {creating ? "Creating..." : "Create Session"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
