@@ -612,7 +612,15 @@ if (require.main === module) {
             if (statusesToReinit.includes(session.status)) {
                 log(`Réinitialisation automatique de la session au démarrage: ${session.id} (dernier statut: ${session.status})`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
 
-                whatsappService.connect(session.id, broadcastSessionUpdate, null);
+                // Add a small delay between session initializations to prevent CPU spikes and WhatsApp conflicts
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Use await here to ensure one session starts before the next one begins its initialization process
+                try {
+                    await whatsappService.connect(session.id, broadcastSessionUpdate, null);
+                } catch (err) {
+                    log(`Échec de l'initialisation auto de ${session.id}: ${err.message}`, 'SYSTEM', { sessionId: session.id, error: err.message }, 'ERROR');
+                }
             } else {
                 log(`Session ignorée au démarrage (statut actuel: ${session.status}): ${session.id}`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'DEBUG');
             }
