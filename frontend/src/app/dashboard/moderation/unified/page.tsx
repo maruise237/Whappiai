@@ -145,10 +145,10 @@ export default function UnifiedModerationHub() {
       const token = await getToken()
       if (!token) return
 
-      const sessionsRes = await api.get("/api/v1/sessions", token)
+      const sessionsRes = await api.sessions.list(token)
       setSessions(sessionsRes || [])
       
-      if (sessionsRes.length > 0 && !selectedSessionId) {
+      if (sessionsRes && sessionsRes.length > 0 && !selectedSessionId) {
         setSelectedSessionId(sessionsRes[0].sessionId)
       }
     } catch (error) {
@@ -163,8 +163,8 @@ export default function UnifiedModerationHub() {
       const token = await getToken()
       if (!token) return
       setIsLoading(true)
-      const groupsRes = await api.get(`/api/v1/whatsapp/${sessionId}/groups`, token)
-      setGroups(groupsRes.groups || [])
+      const groupsRes = await api.sessions.getGroups(sessionId, token)
+      setGroups(groupsRes || [])
     } catch (error) {
       console.error("Error fetching groups:", error)
       toast({ title: "Erreur", description: "Impossible de charger les groupes.", variant: "destructive" })
@@ -179,14 +179,14 @@ export default function UnifiedModerationHub() {
       if (!token) return
       
       const [settingsRes, tasksRes, profileRes] = await Promise.all([
-        api.get(`/api/v1/moderation/groups/settings/${sessionId}/${groupId}`, token),
-        api.get(`/api/v1/moderation/groups/animator/tasks/${sessionId}/${groupId}`, token),
-        api.get(`/api/v1/moderation/groups/profile/${sessionId}/${groupId}`, token)
+        api.sessions.getGroupSettings(sessionId, groupId, token),
+        api.sessions.getAnimatorTasks(sessionId, groupId, token),
+        api.sessions.getGroupProfile(sessionId, groupId, token)
       ])
 
-      setSettings(settingsRes.settings)
-      setTasks(tasksRes.tasks || [])
-      setProfile(profileRes.profile)
+      setSettings(settingsRes.settings || settingsRes)
+      setTasks(tasksRes.tasks || tasksRes || [])
+      setProfile(profileRes.profile || profileRes)
     } catch (error) {
       console.error("Error fetching group details:", error)
     }
@@ -212,7 +212,7 @@ export default function UnifiedModerationHub() {
     if (!settings || !selectedSessionId || !selectedGroupId) return
     try {
       const token = await getToken()
-      await api.post(`/api/v1/moderation/groups/settings/${selectedSessionId}/${selectedGroupId}`, settings, token)
+      await api.sessions.updateGroupSettings(selectedSessionId, selectedGroupId, settings, token)
       toast({ title: "Succès", description: "Paramètres de modération enregistrés." })
     } catch (error) {
       toast({ title: "Erreur", description: "Échec de l'enregistrement.", variant: "destructive" })
@@ -223,7 +223,7 @@ export default function UnifiedModerationHub() {
     if (!profile || !selectedSessionId || !selectedGroupId) return
     try {
       const token = await getToken()
-      await api.post(`/api/v1/moderation/groups/profile/${selectedSessionId}/${selectedGroupId}`, profile, token)
+      await api.sessions.updateGroupProfile(selectedSessionId, selectedGroupId, profile, token)
       toast({ title: "Succès", description: "Profil du groupe mis à jour." })
     } catch (error) {
       toast({ title: "Erreur", description: "Échec de la mise à jour.", variant: "destructive" })
@@ -266,8 +266,8 @@ export default function UnifiedModerationHub() {
               onChange={(e) => setSelectedSessionId(e.target.value)}
             >
               {sessions.map(s => (
-                <option key={s.sessionId} value={s.sessionId}>
-                  {s.sessionId} ({s.status})
+                <option key={s.id || s.sessionId} value={s.id || s.sessionId}>
+                  {s.id || s.sessionId} ({s.status})
                 </option>
               ))}
             </select>

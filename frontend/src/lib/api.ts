@@ -138,55 +138,58 @@ export const api = {
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    getGroups: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups`, {
+    getGroups: (sessionId: string, token?: string) => fetchApi(`/api/v1/whatsapp/${sessionId}/groups`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    updateGroupSettings: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}`, {
+    getGroupSettings: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/moderation/groups/settings/${sessionId}/${groupId}`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    updateGroupSettings: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/moderation/groups/settings/${sessionId}/${groupId}`, {
       method: "POST",
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    getAnimatorTasks: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/animator`, {
+    getAnimatorTasks: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/moderation/groups/animator/tasks/${sessionId}/${groupId}`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    addAnimatorTask: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/animator`, {
+    addAnimatorTask: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/moderation/groups/animator/tasks/${sessionId}/${groupId}`, {
       method: "POST",
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    updateAnimatorTask: (taskId: number, data: any, token?: string) => fetchApi(`/api/v1/moderation/animator/${taskId}`, {
+    updateAnimatorTask: (taskId: number, data: any, token?: string) => fetchApi(`/api/v1/moderation/groups/animator/tasks/${taskId}`, {
       method: "PUT",
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    deleteAnimatorTask: (taskId: number, token?: string) => fetchApi(`/api/v1/moderation/animator/${taskId}`, {
+    deleteAnimatorTask: (taskId: number, token?: string) => fetchApi(`/api/v1/moderation/groups/animator/tasks/${taskId}`, {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
     getAnimatorHistory: (sessionId: string, groupId: string, params: any = {}, token?: string) => {
       const query = new URLSearchParams(params).toString();
-      return fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/animator/history?${query}`, {
+      return fetchApi(`/api/v1/moderation/groups/animator/history/${sessionId}/${groupId}?${query}`, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
       });
     },
     // New Group Management Endpoints
-    getGroupProfile: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/groups/${groupId}/profile`, {
+    getGroupProfile: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/moderation/groups/profile/${sessionId}/${groupId}`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    updateGroupProfile: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/groups/${groupId}/profile`, {
+    updateGroupProfile: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/moderation/groups/profile/${sessionId}/${groupId}`, {
       method: "POST",
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    getGroupLinks: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/groups/${groupId}/links`, {
+    getGroupLinks: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/moderation/groups/links/${sessionId}/${groupId}`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    updateGroupLinks: (sessionId: string, groupId: string, links: any[], token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/groups/${groupId}/links`, {
+    updateGroupLinks: (sessionId: string, groupId: string, links: any[], token?: string) => fetchApi(`/api/v1/moderation/groups/links/${sessionId}/${groupId}`, {
       method: "POST",
       body: JSON.stringify({ links }),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    generateGroupMessage: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/groups/${groupId}/ai-generate`, {
+    generateGroupMessage: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/moderation/groups/ai-generate/${sessionId}/${groupId}`, {
       method: "POST",
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
