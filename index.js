@@ -607,22 +607,28 @@ if (require.main === module) {
                 sessionTokens.set(session.id, session.token);
             }
 
-            // Re-initialize any session that was previously connected, disconnected, or stuck in connecting/generating QR
-            const statusesToReinit = ['CONNECTED', 'DISCONNECTED', 'CONNECTING', 'INITIALIZING', 'GENERATING_QR'];
-            if (statusesToReinit.includes(session.status)) {
-                log(`Réinitialisation automatique de la session au démarrage: ${session.id} (dernier statut: ${session.status})`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
+            // Re-initialize any session that was previously connected
+            // IMPORTANT: Reconnect ONLY sessions that have a valid creds folder to avoid infinite QR loop at start
+            const sessionDir = path.join(process.cwd(), 'auth_info_baileys', session.id);
+            const credsFile = path.join(sessionDir, 'creds.json');
+            
+            if (fs.existsSync(credsFile)) {
+                log(`Session ${session.id} trouvée avec des identifiants valides. Réinitialisation automatique...`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
 
                 // Add a small delay between session initializations to prevent CPU spikes and WhatsApp conflicts
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                // Use await here to ensure one session starts before the next one begins its initialization process
-                try {
-                    await whatsappService.connect(session.id, broadcastSessionUpdate, null);
-                } catch (err) {
-                    log(`Échec de l'initialisation auto de ${session.id}: ${err.message}`, 'SYSTEM', { sessionId: session.id, error: err.message }, 'ERROR');
-                }
+                // Fire and forget: don't wait for the connection to be established to start others
+                whatsappService.connect(session.id, broadcastSessionUpdate, null)
+                    .catch(err => {
+                        log(`Échec de l'initialisation auto de ${session.id}: ${err.message}`, 'SYSTEM', { sessionId: session.id, error: err.message }, 'ERROR');
+                    });
             } else {
-                log(`Session ignorée au démarrage (statut actuel: ${session.status}): ${session.id}`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'DEBUG');
+                log(`Session ${session.id} ignorée au démarrage (pas d'identifiants sur le disque)`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'DEBUG');
+                // If it was supposed to be CONNECTED but no files exist, reset status
+                if (session.status === 'CONNECTED') {
+                    Session.updateStatus(session.id, 'DISCONNECTED', 'No credentials found on disk');
+                }
             }
         }
 

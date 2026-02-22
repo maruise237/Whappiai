@@ -254,13 +254,14 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 // Exponential backoff for WhatsApp reconnection
                 const delay = Math.min(2000 * Math.pow(2, retryCount - 1), 60000);
                 
-                if (retryCount <= 15) { 
-                log(`Reconnexion... (tentative ${retryCount}) dans ${delay}ms`, sessionId, {
+                // Increase max attempts to 50 (approx 45-50 min of retrying) for production stability
+                if (retryCount <= 50) { 
+                log(`Reconnexion... (tentative ${retryCount}/50) dans ${delay}ms`, sessionId, {
                     event: 'connection-retry',
                     attempt: retryCount,
                     delay
                 }, 'INFO');
-                if (onUpdate) onUpdate(sessionId, 'CONNECTING', `Reconnecting (attempt ${retryCount})...`, null);
+                if (onUpdate) onUpdate(sessionId, 'CONNECTING', `Reconnecting (attempt ${retryCount}/50)...`, null);
                     setTimeout(async () => {
                         // Check if it's still disconnected and no new connection was started
                         if (!activeSockets.has(sessionId)) {
