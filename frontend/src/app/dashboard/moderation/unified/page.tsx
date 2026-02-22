@@ -154,8 +154,18 @@ export default function UnifiedModerationHub() {
       const token = await getToken()
       if (!token) return
       setIsLoading(true)
+      
+      // Clear previous groups to avoid showing old data if current session has none
+      setGroups([])
+      setSelectedGroupId("")
+      setSettings(null)
+      setTasks([])
+      setProfile(null)
+
       const groupsRes = await api.sessions.getGroups(sessionId, token)
-      setGroups(groupsRes || [])
+      // Robustness: ensure we handle both array directly or wrapped in data
+      const groupsData = Array.isArray(groupsRes) ? groupsRes : (groupsRes?.data || [])
+      setGroups(groupsData)
     } catch (error) {
       console.error("Error fetching groups:", error)
       toast({ title: "Erreur", description: "Impossible de charger les groupes.", variant: "destructive" })
@@ -175,9 +185,14 @@ export default function UnifiedModerationHub() {
         api.sessions.getGroupProfile(sessionId, groupId, token)
       ])
 
-      setSettings(settingsRes.settings || settingsRes)
-      setTasks(tasksRes.tasks || tasksRes || [])
-      setProfile(profileRes.profile || profileRes)
+      // Enhanced robustness: handle nested data or direct objects
+      const settingsData = settingsRes?.settings || settingsRes?.data || settingsRes
+      const tasksData = tasksRes?.tasks || tasksRes?.data || tasksRes || []
+      const profileData = profileRes?.profile || profileRes?.data || profileRes
+
+      setSettings(settingsData)
+      setTasks(Array.isArray(tasksData) ? tasksData : [])
+      setProfile(profileData)
     } catch (error) {
       console.error("Error fetching group details:", error)
     }
@@ -203,10 +218,13 @@ export default function UnifiedModerationHub() {
     if (!settings || !selectedSessionId || !selectedGroupId) return
     try {
       const token = await getToken()
-      await api.sessions.updateGroupSettings(selectedSessionId, selectedGroupId, settings, token)
+      const res = await api.sessions.updateGroupSettings(selectedSessionId, selectedGroupId, settings, token)
+      
+      if (res?.status === 'error') throw new Error(res.message)
+      
       toast({ title: "Succès", description: "Paramètres de modération enregistrés." })
-    } catch (error) {
-      toast({ title: "Erreur", description: "Échec de l'enregistrement.", variant: "destructive" })
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error.message || "Échec de l'enregistrement.", variant: "destructive" })
     }
   }
 
@@ -214,10 +232,13 @@ export default function UnifiedModerationHub() {
     if (!profile || !selectedSessionId || !selectedGroupId) return
     try {
       const token = await getToken()
-      await api.sessions.updateGroupProfile(selectedSessionId, selectedGroupId, profile, token)
+      const res = await api.sessions.updateGroupProfile(selectedSessionId, selectedGroupId, profile, token)
+      
+      if (res?.status === 'error') throw new Error(res.message)
+      
       toast({ title: "Succès", description: "Profil du groupe mis à jour." })
-    } catch (error) {
-      toast({ title: "Erreur", description: "Échec de la mise à jour.", variant: "destructive" })
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error.message || "Échec de la mise à jour.", variant: "destructive" })
     }
   }
 
@@ -601,13 +622,7 @@ export default function UnifiedModerationHub() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {tasks.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={3} className="h-48 text-center text-muted-foreground">
-                              Aucun message programmé.
-                            </TableCell>
-                          </TableRow>
-                        ) : (
+                        {tasks && tasks.length > 0 ? (
                           tasks.map(task => {
                             const scheduledDate = task.scheduled_at ? new Date(task.scheduled_at) : null;
                             const isValidDate = scheduledDate && !isNaN(scheduledDate.getTime());
@@ -624,6 +639,12 @@ export default function UnifiedModerationHub() {
                               </TableRow>
                             );
                           })
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={3} className="h-48 text-center text-muted-foreground">
+                              Aucun message programmé.
+                            </TableCell>
+                          </TableRow>
                         )}
                       </TableBody>
                     </Table>
