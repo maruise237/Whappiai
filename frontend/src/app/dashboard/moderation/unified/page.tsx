@@ -62,15 +62,6 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts"
 import { api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -448,22 +439,9 @@ export default function UnifiedModerationHub() {
                       <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">Live Sync</Badge>
                     </CardHeader>
                     <CardContent className="pt-8">
-                      <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={activityData}>
-                            <defs>
-                              <linearGradient id="colorMsg" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-                            <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }} />
-                            <Area type="monotone" dataKey="messages" stroke="hsl(var(--primary))" strokeWidth={2} fillOpacity={1} fill="url(#colorMsg)" />
-                          </AreaChart>
-                        </ResponsiveContainer>
+                      <div className="h-[200px] w-full flex flex-col items-center justify-center text-center gap-3 bg-muted/5 rounded-xl border border-dashed border-border">
+                        <BarChart3 className="w-10 h-10 text-muted-foreground/30" />
+                        <p className="text-sm text-muted-foreground">Les statistiques détaillées seront disponibles après 24h d'activité.</p>
                       </div>
                     </CardContent>
                   </Card>
