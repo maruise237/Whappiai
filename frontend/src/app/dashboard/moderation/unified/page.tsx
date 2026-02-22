@@ -630,15 +630,22 @@ export default function UnifiedModerationHub() {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          tasks.map(task => (
-                            <TableRow key={task.id}>
-                              <TableCell className="text-xs">{task.message_content}</TableCell>
-                              <TableCell className="text-[10px]">{format(new Date(task.scheduled_at), "dd MMM, HH:mm", { locale: fr })}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="text-[9px]">{task.status}</Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))
+                          tasks.map(task => {
+                            const scheduledDate = task.scheduled_at ? new Date(task.scheduled_at) : null;
+                            const isValidDate = scheduledDate && !isNaN(scheduledDate.getTime());
+                            
+                            return (
+                              <TableRow key={task.id}>
+                                <TableCell className="text-xs">{task.message_content}</TableCell>
+                                <TableCell className="text-[10px]">
+                                  {isValidDate ? format(scheduledDate, "dd MMM, HH:mm", { locale: fr }) : "Date invalide"}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-[9px]">{task.status}</Badge>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
                         )}
                       </TableBody>
                     </Table>
