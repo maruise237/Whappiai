@@ -53,7 +53,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
     }
 
     // Disconnect existing socket if any
-    disconnect(sessionId);
+    await disconnect(sessionId);
 
     ensureAuthDir();
 
@@ -218,46 +218,57 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         if (onUpdate) onUpdate(sessionId, 'CONNECTED', `Connected as ${name}`, null);
     }
 
-    if (connection === 'close') {
-        const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const reason = lastDisconnect?.error?.output?.payload?.message || 'Connection closed';
+        if (connection === 'close') {
+            const statusCode = lastDisconnect?.error?.output?.statusCode;
+            const reason = lastDisconnect?.error?.output?.payload?.message || 'Connection closed';
 
-        log(`WhatsApp disconnected: ${reason} (Code: ${statusCode})`, sessionId, { 
-            event: 'connection-close', 
-            statusCode, 
-            reason 
-        }, statusCode === DisconnectReason.loggedOut ? 'WARN' : 'ERROR');
-        
-        if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', reason, null);
+            log(`WhatsApp disconnected: ${reason} (Code: ${statusCode})`, sessionId, { 
+                event: 'connection-close', 
+                statusCode, 
+                reason 
+            }, statusCode === DisconnectReason.loggedOut ? 'WARN' : 'ERROR');
+            
+            // Clean up socket reference immediately
+            activeSockets.delete(sessionId);
+
+            if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', reason, null);
+
+            // Special case for code 428 (Terminated by server) or code 440 (Conflict)
+            // We should stop retrying and wait for manual user intervention to prevent infinite QR loop
+            const isFatalError = statusCode === 428 || statusCode === 440;
+            if (isFatalError) {
+                log(`Arrêt des tentatives de reconnexion auto pour cause d'erreur fatale: ${statusCode}`, sessionId, { event: 'fatal-connection-stop' }, 'WARN');
+                retryCounters.delete(sessionId);
+                return;
+            }
 
             // Handle reconnection logic
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
                                   statusCode !== 401 && 
-                                  statusCode !== 403 &&
-                                  statusCode !== 440 &&
-                                  statusCode !== 428; // Avoid infinite loop on session expired or server-terminated sessions
+                                  statusCode !== 403;
 
             if (shouldReconnect) {
                 const retryCount = (retryCounters.get(sessionId) || 0) + 1;
                 retryCounters.set(sessionId, retryCount);
 
                 // Exponential backoff for WhatsApp reconnection
-                // Start with shorter delay for network glitches, then increase
                 const delay = Math.min(2000 * Math.pow(2, retryCount - 1), 60000);
                 
-                if (retryCount <= 15) { // Increased to 15 retries for better resilience
+                if (retryCount <= 15) { 
                 log(`Reconnexion... (tentative ${retryCount}) dans ${delay}ms`, sessionId, {
                     event: 'connection-retry',
                     attempt: retryCount,
                     delay
                 }, 'INFO');
                 if (onUpdate) onUpdate(sessionId, 'CONNECTING', `Reconnecting (attempt ${retryCount})...`, null);
-                    setTimeout(() => {
-                        // Check if it's still disconnected before trying to connect again
+                    setTimeout(async () => {
+                        // Check if it's still disconnected and no new connection was started
                         if (!activeSockets.has(sessionId)) {
-                            connect(sessionId, onUpdate, onMessage).catch(err => {
+                            try {
+                                await connect(sessionId, onUpdate, onMessage);
+                            } catch (err) {
                                 log(`Échec de la tentative de reconnexion ${retryCount}: ${err.message}`, sessionId, { event: 'reconnect-failed', attempt: retryCount, error: err.message }, 'ERROR');
-                            });
+                            }
                         }
                     }, delay);
                 } else {
@@ -274,8 +285,6 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                     }
                 }
             }
-
-            activeSockets.delete(sessionId);
         }
     });
 
@@ -452,10 +461,24 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
  * Disconnect a session
  * @param {string} sessionId - Session ID
  */
-function disconnect(sessionId) {
+async function disconnect(sessionId) {
     const sock = activeSockets.get(sessionId);
     if (sock) {
-        sock.end();
+        log(`Déconnexion demandée pour la session ${sessionId}`, sessionId, { event: 'disconnect-request' }, 'DEBUG');
+        try {
+            // Unregister all events to prevent callbacks during shutdown
+            sock.ev.removeAllListeners('connection.update');
+            sock.ev.removeAllListeners('creds.update');
+            sock.ev.removeAllListeners('messages.upsert');
+            
+            // End the socket properly
+            sock.end();
+            
+            // Wait a small delay to ensure OS resources are released
+            await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (err) {
+            log(`Erreur lors de la déconnexion de ${sessionId}: ${err.message}`, sessionId, { event: 'disconnect-error', error: err.message }, 'WARN');
+        }
         activeSockets.delete(sessionId);
     }
     retryCounters.delete(sessionId);
