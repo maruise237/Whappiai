@@ -597,7 +597,8 @@ if (require.main === module) {
         // Sync sessions from disk to DB
         Session.syncWithFilesystem();
 
-        const existingSessions = Session.getAll();
+        // IMPORTANT: use admin mode to retrieve all sessions for automatic reinitialization
+        const existingSessions = Session.getAll(null, true);
         log(`Trouvé ${existingSessions.length} session(s) existante(s)`, 'SYSTEM', { count: existingSessions.length }, 'INFO');
 
         for (const session of existingSessions) {
@@ -609,9 +610,11 @@ if (require.main === module) {
             // Re-initialize any session that was previously connected, disconnected, or stuck in connecting/generating QR
             const statusesToReinit = ['CONNECTED', 'DISCONNECTED', 'CONNECTING', 'INITIALIZING', 'GENERATING_QR'];
             if (statusesToReinit.includes(session.status)) {
-                log(`Réinitialisation de la session: ${session.id} (dernier statut: ${session.status})`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
+                log(`Réinitialisation automatique de la session au démarrage: ${session.id} (dernier statut: ${session.status})`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
 
                 whatsappService.connect(session.id, broadcastSessionUpdate, null);
+            } else {
+                log(`Session ignorée au démarrage (statut actuel: ${session.status}): ${session.id}`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'DEBUG');
             }
         }
 
