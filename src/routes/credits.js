@@ -35,4 +35,22 @@ router.get('/history', ClerkExpressWithAuth(), async (req, res) => {
     }
 });
 
+// POST /api/v1/credits/claim-welcome
+router.post('/claim-welcome', ClerkExpressWithAuth(), async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+
+        const result = CreditService.giveWelcomeCredits(userId, 60);
+        if (result) {
+            res.json({ status: 'success', message: '60 crédits de bienvenue ont été ajoutés à votre compte 🎉' });
+        } else {
+            res.status(400).json({ status: 'error', message: 'Vous avez déjà reçu vos crédits de bienvenue ou une erreur est survenue.' });
+        }
+    } catch (error) {
+        log('Error claiming welcome credits', 'CREDITS', { error: error.message }, 'ERROR');
+        res.status(500).json({ status: 'error', message: error.message });
+    }
+});
+
 module.exports = router;

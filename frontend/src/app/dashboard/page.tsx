@@ -265,6 +265,35 @@ export default function DashboardPage() {
     }
   }
 
+  const handleClaimWelcomeCredits = async () => {
+    const toastId = toast.loading("Réclamation des crédits...")
+    try {
+      const token = await getToken()
+      const response = await fetch('/api/v1/credits/claim-welcome', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      const data = await response.json()
+      
+      if (data.status === 'success') {
+        toast.success(data.message, { id: toastId })
+        fetchCredits()
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#FFD700', '#FFA500', '#FF4500']
+        })
+      } else {
+        toast.error(data.message || "Erreur lors de la réclamation", { id: toastId })
+      }
+    } catch (error) {
+      toast.error("Erreur réseau", { id: toastId })
+    }
+  }
+
   const handleCreateSession = async () => {
     if (!newSessionId) return
 
@@ -367,6 +396,27 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Welcome Credits Claim (Conditional) */}
+      {credits && credits.balance === 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between p-6 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-4 text-center sm:text-left">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Zap className="w-6 h-6 text-primary animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-primary">Réclamez vos 60 crédits de bienvenue !</h4>
+              <p className="text-[10px] font-bold uppercase tracking-tight opacity-60">Il semble que vous n'ayez pas encore reçu vos crédits gratuits pour démarrer.</p>
+            </div>
+          </div>
+          <Button 
+            onClick={handleClaimWelcomeCredits}
+            className="w-full sm:w-auto px-8 h-12 rounded-full font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
+          >
+            Réclamer 60 crédits 🎁
+          </Button>
+        </div>
+      )}
 
       {/* Session Selection & Status Bar */}
       <div className="flex items-center justify-between p-4 rounded-md border border-border bg-card shadow-sm">
