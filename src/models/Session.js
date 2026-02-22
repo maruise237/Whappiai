@@ -74,13 +74,20 @@ class Session {
      * @returns {array} Array of sessions
      */
     static getAll(ownerEmail = null, isAdmin = false) {
-        if (isAdmin || !ownerEmail) {
+        // SECURITY: Only admins (with explicit isAdmin=true) can see all sessions.
+        // If ownerEmail is null/empty AND not admin → return EMPTY list to prevent data leak.
+        if (isAdmin === true) {
             const stmt = db.prepare('SELECT * FROM whatsapp_sessions ORDER BY created_at DESC');
             return stmt.all();
         }
 
+        if (!ownerEmail || typeof ownerEmail !== 'string' || ownerEmail.trim() === '') {
+            log('Session.getAll called without ownerEmail and without admin flag — returning empty list for security', 'SECURITY', null, 'WARN');
+            return [];
+        }
+
         const stmt = db.prepare('SELECT * FROM whatsapp_sessions WHERE owner_email = ? ORDER BY created_at DESC');
-        return stmt.all(ownerEmail);
+        return stmt.all(ownerEmail.toLowerCase().trim());
     }
 
     /**
@@ -117,13 +124,13 @@ class Session {
      * @returns {object} Updated session
      */
     static updateAIConfig(sessionId, aiConfig) {
-        const { 
+        const {
             enabled, endpoint, key, model, prompt, mode, temperature, max_tokens,
             deactivate_on_typing, deactivate_on_read, trigger_keywords,
             reply_delay, read_on_reply, reject_calls,
             random_protection_enabled, random_protection_rate
         } = aiConfig;
-        
+
         // Handle undefined values to prevent overwriting existing ones with null if not provided
         const existing = this.findById(sessionId);
         if (!existing) return null;
@@ -138,16 +145,16 @@ class Session {
                 updated_at = datetime('now')
             WHERE id = ?
         `);
-        
+
         stmt.run(
-            enabled !== undefined ? (enabled ? 1 : 0) : existing.ai_enabled, 
-            endpoint !== undefined ? endpoint : existing.ai_endpoint, 
-            key !== undefined ? key : existing.ai_key, 
-            model !== undefined ? model : existing.ai_model, 
-            prompt !== undefined ? prompt : existing.ai_prompt, 
-            mode !== undefined ? mode : (existing.ai_mode || 'bot'), 
-            temperature !== undefined ? temperature : (existing.ai_temperature ?? 0.7), 
-            max_tokens !== undefined ? max_tokens : (existing.ai_max_tokens ?? 1000), 
+            enabled !== undefined ? (enabled ? 1 : 0) : existing.ai_enabled,
+            endpoint !== undefined ? endpoint : existing.ai_endpoint,
+            key !== undefined ? key : existing.ai_key,
+            model !== undefined ? model : existing.ai_model,
+            prompt !== undefined ? prompt : existing.ai_prompt,
+            mode !== undefined ? mode : (existing.ai_mode || 'bot'),
+            temperature !== undefined ? temperature : (existing.ai_temperature ?? 0.7),
+            max_tokens !== undefined ? max_tokens : (existing.ai_max_tokens ?? 1000),
             deactivate_on_typing !== undefined ? (deactivate_on_typing ? 1 : 0) : existing.ai_deactivate_on_typing,
             deactivate_on_read !== undefined ? (deactivate_on_read ? 1 : 0) : existing.ai_deactivate_on_read,
             trigger_keywords !== undefined ? trigger_keywords : existing.ai_trigger_keywords,

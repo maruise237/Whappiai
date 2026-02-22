@@ -81,6 +81,12 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
         }
 
+        // Must be authenticated
+        if (!req.currentUser || !req.currentUser.email) {
+            log('ensureOwnership: no currentUser email', 'SECURITY', null, 'ERROR');
+            return res.status(401).json({ status: 'error', message: 'Authentication required' });
+        }
+
         // Admin bypass
         if (req.currentUser.role === 'admin') {
             return next();
@@ -94,19 +100,23 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             return res.status(403).json({ status: 'error', message: 'Token does not match session' });
         }
 
-        // User ownership check
+        // User ownership check — normalize emails to prevent casing mismatches
         const sessionOwner = userManager.getSessionOwner(sessionId);
         if (!sessionOwner) {
             return res.status(404).json({ status: 'error', message: 'Session not found' });
         }
 
-        if (sessionOwner.email !== req.currentUser.email) {
-            log(`Blocked cross-session access: ${req.currentUser.email} tried to access ${sessionId} (owned by ${sessionOwner.email})`, 'AUTH');
+        const ownerEmail = (sessionOwner.email || '').toLowerCase().trim();
+        const currentEmail = (req.currentUser.email || '').toLowerCase().trim();
+
+        if (!ownerEmail || ownerEmail !== currentEmail) {
+            log(`Blocked cross-session access: ${currentEmail} tried to access ${sessionId} (owned by ${ownerEmail})`, 'AUTH');
             return res.status(403).json({ status: 'error', message: 'Access denied: You do not own this session' });
         }
 
         next();
     };
+
 
     // Clerk Auth Middleware (now global in index.js)
     // router.use(ClerkExpressWithAuth());
@@ -297,20 +307,38 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             log(`Syncing user ${email} (ID: ${id})`, 'AUTH');
 
+            // Check if user already exists before creating
+            const existingUser = User.findById(id) || User.findByEmail(email);
+            const isNewUser = !existingUser;
+
             const user = await User.create({
                 id,
-                email,
+                email: email.toLowerCase().trim(),
                 name,
                 role,
                 imageUrl
             });
 
-            res.json({ status: 'success', data: user });
+            // Give welcome credits to new users (idempotent - safe to call each time)
+            if (isNewUser && role !== 'admin') {
+                try {
+                    const granted = CreditService.giveWelcomeCredits(id);
+                    if (granted) {
+                        log(`Welcome credits granted to new user ${email}`, 'CREDITS');
+                    }
+                } catch (creditErr) {
+                    // Non-blocking — user sync still succeeds even if credit grant fails
+                    log(`Welcome credits failed for ${email}: ${creditErr.message}`, 'CREDITS', null, 'WARN');
+                }
+            }
+
+            res.json({ status: 'success', data: user, isNew: isNewUser });
         } catch (err) {
             log(`Sync failed: ${err.message}`, 'AUTH', null, 'ERROR');
             res.status(500).json({ status: 'error', message: 'Failed to sync user' });
         }
     });
+
 
     // WS token endpoint (generates a temporary token for WebSocket auth)
     router.get('/ws-token', checkSessionOrTokenAuth, (req, res) => {

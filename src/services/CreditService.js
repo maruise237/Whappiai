@@ -20,7 +20,7 @@ class CreditService {
         // Or is it a separate wallet? 
         // "Attribution de crédits selon le forfait" implies the limit resets.
         // "Rechargement automatique ou manuel" implies a wallet.
-        
+
         // Let's implement a Wallet approach using credit_history sum.
         const stmt = db.prepare(`
             SELECT 
@@ -29,7 +29,7 @@ class CreditService {
             FROM credit_history
             WHERE user_id = ?
         `);
-        
+
         const result = stmt.get(userId);
         return (result.total_added || 0) - (result.total_used || 0);
     }
@@ -77,7 +77,7 @@ class CreditService {
             });
 
             deductTransaction();
-            
+
             log(`Deducted ${amount} credits from ${user.email}: ${reason}`, 'CREDITS');
             return true;
         } catch (error) {
@@ -101,10 +101,10 @@ class CreditService {
                     VALUES (?, ?, ?, ?, ?)
                 `);
                 stmt.run(crypto.randomUUID(), userId, amount, type, description);
-                
+
                 // Update user stats
                 if (type === 'credit' || type === 'purchase' || type === 'bonus') {
-                     db.prepare(`
+                    db.prepare(`
                         UPDATE users 
                         SET message_limit = message_limit + ?
                         WHERE id = ?
@@ -131,6 +131,34 @@ class CreditService {
     }
 
     /**
+     * Give welcome credits to a new user (idempotent — only once per user)
+     * @param {string} userId 
+     * @param {number} amount - Default: 100 welcome credits
+     * @returns {boolean} Whether credits were actually granted
+     */
+    static giveWelcomeCredits(userId, amount = 100) {
+        try {
+            // Idempotency check: only give welcome credits if no prior 'welcome' entry exists
+            const existing = db.prepare(
+                "SELECT id FROM credit_history WHERE user_id = ? AND description LIKE '%bienvenue%' OR description LIKE '%welcome%' LIMIT 1"
+            ).get(userId);
+
+            if (existing) {
+                log(`Welcome credits already given to ${userId}, skipping`, 'CREDITS');
+                return false;
+            }
+
+            this.add(userId, amount, 'bonus', 'Crédits de bienvenue 🎉');
+            log(`Welcome credits (${amount}) given to new user ${userId}`, 'CREDITS');
+            return true;
+        } catch (error) {
+            log(`Failed to give welcome credits to ${userId}: ${error.message}`, 'CREDITS', null, 'ERROR');
+            return false;
+        }
+    }
+
+
+    /**
      * Reset monthly credits (for subscriptions)
      * This logic handles "Attribution de crédits selon le forfait"
      */
@@ -139,7 +167,7 @@ class CreditService {
         // OR we can implement Rollover.
         // For simplicity and alignment with User.message_limit behavior (which resets),
         // we will expire current balance and add new plan limit.
-        
+
         const currentBalance = this.getBalance(userId);
         if (currentBalance > 0) {
             // We use a special transaction to reset without incrementing message_used for the expiration
@@ -156,11 +184,11 @@ class CreditService {
 
         // Add new credits
         this.add(userId, planLimit, 'credit', 'Renouvellement mensuel');
-        
+
         // Explicitly reset message_used to 0 for the new period
         db.prepare('UPDATE users SET message_used = 0, message_limit = ? WHERE id = ?')
-          .run(planLimit, userId);
-          
+            .run(planLimit, userId);
+
         log(`Reset monthly credits for ${userId}: limit=${planLimit}, used=0`, 'CREDITS');
     }
 }

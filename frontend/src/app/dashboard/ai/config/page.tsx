@@ -495,9 +495,10 @@ function AIConfigForm() {
                   <Textarea
                     value={formData.prompt}
                     onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
-                    className="min-h-[300px] p-8 text-sm leading-relaxed bg-muted/20 border-border focus-visible:ring-primary/20 shadow-inner rounded-xl"
+                    className="min-h-[200px] max-h-[300px] overflow-y-auto resize-none p-8 text-sm leading-relaxed bg-muted/20 border-border focus-visible:ring-primary/20 shadow-inner rounded-xl"
                     placeholder="Tu es un assistant commercial..."
                   />
+
                 </div>
 
                 <div className="flex items-center gap-4 p-5 rounded-lg bg-primary/5 border border-primary/10">
