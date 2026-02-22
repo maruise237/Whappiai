@@ -398,7 +398,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Welcome Credits Claim (Conditional) */}
-      {credits && credits.balance === 0 && (
+      {credits && credits.balance < 100 && (
         <div className="flex flex-col sm:flex-row items-center justify-between p-6 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4 text-center sm:text-left">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">

@@ -13,25 +13,9 @@ class CreditService {
     static getBalance(userId) {
         const user = User.findById(userId);
         if (!user) return 0;
-        // Logic: Credits = (Total Credits Added) - (Total Credits Used)
-        // OR simpler: we rely on 'message_used' vs 'message_limit' in User model for now,
-        // BUT the request asks for a "Credit System".
-        // Let's assume 'message_limit' IS the credit balance for the period?
-        // Or is it a separate wallet? 
-        // "Attribution de crédits selon le forfait" implies the limit resets.
-        // "Rechargement automatique ou manuel" implies a wallet.
-
-        // Let's implement a Wallet approach using credit_history sum.
-        const stmt = db.prepare(`
-            SELECT 
-                SUM(CASE WHEN type IN ('credit', 'bonus', 'purchase') THEN amount ELSE 0 END) as total_added,
-                SUM(CASE WHEN type IN ('debit') THEN amount ELSE 0 END) as total_used
-            FROM credit_history
-            WHERE user_id = ?
-        `);
-
-        const result = stmt.get(userId);
-        return (result.total_added || 0) - (result.total_used || 0);
+        
+        // Return the current message_limit which represents available credits
+        return user.message_limit || 0;
     }
 
     /**
