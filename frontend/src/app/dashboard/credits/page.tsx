@@ -1,178 +1,270 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-    Coins,
-    History,
-    ArrowUpRight,
-    ArrowDownLeft,
-    Search,
-    Filter,
-    Download,
-    Calendar,
-    Sparkles
-} from "lucide-react"
-import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { cn } from "@/lib/utils"
-import { Skeleton } from "@/components/ui/skeleton"
+import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
+import { 
+  Zap, 
+  History, 
+  TrendingUp, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  CreditCard,
+  AlertCircle,
+  ChevronRight,
+  Plus
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { toast } from 'sonner'
+import { api } from '@/lib/api'
+import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
+import confetti from 'canvas-confetti'
 
-export default function CreditsHistoryPage() {
-    const { getToken } = useAuth()
-    const [data, setData] = React.useState<any>(null)
-    const [loading, setLoading] = React.useState(true)
-    const [searchTerm, setSearchTerm] = React.useState("")
+export default function CreditsPage() {
+  const { getToken } = useAuth()
+  const [credits, setCredits] = useState<any>(null)
+  const [history, setHistory] = useState<any[]>([])
+  const [stats, setStats] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-    const fetchCredits = async () => {
-        setLoading(true)
-        try {
-            const token = await getToken()
-            const response = await api.credits.get(token || undefined)
-            if (response && response.data) {
-                setData(response.data)
-            }
-        } catch (error) {
-            console.error("Failed to fetch credits:", error)
-        } finally {
-            setLoading(false)
-        }
+  const fetchData = async () => {
+    try {
+      const token = await getToken()
+      if (!token) return
+
+      const [creditsRes, historyRes, statsRes] = await Promise.all([
+        fetch('/api/v1/credits/balance', { headers: { 'Authorization': `Bearer \` } }).then(res => res.json()),
+        fetch('/api/v1/credits/history', { headers: { 'Authorization': `Bearer \` } }).then(res => res.json()),
+        fetch('/api/v1/credits/stats', { headers: { 'Authorization': `Bearer \` } }).then(res => res.json())
+      ])
+
+      if (creditsRes.status === 'success') setCredits(creditsRes.data)
+      if (historyRes.status === 'success') setHistory(historyRes.data)
+      if (statsRes.status === 'success') setStats(statsRes.data)
+    } catch (error) {
+      console.error('Error fetching credit data:', error)
+      toast.error('Erreur lors du chargement des données')
+    } finally {
+      setLoading(false)
     }
+  }
 
-    React.useEffect(() => {
-        fetchCredits()
-    }, [])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
-    const filteredHistory = data?.history?.filter((item: any) =>
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.type.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || []
-
+  if (loading) {
     return (
-        <div className="flex-1 space-y-8 p-4 sm:p-6 lg:p-10 pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
-                            <History className="w-5 h-5 text-primary" />
-                        </div>
-                        <h1 className="text-2xl font-black tracking-tight uppercase">Historique des CrÃ©dits</h1>
-                    </div>
-                    <p className="text-sm text-muted-foreground font-medium italic opacity-70">
-                        Consultez toutes vos transactions et utilisations de l'assistant IA.
-                    </p>
-                </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
 
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="h-9 px-4 font-black text-xs uppercase tracking-widest bg-primary/5 text-primary border-primary/20">
-                        SOLDE : {data?.balance || 0} CRÃ‰DITS
-                    </Badge>
-                    <Button variant="outline" className="h-9 gap-2 text-xs font-bold uppercase tracking-widest border-2">
-                        <Download className="w-4 h-4" />
-                        Exporter
-                    </Button>
-                </div>
+  const usagePercentage = credits ? (credits.used / credits.limit) * 100 : 0
+  const isLowCredits = credits && credits.balance < (credits.limit * 0.1)
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black tracking-tighter uppercase">Credits & Usage</h1>
+          <p className="text-muted-foreground font-medium uppercase text-[10px] tracking-widest mt-1">
+            Gérez votre consommation et vos recharges en temps réel
+          </p>
+        </div>
+        <Button className="rounded-full h-12 px-6 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 transition-transform hover:scale-105">
+          <Plus className="w-4 h-4 mr-2" />
+          Acheter des crédits
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Wallet Card */}
+        <Card className="lg:col-span-2 border-2 shadow-2xl overflow-hidden relative group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl transition-all group-hover:bg-primary/10" />
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardDescription className="uppercase font-bold tracking-widest text-[10px]">Solde Disponible</CardDescription>
+              <Zap className={w-5 h-5 \} />
+            </div>
+            <CardTitle className="text-6xl font-black tracking-tighter flex items-baseline gap-2">
+              {credits?.balance}
+              <span className="text-xl text-muted-foreground uppercase tracking-widest font-bold">Credits</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                <span className="text-muted-foreground">Utilisation ce mois</span>
+                <span className={isLowCredits ? 'text-destructive' : 'text-primary'}>{Math.round(usagePercentage)}%</span>
+              </div>
+              <Progress value={usagePercentage} className="h-3 rounded-full bg-secondary" />
+              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
+                <span>{credits?.used} utilisés</span>
+                <span>{credits?.limit} limite forfait</span>
+              </div>
             </div>
 
-            <Card className="border-2 border-primary/5 shadow-xl bg-white/50 dark:bg-card/50 backdrop-blur-xl">
-                <CardHeader className="border-b border-primary/5">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-50" />
-                            <Input
-                                placeholder="Rechercher une transaction..."
-                                className="pl-10 h-10 border-2 bg-white/50 dark:bg-background/20 font-medium"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
+            {isLowCredits && (
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/5 border border-destructive/20 animate-pulse">
+                <AlertCircle className="w-5 h-5 text-destructive" />
+                <p className="text-[10px] font-black uppercase tracking-tight text-destructive">
+                  Attention : Votre solde est bas. Vos automatisations risquent de s'arrêter bientôt.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Stats Card */}
+        <Card className="border-2 shadow-xl bg-secondary/30">
+          <CardHeader>
+            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              Tendance 7 jours
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-background/50 border border-border">
+                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Moyenne/Jour</span>
+                <span className="text-xl font-black">{stats.length > 0 ? Math.round(stats.reduce((acc, s) => acc + s.used, 0) / 7) : 0}</span>
+              </div>
+              <div className="p-4 rounded-xl bg-background/50 border border-border">
+                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Total Semaine</span>
+                <span className="text-xl font-black">{stats.reduce((acc, s) => acc + s.used, 0)}</span>
+              </div>
+            </div>
+            
+            <div className="pt-2">
+              <div className="h-24 w-full flex items-end gap-1">
+                {Array.from({ length: 7 }).map((_, i) => {
+                  const dayStat = stats[i] || { used: 0 }
+                  const maxUsed = Math.max(...stats.map(s => s.used)) || 1
+                  const height = Math.max(10, (dayStat.used / maxUsed) * 100)
+                  return (
+                    <div 
+                      key={i} 
+                      className="flex-1 bg-primary/20 rounded-t-sm transition-all hover:bg-primary"
+                      style={{ height: \% }}
+                      title={\ crédits}
+                    />
+                  )
+                })}
+              </div>
+              <div className="flex justify-between text-[8px] font-bold text-muted-foreground uppercase mt-2">
+                <span>Lun</span>
+                <span>Dim</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* History Table */}
+      <Card className="border-2 shadow-2xl overflow-hidden">
+        <CardHeader className="border-b bg-secondary/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-black tracking-tight uppercase flex items-center gap-2">
+                <History className="w-5 h-5 text-primary" />
+                Historique des transactions
+              </CardTitle>
+              <CardDescription className="text-[10px] uppercase font-bold tracking-widest">
+                Détails complets de vos recharges et consommations
+              </CardDescription>
+            </div>
+            <Button variant="ghost" className="rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-primary/5">
+              Exporter CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-secondary/10 border-b">
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Description</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Montant</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {history.length > 0 ? (
+                  history.map((tx) => (
+                    <tr key={tx.id} className="hover:bg-primary/5 transition-colors group">
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] font-bold block opacity-60">
+                          {format(new Date(tx.created_at), 'dd MMM yyyy', { locale: fr })}
+                        </span>
+                        <span className="text-[8px] font-black uppercase opacity-40">
+                          {format(new Date(tx.created_at), 'HH:mm')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm" className="h-10 gap-2 font-bold uppercase tracking-widest text-[10px] opacity-60 hover:opacity-100">
-                                <Filter className="w-3.5 h-3.5" />
-                                Filtrer
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-10 gap-2 font-bold uppercase tracking-widest text-[10px] opacity-60 hover:opacity-100">
-                                <Calendar className="w-3.5 h-3.5" />
-                                Derniers 30 jours
-                            </Button>
+                          <div className={p-1.5 rounded-lg \}>
+                            {tx.type === 'debit' ? <ArrowDownRight className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
+                          </div>
+                          <span className="text-xs font-black uppercase tracking-tight group-hover:translate-x-1 transition-transform inline-block">
+                            {tx.description}
+                          </span>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                    {loading ? (
-                        <div className="p-8 space-y-4">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                            ))}
-                        </div>
-                    ) : filteredHistory.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                            <div className="p-4 bg-slate-100 dark:bg-primary/10 rounded-full opacity-20">
-                                <History className="w-12 h-12" />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-black uppercase tracking-widest">Aucune transaction trouvÃ©e</p>
-                                <p className="text-xs text-muted-foreground opacity-60">Votre historique apparaÃ®tra ici dÃ¨s vos premiÃ¨res actions.</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader className="bg-slate-50/50 dark:bg-primary/5">
-                                    <TableRow className="hover:bg-transparent border-primary/5">
-                                        <TableHead className="w-[150px] font-black uppercase tracking-widest text-[10px] py-6">Date</TableHead>
-                                        <TableHead className="font-black uppercase tracking-widest text-[10px]">Description</TableHead>
-                                        <TableHead className="w-[100px] font-black uppercase tracking-widest text-[10px]">Type</TableHead>
-                                        <TableHead className="w-[120px] text-right font-black uppercase tracking-widest text-[10px]">Montant</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredHistory.map((item: any) => (
-                                        <TableRow key={item.id} className="hover:bg-primary/[0.02] border-primary/5 transition-colors">
-                                            <TableCell className="text-[10px] font-bold text-muted-foreground uppercase opacity-80 py-4">
-                                                {new Date(item.created_at).toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                <br />
-                                                <span className="text-[9px] opacity-40 italic">
-                                                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={cn(
-                                                        "p-2 rounded-lg border",
-                                                        item.type === 'debit' ? "bg-rose-500/5 border-rose-500/10 text-rose-500" : "bg-emerald-500/5 border-emerald-500/10 text-emerald-500"
-                                                    )}>
-                                                        {item.type === 'debit' ? <ArrowDownLeft className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-                                                    </div>
-                                                    <span className="text-xs font-bold uppercase tracking-tight truncate max-w-[300px]">{item.description}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="py-4">
-                                                <Badge variant="outline" className={cn(
-                                                    "font-black text-[9px] uppercase tracking-widest px-2",
-                                                    item.type === 'debit' ? "text-rose-500 border-rose-500/20 bg-rose-500/5" : "text-emerald-500 border-emerald-500/20 bg-emerald-500/5"
-                                                )}>
-                                                    {item.type}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className={cn(
-                                                "text-right font-black text-sm py-4 tabular-nums",
-                                                item.type === 'debit' ? "text-rose-500" : "text-emerald-500"
-                                            )}>
-                                                {item.type === 'debit' ? '-' : '+'}{item.amount}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
-    )
+                      </td>
+                      <td className={px-6 py-4 text-right font-black \}>
+                        {tx.type === 'debit' ? '-' : '+'}{tx.amount}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-12 text-center text-muted-foreground uppercase text-[10px] font-black tracking-widest">
+                      Aucune transaction trouvée
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Footer / CTA Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+        <Card className="border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                <CreditCard className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h4 className="font-black uppercase tracking-tighter text-sm">Passer au forfait Pro</h4>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Obtenez 10,000 crédits par mois</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border bg-card hover:border-primary/50 transition-all cursor-pointer group">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-black uppercase tracking-tighter text-sm">Analyse d'automatisation</h4>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Optimisez votre consommation d'IA</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
 }

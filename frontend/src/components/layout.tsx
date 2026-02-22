@@ -70,6 +70,7 @@ const conversationsNavigation = [
 const menuNavigation = [
   { name: "Assistant IA", href: "/dashboard/ai", icon: Bot },
   { name: "Modération", href: "/dashboard/moderation", icon: Shield },
+  { name: "Crédits & Usage", href: "/dashboard/credits", icon: Zap },
   { name: "Utilisateurs", href: "/dashboard/users", icon: Users, adminOnly: true },
   { name: "Config IA", href: "/dashboard/ai-models", icon: Settings2, adminOnly: true },
 ]

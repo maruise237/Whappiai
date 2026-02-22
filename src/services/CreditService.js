@@ -143,37 +143,44 @@ class CreditService {
 
 
     /**
-     * Reset monthly credits (for subscriptions)
-     * This logic handles "Attribution de crédits selon le forfait"
+     * Get usage statistics for a user
+     * @param {string} userId 
+     * @param {number} days 
      */
-    static resetMonthlyCredits(userId, planLimit) {
-        // To strictly "Reset" to the plan limit, we should expire existing credits
-        // OR we can implement Rollover.
-        // For simplicity and alignment with User.message_limit behavior (which resets),
-        // we will expire current balance and add new plan limit.
+    static getUsageStats(userId, days = 7) {
+        const stats = db.prepare(`
+            SELECT 
+                DATE(created_at) as date,
+                SUM(amount) as used
+            FROM credit_history
+            WHERE user_id = ? AND type = 'debit' AND created_at > DATETIME('now', ?)
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `).all(userId, `-${days} days`);
 
-        const currentBalance = this.getBalance(userId);
-        if (currentBalance > 0) {
-            // We use a special transaction to reset without incrementing message_used for the expiration
-            // because we want to start fresh for the new month.
-            const stmt = db.prepare(`
-                INSERT INTO credit_history (id, user_id, amount, type, description)
-                VALUES (?, ?, ?, 'debit', ?)
-            `);
-            stmt.run(crypto.randomUUID(), userId, currentBalance, 'Expiration mensuelle (Reset)');
-        } else if (currentBalance < 0) {
-            // Should not happen, but reset negative balance
-            this.add(userId, Math.abs(currentBalance), 'adjustment', 'Reset négatif');
+        return stats;
+    }
+
+    /**
+     * Check if user has low credits and trigger notification
+     * @param {string} userId 
+     */
+    static checkAndNotifyLowCredits(userId) {
+        const user = User.findById(userId);
+        if (!user || user.role === 'admin') return;
+
+        const balance = this.getBalance(userId);
+        const threshold = Math.max(5, Math.floor(user.message_limit * 0.1)); // 10% or min 5
+
+        if (balance > 0 && balance <= threshold) {
+            NotificationService.send(userId, 'CREDITS_LOW', {
+                title: 'Crédits bientôt épuisés ⚠️',
+                message: `Il ne vous reste que ${balance} crédits. Pensez à recharger pour éviter toute interruption.`,
+                type: 'warning',
+                action_url: '/dashboard/credits'
+            });
+            log(`Low credit notification sent to ${user.email} (Balance: ${balance})`, 'CREDITS');
         }
-
-        // Add new credits
-        this.add(userId, planLimit, 'credit', 'Renouvellement mensuel');
-
-        // Explicitly reset message_used to 0 for the new period
-        db.prepare('UPDATE users SET message_used = 0, message_limit = ? WHERE id = ?')
-            .run(planLimit, userId);
-
-        log(`Reset monthly credits for ${userId}: limit=${planLimit}, used=0`, 'CREDITS');
     }
 }
 

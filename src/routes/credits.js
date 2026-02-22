@@ -24,13 +24,25 @@ router.get('/history', ClerkExpressWithAuth(), async (req, res) => {
         const userId = req.auth.userId;
         if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
 
-        const limit = parseInt(req.query.limit) || 20;
-        const offset = parseInt(req.query.offset) || 0;
-
-        const history = CreditService.getHistory(userId, limit, offset);
+        const history = CreditService.getHistory(userId);
         res.json({ status: 'success', data: history });
     } catch (error) {
         log('Error fetching credit history', 'CREDITS', { error: error.message }, 'ERROR');
+        res.status(500).json({ status: 'error', message: error.message });
+    }
+});
+
+// GET /api/v1/credits/stats
+router.get('/stats', ClerkExpressWithAuth(), async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+
+        const days = parseInt(req.query.days) || 7;
+        const stats = CreditService.getUsageStats(userId, days);
+        res.json({ status: 'success', data: stats });
+    } catch (error) {
+        log('Error fetching credit stats', 'CREDITS', { error: error.message }, 'ERROR');
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
