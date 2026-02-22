@@ -251,8 +251,8 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 const retryCount = (retryCounters.get(sessionId) || 0) + 1;
                 retryCounters.set(sessionId, retryCount);
 
-                // Exponential backoff for WhatsApp reconnection
-                const delay = Math.min(2000 * Math.pow(2, retryCount - 1), 60000);
+                // Exponential backoff for WhatsApp reconnection (min 5s at startup to be safe)
+                const delay = Math.max(5000, Math.min(2000 * Math.pow(2, retryCount - 1), 60000));
                 
                 // Increase max attempts to 50 (approx 45-50 min of retrying) for production stability
                 if (retryCount <= 50) { 

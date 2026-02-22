@@ -615,8 +615,8 @@ if (require.main === module) {
             if (fs.existsSync(credsFile)) {
                 log(`Session ${session.id} trouvée avec des identifiants valides. Réinitialisation automatique...`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
 
-                // Add a small delay between session initializations to prevent CPU spikes and WhatsApp conflicts
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Increase delay to 3s between session initializations to prevent Dokploy CPU spikes and mass disconnects during updates
+                await new Promise(resolve => setTimeout(resolve, 3000));
                 
                 // Fire and forget: don't wait for the connection to be established to start others
                 whatsappService.connect(session.id, broadcastSessionUpdate, null)
