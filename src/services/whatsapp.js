@@ -234,7 +234,8 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
                                   statusCode !== 401 && 
                                   statusCode !== 403 &&
-                                  statusCode !== 440; // Avoid infinite loop on session expired
+                                  statusCode !== 440 &&
+                                  statusCode !== 428; // Avoid infinite loop on session expired or server-terminated sessions
 
             if (shouldReconnect) {
                 const retryCount = (retryCounters.get(sessionId) || 0) + 1;
