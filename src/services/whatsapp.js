@@ -354,34 +354,24 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             );
 
             if (isReadByMe) {
-                 const aiService = require('./ai');
-                 
-                 // CRITICAL BUG FIX: Ignore read events triggered by the bot itself
-                 if (aiService.isReadByBot(sessionId, update.key.id)) {
-                     // log(`Read event ignoré car déclenché par le bot lui-même`, sessionId, { event: 'ai-ignore-self-read' }, 'DEBUG');
-                     continue;
-
-// Handle presence updates (typing detection)
-sock.ev.on('presence.update', async (update) => {
-    const { id, presences } = update;
-    const session = require('../models/Session').findById(sessionId);
-    
-    if (session && session.ai_enabled && session.ai_deactivate_on_typing) {
-        // Check if any presence is 'composing' from the remote user
-        for (const jid in presences) {
-            const presence = presences[jid];
-            if (presence.lastKnownPresence === 'composing') {
-                log(`Détection d'écriture de ${jid}, mise en pause temporaire de l'IA pour cette conversation`, sessionId, { event: 'ai-auto-pause-typing', jid }, 'INFO');
-                
                 const aiService = require('./ai');
-                aiService.pauseForConversation(sessionId, jid);
                 
-                // Broadcast to frontend (optional: update to show "paused" status instead of "disabled")
+                // CRITICAL BUG FIX: Ignore read events triggered by the bot itself
+                if (aiService.isReadByBot(sessionId, update.key.id)) {
+                    // log(`Read event ignoré car déclenché par le bot lui-même`, sessionId, { event: 'ai-ignore-self-read' }, 'DEBUG');
+                    continue;
+                }
+
+                log(`L'utilisateur (propriétaire) a lu un message de ${jid}. Mise en pause de l'IA.`, sessionId, { event: 'ai-auto-pause-read', jid, update: update.update }, 'INFO');
+                
+                aiService.pauseForConversation(sessionId, jid);
+               
+                // Broadcast to frontend
                 const { broadcastToClients } = require('../../index');
                 if (broadcastToClients) {
                     broadcastToClients({
                         type: 'session-update',
-                        data: [{ sessionId, ai_paused_jid: jid, detail: 'IA en pause (détection d\'écriture)' }]
+                        data: [{ sessionId, ai_paused_jid: jid, detail: 'IA en pause (vous avez lu le message)' }]
                     });
                 }
             }
