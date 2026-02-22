@@ -69,7 +69,7 @@ system.log
 # Dependencies & Build
 node_modules/
 npm-debug.log
-package-lock.json
+# package-lock.json (Recommended to keep for stable builds)
 
 # Media Files (user uploads)
 media/
