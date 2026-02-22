@@ -1,270 +1,406 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import * as React from "react"
+import { useUser, useAuth } from "@clerk/nextjs"
 import { 
   Zap, 
-  History, 
   TrendingUp, 
+  History, 
   ArrowUpRight, 
-  ArrowDownRight, 
+  ArrowDownLeft, 
+  ShieldCheck,
   CreditCard,
+  BarChart3,
+  Calendar,
   AlertCircle,
-  ChevronRight,
-  Plus
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { toast } from 'sonner'
-import { api } from '@/lib/api'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
-import confetti from 'canvas-confetti'
+  CheckCircle2,
+  Clock,
+  LayoutDashboard,
+  Sparkles
+} from "lucide-react"
+import { format } from "date-fns"
+import { fr } from "date-fns/locale"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts"
+import { api } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
+
+interface CreditHistory {
+  id: number
+  amount: number
+  type: 'add' | 'usage'
+  description: string
+  created_at: string
+}
+
+interface CreditStats {
+  date: string
+  usage: number
+  added: number
+}
 
 export default function CreditsPage() {
+  const { user } = useUser()
   const { getToken } = useAuth()
-  const [credits, setCredits] = useState<any>(null)
-  const [history, setHistory] = useState<any[]>([])
-  const [stats, setStats] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+  
+  const [balance, setBalance] = React.useState<number>(0)
+  const [history, setHistory] = React.useState<CreditHistory[]>([])
+  const [stats, setStats] = React.useState<CreditStats[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [isClaiming, setIsClaiming] = React.useState(false)
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     try {
       const token = await getToken()
       if (!token) return
 
-      const [creditsRes, historyRes, statsRes] = await Promise.all([
-        fetch('/api/v1/credits/balance', { headers: { 'Authorization': `Bearer \` } }).then(res => res.json()),
-        fetch('/api/v1/credits/history', { headers: { 'Authorization': `Bearer \` } }).then(res => res.json()),
-        fetch('/api/v1/credits/stats', { headers: { 'Authorization': `Bearer \` } }).then(res => res.json())
+      const [balanceRes, historyRes, statsRes] = await Promise.all([
+        api.get("/api/v1/credits/balance", token),
+        api.get("/api/v1/credits/history", token),
+        api.get("/api/v1/credits/stats?days=7", token)
       ])
 
-      if (creditsRes.status === 'success') setCredits(creditsRes.data)
-      if (historyRes.status === 'success') setHistory(historyRes.data)
-      if (statsRes.status === 'success') setStats(statsRes.data)
+      setBalance(balanceRes.balance || 0)
+      setHistory(historyRes.history || [])
+      setStats(statsRes.stats || [])
     } catch (error) {
-      console.error('Error fetching credit data:', error)
-      toast.error('Erreur lors du chargement des donn�es')
+      console.error("Error fetching credit data:", error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }, [getToken])
+
+  React.useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const handleClaimCredits = async () => {
+    setIsClaiming(true)
+    try {
+      const token = await getToken()
+      await api.post("/api/v1/credits/claim-welcome", {}, token)
+      toast({
+        title: "Succès !",
+        description: "60 crédits de bienvenue ont été ajoutés à votre compte.",
+      })
+      fetchData()
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de réclamer les crédits.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsClaiming(false)
     }
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex flex-col gap-6 animate-pulse">
+        <div className="h-8 w-48 bg-muted rounded" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-32 bg-muted rounded-xl" />
+          ))}
+        </div>
+        <div className="h-[400px] bg-muted rounded-xl" />
       </div>
     )
   }
 
-  const usagePercentage = credits ? (credits.used / credits.limit) * 100 : 0
-  const isLowCredits = credits && credits.balance < (credits.limit * 0.1)
+  const usageLast7Days = stats.reduce((acc, curr) => acc + curr.usage, 0)
+  const showClaimButton = balance < 100
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-black tracking-tighter uppercase">Credits & Usage</h1>
-          <p className="text-muted-foreground font-medium uppercase text-[10px] tracking-widest mt-1">
-            G�rez votre consommation et vos recharges en temps r�el
-          </p>
+    <div className="flex flex-col gap-8 pb-10">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <LayoutDashboard className="w-4 h-4" />
+          <span className="text-sm font-medium">Dashboard</span>
+          <span className="text-muted-foreground/40">/</span>
+          <span className="text-sm font-medium text-foreground">Crédits</span>
         </div>
-        <Button className="rounded-full h-12 px-6 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-primary/20 transition-transform hover:scale-105">
-          <Plus className="w-4 h-4 mr-2" />
-          Acheter des cr�dits
-        </Button>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">Gestion des Crédits</h1>
+          <Badge variant="outline" className="px-3 py-1 border-primary/20 bg-primary/5 text-primary">
+            Plan Premium 2025
+          </Badge>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Wallet Card */}
-        <Card className="lg:col-span-2 border-2 shadow-2xl overflow-hidden relative group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl transition-all group-hover:bg-primary/10" />
+      {/* Hero Stats */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-primary/10 via-primary/5 to-background shadow-sm ring-1 ring-primary/20">
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardDescription className="uppercase font-bold tracking-widest text-[10px]">Solde Disponible</CardDescription>
-              <Zap className={w-5 h-5 \} />
-            </div>
-            <CardTitle className="text-6xl font-black tracking-tighter flex items-baseline gap-2">
-              {credits?.balance}
-              <span className="text-xl text-muted-foreground uppercase tracking-widest font-bold">Credits</span>
-            </CardTitle>
+            <CardDescription className="text-primary/70 font-medium">Solde Actuel</CardDescription>
+            <CardTitle className="text-4xl font-bold">{balance}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-6 space-y-6">
-            <div className="space-y-2">
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                <span className="text-muted-foreground">Utilisation ce mois</span>
-                <span className={isLowCredits ? 'text-destructive' : 'text-primary'}>{Math.round(usagePercentage)}%</span>
-              </div>
-              <Progress value={usagePercentage} className="h-3 rounded-full bg-secondary" />
-              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase">
-                <span>{credits?.used} utilis�s</span>
-                <span>{credits?.limit} limite forfait</span>
-              </div>
+          <CardContent>
+            <div className="flex items-center gap-1 text-xs text-primary/60">
+              <Zap className="w-3 h-3 fill-current" />
+              <span>Crédits disponibles</span>
             </div>
+          </CardContent>
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Zap className="w-16 h-16 text-primary" />
+          </div>
+        </Card>
 
-            {isLowCredits && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/5 border border-destructive/20 animate-pulse">
-                <AlertCircle className="w-5 h-5 text-destructive" />
-                <p className="text-[10px] font-black uppercase tracking-tight text-destructive">
-                  Attention : Votre solde est bas. Vos automatisations risquent de s'arr�ter bient�t.
-                </p>
-              </div>
-            )}
+        <Card className="shadow-sm border-border/50">
+          <CardHeader className="pb-2">
+            <CardDescription>Utilisation (7j)</CardDescription>
+            <CardTitle className="text-3xl font-bold">{usageLast7Days}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-1 text-xs text-destructive">
+              <TrendingUp className="w-3 h-3" />
+              <span>Consommation active</span>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Quick Stats Card */}
-        <Card className="border-2 shadow-xl bg-secondary/30">
-          <CardHeader>
-            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              Tendance 7 jours
+        <Card className="shadow-sm border-border/50">
+          <CardHeader className="pb-2">
+            <CardDescription>Messages Restants</CardDescription>
+            <CardTitle className="text-3xl font-bold">{balance}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Progress value={Math.min((balance / 1000) * 100, 100)} className="h-2 mt-1" />
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-border/50">
+          <CardHeader className="pb-2">
+            <CardDescription>Status Compte</CardDescription>
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              Actif
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-background/50 border border-border">
-                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Moyenne/Jour</span>
-                <span className="text-xl font-black">{stats.length > 0 ? Math.round(stats.reduce((acc, s) => acc + s.used, 0) / 7) : 0}</span>
-              </div>
-              <div className="p-4 rounded-xl bg-background/50 border border-border">
-                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Total Semaine</span>
-                <span className="text-xl font-black">{stats.reduce((acc, s) => acc + s.used, 0)}</span>
-              </div>
-            </div>
-            
-            <div className="pt-2">
-              <div className="h-24 w-full flex items-end gap-1">
-                {Array.from({ length: 7 }).map((_, i) => {
-                  const dayStat = stats[i] || { used: 0 }
-                  const maxUsed = Math.max(...stats.map(s => s.used)) || 1
-                  const height = Math.max(10, (dayStat.used / maxUsed) * 100)
-                  return (
-                    <div 
-                      key={i} 
-                      className="flex-1 bg-primary/20 rounded-t-sm transition-all hover:bg-primary"
-                      style={{ height: \% }}
-                      title={\ cr�dits}
-                    />
-                  )
-                })}
-              </div>
-              <div className="flex justify-between text-[8px] font-bold text-muted-foreground uppercase mt-2">
-                <span>Lun</span>
-                <span>Dim</span>
-              </div>
-            </div>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">Vérifié via Clerk Auth</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* History Table */}
-      <Card className="border-2 shadow-2xl overflow-hidden">
-        <CardHeader className="border-b bg-secondary/20">
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Graphique d'utilisation */}
+        <Card className="lg:col-span-2 shadow-sm border-border/50 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 bg-muted/20 pb-4">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                Analyse de Consommation
+              </CardTitle>
+              <CardDescription>Usage des crédits sur les 7 derniers jours</CardDescription>
+            </div>
+            <Calendar className="w-5 h-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats}>
+                  <defs>
+                    <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="usage" 
+                    name="Consommation"
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorUsage)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Actions & Promo */}
+        <div className="flex flex-col gap-6">
+          <Card className="shadow-sm border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Besoin de plus ?
+              </CardTitle>
+              <CardDescription>Boostez votre limite de messages instantanément.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Usage actuel</span>
+                  <span className="font-medium">{balance} / 1000</span>
+                </div>
+                <Progress value={(balance / 1000) * 100} className="h-2" />
+              </div>
+              
+              {showClaimButton && (
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 shadow-md"
+                  onClick={handleClaimCredits}
+                  disabled={isClaiming}
+                >
+                  {isClaiming ? (
+                    <>
+                      <Clock className="w-4 h-4 mr-2 animate-spin" />
+                      Traitement...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 mr-2" />
+                      Réclamer 60 Crédits Gratuits
+                    </>
+                  )}
+                </Button>
+              )}
+              
+              <Button variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10" asChild>
+                <a href="/dashboard/billing">Voir les forfaits Pro</a>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-green-500" />
+                Sécurité & Transparence
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs text-muted-foreground space-y-2">
+              <p>• 1 crédit = 1 message WhatsApp envoyé avec succès.</p>
+              <p>• Les messages reçus sont illimités et gratuits.</p>
+              <p>• Historique conservé pendant 30 jours.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Historique des transactions */}
+      <Card className="shadow-sm border-border/50">
+        <CardHeader className="border-b border-border/50 bg-muted/10">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl font-black tracking-tight uppercase flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2">
                 <History className="w-5 h-5 text-primary" />
-                Historique des transactions
+                Historique des Mouvements
               </CardTitle>
-              <CardDescription className="text-[10px] uppercase font-bold tracking-widest">
-                D�tails complets de vos recharges et consommations
-              </CardDescription>
+              <CardDescription>Détail de vos ajouts et consommations de crédits</CardDescription>
             </div>
-            <Button variant="ghost" className="rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-primary/5">
-              Exporter CSV
+            <Button variant="ghost" size="sm" onClick={fetchData} className="h-8 text-xs">
+              Actualiser
             </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-secondary/10 border-b">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Description</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Montant</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {history.length > 0 ? (
-                  history.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-primary/5 transition-colors group">
-                      <td className="px-6 py-4">
-                        <span className="text-[10px] font-bold block opacity-60">
-                          {format(new Date(tx.created_at), 'dd MMM yyyy', { locale: fr })}
-                        </span>
-                        <span className="text-[8px] font-black uppercase opacity-40">
-                          {format(new Date(tx.created_at), 'HH:mm')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className={p-1.5 rounded-lg \}>
-                            {tx.type === 'debit' ? <ArrowDownRight className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
-                          </div>
-                          <span className="text-xs font-black uppercase tracking-tight group-hover:translate-x-1 transition-transform inline-block">
-                            {tx.description}
-                          </span>
-                        </div>
-                      </td>
-                      <td className={px-6 py-4 text-right font-black \}>
-                        {tx.type === 'debit' ? '-' : '+'}{tx.amount}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={3} className="px-6 py-12 text-center text-muted-foreground uppercase text-[10px] font-black tracking-widest">
-                      Aucune transaction trouv�e
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent bg-muted/20">
+                <TableHead className="w-[150px]">Date</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-right">Montant</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {history.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                    Aucune transaction trouvée.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                history.map((item) => (
+                  <TableRow key={item.id} className="group cursor-default">
+                    <TableCell className="text-muted-foreground font-mono text-xs">
+                      {format(new Date(item.created_at), "dd MMM yyyy HH:mm", { locale: fr })}
+                    </TableCell>
+                    <TableCell className="font-medium">{item.description}</TableCell>
+                    <TableCell>
+                      {item.type === 'add' ? (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 gap-1 font-normal">
+                          <ArrowDownLeft className="w-3 h-3" /> Ajout
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20 gap-1 font-normal">
+                          <ArrowUpRight className="w-3 h-3" /> Usage
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className={cn(
+                      "text-right font-bold",
+                      item.type === 'add' ? "text-green-600" : "text-foreground"
+                    )}>
+                      {item.type === 'add' ? "+" : "-"}{Math.abs(item.amount)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
+        <CardFooter className="py-3 bg-muted/5 border-t border-border/50">
+          <p className="text-[10px] text-muted-foreground">
+            Affichage des 20 dernières transactions. Contactez le support pour un export complet.
+          </p>
+        </CardFooter>
       </Card>
-
-      {/* Footer / CTA Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-        <Card className="border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                <CreditCard className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h4 className="font-black uppercase tracking-tighter text-sm">Passer au forfait Pro</h4>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Obtenez 10,000 cr�dits par mois</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border bg-card hover:border-primary/50 transition-all cursor-pointer group">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h4 className="font-black uppercase tracking-tighter text-sm">Analyse d'automatisation</h4>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Optimisez votre consommation d'IA</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-          </CardContent>
-        </Card>
-      </div>
     </div>
   )
 }
