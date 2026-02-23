@@ -3,38 +3,22 @@
 import * as React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import {
-  ArrowLeft, Users, Search, Save, Calendar, Plus, Trash2, Clock, Zap, MessageSquare,
-  Image as ImageIcon, Video, Music, Type, Pencil, ShieldCheck, ShieldAlert, ChevronRight, Info
+  ArrowLeft, Users, Search, Save, Calendar, Plus, Trash2, Clock, Zap, Pencil, ShieldCheck, ChevronRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useAuth } from "@clerk/nextjs"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-
-// --- Interfaces ---
-interface AnimatorTask {
-  id: number; group_id: string; session_id: string; message_content: string;
-  media_url?: string; media_type: 'text' | 'image' | 'video' | 'audio';
-  scheduled_at: string; recurrence: 'none' | 'daily' | 'weekly';
-  status: 'pending' | 'completed' | 'failed';
-}
-
-interface ProductLink { id?: number; title: string; description: string; url: string; cta: string; }
-
-interface GroupProfile { mission: string; objectives: string; rules: string; theme: string; }
-
-interface Group { id: string; subject: string; creation: number; desc?: string; participantsCount: number; settings?: any; }
 
 function AnimationPageContent() {
   const searchParams = useSearchParams();
@@ -42,25 +26,20 @@ function AnimationPageContent() {
   const sessionId = searchParams.get('session');
   const { getToken } = useAuth();
 
-  const [groups, setGroups] = React.useState<Group[]>([]);
-  const [filteredGroups, setFilteredGroups] = React.useState<Group[]>([]);
+  const [groups, setGroups] = React.useState<any[]>([]);
+  const [filteredGroups, setFilteredGroups] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedGroup, setSelectedGroup] = React.useState<Group | null>(null);
-  const [activeTab, setActiveTab] = React.useState("profile");
+  const [selectedGroup, setSelectedGroup] = React.useState<any>(null);
 
-  const [profileFormData, setProfileFormData] = React.useState<GroupProfile>({ mission: "", objectives: "", rules: "", theme: "" });
-  const [productLinks, setProductLinks] = React.useState<ProductLink[]>([]);
-  const [animatorTasks, setAnimatorTasks] = React.useState<AnimatorTask[]>([]);
-  const [aiObjective, setAiObjective] = React.useState("annonce");
-  const [aiAdditionalInfo, setAiAdditionalInfo] = React.useState("");
-  const [aiIncludeLinks, setAiIncludeLinks] = React.useState(true);
-  const [isGeneratingAi, setIsGeneratingAi] = React.useState(false);
-  const [editingTaskId, setEditingTaskId] = React.useState<number | null>(null);
-  const [taskFormData, setTaskFormData] = React.useState({
-    message_content: "", media_url: "", media_type: "text" as any, scheduled_at: "", recurrence: "none" as any
-  });
+  const [profileData, setProfileData] = React.useState({ mission: "", objectives: "", rules: "", theme: "" });
+  const [productLinks, setProductLinks] = React.useState<any[]>([]);
+  const [tasks, setTasks] = React.useState<any[]>([]);
+
+  const [aiConfig, setAiConfig] = React.useState({ objective: "annonce", additionalInfo: "", includeLinks: true });
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [taskForm, setTaskForm] = React.useState({ message_content: "", media_url: "", media_type: "text" as any, scheduled_at: "", recurrence: "none" as any });
 
   const fetchGroups = async () => {
     if (!sessionId) return;
@@ -70,9 +49,9 @@ function AnimationPageContent() {
       const data = await api.sessions.getGroups(sessionId, token || undefined);
       setGroups(data || []);
       setFilteredGroups(data || []);
-      if (data?.length > 0 && !selectedGroup) handleSelectGroup(data[0]);
-    } catch (error: any) {
-      toast.error(`Erreur: ${error.message || "Chargement impossible"}`);
+      if (data?.length > 0) handleSelectGroup(data[0]);
+    } catch (error) {
+      toast.error("Failed to load groups");
     } finally { setIsLoading(false); }
   };
 
@@ -83,7 +62,7 @@ function AnimationPageContent() {
     setFilteredGroups(groups.filter(g => g.subject.toLowerCase().includes(lower)));
   }, [searchQuery, groups]);
 
-  const handleSelectGroup = async (group: Group) => {
+  const handleSelectGroup = async (group: any) => {
     setSelectedGroup(group);
     try {
       const token = await getToken();
@@ -92,233 +71,254 @@ function AnimationPageContent() {
         api.sessions.getGroupProfile(sessionId!, group.id, token || undefined),
         api.sessions.getGroupLinks(sessionId!, group.id, token || undefined)
       ]);
-      setAnimatorTasks(tasksRes.data || []);
-      setProfileFormData(profileRes.data || { mission: "", objectives: "", rules: group.desc || "", theme: "" });
+      setTasks(tasksRes.data || []);
+      setProfileData(profileRes.data || { mission: "", objectives: "", rules: group.desc || "", theme: "" });
       setProductLinks(linksRes.data || []);
     } catch (e) { console.error(e); }
   };
 
   const handleSaveProfile = async () => {
     if (!selectedGroup || !sessionId) return;
+    setIsSaving(true);
     try {
       const token = await getToken();
-      await api.sessions.updateGroupProfile(sessionId, selectedGroup.id, profileFormData, token || undefined);
-      toast.success("Profil mis à jour");
-    } catch (e) { toast.error("Erreur profile"); }
+      await api.sessions.updateGroupProfile(sessionId, selectedGroup.id, profileData, token || undefined);
+      toast.success("Profile updated");
+    } catch (e) { toast.error("Error saving profile"); } finally { setIsSaving(false); }
   };
 
   const handleSaveLinks = async () => {
     if (!selectedGroup || !sessionId) return;
+    setIsSaving(true);
     try {
       const token = await getToken();
       await api.sessions.updateGroupLinks(sessionId, selectedGroup.id, productLinks, token || undefined);
-      toast.success("Liens mis à jour");
-    } catch (e) { toast.error("Erreur liens"); }
+      toast.success("Links updated");
+    } catch (e) { toast.error("Error saving links"); } finally { setIsSaving(false); }
   };
 
-  const handleGenerateAiMessage = async () => {
+  const handleGenerateAI = async () => {
     if (!selectedGroup || !sessionId) return;
+    setIsGenerating(true);
     try {
-      setIsGeneratingAi(true);
       const token = await getToken();
-      const res = await api.sessions.generateGroupMessage(sessionId, selectedGroup.id, {
-        objective: aiObjective, additionalInfo: aiAdditionalInfo, includeLinks: aiIncludeLinks
-      }, token || undefined);
-      const message = res.data?.message || res.message || (typeof res === 'string' ? res : "");
-      if (!message) return toast.error("L'IA n'a pas retourné de message");
-      setTaskFormData(prev => ({ ...prev, message_content: message }));
-      toast.success("Message généré");
-      setActiveTab("animator");
-    } catch (e) { toast.error("Erreur IA"); } finally { setIsGeneratingAi(false); }
+      const res = await api.sessions.generateGroupMessage(sessionId, selectedGroup.id, aiConfig, token || undefined);
+      const msg = res.data?.message || res.message || (typeof res === 'string' ? res : "");
+      setTaskForm(prev => ({ ...prev, message_content: msg }));
+      toast.success("Message generated");
+    } catch (e) { toast.error("AI error"); } finally { setIsGenerating(false); }
   };
 
-  const handleAddTask = async () => {
-    if (!selectedGroup || !sessionId || (!taskFormData.message_content && !taskFormData.media_url)) return;
+  const handleSchedule = async () => {
+    if (!selectedGroup || !sessionId || !taskForm.message_content) return;
     try {
       const token = await getToken();
-      if (editingTaskId) {
-        await api.sessions.updateAnimatorTask(editingTaskId, taskFormData, token || undefined);
-        toast.success("Tâche mise à jour");
-        setEditingTaskId(null);
-      } else {
-        await api.sessions.addAnimatorTask(sessionId, selectedGroup.id, taskFormData, token || undefined);
-        toast.success("Tâche ajoutée");
-      }
-      setTaskFormData({ message_content: "", media_url: "", media_type: "text", scheduled_at: "", recurrence: "none" });
+      await api.sessions.addAnimatorTask(sessionId, selectedGroup.id, taskForm, token || undefined);
+      toast.success("Task scheduled");
+      setTaskForm({ message_content: "", media_url: "", media_type: "text", scheduled_at: "", recurrence: "none" });
       const response = await api.sessions.getAnimatorTasks(sessionId, selectedGroup.id, token || undefined);
-      setAnimatorTasks(response.data || []);
-    } catch (e) { toast.error("Erreur tâche"); }
+      setTasks(response.data || []);
+    } catch (e) { toast.error("Error scheduling task"); }
   };
 
-  const handleEditTask = (task: AnimatorTask) => {
-    setEditingTaskId(task.id);
-    setTaskFormData({
-      message_content: task.message_content, media_url: task.media_url || "",
-      media_type: task.media_type, scheduled_at: task.scheduled_at, recurrence: task.recurrence
-    });
-    setActiveTab("animator");
-  };
-
-  const handleDeleteTask = async (taskId: number) => {
+  const handleDeleteTask = async (id: number) => {
     try {
       const token = await getToken();
-      await api.sessions.deleteAnimatorTask(taskId, token || undefined);
-      setAnimatorTasks(prev => prev.filter(t => t.id !== taskId));
-      toast.success("Supprimé");
-    } catch (e) { toast.error("Erreur suppression"); }
+      await api.sessions.deleteAnimatorTask(id, token || undefined);
+      setTasks(prev => prev.filter(t => t.id !== id));
+      toast.success("Task deleted");
+    } catch (e) { toast.error("Error deleting task"); }
   };
 
-  if (isLoading) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-      <div className="w-12 h-12 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-lg" />
-      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Chargement...</p>
-    </div>
-  );
+  if (isLoading) return <div className="p-8 text-center">Loading groups...</div>;
+  if (!sessionId) return <div className="p-8 text-center">No session specified.</div>;
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-20 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 py-8 border-b border-border mb-8">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 rounded-lg"><ArrowLeft className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div className="space-y-1">
-            <h1 className="text-2xl font-black tracking-tight uppercase">Animation <span className="text-primary">Groupes</span></h1>
-            <p className="text-xs font-medium text-muted-foreground opacity-60">Gérez l'engagement et l'IA de vos groupes WhatsApp</p>
+            <h1 className="text-xl font-semibold">Animation</h1>
+            <Badge variant="secondary">{sessionId}</Badge>
           </div>
         </div>
-        <Button onClick={() => { if (activeTab === 'profile') handleSaveProfile(); else if (activeTab === 'links') handleSaveLinks(); else handleAddTask(); }}
-          className="shadow-lg h-11 px-8 font-black uppercase tracking-widest text-[10px] rounded-md gap-2">
-          <Save className="w-4 h-4" /> Enregistrer
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-12 items-start">
-        {/* Sidebar */}
-        <div className="space-y-6 lg:sticky lg:top-24">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8 items-start">
+        <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-            <Input placeholder="RECHERCHER..." className="pl-11 h-12 rounded-xl" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search groups..."
+              className="pl-8 h-9 text-sm"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
           </div>
-          <Card className="border-border/50 bg-card/50 overflow-hidden">
-            <ScrollArea className="h-[600px] p-2">
-              {filteredGroups.map(g => (
-                <button key={g.id} onClick={() => handleSelectGroup(g)} className={cn("w-full flex items-center gap-4 p-4 rounded-xl transition-all mb-1", selectedGroup?.id === g.id ? "bg-primary text-white shadow-lg" : "hover:bg-secondary/80 text-muted-foreground")}>
-                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", selectedGroup?.id === g.id ? "bg-white/20" : "bg-primary/10 text-primary")}><Users className="w-5 h-5" /></div>
-                  <div className="flex-1 min-w-0"><div className="text-[11px] font-black uppercase truncate">{g.subject}</div></div>
-                  <ChevronRight className="w-4 h-4 opacity-20" />
-                </button>
-              ))}
+          <Card>
+            <ScrollArea className="h-[500px]">
+              <div className="p-2 space-y-1">
+                {filteredGroups.map(g => (
+                  <button
+                    key={g.id}
+                    onClick={() => handleSelectGroup(g)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-3 text-sm rounded-md transition-colors text-left",
+                      selectedGroup?.id === g.id ? "bg-muted font-medium" : "hover:bg-muted/50 text-muted-foreground"
+                    )}
+                  >
+                    <span className="truncate flex-1">{g.subject}</span>
+                    <ChevronRight className="h-3 w-3 opacity-50" />
+                  </button>
+                ))}
+              </div>
             </ScrollArea>
           </Card>
         </div>
 
-        {/* Content */}
-        <div className="space-y-12">
-          {!selectedGroup ? <div className="py-40 text-center uppercase font-black opacity-20">Sélectionnez un groupe</div> : (
-            <div className="animate-in slide-in-from-right-4 duration-500 space-y-12">
-              {/* Group Info */}
-              <div className="p-8 rounded-3xl bg-primary/5 border border-primary/10 flex items-center gap-8 relative overflow-hidden">
-                <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl"><ShieldCheck className="w-8 h-8" /></div>
-                <div className="flex-1"><h2 className="text-xl font-black uppercase">{selectedGroup.subject}</h2><Badge variant="outline" className="text-[8px]">{selectedGroup.participantsCount} MEMBRES</Badge></div>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex gap-2 p-1 bg-secondary/50 rounded-xl max-w-md">
-                {['profile', 'links', 'animator'].map(t => (
-                  <button key={t} onClick={() => setActiveTab(t)} className={cn("flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all", activeTab === t ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:bg-card/50")}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-
-              {activeTab === 'profile' && (
-                <div className="space-y-8 animate-in fade-in">
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase opacity-40 ml-2">Thématique</Label>
-                    <Input value={profileFormData.theme} onChange={e => setProfileFormData({ ...profileFormData, theme: e.target.value })} className="h-12 rounded-xl" />
-                    <Label className="text-[10px] font-black uppercase opacity-40 ml-2">Mission</Label>
-                    <Textarea value={profileFormData.mission} onChange={e => setProfileFormData({ ...profileFormData, mission: e.target.value })} className="min-h-[100px] rounded-xl" />
-                    <Label className="text-[10px] font-black uppercase opacity-40 ml-2">Règles</Label>
-                    <Textarea value={profileFormData.rules} onChange={e => setProfileFormData({ ...profileFormData, rules: e.target.value })} className="min-h-[120px] rounded-xl" />
-                  </div>
-                  <Button onClick={handleSaveProfile} className="w-full h-14 font-black uppercase text-[10px]">Enregistrer Profil</Button>
-                </div>
-              )}
-
-              {activeTab === 'links' && (
-                <div className="space-y-8 animate-in fade-in">
-                  <div className="flex justify-between items-center px-2">
-                    <span className="text-[10px] font-black uppercase opacity-40">Liens Produits</span>
-                    <Button size="sm" onClick={() => setProductLinks([...productLinks, { title: "", description: "", url: "", cta: "En savoir plus" }])} className="text-[8px] uppercase">Ajouter</Button>
-                  </div>
-                  <div className="space-y-4">
-                    {productLinks.map((link, i) => (
-                      <Card key={i} className="p-6 space-y-4 border-border/50">
-                        <Input value={link.title} onChange={e => { const nl = [...productLinks]; nl[i].title = e.target.value; setProductLinks(nl); }} placeholder="Titre" className="h-10 text-[10px] font-black" />
-                        <Input value={link.url} onChange={e => { const nl = [...productLinks]; nl[i].url = e.target.value; setProductLinks(nl); }} placeholder="URL" className="h-10 text-[10px]" />
-                        <Button variant="ghost" className="text-destructive text-[8px] font-black uppercase" onClick={() => setProductLinks(productLinks.filter((_, idx) => idx !== i))}>Supprimer</Button>
-                      </Card>
-                    ))}
-                  </div>
-                  <Button onClick={handleSaveLinks} className="w-full h-14 font-black uppercase text-[10px]">Enregistrer Liens</Button>
-                </div>
-              )}
-
-              {activeTab === 'animator' && (
-                <div className="space-y-8 animate-in fade-in">
-                  {/* AI Generator */}
-                  <div className="p-8 rounded-3xl bg-primary/5 border border-primary/10 space-y-6">
-                    <h3 className="text-sm font-black uppercase">IA Animation</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Select value={aiObjective} onValueChange={setAiObjective}>
-                        <SelectTrigger className="h-12 rounded-xl text-[10px] uppercase font-black"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {['annonce', 'promotion', 'engagement'].map(o => <SelectItem key={o} value={o} className="text-[10px] uppercase">{o}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Button onClick={handleGenerateAiMessage} disabled={isGeneratingAi} className="h-12 rounded-xl uppercase font-black text-[10px] gap-2">
-                        {isGeneratingAi ? <div className="w-4 h-4 animate-spin border-2 border-t-transparent rounded-full" /> : <Zap className="w-4 h-4" />} Générer
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Task Form */}
-                  <div className="space-y-6 pt-12 border-t border-border">
-                    <h3 className="text-sm font-black uppercase">Programmer un message</h3>
-                    <Textarea value={taskFormData.message_content} onChange={e => setTaskFormData({ ...taskFormData, message_content: e.target.value })} className="min-h-[150px] rounded-2xl p-6" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input type="datetime-local" value={taskFormData.scheduled_at} onChange={e => setTaskFormData({ ...taskFormData, scheduled_at: e.target.value })} className="h-12 rounded-xl" />
-                      <Select value={taskFormData.recurrence} onValueChange={v => setTaskFormData({ ...taskFormData, recurrence: v })}>
-                        <SelectTrigger className="h-12 rounded-xl text-[10px] uppercase font-black"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {['none', 'daily', 'weekly'].map(r => <SelectItem key={r} value={r} className="text-[10px] uppercase">{r}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button onClick={handleAddTask} className="w-full h-14 font-black uppercase text-[10px]">Programmer</Button>
-                  </div>
-
-                  {/* Queue */}
-                  <div className="space-y-6">
-                    <h3 className="text-[10px] font-black uppercase opacity-40 flex items-center gap-2"><Clock className="w-4 h-4" /> File d'attente ({animatorTasks.length})</h3>
-                    <div className="space-y-3">
-                      {animatorTasks.map(t => (
-                        <div key={t.id} className="p-6 rounded-2xl border border-border bg-card flex items-center justify-between group">
-                          <div className="space-y-1">
-                            <p className="text-[11px] font-black uppercase truncate max-w-[300px]">{t.message_content}</p>
-                            <Badge variant="outline" className="text-[8px]">{new Date(t.scheduled_at).toLocaleString()}</Badge>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleEditTask(t)}><Pencil className="w-4 h-4 text-primary" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+        <div className="space-y-8">
+          {!selectedGroup ? (
+            <div className="p-12 text-center border-dashed border-2 rounded-lg">
+              <p className="text-sm text-muted-foreground">Select a group to configure</p>
             </div>
+          ) : (
+            <Tabs defaultValue="profile" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-8">
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="links">Links</TabsTrigger>
+                <TabsTrigger value="animation">Animation</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="profile" className="space-y-6">
+                <Card>
+                  <CardHeader><CardTitle className="text-sm font-medium">Group Profile</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Theme</Label>
+                      <Input value={profileData.theme} onChange={e => setProfileData({...profileData, theme: e.target.value})} className="h-9" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Mission</Label>
+                      <Textarea value={profileData.mission} onChange={e => setProfileData({...profileData, mission: e.target.value})} className="min-h-[80px]" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Rules</Label>
+                      <Textarea value={profileData.rules} onChange={e => setProfileData({...profileData, rules: e.target.value})} className="min-h-[80px]" />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t p-4 flex justify-end">
+                    <Button size="sm" onClick={handleSaveProfile} disabled={isSaving}>Save Profile</Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="links" className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-medium">Product Links</h3>
+                  <Button size="sm" variant="outline" onClick={() => setProductLinks([...productLinks, { title: "", url: "", cta: "Learn more" }])}>
+                    <Plus className="h-4 w-4 mr-2" /> Add Link
+                  </Button>
+                </div>
+                <Accordion type="multiple" className="space-y-2">
+                  {productLinks.map((link, i) => (
+                    <AccordionItem key={i} value={`item-${i}`} className="border rounded-md px-4 bg-card">
+                      <AccordionTrigger className="text-sm font-medium hover:no-underline py-3">
+                        {link.title || `Link #${i + 1}`}
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pb-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Title</Label>
+                          <Input value={link.title} onChange={e => { const nl = [...productLinks]; nl[i].title = e.target.value; setProductLinks(nl); }} className="h-9" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">URL</Label>
+                          <Input value={link.url} onChange={e => { const nl = [...productLinks]; nl[i].url = e.target.value; setProductLinks(nl); }} className="h-9" />
+                        </div>
+                        <Button variant="ghost" size="sm" className="text-destructive h-8 px-0 hover:bg-transparent" onClick={() => setProductLinks(productLinks.filter((_, idx) => idx !== i))}>
+                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Remove Link
+                        </Button>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+                <div className="flex justify-end pt-4 border-t">
+                  <Button size="sm" onClick={handleSaveLinks} disabled={isSaving}>Save Links</Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="animation" className="space-y-8">
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader><CardTitle className="text-sm font-medium">AI Generation</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Objective</Label>
+                        <Select value={aiConfig.objective} onValueChange={v => setAiConfig({...aiConfig, objective: v})}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="annonce">Announcement</SelectItem>
+                            <SelectItem value="promotion">Promotion</SelectItem>
+                            <SelectItem value="engagement">Engagement</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-end">
+                        <Button className="w-full h-9" onClick={handleGenerateAI} disabled={isGenerating}>
+                          {isGenerating ? "Generating..." : "Generate with AI"}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">Schedule Message</h3>
+                  <div className="space-y-4">
+                    <Textarea value={taskForm.message_content} onChange={e => setTaskForm({...taskForm, message_content: e.target.value})} className="min-h-[120px]" placeholder="Type or generate message..." />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input type="datetime-local" value={taskForm.scheduled_at} onChange={e => setTaskForm({...taskForm, scheduled_at: e.target.value})} className="h-9" />
+                      <Select value={taskForm.recurrence} onValueChange={v => setTaskForm({...taskForm, recurrence: v})}>
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Once</SelectItem>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full" onClick={handleSchedule} disabled={!taskForm.message_content}>
+                      Schedule Task
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-6 border-t">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5" /> Queue ({tasks.length})
+                  </h3>
+                  <div className="divide-y border rounded-md">
+                    {tasks.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-muted-foreground">No pending tasks</div>
+                    ) : (
+                      tasks.map(t => (
+                        <div key={t.id} className="p-4 flex items-center justify-between bg-card hover:bg-muted/30 transition-colors">
+                          <div className="min-w-0">
+                            <p className="text-sm truncate max-w-md">{t.message_content}</p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(t.scheduled_at).toLocaleString()}</p>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteTask(t.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </div>
@@ -327,5 +327,5 @@ function AnimationPageContent() {
 }
 
 export default function AnimationPage() {
-  return <React.Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><AnimationPageContent /></React.Suspense>;
+  return <React.Suspense fallback={<div className="p-8 text-center">Loading...</div>}><AnimationPageContent /></React.Suspense>;
 }

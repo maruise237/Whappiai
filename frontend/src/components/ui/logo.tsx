@@ -11,25 +11,25 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ 
-  size = 40, 
+  size = 24,
   className, 
   showText = true, 
-  orientation = 'vertical',
+  orientation = 'horizontal',
   textClassName
 }) => {
   return (
     <div 
       className={cn(
-        "flex items-center justify-center group cursor-pointer", 
-        orientation === 'vertical' ? "flex-col gap-2" : "flex-row gap-3",
+        "flex items-center gap-2",
+        orientation === 'vertical' ? "flex-col" : "flex-row",
         className
       )}
-      aria-label="Logo WHAPPI"
+      aria-label="Logo Whappi"
     >
-      <div className="relative hover:scale-105 transition-transform duration-200">
+      <div className="relative shrink-0">
         <Image
           src="/icon.png"
-          alt="Whappi Logo"
+          alt="Whappi"
           width={size}
           height={size}
           className="object-contain"
@@ -38,11 +38,10 @@ export const Logo: React.FC<LogoProps> = ({
       </div>
       {showText && (
         <span className={cn(
-          "font-bold text-lg tracking-tight text-foreground transition-all duration-200 group-hover:opacity-80 uppercase",
-          orientation === 'horizontal' && "leading-none",
+          "font-semibold text-base tracking-tight text-foreground",
           textClassName
         )}>
-          WHAPPI
+          Whappi
         </span>
       )}
     </div>
