@@ -504,12 +504,36 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/sessions/:sessionId/inbox/:jid', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         try {
             const history = db.prepare(`
-                SELECT role, content, created_at
+                SELECT id, role, content, created_at
                 FROM conversation_memory
                 WHERE session_id = ? AND remote_jid = ?
                 ORDER BY created_at ASC
             `).all(req.params.sessionId, req.params.jid);
             res.json({ status: 'success', data: history });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.delete('/sessions/:sessionId/inbox/:jid', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const result = db.prepare(`
+                DELETE FROM conversation_memory
+                WHERE session_id = ? AND remote_jid = ?
+            `).run(req.params.sessionId, req.params.jid);
+            res.json({ status: 'success', data: { changes: result.changes } });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.delete('/sessions/:sessionId/inbox/:jid/:id', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const result = db.prepare(`
+                DELETE FROM conversation_memory
+                WHERE id = ? AND session_id = ? AND remote_jid = ?
+            `).run(req.params.id, req.params.sessionId, req.params.jid);
+            res.json({ status: 'success', data: { changes: result.changes } });
         } catch (error) {
             res.status(500).json({ status: 'error', message: error.message });
         }
@@ -888,7 +912,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             res.json({ status: 'success', data: summary });
         } catch (err) {
-            log(`[API] Erreur résumé activités: ${error.message}`, 'SYSTEM', null, 'ERROR');
+            log(`[API] Erreur résumé activités: ${err.message}`, 'SYSTEM', null, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
