@@ -187,7 +187,8 @@ function initializeSchema() {
         { name: 'ai_random_protection_enabled', type: 'INTEGER DEFAULT 1' },
         { name: 'ai_random_protection_rate', type: 'REAL DEFAULT 0.1' },
         { name: 'ai_constraints', type: 'TEXT' },
-        { name: 'ai_session_window', type: 'INTEGER DEFAULT 5' }
+        { name: 'ai_session_window', type: 'INTEGER DEFAULT 5' },
+        { name: 'ai_respond_to_tags', type: 'INTEGER DEFAULT 0' }
     ];
 
     aiColumns.forEach(col => {

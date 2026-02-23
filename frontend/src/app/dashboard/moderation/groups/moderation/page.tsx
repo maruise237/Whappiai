@@ -164,7 +164,7 @@ function ModerationPageContent() {
           ) : (
             <div className="space-y-10">
               <section className="space-y-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Protection</p>
+                <p className="text-xs font-semibold text-muted-foreground">Protection</p>
                 <div className="space-y-1">
                   <ToggleRow label="Statut de modération" desc="Activez la modération automatisée pour ce groupe." value={formData.is_active} onChange={v => setFormData({...formData, is_active: v})} />
                   <ToggleRow label="Anti-Lien" desc="Supprime automatiquement les liens externes." value={formData.anti_link} onChange={v => setFormData({...formData, anti_link: v})} />
@@ -174,14 +174,14 @@ function ModerationPageContent() {
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avertissements</p>
+                <p className="text-xs font-semibold text-muted-foreground">Avertissements</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                   <div className="space-y-2">
-                    <Label className="text-xs">Avertissements max</Label>
+                    <Label className="text-xs font-medium">Avertissements max</Label>
                     <Input type="number" value={formData.max_warnings} onChange={e => setFormData({...formData, max_warnings: parseInt(e.target.value) || 1})} className="w-24 h-9" />
                   </div>
                   <div className="space-y-2 flex-1">
-                    <div className="flex justify-between text-[10px] font-medium uppercase text-muted-foreground">
+                    <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
                       <span>Sévérité</span>
                       <span>{formData.max_warnings <= 3 ? "Élevée" : "Normale"}</span>
                     </div>
@@ -193,7 +193,7 @@ function ModerationPageContent() {
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Filtre de contenu</p>
+                <p className="text-xs font-semibold text-muted-foreground">Filtre de contenu</p>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-xs">Mots proscrits (séparés par des virgules)</Label>
@@ -210,7 +210,7 @@ function ModerationPageContent() {
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message de bienvenue</p>
+                <p className="text-xs font-semibold text-muted-foreground">Message de bienvenue</p>
                 <div className="space-y-4">
                   <ToggleRow label="Activer le bienvenue" desc="Saluez automatiquement les nouveaux membres." value={formData.welcome_enabled} onChange={v => setFormData({...formData, welcome_enabled: v})} />
                   {formData.welcome_enabled && (

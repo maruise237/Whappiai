@@ -186,7 +186,7 @@ export default function CreditsPage() {
   )
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string | number; subText?: string, sub?: string }) {
+function StatCard({ label, value, sub }: { label: string; value: string | number; subText?: string; sub?: string }) {
   return (
     <Card>
       <CardContent className="p-4">

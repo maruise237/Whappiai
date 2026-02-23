@@ -197,8 +197,20 @@ class AIService {
             }
 
             const remoteJid = msg.key.remoteJid;
+            const isGroup = remoteJid.endsWith('@g.us');
+            const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(sock.user.id.split(':')[0] + '@s.whatsapp.net');
 
-            // 1. Random Protection System (Protection against spam/unpredictable AI behavior)
+            // 1. Check if AI should respond to tags in groups
+            if (isGroup && isTagged && !isGroupMode) {
+                if (parseInt(session.ai_respond_to_tags) !== 1) {
+                    log(`Tag détecté mais réponse aux tags désactivée`, sessionId, { event: 'ai-skip', reason: 'tags-disabled' }, 'INFO');
+                    return;
+                }
+                log(`Tag détecté dans ${remoteJid}, activation du mode groupe temporaire`, sessionId, { event: 'ai-tag-response' }, 'INFO');
+                isGroupMode = true; // Use group profile if available
+            }
+
+            // 2. Random Protection System (Protection against spam/unpredictable AI behavior)
             // If enabled, randomly ignore messages to simulate human inconsistency or prevent bot loops
             const protectionEnabled = session.ai_random_protection_enabled ?? 1;
             const protectionRate = session.ai_random_protection_rate ?? 0.1; // 10% chance to ignore
@@ -289,7 +301,7 @@ class AIService {
             Session.updateAIStats(sessionId, 'received');
             
             // Handle group vs private messages
-            if (remoteJid.endsWith('@g.us')) {
+            if (isGroup) {
                 if (!isGroupMode) {
                     log(`Message de groupe ignoré par l'auto-répondeur IA personnel`, sessionId, { remoteJid }, 'DEBUG');
                     return;
