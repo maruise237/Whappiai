@@ -77,6 +77,7 @@ export default function AIPage() {
   const { getToken } = useAuth()
   const [items, setItems] = React.useState<AIAutomationItem[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isToggling, setIsToggling] = React.useState<string | null>(null)
   const [isQuickEditOpen, setIsQuickEditOpen] = React.useState(false)
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
   const [isAdmin, setIsAdmin] = React.useState(false)
@@ -214,16 +215,33 @@ export default function AIPage() {
   }
 
   const toggleAI = async (item: AIAutomationItem) => {
+    setIsToggling(item.sessionId)
     try {
       const token = await getToken()
+      const newEnabled = !item.aiConfig.enabled
       await api.sessions.updateAI(item.sessionId, {
         ...item.aiConfig,
-        enabled: !item.aiConfig.enabled
+        enabled: newEnabled
       }, token || undefined)
-      toast.success(`Assistant IA ${!item.aiConfig.enabled ? 'activé' : 'désactivé'}`)
-      fetchData()
+
+      if (newEnabled) {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ffffff']
+        })
+        toast.success("Assistant IA activé ! 🚀", {
+          description: "Votre numéro est désormais sous pilotage intelligent."
+        })
+      } else {
+        toast.success(`Assistant IA désactivé`)
+      }
+      await fetchData()
     } catch (error) {
       toast.error("Erreur lors de la modification")
+    } finally {
+      setIsToggling(null)
     }
   }
 
@@ -322,6 +340,28 @@ export default function AIPage() {
         </div>
       </section>
 
+      {/* Quick Actions / Checklist for New Users */}
+      {items.length > 0 && globalStats.activeBots === 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mx-4 p-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg shadow-amber-500/5"
+        >
+          <div className="flex items-center gap-5">
+            <div className="p-4 rounded-xl bg-amber-500 text-white shadow-lg">
+              <Zap className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <p className="text-lg font-black uppercase tracking-tighter text-amber-600 leading-none mb-1">Prêt pour le déploiement ?</p>
+              <p className="text-xs font-medium text-amber-700/60 uppercase tracking-widest">Activez votre premier assistant pour commencer à automatiser.</p>
+            </div>
+          </div>
+          <Button asChild variant="outline" className="rounded-xl border-amber-500/30 bg-amber-500/5 text-amber-600 hover:bg-amber-500 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest h-12 px-8">
+            <Link href={`/dashboard/ai/config?session=${items[0].sessionId}`}>Configurer maintenant</Link>
+          </Button>
+        </motion.div>
+      )}
+
       {/* Main Content Grid */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-4">
@@ -364,6 +404,7 @@ export default function AIPage() {
                 <motion.div
                   key={item.sessionId}
                   layout
+                  whileHover={{ y: -5 }}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -443,11 +484,15 @@ export default function AIPage() {
                     <CardFooter className="p-8 pt-0 flex items-center justify-between gap-4 mt-auto">
                       <div className="flex-1 flex items-center justify-between p-2 pl-5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
                         <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Status</span>
-                        <Switch
-                          checked={item.aiConfig.enabled}
-                          onCheckedChange={() => toggleAI(item)}
-                          className="data-[state=checked]:bg-primary shadow-lg"
-                        />
+                        {isToggling === item.sessionId ? (
+                          <div className="w-8 h-4 animate-pulse bg-primary/20 rounded-full" />
+                        ) : (
+                          <Switch
+                            checked={item.aiConfig.enabled}
+                            onCheckedChange={() => toggleAI(item)}
+                            className="data-[state=checked]:bg-primary shadow-lg"
+                          />
+                        )}
                       </div>
 
                       <DropdownMenu>

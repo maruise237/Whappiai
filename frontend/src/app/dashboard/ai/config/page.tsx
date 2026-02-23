@@ -23,6 +23,7 @@ import {
   Brain,
   Terminal,
   Eraser,
+  Copy,
   Settings2,
   Lock,
   Globe,
@@ -46,6 +47,12 @@ import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn, getFriendlyErrorMessage } from "@/lib/utils"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 function AIConfigForm() {
   const searchParams = useSearchParams()
@@ -212,7 +219,7 @@ function AIConfigForm() {
       <AITour enabled={showTour} onExit={handleTourExit} isConfigPage={true} />
 
       {/* Modern SaaS Sticky Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-2xl border-b border-border -mx-4 px-4 sm:-mx-8 sm:px-8 py-6">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-2xl border-b border-border -mx-4 px-4 sm:-mx-8 sm:px-8 py-6 ai-config-header">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-6">
             <Button
@@ -248,7 +255,7 @@ function AIConfigForm() {
             <Button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 md:flex-none h-12 px-10 rounded-xl font-black uppercase tracking-widest text-[11px] whappi-gradient border-none shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+              className="flex-1 md:flex-none h-12 px-10 rounded-xl font-black uppercase tracking-widest text-[11px] whappi-gradient border-none shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all ai-save-button"
             >
               {isSaving ? (
                 <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-3" />
@@ -334,8 +341,18 @@ function AIConfigForm() {
                     />
                   </div>
 
-                  <div className="space-y-6">
-                    <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground ml-2">Mode de déploiement</Label>
+                  <div className="space-y-6 ai-mode-selector">
+                    <div className="flex items-center gap-2 ml-2">
+                      <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Mode de déploiement</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-3 h-3 text-muted-foreground/40 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p className="text-[10px]">Détermine si l'IA répond seule ou vous laisse la main.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {[
                         { id: 'bot', name: 'Autonome', icon: Bot, desc: 'Full Auto-reply', long: 'Répond instantanément à chaque message.', color: 'emerald' },
@@ -444,7 +461,17 @@ function AIConfigForm() {
                 <div className="flex flex-col md:flex-row gap-12">
                   <div className="flex-1 space-y-6">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-black uppercase tracking-widest">Anti-Loop Protection</Label>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs font-black uppercase tracking-widest">Anti-Loop Protection</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="w-3 h-3 text-muted-foreground/40 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px]">
+                            <p className="text-[10px]">Empêche deux IA de se répondre à l'infini en simulant une "hésitation" humaine.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Switch
                         checked={formData.random_protection_enabled}
                         onCheckedChange={(c) => setFormData({ ...formData, random_protection_enabled: c })}
@@ -514,9 +541,19 @@ function AIConfigForm() {
 
             <Card className="rounded-[2.5rem] border-2 border-slate-100 dark:border-white/5 bg-white dark:bg-card overflow-hidden shadow-2xl">
               <CardContent className="p-10 space-y-12">
-                <div className="space-y-6">
+                <div className="space-y-6 ai-prompt-area">
                   <div className="flex items-center justify-between px-2">
-                    <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Intelligence Templates</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Neural Matrix (System Prompt)</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-3 h-3 text-muted-foreground/40 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[250px]">
+                          <p className="text-[10px]">La "bible" de votre assistant. Décrivez son rôle, ce qu'il sait, et comment il doit s'adresser aux clients.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <Badge variant="outline" className="text-[8px] font-black px-4">Beta Pro</Badge>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -536,14 +573,27 @@ function AIConfigForm() {
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 ai-prompt-area">
                   <div className="flex items-center justify-between px-2">
                     <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Neural Matrix (System Prompt)</Label>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-[8px] font-black px-3">{formData.prompt.length} TOKENS</Badge>
-                      <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, prompt: ""})} className="h-6 w-6 text-muted-foreground hover:text-destructive">
-                        <Eraser className="w-3.5 h-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            navigator.clipboard.writeText(formData.prompt);
+                            toast.success("Prompt copié dans le presse-papier");
+                          }}
+                          className="h-6 w-6 text-muted-foreground hover:text-primary"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, prompt: ""})} className="h-6 w-6 text-muted-foreground hover:text-destructive">
+                          <Eraser className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                   <div className="relative group">
@@ -588,7 +638,7 @@ function AIConfigForm() {
               <CardContent className="p-10 space-y-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   <div className="space-y-10">
-                    <div className="space-y-4">
+                    <div className="space-y-4 ai-model-selector">
                       <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground ml-2">Core Engine Model</Label>
                       <Select
                         value={formData.model}
@@ -618,7 +668,17 @@ function AIConfigForm() {
 
                     <div className="space-y-6 p-8 rounded-3xl bg-secondary/30 border border-border/50">
                       <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Creativity (Temp)</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="w-3 h-3 text-muted-foreground/40 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px]">
+                            <p className="text-[10px]">Contrôle le hasard. **0.0** est très sérieux et répétitif, **1.0** et plus est créatif et imprévisible.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                         <span className="text-lg font-black text-primary">{formData.temperature}</span>
                       </div>
                       <input
