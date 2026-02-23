@@ -132,8 +132,8 @@ export default function AIPage() {
       const token = await getToken()
       const response = await api.sessions.getInbox(sessionId, token || undefined)
       setConversations(response || [])
-    } catch (e) {
-      toast.error("Échec du chargement de la mémoire")
+    } catch (e: any) {
+      toast.error("Échec du chargement de la mémoire: " + (e.message || "Erreur inconnue"))
     }
   }
 
@@ -145,8 +145,8 @@ export default function AIPage() {
       const response = await api.sessions.getChatHistory(selectedSessionMemory, jid, token || undefined)
       setHistory(response || [])
       setSelectedChat(jid)
-    } catch (e) {
-      toast.error("Erreur historique")
+    } catch (e: any) {
+      toast.error("Erreur historique: " + (e.message || "Erreur inconnue"))
     } finally {
       setIsChatLoading(false)
     }

@@ -70,18 +70,24 @@ class KnowledgeService {
      * Search in knowledge base
      */
     static search(sessionId, query, limit = 5) {
+        if (!query || typeof query !== 'string' || query.trim().length < 3) return [];
+
         try {
+            // Sanitize query for FTS5
+            const sanitizedQuery = query.trim().replace(/[^a-zA-Z0-9\s]/g, ' ');
+            if (!sanitizedQuery) return [];
+
             // Use FTS5 BM25 ranking for relevance
             const results = db.prepare(`
                 SELECT content FROM knowledge_search
                 WHERE knowledge_search MATCH ? AND session_id = ?
                 ORDER BY bm25(knowledge_search)
                 LIMIT ?
-            `).all(query, sessionId, limit);
+            `).all(sanitizedQuery, sessionId, limit);
 
             return results.map(r => r.content);
         } catch (err) {
-            log(`Erreur recherche RAG: ${err.message}`, sessionId, { query }, 'ERROR');
+            log(`Erreur recherche RAG: ${err.message}`, sessionId, { query }, 'WARN');
             return [];
         }
     }

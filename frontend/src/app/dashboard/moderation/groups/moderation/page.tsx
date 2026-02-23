@@ -54,9 +54,10 @@ function ModerationPageContent() {
       setIsLoading(true)
       const token = await getToken()
       const data = await api.sessions.getGroups(sessionId, token || undefined)
-      setGroups(data || [])
-      setFilteredGroups(data || [])
-      if (data?.length > 0) handleSelectGroup(data[0])
+      const groupsArray = Array.isArray(data) ? data : []
+      setGroups(groupsArray)
+      setFilteredGroups(groupsArray)
+      if (groupsArray.length > 0) handleSelectGroup(groupsArray[0])
     } catch (error) {
       toast.error("Échec du chargement des groupes")
     } finally {
@@ -68,19 +69,21 @@ function ModerationPageContent() {
 
   React.useEffect(() => {
     const lower = searchQuery.toLowerCase()
-    setFilteredGroups(groups.filter(g => g.subject.toLowerCase().includes(lower)))
+    setFilteredGroups(groups.filter(g => (g.subject || g.name || '').toLowerCase().includes(lower)))
   }, [searchQuery, groups])
 
   const handleSelectGroup = (group: any) => {
+    if (!group) return
     setSelectedGroup(group)
+    const settings = group.settings || {}
     setFormData({
-      is_active: !!group.settings.is_active,
-      anti_link: !!group.settings.anti_link,
-      bad_words: group.settings.bad_words || "",
-      warning_template: group.settings.warning_template || "Attention @{{name}}, {{count}}/{{max}} pour : {{reason}}.",
-      max_warnings: group.settings.max_warnings || 5,
-      welcome_enabled: !!group.settings.welcome_enabled,
-      welcome_template: group.settings.welcome_template || "Bienvenue @{{name}} dans {{group_name}} !"
+      is_active: !!settings.is_active,
+      anti_link: !!settings.anti_link,
+      bad_words: settings.bad_words || "",
+      warning_template: settings.warning_template || "Attention @{{name}}, {{count}}/{{max}} pour : {{reason}}.",
+      max_warnings: settings.max_warnings || 5,
+      welcome_enabled: !!settings.welcome_enabled,
+      welcome_template: settings.welcome_template || "Bienvenue @{{name}} dans {{group_name}} !"
     })
   }
 
@@ -102,12 +105,6 @@ function ModerationPageContent() {
   if (isLoading) return <div className="p-8 text-center">Chargement des groupes...</div>
   if (!sessionId) return <div className="p-8 text-center">Session non spécifiée.</div>
 
-  const sections = [
-    { id: 'intelligence', label: 'Intelligence', icon: Bot },
-    { id: 'automation', label: 'Automatisation', icon: Zap },
-    { id: 'personality', label: 'Personnalité', icon: Sparkles },
-    { id: 'engine', label: 'Moteur', icon: Cpu }
-  ]
 
   return (
     <div className="space-y-6">
@@ -150,7 +147,7 @@ function ModerationPageContent() {
                       selectedGroup?.id === g.id ? "bg-muted font-medium" : "hover:bg-muted/50 text-muted-foreground"
                     )}
                   >
-                    <span className="truncate flex-1">{g.subject}</span>
+                    <span className="truncate flex-1">{g.subject || g.name || 'Sans titre'}</span>
                     <ChevronRight className="h-3 w-3 opacity-50" />
                   </button>
                 ))}
