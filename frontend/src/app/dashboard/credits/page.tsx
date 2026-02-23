@@ -123,6 +123,7 @@ export default function CreditsPage() {
 
             <div className="mt-8">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Transaction History</p>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -149,6 +150,7 @@ export default function CreditsPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </CardContent>
         </Card>

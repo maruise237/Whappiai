@@ -188,10 +188,10 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 <TabsTrigger value="code" className="text-xs">Pairing Code</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="qr" className="flex flex-col items-center space-y-4">
-                <div className="relative aspect-square w-48 border rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden">
+              <TabsContent value="qr" className="flex flex-col items-center space-y-4 pt-4">
+                <div className="relative aspect-square w-full max-w-[240px] border rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shadow-inner">
                   {qrCode ? (
-                    <img src={qrCode} alt="QR Code" className="w-full h-full p-2 bg-white rounded-md object-contain" />
+                    <img src={qrCode} alt="QR Code" className="w-full h-full p-4 bg-white rounded-md object-contain" />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
                       <RefreshCw className={cn("h-6 w-6", loading && "animate-spin")} />
@@ -199,34 +199,34 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                     </div>
                   )}
                 </div>
-                <Button size="sm" variant="outline" onClick={handleRefreshQr} disabled={loading}>
+                <Button size="sm" variant="outline" className="h-9 px-6" onClick={handleRefreshQr} disabled={loading}>
                   <RefreshCw className={cn("h-3.5 w-3.5 mr-2", loading && "animate-spin")} />
                   Refresh QR
                 </Button>
               </TabsContent>
 
-              <TabsContent value="code" className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-medium text-muted-foreground uppercase">Phone Number</label>
+              <TabsContent value="code" className="space-y-6 pt-4">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
                   <div className="flex gap-2">
                     <Input
                       placeholder="e.g. 237600000000"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="h-9 text-sm"
+                      className="h-10 text-sm"
                     />
-                    <Button size="sm" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                    <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
                       Get Code
                     </Button>
                   </div>
                 </div>
 
                 {pairingCode ? (
-                  <div className="p-4 rounded-lg bg-muted border flex flex-col items-center space-y-3">
-                    <p className="text-xs font-medium text-muted-foreground">Your Pairing Code</p>
-                    <div className="flex gap-1">
+                  <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your Pairing Code</p>
+                    <div className="flex flex-wrap justify-center gap-1.5">
                       {pairingCode.split('').map((char: string, i: number) => (
-                        <div key={i} className="w-8 h-10 border bg-card rounded flex items-center justify-center text-lg font-bold text-primary">
+                        <div key={i} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
                           {char}
                         </div>
                       ))}

@@ -157,7 +157,8 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -207,6 +208,7 @@ export default function UsersPage() {
             )}
           </TableBody>
         </Table>
+        </div>
         {totalPages > 1 && (
           <div className="p-4 border-t">
             <Pagination>

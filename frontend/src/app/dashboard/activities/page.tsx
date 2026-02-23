@@ -84,7 +84,7 @@ export default function ActivitiesPage() {
         <StatCard label="Messages" value={summary.messagesSent} />
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
           <div className="flex items-center gap-4">
             <CardTitle className="text-sm font-medium">Activity Journal</CardTitle>
@@ -97,6 +97,7 @@ export default function ActivitiesPage() {
             </div>
           </div>
         </CardHeader>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -146,6 +147,7 @@ export default function ActivitiesPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   )
