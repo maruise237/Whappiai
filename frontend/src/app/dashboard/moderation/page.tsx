@@ -32,7 +32,7 @@ export default function ModerationSessionsPage() {
       const data = await api.sessions.list(token || undefined)
       setSessions(data || [])
     } catch (error) {
-      toast.error("Failed to load sessions")
+      toast.error("Échec du chargement des sessions")
     } finally {
       setIsLoading(false)
     }
@@ -46,19 +46,19 @@ export default function ModerationSessionsPage() {
     s.sessionId.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>
+  if (isLoading) return <div className="p-8 text-center">Chargement...</div>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Group Management</h1>
-          <p className="text-sm text-muted-foreground">Select a session to manage group moderation and animation.</p>
+          <h1 className="text-xl font-semibold">Gestion des Groupes</h1>
+          <p className="text-sm text-muted-foreground">Sélectionnez une session pour gérer la modération et l&apos;animation des groupes.</p>
         </div>
         <div className="relative w-64">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search session..."
+            placeholder="Rechercher une session..."
             className="pl-8 h-9 text-sm"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -68,14 +68,14 @@ export default function ModerationSessionsPage() {
 
       <div className="flex items-center gap-3 p-3 rounded-md bg-primary/5 border border-primary/10">
         <ShieldAlert className="h-4 w-4 text-primary" />
-        <p className="text-xs text-muted-foreground">Select a connected session to access groups where you are an administrator.</p>
+        <p className="text-xs text-muted-foreground">Sélectionnez une session connectée pour accéder aux groupes dont vous êtes administrateur.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSessions.length === 0 ? (
           <Card className="col-span-full py-12 text-center border-dashed">
             <Zap className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm font-medium">No sessions found</p>
+            <p className="text-sm font-medium">Aucune session trouvée</p>
           </Card>
         ) : (
           filteredSessions.map(session => (
@@ -91,14 +91,14 @@ export default function ModerationSessionsPage() {
                       ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
                       : "border-border text-muted-foreground"
                     }>
-                      {session.isConnected ? "Active" : "Offline"}
+                      {session.isConnected ? "Actif" : "Hors ligne"}
                     </Badge>
                   </div>
                 </div>
               </CardHeader>
               <CardFooter className="p-4 bg-muted/20 border-t grid grid-cols-2 gap-3">
                 <Button size="sm" variant="outline" disabled={!session.isConnected} onClick={() => router.push(`/dashboard/moderation/groups/moderation?session=${session.sessionId}`)}>
-                  Moderation
+                  Modération
                 </Button>
                 <Button size="sm" variant="outline" disabled={!session.isConnected} onClick={() => router.push(`/dashboard/moderation/groups/animation?session=${session.sessionId}`)}>
                   Animation

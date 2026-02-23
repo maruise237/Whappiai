@@ -42,18 +42,18 @@ import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
 
 const navigation = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Activities", href: "/dashboard/activities", icon: History, adminOnly: true },
-  { name: "AI Assistant", href: "/dashboard/ai", icon: Bot },
-  { name: "Group Management", href: "/dashboard/moderation", icon: Shield },
-  { name: "Credits", href: "/dashboard/credits", icon: Zap },
-  { name: "Users", href: "/dashboard/users", icon: Users, adminOnly: true },
-  { name: "AI Models", href: "/dashboard/ai-models", icon: Settings2, adminOnly: true },
+  { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Activités", href: "/dashboard/activities", icon: History, adminOnly: true },
+  { name: "Assistant IA", href: "/dashboard/ai", icon: Bot },
+  { name: "Gestion des Groupes", href: "/dashboard/moderation", icon: Shield },
+  { name: "Crédits", href: "/dashboard/credits", icon: Zap },
+  { name: "Utilisateurs", href: "/dashboard/users", icon: Users, adminOnly: true },
+  { name: "Modèles IA", href: "/dashboard/ai-models", icon: Settings2, adminOnly: true },
 ]
 
 const footerNav = [
-  { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
-  { name: "Settings", href: "/dashboard/profile", icon: Settings },
+  { name: "Facturation", href: "/dashboard/billing", icon: CreditCard },
+  { name: "Paramètres", href: "/dashboard/profile", icon: Settings },
 ]
 
 function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
@@ -172,12 +172,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}><UserCircle className="h-4 w-4 mr-2" /> Profile</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}><CreditCard className="h-4 w-4 mr-2" /> Billing</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}><UserCircle className="h-4 w-4 mr-2" /> Profil</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}><CreditCard className="h-4 w-4 mr-2" /> Facturation</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut(() => router.push("/login"))} className="text-destructive"><LogOut className="h-4 w-4 mr-2" /> Logout</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut(() => router.push("/login"))} className="text-destructive"><LogOut className="h-4 w-4 mr-2" /> Déconnexion</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -203,7 +203,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </Sheet>
               </div>
               <h2 className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
-                {[...navigation, ...footerNav].find(n => n.href === pathname)?.name || "Dashboard"}
+                {[...navigation, ...footerNav].find(n => n.href === pathname)?.name || "Tableau de bord"}
               </h2>
             </div>
             <div className="flex items-center gap-4">
@@ -216,7 +216,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               >
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
+                <span className="sr-only">Changer de thème</span>
               </Button>
               <button className="text-muted-foreground hover:text-foreground transition-colors"><Bell className="h-5 w-5" /></button>
               <UserButton afterSignOutUrl="/login" />

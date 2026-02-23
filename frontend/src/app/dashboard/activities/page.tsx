@@ -52,7 +52,7 @@ export default function ActivitiesPage() {
       setActivities(activitiesData || [])
       setSummary(summaryData?.data || summaryData || summary)
     } catch (error) {
-      toast.error("Failed to load activities")
+      toast.error("Échec du chargement des activités")
     } finally {
       setIsLoading(false)
     }
@@ -68,18 +68,18 @@ export default function ActivitiesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Activities</h1>
-          <p className="text-sm text-muted-foreground">Real-time system log and audit trail.</p>
+          <h1 className="text-xl font-semibold">Activités</h1>
+          <p className="text-sm text-muted-foreground">Journal système en temps réel et piste d'audit.</p>
         </div>
         <Button size="sm" onClick={() => fetchActivities()} disabled={isLoading}>
           <RefreshCcw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-          Refresh
+          Actualiser
         </Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Activities" value={summary.totalActivities} />
-        <StatCard label="Active Users" value={summary.activeUsers} />
+        <StatCard label="Total Activités" value={summary.totalActivities} />
+        <StatCard label="Utilisateurs Actifs" value={summary.activeUsers} />
         <StatCard label="Sessions" value={summary.sessionsCreated} />
         <StatCard label="Messages" value={summary.messagesSent} />
       </div>
@@ -87,13 +87,13 @@ export default function ActivitiesPage() {
       <Card className="overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
           <div className="flex items-center gap-4">
-            <CardTitle className="text-sm font-medium">Activity Journal</CardTitle>
+            <CardTitle className="text-sm font-medium">Journal d'activité</CardTitle>
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
               </span>
-              <span className="text-xs text-muted-foreground">Live</span>
+              <span className="text-xs text-muted-foreground">En direct</span>
             </div>
           </div>
         </CardHeader>
@@ -101,12 +101,12 @@ export default function ActivitiesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground">Timestamp</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">User</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Horodatage</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Action</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Resource</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Details</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground text-right">Status</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Ressource</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Détails</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground text-right">Statut</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -114,8 +114,8 @@ export default function ActivitiesPage() {
               <TableRow>
                 <TableCell colSpan={6} className="h-64 text-center py-12">
                   <Activity className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-                  <h3 className="text-sm font-medium mb-1">No activities found</h3>
-                  <p className="text-xs text-muted-foreground">All system events will appear here.</p>
+                  <h3 className="text-sm font-medium mb-1">Aucune activité trouvée</h3>
+                  <p className="text-xs text-muted-foreground">Tous les événements système apparaîtront ici.</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -139,7 +139,7 @@ export default function ActivitiesPage() {
                       ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
                       : "bg-destructive/10 text-destructive border-destructive/20"
                     }>
-                      {a.success ? "Success" : "Error"}
+                      {a.success ? "Succès" : "Erreur"}
                     </Badge>
                   </TableCell>
                 </TableRow>

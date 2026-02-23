@@ -67,7 +67,7 @@ export default function CreditsPage() {
 
   React.useEffect(() => { fetchData() }, [fetchData])
 
-  if (isLoading) return <div className="p-8 text-center">Loading credits...</div>
+  if (isLoading) return <div className="p-8 text-center">Chargement des crédits...</div>
 
   const usageLast7Days = stats.reduce((acc, curr) => acc + (curr.usage || 0), 0)
 
@@ -76,28 +76,28 @@ export default function CreditsPage() {
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <LayoutDashboard className="h-3 w-3" />
-          <span>Dashboard</span>
+          <span>Tableau de bord</span>
           <span>/</span>
-          <span className="text-foreground">Credits</span>
+          <span className="text-foreground">Crédits</span>
         </div>
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Credits & Usage</h1>
-          <Badge variant="secondary">Pro Plan</Badge>
+          <h1 className="text-xl font-semibold">Crédits & Utilisation</h1>
+          <Badge variant="secondary" className="uppercase">Plan Pro</Badge>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Current Balance" value={balance} sub="credits available" />
-        <StatCard label="Usage (7d)" value={usageLast7Days} sub="credits consumed" />
-        <StatCard label="Messages Sent" value={balance} sub="remaining capacity" />
-        <StatCard label="Account Status" value="Active" sub="verified" />
+        <StatCard label="Solde actuel" value={balance} sub="crédits disponibles" />
+        <StatCard label="Usage (7j)" value={usageLast7Days} sub="crédits consommés" />
+        <StatCard label="Messages envoyés" value={balance} sub="capacité restante" />
+        <StatCard label="Statut du compte" value="Actif" sub="vérifié" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Card className="lg:col-span-8">
           <CardHeader className="p-4 border-b">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-primary" /> Consumption Analysis
+              <BarChart3 className="h-4 w-4 text-primary" /> Analyse de consommation
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
@@ -122,19 +122,19 @@ export default function CreditsPage() {
             </div>
 
             <div className="mt-8">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Transaction History</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Historique des transactions</p>
               <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs font-medium">Date</TableHead>
                     <TableHead className="text-xs font-medium">Description</TableHead>
-                    <TableHead className="text-xs font-medium text-right">Amount</TableHead>
+                    <TableHead className="text-xs font-medium text-right">Montant</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {history.length === 0 ? (
-                    <TableRow><TableCell colSpan={3} className="text-center py-8 text-xs text-muted-foreground">No transactions found.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={3} className="text-center py-8 text-xs text-muted-foreground">Aucune transaction trouvée.</TableCell></TableRow>
                   ) : (
                     history.map(item => (
                       <TableRow key={item.id} className="hover:bg-muted/50">
@@ -157,27 +157,27 @@ export default function CreditsPage() {
 
         <div className="lg:col-span-4 space-y-6">
           <Card className="border-primary/20 bg-primary/5">
-            <CardHeader><CardTitle className="text-sm font-medium">Claim Credits</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-medium">Réclamer des crédits</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-xs text-muted-foreground">Reclaim your welcome credits if you haven't already.</p>
+              <p className="text-xs text-muted-foreground">Réclamez vos crédits de bienvenue si vous ne l'avez pas encore fait.</p>
               <Button className="w-full h-9" onClick={async () => {
-                const t = toast.loading("Claiming...");
+                const t = toast.loading("Réclamation...");
                 try {
                   const token = await getToken();
                   await api.post("/api/v1/credits/claim-welcome", {}, token || undefined);
-                  toast.success("60 credits added!", { id: t });
+                  toast.success("60 crédits ajoutés !", { id: t });
                   fetchData();
-                } catch (e) { toast.error("Already claimed", { id: t }); }
-              }}>Claim 60 Credits 🎁</Button>
+                } catch (e) { toast.error("Déjà réclamé", { id: t }); }
+              }}>Réclamer 60 crédits 🎁</Button>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-sm font-medium">Information</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-medium">Informations</CardTitle></CardHeader>
             <CardContent className="text-xs text-muted-foreground space-y-2">
-              <p>• 1 message = 1 credit.</p>
-              <p>• Incoming messages are free.</p>
-              <p>• History kept for 30 days.</p>
+              <p>• 1 message = 1 crédit.</p>
+              <p>• Les messages entrants sont gratuits.</p>
+              <p>• Historique conservé 30 jours.</p>
             </CardContent>
           </Card>
         </div>

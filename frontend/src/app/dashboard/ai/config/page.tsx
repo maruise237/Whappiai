@@ -76,7 +76,7 @@ function AIConfigForm() {
         const config = await api.sessions.getAI(sessionId, token || undefined)
         setFormData(prev => ({ ...prev, ...config }))
       } catch (error) {
-        toast.error("Failed to load configuration")
+        toast.error("Échec du chargement de la configuration")
       } finally {
         setIsLoading(false)
       }
@@ -90,22 +90,22 @@ function AIConfigForm() {
     try {
       const token = await getToken()
       await api.sessions.updateAI(sessionId, formData, token || undefined)
-      toast.success("Configuration saved")
+      toast.success("Configuration enregistrée")
     } catch (error: any) {
-      toast.error("Save failed")
+      toast.error("Échec de l'enregistrement")
     } finally {
       setIsSaving(false)
     }
   }
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>
-  if (!sessionId) return <div className="p-8 text-center">No session specified.</div>
+  if (isLoading) return <div className="p-8 text-center">Chargement...</div>
+  if (!sessionId) return <div className="p-8 text-center">Session non spécifiée.</div>
 
   const sections = [
     { id: 'intelligence', label: 'Intelligence', icon: Bot },
-    { id: 'automation', label: 'Automation', icon: Zap },
-    { id: 'personality', label: 'Personality', icon: Sparkles },
-    { id: 'engine', label: 'Engine', icon: Cpu }
+    { id: 'automation', label: 'Automatisation', icon: Zap },
+    { id: 'personality', label: 'Personnalité', icon: Sparkles },
+    { id: 'engine', label: 'Moteur', icon: Cpu }
   ]
 
   return (
@@ -116,13 +116,13 @@ function AIConfigForm() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold">AI Configuration</h1>
-            <p className="text-sm text-muted-foreground">Session: {sessionId}</p>
+            <h1 className="text-xl font-semibold">Configuration IA</h1>
+            <p className="text-sm text-muted-foreground">Session : {sessionId}</p>
           </div>
         </div>
         <Button onClick={handleSave} disabled={isSaving}>
           <Save className="h-4 w-4 mr-2" />
-          Save Changes
+          Enregistrer
         </Button>
       </div>
 
@@ -141,23 +141,23 @@ function AIConfigForm() {
           <section id="intelligence" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Intelligence</h2>
-              <p className="text-sm text-muted-foreground">Core behavior and mode.</p>
+              <p className="text-sm text-muted-foreground">Comportement de base et mode.</p>
             </div>
             <Card>
               <CardContent className="p-6 space-y-6">
                 <ToggleRow
-                  label="Enable AI"
-                  desc="Activate automatic responses for this session."
+                  label="Activer l&apos;IA"
+                  desc="Activez les réponses automatiques pour cette session."
                   value={formData.enabled}
                   onChange={v => setFormData({...formData, enabled: v})}
                 />
                 <div className="space-y-3">
-                  <Label className="text-xs font-medium uppercase text-muted-foreground">Response Mode</Label>
+                  <Label className="text-xs font-medium uppercase text-muted-foreground">Mode de réponse</Label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
                       { id: 'bot', name: 'Bot', desc: '100% Auto', icon: Bot },
-                      { id: 'hybrid', name: 'Hybrid', desc: 'Delay 5s', icon: Zap },
-                      { id: 'human', name: 'Human', desc: 'Draft only', icon: Sparkles }
+                      { id: 'hybrid', name: 'Hybride', desc: 'Délai 5s', icon: Zap },
+                      { id: 'human', name: 'Humain', desc: 'Brouillon', icon: Sparkles }
                     ].map(m => (
                       <button
                         key={m.id}
@@ -181,26 +181,26 @@ function AIConfigForm() {
           {/* Automation */}
           <section id="automation" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold">Automation</h2>
-              <p className="text-sm text-muted-foreground">Trigger and response controls.</p>
+              <h2 className="text-lg font-semibold">Automatisation</h2>
+              <p className="text-sm text-muted-foreground">Contrôles de déclenchement et de réponse.</p>
             </div>
             <Card>
               <CardContent className="p-6 divide-y">
-                <ToggleRow label="Stop on typing" desc="Disable IA if you start typing." value={formData.deactivate_on_typing} onChange={v => setFormData({...formData, deactivate_on_typing: v})} />
-                <ToggleRow label="Stop on read" desc="IA waits for you to read messages." value={formData.deactivate_on_read} onChange={v => setFormData({...formData, deactivate_on_read: v})} />
-                <ToggleRow label="Read receipts" desc="Mark as read when IA replies." value={formData.read_on_reply} onChange={v => setFormData({...formData, read_on_reply: v})} />
-                <ToggleRow label="Reject calls" desc="Automatically block incoming calls." value={formData.reject_calls} onChange={v => setFormData({...formData, reject_calls: v})} />
+                <ToggleRow label="Arrêt à la frappe" desc="Désactive l&apos;IA si vous commencez à écrire." value={formData.deactivate_on_typing} onChange={v => setFormData({...formData, deactivate_on_typing: v})} />
+                <ToggleRow label="Arrêt à la lecture" desc="L&apos;IA attend que vous lisiez les messages." value={formData.deactivate_on_read} onChange={v => setFormData({...formData, deactivate_on_read: v})} />
+                <ToggleRow label="Confirmations de lecture" desc="Marquer comme lu quand l&apos;IA répond." value={formData.read_on_reply} onChange={v => setFormData({...formData, read_on_reply: v})} />
+                <ToggleRow label="Rejeter les appels" desc="Bloquer automatiquement les appels entrants." value={formData.reject_calls} onChange={v => setFormData({...formData, reject_calls: v})} />
 
                 <div className="py-6 space-y-4">
-                  <p className="text-sm font-medium">Human Simulation</p>
+                  <p className="text-sm font-medium">Simulation humaine</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-xs">Reply Delay (seconds)</Label>
+                      <Label className="text-xs">Délai de réponse (secondes)</Label>
                       <Input type="number" value={formData.reply_delay} onChange={e => setFormData({...formData, reply_delay: parseInt(e.target.value) || 0})} className="h-9" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs">Trigger Keywords</Label>
-                      <Input value={formData.trigger_keywords} onChange={e => setFormData({...formData, trigger_keywords: e.target.value})} placeholder="ia, help..." className="h-9" />
+                      <Label className="text-xs">Mots-clés déclencheurs</Label>
+                      <Input value={formData.trigger_keywords} onChange={e => setFormData({...formData, trigger_keywords: e.target.value})} placeholder="ia, aide..." className="h-9" />
                     </div>
                   </div>
                 </div>
@@ -211,17 +211,17 @@ function AIConfigForm() {
           {/* Personality */}
           <section id="personality" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold">Personality</h2>
-              <p className="text-sm text-muted-foreground">Prompt and instructions.</p>
+              <h2 className="text-lg font-semibold">Personnalité</h2>
+              <p className="text-sm text-muted-foreground">Instructions et prompt système.</p>
             </div>
             <Card>
               <CardContent className="p-6 space-y-4">
-                <Label className="text-xs font-medium uppercase text-muted-foreground">System Prompt</Label>
+                <Label className="text-xs font-medium uppercase text-muted-foreground">Prompt Système</Label>
                 <Textarea
                   value={formData.prompt}
                   onChange={e => setFormData({...formData, prompt: e.target.value})}
                   className="min-h-[200px] text-sm leading-relaxed"
-                  placeholder="Act as a helpful sales assistant..."
+                  placeholder="Agissez comme un assistant commercial utile..."
                 />
               </CardContent>
             </Card>
@@ -230,13 +230,13 @@ function AIConfigForm() {
           {/* Engine */}
           <section id="engine" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold">Engine</h2>
-              <p className="text-sm text-muted-foreground">Model and API settings.</p>
+              <h2 className="text-lg font-semibold">Moteur</h2>
+              <p className="text-sm text-muted-foreground">Paramètres du modèle et de l'API.</p>
             </div>
             <Card>
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium uppercase text-muted-foreground">AI Model</Label>
+                  <Label className="text-xs font-medium uppercase text-muted-foreground">Modèle IA</Label>
                   <Select value={formData.model} onValueChange={v => {
                     const m = availableModels.find(mod => mod.id === v);
                     setFormData({...formData, model: v, endpoint: m?.endpoint || formData.endpoint})
@@ -254,11 +254,11 @@ function AIConfigForm() {
                 {isAdmin && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-xs">Custom Endpoint</Label>
+                      <Label className="text-xs">Endpoint personnalisé</Label>
                       <Input value={formData.endpoint} onChange={e => setFormData({...formData, endpoint: e.target.value})} className="h-9 font-mono text-xs" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs">Custom API Key</Label>
+                      <Label className="text-xs">Clé API personnalisée</Label>
                       <Input type="password" value={formData.key} onChange={e => setFormData({...formData, key: e.target.value})} className="h-9 font-mono text-xs" />
                     </div>
                   </div>
@@ -286,7 +286,7 @@ function ToggleRow({ label, desc, value, onChange }: { label: string; desc: stri
 
 export default function AIConfigPage() {
   return (
-    <React.Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+    <React.Suspense fallback={<div className="p-8 text-center">Chargement...</div>}>
       <AIConfigForm />
     </React.Suspense>
   )

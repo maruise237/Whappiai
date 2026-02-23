@@ -15,13 +15,13 @@ const plans = [
     name: "Starter",
     price: "2,500 FCFA",
     features: [
-      "500 AI messages / month",
-      "1 WhatsApp session",
-      "24/7 Smart auto-responses",
-      "Email technical support",
-      "Standard API access"
+      "500 messages IA / mois",
+      "1 session WhatsApp",
+      "Réponses auto 24/7",
+      "Support technique par email",
+      "Accès API standard"
     ],
-    cta: "Choose Starter",
+    cta: "Choisir Starter",
     highlighted: false,
   },
   {
@@ -29,14 +29,14 @@ const plans = [
     name: "Pro",
     price: "5,000 FCFA",
     features: [
-      "2,000 AI messages / month",
-      "Unlimited WhatsApp groups",
-      "Advanced Analytics",
-      "Intelligent anti-spam",
-      "Priority customer support",
-      "Data export (CSV/JSON)"
+      "2,000 messages IA / mois",
+      "Groupes WhatsApp illimités",
+      "Analyses avancées",
+      "Anti-spam intelligent",
+      "Support client prioritaire",
+      "Export de données (CSV/JSON)"
     ],
-    cta: "Choose Pro",
+    cta: "Choisir Pro",
     highlighted: true,
   },
   {
@@ -44,14 +44,14 @@ const plans = [
     name: "Business",
     price: "10,000 FCFA",
     features: [
-      "10,000 AI messages / month",
-      "Everything in Pro",
-      "Dedicated account manager",
-      "Custom API integrations",
-      "Audit logs & Security",
-      "Team training sessions"
+      "10,000 messages IA / mois",
+      "Tout ce qui est dans Pro",
+      "Gestionnaire de compte dédié",
+      "Intégrations API personnalisées",
+      "Logs d'audit & Sécurité",
+      "Sessions de formation d'équipe"
     ],
-    cta: "Choose Business",
+    cta: "Choisir Business",
     highlighted: false,
   },
 ]
@@ -72,10 +72,10 @@ export function BillingPlans() {
       if (response.url) {
         window.location.href = response.url
       } else {
-        toast.error("Unable to initialize payment")
+        toast.error("Impossible d'initialiser le paiement")
       }
     } catch (error) {
-      toast.error("An unexpected error occurred")
+      toast.error("Une erreur inattendue est survenue")
     } finally {
       setLoading(null)
     }
@@ -90,14 +90,14 @@ export function BillingPlans() {
         )}>
           {plan.highlighted && (
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-              Most Popular
+              Le plus populaire
             </div>
           )}
           <CardHeader className="p-6 pb-0">
             <CardTitle className="text-sm font-medium text-muted-foreground uppercase">{plan.name}</CardTitle>
             <div className="mt-2 flex items-baseline gap-1">
               <span className="text-3xl font-bold">{plan.price}</span>
-              <span className="text-xs text-muted-foreground">/mo</span>
+              <span className="text-xs text-muted-foreground">/mois</span>
             </div>
           </CardHeader>
           <CardContent className="p-6 flex-1">

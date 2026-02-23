@@ -157,12 +157,12 @@ export const api = {
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    updateAnimatorTask: (taskId: number, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${taskId}`, {
+    updateAnimatorTask: (taskId: number, data: any, token?: string) => fetchApi(`/api/v1/moderation/animator/${taskId}`, {
       method: "PUT",
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    deleteAnimatorTask: (taskId: number, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${taskId}`, {
+    deleteAnimatorTask: (taskId: number, token?: string) => fetchApi(`/api/v1/moderation/animator/${taskId}`, {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),

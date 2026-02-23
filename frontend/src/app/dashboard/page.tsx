@@ -38,7 +38,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 
 const sessionSchema = z.object({
-  sessionId: z.string().min(3, "Session ID must be at least 3 characters").regex(/^[a-z0-9-]+$/, "Only lowercase, numbers and hyphens allowed"),
+  sessionId: z.string().min(3, "L'ID de session doit comporter au moins 3 caractères").regex(/^[a-z0-9-]+$/, "Seuls les minuscules, les chiffres et les traits d'union sont autorisés"),
   phoneNumber: z.string().optional(),
 })
 
@@ -137,7 +137,7 @@ export default function DashboardPage() {
             const newStatus = update.isConnected;
 
             if (!oldStatus && newStatus) {
-              toast.success(`Session ${update.sessionId} connected successfully!`);
+              toast.success(`Session ${update.sessionId} connectée avec succès !`);
               confetti({
                 particleCount: 150,
                 spread: 70,
@@ -166,16 +166,16 @@ export default function DashboardPage() {
   }, [lastMessage, selectedSessionId])
 
   const onCreateSession = async (values: z.infer<typeof sessionSchema>) => {
-    const t = toast.loading("Creating session...")
+    const t = toast.loading("Création de la session...")
     try {
       const token = await getToken()
       await api.sessions.create(values.sessionId, values.phoneNumber || undefined, token || undefined)
-      toast.success("Session created!", { id: t })
+      toast.success("Session créée !", { id: t })
       setIsCreateOpen(false)
       form.reset()
       fetchSessions()
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
-    } catch (e) { toast.error("Creation failed", { id: t }) }
+    } catch (e) { toast.error("Échec de la création", { id: t }) }
   }
 
   const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
@@ -184,23 +184,23 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Overview</h1>
-          <p className="text-sm text-muted-foreground">Manage your sessions and monitor activity.</p>
+          <h1 className="text-xl font-semibold">Vue d&apos;ensemble</h1>
+          <p className="text-sm text-muted-foreground">Gérez vos sessions et surveillez l&apos;activité.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Sessions" value={sessions.length} />
-        <StatCard label="Success Rate" value={`${summary.successRate}%`} />
-        <StatCard label="Messages Sent" value={summary.messagesSent} />
-        {userRole === 'admin' && <StatCard label="System Activities" value={summary.totalActivities} />}
+        <StatCard label="Taux de succès" value={`${summary.successRate}%`} />
+        <StatCard label="Messages envoyés" value={summary.messagesSent} />
+        {userRole === 'admin' && <StatCard label="Activités Système" value={summary.totalActivities} />}
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
             <SelectTrigger className="flex-1 sm:w-48 h-9 text-xs">
-              <SelectValue placeholder="Select Session" />
+              <SelectValue placeholder="Sélectionner une session" />
             </SelectTrigger>
             <SelectContent>
               {sessions.map((s) => (
@@ -215,12 +215,12 @@ export default function DashboardPage() {
                 ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
                 : "bg-muted text-muted-foreground"
             )}>
-              {selectedSession.isConnected ? "Active" : "Offline"}
+              {selectedSession.isConnected ? "Connecté" : "Hors ligne"}
             </Badge>
           )}
         </div>
         <Button size="sm" className="w-full sm:w-auto h-9" onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> New Session
+          <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
         </Button>
       </div>
 
@@ -241,8 +241,8 @@ export default function DashboardPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onCreateSession)} className="space-y-6">
               <SheetHeader>
-                <SheetTitle>New WhatsApp Session</SheetTitle>
-                <SheetDescription>Create a new instance to start sending messages.</SheetDescription>
+                <SheetTitle>Nouvelle Session WhatsApp</SheetTitle>
+                <SheetDescription>Créez une nouvelle instance pour commencer à envoyer des messages.</SheetDescription>
               </SheetHeader>
 
               <div className="space-y-4 py-4">
@@ -251,11 +251,11 @@ export default function DashboardPage() {
                   name="sessionId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase">Session ID</FormLabel>
-                      <FormControl><Input placeholder="e.g. marketing-dept" {...field} className="h-9" /></FormControl>
+                      <FormLabel className="text-xs uppercase">Identifiant de session</FormLabel>
+                      <FormControl><Input placeholder="ex: departement-marketing" {...field} className="h-9" /></FormControl>
                       <FormMessage className="text-[10px]" />
                       <div className="flex flex-wrap gap-2 pt-1">
-                        {['marketing', 'support', 'alerts'].map(s => (
+                        {['marketing', 'support', 'alertes'].map(s => (
                           <button key={s} type="button" onClick={() => field.onChange(`${s}-${Math.floor(Math.random()*900)+100}`)} className="text-[10px] px-2 py-1 rounded bg-muted hover:bg-primary/10 transition-colors">+ {s}</button>
                         ))}
                       </div>
@@ -267,7 +267,7 @@ export default function DashboardPage() {
                   name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase">Phone Number (Optional)</FormLabel>
+                      <FormLabel className="text-xs uppercase">Numéro de téléphone (Optionnel)</FormLabel>
                       <FormControl><Input placeholder="237..." {...field} className="h-9" /></FormControl>
                       <FormMessage className="text-[10px]" />
                     </FormItem>
@@ -276,9 +276,9 @@ export default function DashboardPage() {
               </div>
 
               <SheetFooter>
-                <Button variant="ghost" type="button" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button variant="ghost" type="button" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
                 <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Creating..." : "Create Session"}
+                  {form.formState.isSubmitting ? "Création..." : "Créer la session"}
                 </Button>
               </SheetFooter>
             </form>
@@ -309,17 +309,17 @@ function ActivityCard({ activities, loading }: { activities: any[]; loading: boo
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
           </span>
-          <p className="text-sm font-medium">Live Activities</p>
+          <p className="text-sm font-medium">Activités en direct</p>
         </div>
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y">
           {loading ? (
-            <div className="p-4 text-xs text-muted-foreground">Loading...</div>
+            <div className="p-4 text-xs text-muted-foreground">Chargement...</div>
           ) : activities.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Activity className="h-8 w-8 text-muted-foreground/40 mb-3" />
-              <p className="text-xs text-muted-foreground">No recent activity</p>
+              <p className="text-xs text-muted-foreground">Aucune activité récente</p>
             </div>
           ) : (
             activities.map((a, i) => (
@@ -336,7 +336,7 @@ function ActivityCard({ activities, loading }: { activities: any[]; loading: boo
           )}
         </div>
         <Link href="/dashboard/activities" className="block w-full p-2 text-center text-[10px] font-medium text-muted-foreground hover:text-foreground border-t">
-          View All Activities
+          Voir tout l&apos;historique
         </Link>
       </CardContent>
     </Card>

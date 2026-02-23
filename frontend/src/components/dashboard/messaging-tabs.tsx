@@ -78,20 +78,20 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
         case 'audio': setAudioUrl(url); break;
         case 'video': setVideoUrl(url); break;
       }
-      toast.success("File uploaded successfully")
+      toast.success("Fichier mis en ligne avec succès")
     } catch (error: any) {
-      toast.error("Upload failed")
+      toast.error("Échec de la mise en ligne")
     } finally {
       setUploading(false)
     }
   }
 
   const handleSend = async () => {
-    if (!session || !isConnected) return toast.error("Session not connected")
-    if (!to) return toast.error("Recipient required")
+    if (!session || !isConnected) return toast.error("Session non connectée")
+    if (!to) return toast.error("Destinataire requis")
 
     setLoading(true)
-    const toastId = toast.loading("Sending message...")
+    const toastId = toast.loading("Envoi du message...")
 
     try {
       let payload: any = { to }
@@ -108,11 +108,11 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
       }
 
       await api.messages.send(session.sessionId, payload, session.token)
-      toast.success("Message sent!", { id: toastId })
+      toast.success("Message envoyé !", { id: toastId })
       confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } })
       if (activeTab === 'text') setMessage("")
     } catch (error: any) {
-      toast.error("Send failed", { id: toastId, description: error.message })
+      toast.error("Échec de l'envoi", { id: toastId, description: error.message })
     } finally {
       setLoading(false)
     }
@@ -123,13 +123,13 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
       <CardHeader className="p-4 border-b">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-sm font-semibold">Direct Messaging</CardTitle>
-            <CardDescription className="text-xs">Send messages instantly via WhatsApp.</CardDescription>
+            <CardTitle className="text-sm font-semibold">Messagerie directe</CardTitle>
+            <CardDescription className="text-xs">Envoyez des messages instantanément via WhatsApp.</CardDescription>
           </div>
           <div className="relative w-full sm:w-64">
             <Smartphone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Recipient (e.g. 237...)"
+              placeholder="Destinataire (ex: 237...)"
               className="pl-8 h-9 text-sm"
               value={to}
               onChange={(e) => setTo(e.target.value)}
@@ -142,11 +142,11 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
         <div className="px-4 py-2 border-b bg-muted/30 overflow-x-auto no-scrollbar">
           <TabsList className="bg-transparent h-auto p-0 gap-6 flex w-max min-w-full">
             {[
-              { value: "text", icon: Type, label: "Text" },
+              { value: "text", icon: Type, label: "Texte" },
               { value: "image", icon: ImageIcon, label: "Image" },
               { value: "document", icon: FileText, label: "Doc" },
               { value: "audio", icon: Mic, label: "Audio" },
-              { value: "video", icon: Video, label: "Video" },
+              { value: "video", icon: Video, label: "Vidéo" },
             ].map((tab) => (
               <TabsTrigger
                 key={tab.value}
@@ -164,7 +164,7 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
           <div className="min-h-[200px]">
             <TabsContent value="text" className="mt-0">
               <Textarea
-                placeholder="Type your message..."
+                placeholder="Écrivez votre message..."
                 className="min-h-[150px] text-sm"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -174,7 +174,7 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
             <TabsContent value="image" className="mt-0 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs">Image URL</Label>
+                  <Label className="text-xs">URL de l'image</Label>
                   <div className="flex gap-2">
                     <Input placeholder="https://..." value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="h-9 text-sm" />
                     <input type="file" accept="image/*" className="hidden" id="img-up" onChange={(e) => handleFileUpload(e, 'image')} />
@@ -184,17 +184,17 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs">Caption</Label>
-                  <Input placeholder="Optional..." value={imageCaption} onChange={(e) => setImageCaption(e.target.value)} className="h-9 text-sm" />
+                  <Label className="text-xs">Légende</Label>
+                  <Input placeholder="Optionnel..." value={imageCaption} onChange={(e) => setImageCaption(e.target.value)} className="h-9 text-sm" />
                 </div>
               </div>
-              {imageUrl && <img src={imageUrl} alt="Preview" className="h-32 rounded-md border object-cover" />}
+              {imageUrl && <img src={imageUrl} alt="Aperçu" className="h-32 rounded-md border object-cover" />}
             </TabsContent>
 
             <TabsContent value="document" className="mt-0 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs">File URL</Label>
+                  <Label className="text-xs">URL du fichier</Label>
                   <div className="flex gap-2">
                     <Input placeholder="https://..." value={docUrl} onChange={(e) => setDocUrl(e.target.value)} className="h-9 text-sm" />
                     <input type="file" className="hidden" id="doc-up" onChange={(e) => handleFileUpload(e, 'document')} />
@@ -204,8 +204,8 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs">File Name</Label>
-                  <Input placeholder="file.pdf" value={docName} onChange={(e) => setDocName(e.target.value)} className="h-9 text-sm" />
+                  <Label className="text-xs">Nom du fichier</Label>
+                  <Input placeholder="fichier.pdf" value={docName} onChange={(e) => setDocName(e.target.value)} className="h-9 text-sm" />
                 </div>
               </div>
             </TabsContent>
@@ -213,7 +213,7 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
             <TabsContent value="audio" className="mt-0 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs">Audio URL</Label>
+                  <Label className="text-xs">URL de l'audio</Label>
                   <div className="flex gap-2">
                     <Input placeholder="https://..." value={audioUrl} onChange={(e) => setAudioUrl(e.target.value)} className="h-9 text-sm" />
                     <input type="file" accept="audio/*" className="hidden" id="aud-up" onChange={(e) => handleFileUpload(e, 'audio')} />
@@ -224,7 +224,7 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
                 </div>
                 <div className="flex items-center gap-2 pt-8">
                   <Switch checked={isPtt} onCheckedChange={setIsPtt} />
-                  <Label className="text-xs">Voice Note (PTT)</Label>
+                  <Label className="text-xs">Note vocale (PTT)</Label>
                 </div>
               </div>
             </TabsContent>
@@ -232,7 +232,7 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
             <TabsContent value="video" className="mt-0 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs">Video URL</Label>
+                  <Label className="text-xs">URL de la vidéo</Label>
                   <div className="flex gap-2">
                     <Input placeholder="https://..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="h-9 text-sm" />
                     <input type="file" accept="video/*" className="hidden" id="vid-up" onChange={(e) => handleFileUpload(e, 'video')} />
@@ -242,8 +242,8 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs">Caption</Label>
-                  <Input placeholder="Optional..." value={videoCaption} onChange={(e) => setVideoCaption(e.target.value)} className="h-9 text-sm" />
+                  <Label className="text-xs">Légende</Label>
+                  <Input placeholder="Optionnel..." value={videoCaption} onChange={(e) => setVideoCaption(e.target.value)} className="h-9 text-sm" />
                 </div>
               </div>
             </TabsContent>
@@ -251,11 +251,11 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
 
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
             <Button variant="ghost" size="sm" onClick={() => { setMessage(""); setImageUrl(""); setDocUrl(""); setAudioUrl(""); setVideoUrl(""); }}>
-              Clear
+              Effacer
             </Button>
             <Button size="sm" onClick={handleSend} disabled={loading || !isConnected || !to}>
               {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin mr-2" /> : <SendHorizontal className="h-3.5 w-3.5 mr-2" />}
-              Send Message
+              Envoyer le message
             </Button>
           </div>
         </CardContent>

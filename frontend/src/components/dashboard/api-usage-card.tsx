@@ -32,7 +32,7 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
     "type": "image",
     "image": {
       "link": "https://example.com/image.jpg",
-      "caption": "Check this out!"
+      "caption": "Regardez ça !"
     }
   }'`
       case "video":
@@ -40,7 +40,7 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
     "type": "video",
     "video": {
       "link": "https://example.com/video.mp4",
-      "caption": "Watch this!"
+      "caption": "Visionnez ceci !"
     }
   }'`
       case "audio":
@@ -61,7 +61,7 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
       default:
         return `${base}
     "type": "text",
-    "text": "Hello from Whappi API!"
+    "text": "Bonjour de l'API Whappi !"
   }'`
     }
   }
@@ -73,7 +73,7 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
     if (success) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      toast.success("Copied to clipboard")
+      toast.success("Copié dans le presse-papier")
     }
   }
 
@@ -86,13 +86,13 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
               <Terminal className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium">API Example</p>
-              <p className="text-xs text-muted-foreground">cURL implementation</p>
+              <p className="text-sm font-medium">Exemple d'API</p>
+              <p className="text-xs text-muted-foreground">Implémentation cURL</p>
             </div>
           </div>
           <Button variant="outline" size="sm" className="h-8 gap-2" onClick={copyToClipboard}>
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            {copied ? "Copied" : "Copy"}
+            {copied ? "Copié" : "Copier"}
           </Button>
         </div>
       </CardHeader>

@@ -35,11 +35,11 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
               <Coins className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium">Wallet</p>
-              <p className="text-xs text-muted-foreground">AI Credits</p>
+              <p className="text-sm font-medium">Portefeuille</p>
+              <p className="text-xs text-muted-foreground">Crédits IA</p>
             </div>
           </div>
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="text-xs uppercase">
             {credits.plan}
           </Badge>
         </div>
@@ -47,16 +47,16 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
 
       <CardContent className="p-4 space-y-6">
         <div className="text-center py-4 bg-muted/30 rounded-lg border">
-          <p className="text-xs text-muted-foreground font-medium">Current Balance</p>
+          <p className="text-xs text-muted-foreground font-medium">Solde actuel</p>
           <div className="flex items-baseline justify-center gap-1 mt-1">
             <span className="text-3xl font-bold text-primary">{credits.balance}</span>
-            <span className="text-xs text-muted-foreground">credits</span>
+            <span className="text-xs text-muted-foreground">crédits</span>
           </div>
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-medium">
-            <span className="text-muted-foreground">Usage</span>
+            <span className="text-muted-foreground">Utilisation</span>
             <span className={usagePercentage > 80 ? "text-destructive" : "text-primary"}>
               {usagePercentage}%
             </span>
@@ -69,10 +69,10 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                 <History className="h-3.5 w-3.5" />
-                Recent Activity
+                Activité récente
               </p>
               <Link href="/dashboard/credits" className="text-xs font-medium text-primary hover:underline">
-                View all
+                Voir tout
               </Link>
             </div>
             <div className="space-y-2">
@@ -101,7 +101,7 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
         <Button asChild className="w-full h-9 gap-2" size="sm">
           <Link href="/dashboard/billing">
             <Zap className="h-3.5 w-3.5" />
-            Upgrade Plan
+            Améliorer le forfait
           </Link>
         </Button>
       </CardContent>
