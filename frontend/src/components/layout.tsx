@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useUser, UserButton, useClerk, useAuth } from "@clerk/nextjs"
+import { useTheme } from "next-themes"
 import {
   LayoutDashboard,
   History,
@@ -20,6 +21,8 @@ import {
   UserCircle,
   LogOut,
   ChevronDown,
+  Sun,
+  Moon,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -116,6 +119,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
   const { getToken } = useAuth()
+  const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
   const userEmail = user?.primaryEmailAddress?.emailAddress
@@ -194,6 +198,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex items-center gap-4">
               <LiveIndicator />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
               <button className="text-muted-foreground hover:text-foreground transition-colors"><Bell className="h-5 w-5" /></button>
               <UserButton afterSignOutUrl="/login" />
             </div>

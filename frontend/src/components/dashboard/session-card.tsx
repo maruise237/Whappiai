@@ -17,7 +17,15 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
   const [loading, setLoading] = React.useState(false)
   const [showToken, setShowToken] = React.useState(false)
   const [phoneNumber, setPhoneNumber] = React.useState("")
+  const [localQrCode, setLocalQrCode] = React.useState<string | null>(null)
+  const [localPairingCode, setLocalPairingCode] = React.useState<string | null>(null)
   const [activeTab, setActiveTab] = React.useState("qr")
+
+  // Reset local state when session changes
+  React.useEffect(() => {
+    setLocalQrCode(null)
+    setLocalPairingCode(null)
+  }, [session?.sessionId])
 
   const handleRequestPairingCode = async () => {
     if (!phoneNumber) {
@@ -29,20 +37,23 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     const toastId = toast.loading("Génération du code d'appairage...")
 
     try {
+      let response;
       if (!session) {
         const newSessionId = `session_${Math.random().toString(36).substring(2, 9)}`
-        await api.sessions.create(newSessionId, phoneNumber)
+        response = await api.sessions.create(newSessionId, phoneNumber)
         onRefresh()
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        })
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
       } else {
-        await api.sessions.create(session.sessionId, phoneNumber)
+        response = await api.sessions.create(session.sessionId, phoneNumber)
         onRefresh()
       }
-      toast.success("Demande envoyée", { id: toastId })
+
+      if (response && response.pairingCode) {
+        setLocalPairingCode(response.pairingCode)
+        toast.success("Code d'appairage reçu", { id: toastId })
+      } else {
+        toast.success("Demande envoyée, attendez le code...", { id: toastId })
+      }
     } catch (error: any) {
       toast.error("Échec de la demande", {
         id: toastId,
@@ -60,7 +71,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
   }
 
-  const handleRefresh = async () => {
+  const handleRefreshQr = async () => {
     if (!session) {
       onCreate()
       return
@@ -70,9 +81,15 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     const toastId = toast.loading("Génération du QR Code...")
 
     try {
-      await api.sessions.qr(session.sessionId)
-      onRefresh()
-      toast.success("QR Code généré", { id: toastId })
+      const response = await api.sessions.qr(session.sessionId)
+      if (response && response.qr) {
+        setLocalQrCode(response.qr)
+        toast.success("QR Code généré", { id: toastId })
+      } else {
+        // Fallback to refresh if not returned directly
+        onRefresh()
+        toast.success("Demande de QR Code envoyée", { id: toastId })
+      }
     } catch (error: any) {
       toast.error("Échec de la génération", {
         id: toastId,
@@ -97,7 +114,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     setLoading(true)
     const toastId = toast.loading("Suppression...")
     try {
-      await api.sessions.delete(session.sessionId, session.token)
+      await api.sessions.delete(session.sessionId)
       onRefresh()
       toast.success("Session supprimée", { id: toastId })
     } catch (error: any) {
@@ -107,9 +124,10 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
   }
 
+  // A session is connected if explicitly marked as isConnected and NOT currently generating/connecting
   const isConnected = session?.isConnected && !loading
-  const qrCode = session?.qr
-  const pairingCode = session?.pairingCode
+  const qrCode = localQrCode || session?.qr
+  const pairingCode = localPairingCode || session?.pairingCode
 
   if (!session) {
     return (
@@ -171,17 +189,17 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </TabsList>
 
               <TabsContent value="qr" className="flex flex-col items-center space-y-4">
-                <div className="relative aspect-square w-48 border rounded-lg flex items-center justify-center bg-muted/20">
+                <div className="relative aspect-square w-48 border rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden">
                   {qrCode ? (
-                    <img src={qrCode} alt="QR Code" className="w-full h-full p-2 bg-white rounded-md" />
+                    <img src={qrCode} alt="QR Code" className="w-full h-full p-2 bg-white rounded-md object-contain" />
                   ) : (
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
                       <RefreshCw className={cn("h-6 w-6", loading && "animate-spin")} />
-                      <span className="text-[10px] font-medium">Generating...</span>
+                      <span className="text-[10px] font-medium">{loading ? "Generating..." : "Click refresh to get a QR code"}</span>
                     </div>
                   )}
                 </div>
-                <Button size="sm" variant="outline" onClick={handleRefresh} disabled={loading}>
+                <Button size="sm" variant="outline" onClick={handleRefreshQr} disabled={loading}>
                   <RefreshCw className={cn("h-3.5 w-3.5 mr-2", loading && "animate-spin")} />
                   Refresh QR
                 </Button>
@@ -203,7 +221,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   </div>
                 </div>
 
-                {pairingCode && (
+                {pairingCode ? (
                   <div className="p-4 rounded-lg bg-muted border flex flex-col items-center space-y-3">
                     <p className="text-xs font-medium text-muted-foreground">Your Pairing Code</p>
                     <div className="flex gap-1">
@@ -218,6 +236,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                       Copy Code
                     </Button>
                   </div>
+                ) : (
+                   <div className="p-8 text-center border border-dashed rounded-lg bg-muted/20">
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                         {loading ? "Requesting code..." : "Enter number to link manually"}
+                      </p>
+                   </div>
                 )}
               </TabsContent>
             </Tabs>

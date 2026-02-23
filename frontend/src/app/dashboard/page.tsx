@@ -55,6 +55,7 @@ export default function DashboardPage() {
 
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
+  const { lastMessage } = useWebSocket()
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
@@ -109,7 +110,60 @@ export default function DashboardPage() {
     fetchSessions()
     fetchRecentActivities()
     fetchCredits()
+
+    const interval = setInterval(() => {
+      fetchSessions()
+      fetchRecentActivities()
+      fetchCredits()
+    }, 30000)
+
+    return () => clearInterval(interval)
   }, [])
+
+  // Handle real-time updates
+  React.useEffect(() => {
+    if (!lastMessage) return
+
+    if (lastMessage.type === 'session-update') {
+      const updates = lastMessage.data
+      setSessions(prev => {
+        const sessionsMap = new Map(prev.map(s => [s.sessionId, s]));
+        let changed = false;
+
+        updates.forEach((update: any) => {
+          const existing = sessionsMap.get(update.sessionId);
+          if (existing) {
+            const oldStatus = existing.isConnected;
+            const newStatus = update.isConnected;
+
+            if (!oldStatus && newStatus) {
+              toast.success(`Session ${update.sessionId} connected successfully!`);
+              confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#10b981', '#34d399', '#6ee7b7', '#ffffff']
+              });
+            }
+
+            sessionsMap.set(update.sessionId, { ...existing, ...update });
+            changed = true;
+          } else {
+            sessionsMap.set(update.sessionId, update);
+            changed = true;
+          }
+        });
+
+        return changed ? Array.from(sessionsMap.values()) : prev;
+      });
+    } else if (lastMessage.type === 'session-deleted') {
+      const { sessionId } = lastMessage.data
+      setSessions(prev => prev.filter(s => s.sessionId !== sessionId))
+      if (selectedSessionId === sessionId) {
+        setSelectedSessionId(null)
+      }
+    }
+  }, [lastMessage, selectedSessionId])
 
   const onCreateSession = async (values: z.infer<typeof sessionSchema>) => {
     const t = toast.loading("Creating session...")
