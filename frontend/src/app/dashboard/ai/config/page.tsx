@@ -129,7 +129,7 @@ function AIConfigForm() {
   const modes = [
     { id: "bot", name: "Auto", desc: "100% IA", icon: Bot },
     { id: "hybrid", name: "Hybride", desc: "IA + Main", icon: Cpu },
-    { id: "human", name: "Suggest", desc: "Suggestion", icon: Users }
+    { id: "human", name: "Suggérer", desc: "Suggestion", icon: Users }
   ]
 
   return (

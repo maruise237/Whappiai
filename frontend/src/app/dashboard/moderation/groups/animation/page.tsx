@@ -222,6 +222,10 @@ function AnimationPageContent() {
                       <Textarea value={profileData.mission} onChange={e => setProfileData({...profileData, mission: e.target.value})} className="min-h-[80px]" />
                     </div>
                     <div className="space-y-2">
+                      <Label className="text-xs">Objectifs</Label>
+                      <Textarea value={profileData.objectives} onChange={e => setProfileData({...profileData, objectives: e.target.value})} className="min-h-[80px]" />
+                    </div>
+                    <div className="space-y-2">
                       <Label className="text-xs">Règles</Label>
                       <Textarea value={profileData.rules} onChange={e => setProfileData({...profileData, rules: e.target.value})} className="min-h-[80px]" />
                     </div>

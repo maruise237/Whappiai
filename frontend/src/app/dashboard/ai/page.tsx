@@ -15,6 +15,8 @@ import {
   Send,
   Loader2,
   BrainCircuit,
+  Trash2,
+  RefreshCcw,
 } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -65,6 +67,7 @@ export default function AIPage() {
   const [selectedChat, setSelectedChat] = React.useState<string | null>(null)
   const [history, setHistory] = React.useState<any[]>([])
   const [isChatLoading, setIsChatLoading] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
   const [isAdmin, setIsAdmin] = React.useState(false)
   
@@ -150,6 +153,40 @@ export default function AIPage() {
       toast.error("Erreur historique: " + (e.message || "Erreur inconnue"))
     } finally {
       setIsChatLoading(false)
+    }
+  }
+
+  const handleDeleteChat = async (e: React.MouseEvent, jid: string) => {
+    e.stopPropagation()
+    if (!selectedSessionMemory || !confirm("Supprimer toute cette conversation de la mémoire ?")) return
+
+    setIsDeleting(true)
+    try {
+      const token = await getToken()
+      await api.sessions.deleteChat(selectedSessionMemory, jid, token || undefined)
+      setConversations(prev => prev.filter(c => c.remote_jid !== jid))
+      if (selectedChat === jid) {
+        setSelectedChat(null)
+        setHistory([])
+      }
+      toast.success("Conversation oubliée")
+    } catch (e: any) {
+      toast.error("Échec de la suppression")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!selectedSessionMemory || !selectedChat || !confirm("Supprimer ce message ?")) return
+
+    try {
+      const token = await getToken()
+      await api.sessions.deleteMessage(selectedSessionMemory, selectedChat, messageId, token || undefined)
+      setHistory(prev => prev.filter(m => m.id !== messageId))
+      toast.success("Message supprimé")
+    } catch (e: any) {
+      toast.error("Échec de la suppression")
     }
   }
 
@@ -329,7 +366,12 @@ export default function AIPage() {
             <DialogDescription>Consultez les derniers échanges mémorisés par l&apos;IA Whappi.</DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 flex min-h-0 divide-x">
+          <div className="flex-1 flex min-h-0 divide-x relative">
+            {isDeleting && (
+              <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-50 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
             {/* Liste convos */}
             <div className="w-[300px] flex flex-col min-h-0">
               <ScrollArea className="flex-1">
@@ -338,13 +380,13 @@ export default function AIPage() {
                     <div className="p-8 text-center text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Vide</div>
                   ) : (
                     conversations.map(conv => (
-                      <button
+                      <div
                         key={conv.remote_jid}
-                        onClick={() => handleFetchHistory(conv.remote_jid)}
                         className={cn(
-                          "w-full p-4 text-left hover:bg-muted/50 transition-colors flex flex-col gap-1",
+                          "group relative w-full p-4 text-left hover:bg-muted/50 transition-colors cursor-pointer flex flex-col gap-1",
                           selectedChat === conv.remote_jid && "bg-muted"
                         )}
+                        onClick={() => handleFetchHistory(conv.remote_jid)}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold truncate">{conv.remote_jid.split('@')[0]}</span>
@@ -352,8 +394,16 @@ export default function AIPage() {
                             {new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate">{conv.last_message}</p>
-                      </button>
+                        <p className="text-[11px] text-muted-foreground truncate pr-6">{conv.last_message}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 bottom-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                          onClick={(e) => handleDeleteChat(e, conv.remote_jid)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     ))
                   )}
                 </div>
@@ -372,15 +422,24 @@ export default function AIPage() {
                   <ScrollArea className="flex-1 p-6">
                     <div className="space-y-6">
                       {history.map((msg, i) => (
-                        <div key={i} className={cn(
-                          "flex flex-col max-w-[85%]",
+                        <div key={msg.id || i} className={cn(
+                          "group flex flex-col max-w-[85%] relative",
                           msg.role === 'user' ? "mr-auto" : "ml-auto items-end"
                         )}>
                           <div className={cn(
-                            "rounded-lg p-3 text-xs shadow-sm",
+                            "rounded-lg p-3 text-xs shadow-sm relative",
                             msg.role === 'user' ? "bg-card border" : "bg-primary text-primary-foreground"
                           )}>
                             {msg.content}
+                            <button
+                              onClick={() => handleDeleteMessage(msg.id)}
+                              className={cn(
+                                "absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-white items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity flex shadow-sm hover:scale-110",
+                                msg.role !== 'user' && "-left-2 right-auto"
+                              )}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
                           </div>
                           <span className="text-[9px] text-muted-foreground mt-1 px-1">
                             {new Date(msg.created_at).toLocaleTimeString()}

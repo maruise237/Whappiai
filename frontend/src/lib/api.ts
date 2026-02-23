@@ -212,6 +212,14 @@ export const api = {
     getChatHistory: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    deleteChat: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}`, {
+      method: "DELETE",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    deleteMessage: (sessionId: string, jid: string, messageId: number, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}/${messageId}`, {
+      method: "DELETE",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
     getWebhooks: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/webhooks`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
