@@ -364,5 +364,18 @@ export const api = {
     stats: (token?: string) => fetchApi("/api/v1/stats", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+  },
+  notifications: {
+    list: (unreadOnly = false, token?: string) => fetchApi(`/api/v1/notifications?unread=${unreadOnly}`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    markAsRead: (id: string, token?: string) => fetchApi(`/api/v1/notifications/${id}/read`, {
+      method: "PUT",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    markAllAsRead: (token?: string) => fetchApi("/api/v1/notifications/read-all", {
+      method: "PUT",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   }
 };
