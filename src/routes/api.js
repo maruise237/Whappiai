@@ -16,6 +16,7 @@ const Session = require('../models/Session');
 const AIModel = require('../models/AIModel');
 const ActivityLog = require('../models/ActivityLog');
 const CreditService = require('../services/CreditService');
+const { db } = require('../config/database');
 // Security: csurf removed (deprecated) - use modern CSRF protection if needed
 
 const router = express.Router();
@@ -483,6 +484,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     router.get('/sessions/:sessionId/inbox', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         try {
+            log(`[API] Récupération de l'inbox pour la session: ${req.params.sessionId}`, 'SYSTEM');
             const conversations = db.prepare(`
                 SELECT remote_jid, MAX(created_at) as last_message_at,
                 (SELECT content FROM conversation_memory WHERE remote_jid = m.remote_jid AND session_id = m.session_id ORDER BY created_at DESC LIMIT 1) as last_message
@@ -491,8 +493,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 GROUP BY remote_jid
                 ORDER BY last_message_at DESC
             `).all(req.params.sessionId);
+            log(`[API] Inbox récupérée: ${conversations.length} conversations`, 'SYSTEM');
             res.json({ status: 'success', data: conversations });
         } catch (error) {
+            log(`[API] Erreur récupération inbox: ${error.message}`, 'SYSTEM', null, 'ERROR');
             res.status(500).json({ status: 'error', message: error.message });
         }
     });
@@ -843,34 +847,47 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Activity Log Endpoints
     router.get('/activities', checkSessionOrTokenAuth, async (req, res) => {
         try {
-            if (!activityLogger) return res.status(501).json({ status: 'error', message: 'Activity logger not initialized' });
+            if (!activityLogger) {
+                log(`[API] Activity logger non initialisé`, 'SYSTEM', null, 'ERROR');
+                return res.status(501).json({ status: 'error', message: 'Activity logger not initialized' });
+            }
 
             const limit = parseInt(req.query.limit) || 100;
             const offset = parseInt(req.query.offset) || 0;
 
+            log(`[API] Récupération des activités pour ${req.currentUser.email} (role: ${req.currentUser.role})`, 'SYSTEM');
+
             let logs;
             if (req.currentUser.role === 'admin') {
-                logs = await activityLogger.getLogs(limit, offset);
+                logs = activityLogger.getLogs(limit, offset);
             } else {
-                logs = await activityLogger.getUserLogs(req.currentUser.email, limit, offset);
+                logs = activityLogger.getUserLogs(req.currentUser.email, limit, offset);
             }
 
             res.json({ status: 'success', data: logs });
         } catch (err) {
+            log(`[API] Erreur activités: ${err.message}`, 'SYSTEM', null, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
 
     router.get('/activities/summary', checkSessionOrTokenAuth, async (req, res) => {
         try {
-            if (!activityLogger) return res.status(501).json({ status: 'error', message: 'Activity logger not initialized' });
+            if (!activityLogger) {
+                log(`[API] Activity logger non initialisé (summary)`, 'SYSTEM', null, 'ERROR');
+                return res.status(501).json({ status: 'error', message: 'Activity logger not initialized' });
+            }
+
+            const days = parseInt(req.query.days) || 7;
+            log(`[API] Résumé activités pour ${req.currentUser.email} (${days} jours)`, 'SYSTEM');
 
             // If admin, show global summary, else show user-specific summary
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
-            const summary = await activityLogger.getSummary(userEmail);
+            const summary = activityLogger.getSummary(userEmail, days);
 
             res.json({ status: 'success', data: summary });
         } catch (err) {
+            log(`[API] Erreur résumé activités: ${error.message}`, 'SYSTEM', null, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });

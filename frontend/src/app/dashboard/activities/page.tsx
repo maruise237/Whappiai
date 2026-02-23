@@ -51,8 +51,8 @@ export default function ActivitiesPage() {
       ])
       setActivities(activitiesData || [])
       setSummary(summaryData?.data || summaryData || summary)
-    } catch (error) {
-      toast.error("Échec du chargement des activités")
+    } catch (error: any) {
+      toast.error("Échec du chargement des activités: " + (error.message || "Erreur inconnue"))
     } finally {
       setIsLoading(false)
     }

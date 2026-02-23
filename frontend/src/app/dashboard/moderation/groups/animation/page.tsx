@@ -59,7 +59,7 @@ function AnimationPageContent() {
 
   React.useEffect(() => {
     const lower = searchQuery.toLowerCase();
-    setFilteredGroups(groups.filter(g => g.subject.toLowerCase().includes(lower)));
+    setFilteredGroups(groups.filter(g => (g.subject || g.name || '').toLowerCase().includes(lower)));
   }, [searchQuery, groups]);
 
   const handleSelectGroup = async (group: any) => {
@@ -170,7 +170,7 @@ function AnimationPageContent() {
                       selectedGroup?.id === g.id ? "bg-muted font-medium" : "hover:bg-muted/50 text-muted-foreground"
                     )}
                   >
-                    <span className="truncate flex-1">{g.subject}</span>
+                    <span className="truncate flex-1">{g.subject || g.name || 'Sans titre'}</span>
                     <ChevronRight className="h-3 w-3 opacity-50" />
                   </button>
                 ))}
