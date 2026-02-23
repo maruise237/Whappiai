@@ -10,6 +10,11 @@ import {
   Save,
   MoreVertical,
   Zap,
+  User,
+  Clock,
+  Send,
+  Loader2,
+  BrainCircuit,
 } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -44,6 +49,8 @@ import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import confetti from "canvas-confetti"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 
 export default function AIPage() {
   const { user, isLoaded } = useUser()
@@ -51,6 +58,12 @@ export default function AIPage() {
   const [items, setItems] = React.useState<any[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isQuickEditOpen, setIsQuickEditOpen] = React.useState(false)
+  const [isMemoryOpen, setIsMemoryOpen] = React.useState(false)
+  const [selectedSessionMemory, setSelectedSessionMemory] = React.useState<string | null>(null)
+  const [conversations, setConversations] = React.useState<any[]>([])
+  const [selectedChat, setSelectedChat] = React.useState<string | null>(null)
+  const [history, setHistory] = React.useState<any[]>([])
+  const [isChatLoading, setIsChatLoading] = React.useState(false)
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
   const [isAdmin, setIsAdmin] = React.useState(false)
   
@@ -109,6 +122,35 @@ export default function AIPage() {
   React.useEffect(() => {
     if (isLoaded && user) fetchData()
   }, [isLoaded, user, fetchData])
+
+  const handleOpenMemory = async (sessionId: string) => {
+    setSelectedSessionMemory(sessionId)
+    setIsMemoryOpen(true)
+    setSelectedChat(null)
+    setHistory([])
+    try {
+      const token = await getToken()
+      const response = await api.sessions.getInbox(sessionId, token || undefined)
+      setConversations(response || [])
+    } catch (e) {
+      toast.error("Échec du chargement de la mémoire")
+    }
+  }
+
+  const handleFetchHistory = async (jid: string) => {
+    if (!selectedSessionMemory) return
+    setIsChatLoading(true)
+    try {
+      const token = await getToken()
+      const response = await api.sessions.getChatHistory(selectedSessionMemory, jid, token || undefined)
+      setHistory(response || [])
+      setSelectedChat(jid)
+    } catch (e) {
+      toast.error("Erreur historique")
+    } finally {
+      setIsChatLoading(false)
+    }
+  }
 
   const handleOpenQuickEdit = (item: any) => {
     setFormData({
@@ -193,6 +235,9 @@ export default function AIPage() {
                     <DropdownMenuItem onClick={() => handleOpenQuickEdit(item)}>
                       <Settings2 className="h-4 w-4 mr-2" /> Modification rapide
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleOpenMemory(item.sessionId)}>
+                      <MessageSquare className="h-4 w-4 mr-2" /> Voir la mémoire
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href={`/dashboard/ai/config?session=${item.sessionId}`}>
                         <Zap className="h-4 w-4 mr-2" /> Config avancée
@@ -269,6 +314,91 @@ export default function AIPage() {
             </Button>
             <Button onClick={handleSave} className="flex-1">Enregistrer</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Mémoire IA */}
+      <Dialog open={isMemoryOpen} onOpenChange={setIsMemoryOpen}>
+        <DialogContent className="sm:max-w-[900px] h-[80vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <BrainCircuit className="h-5 w-5 text-primary" />
+              Mémoire de l&apos;IA : {selectedSessionMemory}
+            </DialogTitle>
+            <DialogDescription>Consultez les derniers échanges mémorisés par l&apos;IA Whappi.</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 flex min-h-0 divide-x">
+            {/* Liste convos */}
+            <div className="w-[300px] flex flex-col min-h-0">
+              <ScrollArea className="flex-1">
+                <div className="divide-y">
+                  {conversations.length === 0 ? (
+                    <div className="p-8 text-center text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Vide</div>
+                  ) : (
+                    conversations.map(conv => (
+                      <button
+                        key={conv.remote_jid}
+                        onClick={() => handleFetchHistory(conv.remote_jid)}
+                        className={cn(
+                          "w-full p-4 text-left hover:bg-muted/50 transition-colors flex flex-col gap-1",
+                          selectedChat === conv.remote_jid && "bg-muted"
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold truncate">{conv.remote_jid.split('@')[0]}</span>
+                          <span className="text-[9px] text-muted-foreground">
+                            {new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate">{conv.last_message}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Chat history */}
+            <div className="flex-1 flex flex-col min-h-0 bg-muted/5">
+              {!selectedChat ? (
+                <div className="flex-1 flex items-center justify-center text-muted-foreground/30 flex-col gap-2">
+                  <MessageSquare className="h-10 w-10" />
+                  <p className="text-xs">Sélectionnez un contact</p>
+                </div>
+              ) : (
+                <>
+                  <ScrollArea className="flex-1 p-6">
+                    <div className="space-y-6">
+                      {history.map((msg, i) => (
+                        <div key={i} className={cn(
+                          "flex flex-col max-w-[85%]",
+                          msg.role === 'user' ? "mr-auto" : "ml-auto items-end"
+                        )}>
+                          <div className={cn(
+                            "rounded-lg p-3 text-xs shadow-sm",
+                            msg.role === 'user' ? "bg-card border" : "bg-primary text-primary-foreground"
+                          )}>
+                            {msg.content}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground mt-1 px-1">
+                            {new Date(msg.created_at).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      ))}
+                      {isChatLoading && <div className="py-4 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></div>}
+                    </div>
+                  </ScrollArea>
+                  <div className="p-4 border-t bg-card">
+                    <div className="flex gap-2">
+                      <Input placeholder="Répondre sur WhatsApp..." className="h-9 text-xs" />
+                      <Button size="icon" className="h-9 w-9 shrink-0"><Send className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

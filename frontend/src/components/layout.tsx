@@ -43,7 +43,6 @@ import { Logo } from "@/components/ui/logo"
 
 const navigation = [
   { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Inbox & IA", href: "/dashboard/inbox", icon: MessageSquare },
   { name: "Activités", href: "/dashboard/activities", icon: History, adminOnly: true },
   { name: "Assistant IA", href: "/dashboard/ai", icon: Bot },
   { name: "Gestion des Groupes", href: "/dashboard/moderation", icon: Shield },
