@@ -77,7 +77,7 @@ export function LogViewer() {
             onClick={() => setExpandedLogs(prev => ({ ...prev, [index]: !prev[index] }))}
             className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
-            {isExpanded ? <>Show less <ChevronUp className="h-3 w-3" /></> : <>Show more <ChevronDown className="h-3 w-3" /></>}
+            {isExpanded ? <>Voir moins <ChevronUp className="h-3 w-3" /></> : <>Voir plus <ChevronDown className="h-3 w-3" /></>}
           </button>
         )}
       </div>
@@ -99,14 +99,14 @@ export function LogViewer() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Terminal className="h-4 w-4 text-muted-foreground" />
-            <CardTitle className="text-sm font-semibold">System Logs</CardTitle>
+            <CardTitle className="text-sm font-semibold">Logs Système</CardTitle>
             <Badge variant="secondary" className="text-[10px]">{logs.length}</Badge>
           </div>
           <div className="flex flex-1 items-center gap-2 max-w-md">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Filter logs..."
+                placeholder="Filtrer les logs..."
                 className="pl-8 h-8 text-xs"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -114,13 +114,13 @@ export function LogViewer() {
             </div>
             <Select value={levelFilter} onValueChange={setLevelFilter}>
               <SelectTrigger className="w-24 h-8 text-xs">
-                <SelectValue placeholder="Level" />
+                <SelectValue placeholder="Niveau" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="warn">Warn</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
+                <SelectItem value="warn">Avertissement</SelectItem>
+                <SelectItem value="error">Erreur</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsAutoScroll(!isAutoScroll)}>
@@ -138,7 +138,7 @@ export function LogViewer() {
             {filteredLogs.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-muted-foreground/40">
                 <Terminal className="h-8 w-8 mb-2 opacity-20" />
-                <p className="text-xs">No logs available</p>
+                <p className="text-xs">Aucun log disponible</p>
               </div>
             ) : (
               filteredLogs.map((log, i) => (

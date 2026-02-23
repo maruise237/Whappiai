@@ -37,9 +37,9 @@ import {
 } from "@/components/ui/dialog"
 
 const sections = [
-  { id: "general", label: "General", icon: UserIcon },
+  { id: "general", label: "Général", icon: UserIcon },
   { id: "contact", label: "Contact & Bio", icon: Sparkles },
-  { id: "account", label: "Account Management", icon: Settings },
+  { id: "account", label: "Gestion du compte", icon: Settings },
 ]
 
 export default function ProfilePage() {
@@ -69,11 +69,11 @@ export default function ProfilePage() {
       setUser(data)
       setFormData({
         phone: data.phone || "",
-        location: data.location || "",
+        location: data.location || "" ,
         bio: data.bio || ""
       })
     } catch (error) {
-      toast.error("Failed to load profile")
+      toast.error("Échec du chargement du profil")
     } finally {
       setLoading(false)
     }
@@ -87,26 +87,26 @@ export default function ProfilePage() {
     try {
       const token = await getToken()
       await api.users.updateProfile(formData, token || undefined)
-      toast.success("Profile updated")
+      toast.success("Profil mis à jour")
     } catch (error) {
-      toast.error("Update failed")
+      toast.error("Échec de la mise à jour")
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (deleteConfirm !== "DELETE") return
+    if (deleteConfirm !== "SUPPRIMER") return
     try {
       const token = await getToken()
       await api.users.delete(user.email, token || undefined)
       await signOut(() => router.push("/login"))
     } catch (error) {
-      toast.error("Delete failed")
+      toast.error("Échec de la suppression")
     }
   }
 
-  if (loading) return <div className="p-8 text-center">Loading profile...</div>
+  if (loading) return <div className="p-8 text-center">Chargement du profil...</div>
 
   const userEmail = clerkUser?.primaryEmailAddress?.emailAddress || user?.email
   const userName = clerkUser?.firstName || user?.name || userEmail?.split('@')[0]
@@ -148,12 +148,12 @@ export default function ProfilePage() {
             <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">General Information</CardTitle>
+                  <CardTitle className="text-sm font-medium">Informations générales</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <Label className="text-[10px] uppercase text-muted-foreground">Name</Label>
+                      <Label className="text-[10px] uppercase text-muted-foreground">Nom</Label>
                       <Input value={userName} readOnly className="h-9 bg-muted/50" />
                     </div>
                     <div className="space-y-1">
@@ -163,15 +163,15 @@ export default function ProfilePage() {
                   </div>
                   <div className="p-3 rounded-md bg-amber-500/5 border border-amber-500/10 flex items-center gap-3">
                     <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    <p className="text-xs text-amber-700">Account details are managed via Clerk.</p>
+                    <p className="text-xs text-amber-700">Les détails du compte sont gérés via Clerk.</p>
                   </div>
                 </CardContent>
               </Card>
 
               <div className="grid grid-cols-3 gap-4">
-                <StatCard label="Status" value="Active" />
-                <StatCard label="Verification" value="Verified" />
-                <StatCard label="Member Since" value={new Date(user?.createdAt || Date.now()).getFullYear()} />
+                <StatCard label="Statut" value="Actif" />
+                <StatCard label="Vérification" value="Vérifié" />
+                <StatCard label="Membre depuis" value={new Date(user?.createdAt || Date.now()).getFullYear()} />
               </div>
             </div>
           )}
@@ -180,27 +180,27 @@ export default function ProfilePage() {
             <form onSubmit={handleUpdate} className="space-y-6 animate-in fade-in slide-in-from-top-2">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">Contact Details & Bio</CardTitle>
+                  <CardTitle className="text-sm font-medium">Coordonnées & Bio</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <Label className="text-[10px] uppercase text-muted-foreground">Phone</Label>
-                      <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="h-9" placeholder="+1..." />
+                      <Label className="text-[10px] uppercase text-muted-foreground">Téléphone</Label>
+                      <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="h-9" placeholder="+33..." />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] uppercase text-muted-foreground">Location</Label>
-                      <Input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="h-9" placeholder="City, Country" />
+                      <Label className="text-[10px] uppercase text-muted-foreground">Localisation</Label>
+                      <Input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="h-9" placeholder="Ville, Pays" />
                     </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] uppercase text-muted-foreground">Bio</Label>
-                    <Textarea value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} className="min-h-[100px]" placeholder="Tell us about yourself..." />
+                    <Textarea value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} className="min-h-[100px]" placeholder="Parlez-nous de vous..." />
                   </div>
                 </CardContent>
                 <CardFooter className="border-t p-4 flex justify-end">
                   <Button size="sm" type="submit" disabled={isSaving}>
-                    <Save className="h-4 w-4 mr-2" /> Save Profile
+                    <Save className="h-4 w-4 mr-2" /> Enregistrer le profil
                   </Button>
                 </CardFooter>
               </Card>
@@ -211,12 +211,12 @@ export default function ProfilePage() {
             <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">Security & Access</CardTitle>
+                  <CardTitle className="text-sm font-medium">Sécurité & Accès</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex gap-4">
                     <Button variant="outline" size="sm" onClick={() => signOut(() => router.push("/login"))}>
-                      <LogOut className="h-4 w-4 mr-2" /> Logout
+                      <LogOut className="h-4 w-4 mr-2" /> Déconnexion
                     </Button>
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/docs"><FileText className="h-4 w-4 mr-2" /> Documentation</Link>
@@ -226,11 +226,11 @@ export default function ProfilePage() {
                   <div className="pt-6 border-t border-destructive/20">
                     <div className="p-4 rounded-md bg-destructive/5 border border-destructive/10 flex items-center justify-between">
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-destructive">Danger Zone</p>
-                        <p className="text-xs text-muted-foreground">Permanently delete your account and all data.</p>
+                        <p className="text-sm font-medium text-destructive">Zone de danger</p>
+                        <p className="text-xs text-muted-foreground">Supprimer définitivement votre compte et toutes vos données.</p>
                       </div>
                       <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete Account
+                        <Trash2 className="h-4 w-4 mr-2" /> Supprimer le compte
                       </Button>
                     </div>
                   </div>
@@ -244,17 +244,17 @@ export default function ProfilePage() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
             <DialogDescription>
-              This action is irreversible. Please type <span className="font-bold text-foreground">DELETE</span> to confirm.
+              Cette action est irréversible. Veuillez taper <span className="font-bold text-foreground">SUPPRIMER</span> pour confirmer.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Input value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} placeholder="DELETE" className="h-10 text-center font-bold tracking-widest border-destructive/50" />
+            <Input value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} placeholder="SUPPRIMER" className="h-10 text-center font-bold tracking-widest border-destructive/50" />
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
-            <Button variant="destructive" disabled={deleteConfirm !== "DELETE"} onClick={handleDelete}>Permanently Delete Account</Button>
+            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)}>Annuler</Button>
+            <Button variant="destructive" disabled={deleteConfirm !== "SUPPRIMER"} onClick={handleDelete}>Supprimer définitivement le compte</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

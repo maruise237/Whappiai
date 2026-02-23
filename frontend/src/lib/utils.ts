@@ -46,22 +46,22 @@ export function getFriendlyErrorMessage(error: string | Error): string {
   const msg = typeof error === "string" ? error : error.message;
 
   if (msg.includes("409") || msg.toLowerCase().includes("already exists")) {
-    return "This Session ID is already in use. Please choose a unique name for your session.";
+    return "Cet ID de session est déjà utilisé. Veuillez choisir un nom unique pour votre session.";
   }
   if (msg.includes("401") || msg.toLowerCase().includes("unauthorized")) {
-    return "Your session has expired. Please log in again to continue.";
+    return "Votre session a expiré. Veuillez vous reconnecter pour continuer.";
   }
   if (msg.includes("403") || msg.toLowerCase().includes("forbidden")) {
-    return "You don't have permission to perform this action. Contact your administrator if you believe this is a mistake.";
+    return "Vous n'avez pas l'autorisation d'effectuer cette action. Contactez votre administrateur si vous pensez qu'il s'agit d'une erreur.";
   }
   if (msg.includes("400") || msg.toLowerCase().includes("bad request")) {
-    return "The information provided is invalid. Please check your inputs and try again.";
+    return "Les informations fournies sont invalides. Veuillez vérifier vos saisies et réessayer.";
   }
   if (msg.includes("500") || msg.toLowerCase().includes("internal server error")) {
-    return "The server encountered an issue. Please try again in a few moments.";
+    return "Le serveur a rencontré un problème. Veuillez réessayer dans quelques instants.";
   }
   if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
-    return "Connection error. Please check your internet connection and ensure the server is online.";
+    return "Erreur de connexion. Veuillez vérifier votre connexion internet et vous assurer que le serveur est en ligne.";
   }
 
   return msg;

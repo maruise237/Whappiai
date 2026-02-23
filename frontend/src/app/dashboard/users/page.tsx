@@ -59,8 +59,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 
 const userSchema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(6, "Min 6 characters").optional().or(z.literal('')),
+  email: z.string().email("Email invalide"),
+  password: z.string().min(6, "Minimum 6 caractères").optional().or(z.literal('')),
   role: z.enum(["user", "admin", "collaborateur"]),
   isActive: z.boolean(),
 })
@@ -112,25 +112,25 @@ export default function UsersPage() {
           isActive: values.isActive,
           password: values.password || undefined
         }, token || undefined)
-        toast.success("User updated")
+        toast.success("Utilisateur mis à jour")
       } else {
         await api.users.create(values, token || undefined)
-        toast.success("User created")
+        toast.success("Utilisateur créé")
       }
       setIsAddingUser(false)
       setEditingUser(null)
       form.reset()
       fetchUsers()
-    } catch (error: any) { toast.error(error.message || "Save failed") }
+    } catch (error: any) { toast.error(error.message || "Échec de l'enregistrement") }
   }
 
   const handleDeleteUser = async (email: string) => {
-    const res = await showConfirm("Delete user?", `Remove ${email}?`, "warning")
+    const res = await showConfirm("Supprimer l'utilisateur ?", `Supprimer ${email} ?`, "warning")
     if (!res.isConfirmed) return
     try {
       const token = await getToken()
       await api.users.delete(email, token || undefined)
-      toast.success("User deleted")
+      toast.success("Utilisateur supprimé")
       fetchUsers()
     } catch (e) {}
   }
@@ -139,8 +139,8 @@ export default function UsersPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <Lock className="h-12 w-12 text-muted-foreground/40 mb-4" />
-        <h1 className="text-xl font-semibold">Access Denied</h1>
-        <p className="text-sm text-muted-foreground">Admin privileges required.</p>
+        <h1 className="text-xl font-semibold">Accès refusé</h1>
+        <p className="text-sm text-muted-foreground">Privilèges d&apos;administrateur requis.</p>
       </div>
     )
   }
@@ -149,11 +149,11 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Users</h1>
-          <p className="text-sm text-muted-foreground">Manage your team and permissions.</p>
+          <h1 className="text-xl font-semibold">Utilisateurs</h1>
+          <p className="text-sm text-muted-foreground">Gérez votre équipe et les permissions.</p>
         </div>
         <Button size="sm" onClick={() => { setEditingUser(null); form.reset({ email: "", password: "", role: "user", isActive: true }); setIsAddingUser(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Add User
+          <Plus className="h-4 w-4 mr-2" /> Ajouter un utilisateur
         </Button>
       </div>
 
@@ -162,18 +162,18 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground">User</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Role</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Joined</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Rôle</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Statut</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Inscrit le</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs">Chargement...</TableCell></TableRow>
             ) : paginatedUsers.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground">No users found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground">Aucun utilisateur trouvé.</TableCell></TableRow>
             ) : (
               paginatedUsers.map((u) => (
                 <TableRow key={u.email} className="hover:bg-muted/50">
@@ -190,7 +190,7 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className={cn("h-1.5 w-1.5 rounded-full", u.isActive ? "bg-primary" : "bg-muted-foreground/30")} />
-                      <span className="text-xs">{u.isActive ? "Active" : "Inactive"}</span>
+                      <span className="text-xs">{u.isActive ? "Actif" : "Inactif"}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
@@ -198,8 +198,8 @@ export default function UsersPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setEditingUser(u); form.reset({ ...u, password: "" }); setIsAddingUser(true); }}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(u.email)}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setEditingUser(u); form.reset({ ...u, password: "" }); setIsAddingUser(true); }}><Pencil className="h-4 w-4 mr-2" /> Modifier</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(u.email)}><Trash2 className="h-4 w-4 mr-2" /> Supprimer</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -229,28 +229,28 @@ export default function UsersPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSaveUser)} className="space-y-4">
               <DialogHeader>
-                <DialogTitle>{editingUser ? "Edit User" : "Add User"}</DialogTitle>
-                <DialogDescription>Set roles and permissions.</DialogDescription>
+                <DialogTitle>{editingUser ? "Modifier l'utilisateur" : "Ajouter un utilisateur"}</DialogTitle>
+                <DialogDescription>Définissez les rôles et les permissions.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem><FormLabel className="text-xs uppercase">Email Address</FormLabel><FormControl><Input {...field} disabled={!!editingUser} className="h-9" /></FormControl><FormMessage className="text-[10px]" /></FormItem>
+                  <FormItem><FormLabel className="text-xs uppercase">Adresse Email</FormLabel><FormControl><Input {...field} disabled={!!editingUser} className="h-9" /></FormControl><FormMessage className="text-[10px]" /></FormItem>
                 )} />
                 <FormField control={form.control} name="password" render={({ field }) => (
-                  <FormItem><FormLabel className="text-xs uppercase">{editingUser ? "New Password (Optional)" : "Password"}</FormLabel><FormControl><Input type="password" {...field} className="h-9" /></FormControl><FormMessage className="text-[10px]" /></FormItem>
+                  <FormItem><FormLabel className="text-xs uppercase">{editingUser ? "Nouveau mot de passe (Optionnel)" : "Mot de passe"}</FormLabel><FormControl><Input type="password" {...field} className="h-9" /></FormControl><FormMessage className="text-[10px]" /></FormItem>
                 )} />
                 <FormField control={form.control} name="role" render={({ field }) => (
-                  <FormItem><FormLabel className="text-xs uppercase">Role</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="h-9"><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="user">User</SelectItem><SelectItem value="admin">Admin</SelectItem><SelectItem value="collaborateur">Collaborator</SelectItem></SelectContent></Select><FormMessage className="text-[10px]" /></FormItem>
+                  <FormItem><FormLabel className="text-xs uppercase">Rôle</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="h-9"><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="user">Utilisateur</SelectItem><SelectItem value="admin">Administrateur</SelectItem><SelectItem value="collaborateur">Collaborateur</SelectItem></SelectContent></Select><FormMessage className="text-[10px]" /></FormItem>
                 )} />
                 {editingUser && (
                   <FormField control={form.control} name="isActive" render={({ field }) => (
-                    <FormItem className="flex items-center justify-between p-3 border rounded-md"><Label className="text-xs">Account Active</Label><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                    <FormItem className="flex items-center justify-between p-3 border rounded-md"><Label className="text-xs">Compte actif</Label><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                   )} />
                 )}
               </div>
               <DialogFooter>
-                <Button variant="ghost" type="button" onClick={() => setIsAddingUser(false)}>Cancel</Button>
-                <Button type="submit">Save User</Button>
+                <Button variant="ghost" type="button" onClick={() => setIsAddingUser(false)}>Annuler</Button>
+                <Button type="submit">Enregistrer</Button>
               </DialogFooter>
             </form>
           </Form>

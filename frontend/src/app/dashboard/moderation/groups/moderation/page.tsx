@@ -58,7 +58,7 @@ function ModerationPageContent() {
       setFilteredGroups(data || [])
       if (data?.length > 0) handleSelectGroup(data[0])
     } catch (error) {
-      toast.error("Failed to load groups")
+      toast.error("Échec du chargement des groupes")
     } finally {
       setIsLoading(false)
     }
@@ -77,10 +77,10 @@ function ModerationPageContent() {
       is_active: !!group.settings.is_active,
       anti_link: !!group.settings.anti_link,
       bad_words: group.settings.bad_words || "",
-      warning_template: group.settings.warning_template || "Warning @{{name}}, {{count}}/{{max}} for: {{reason}}.",
+      warning_template: group.settings.warning_template || "Attention @{{name}}, {{count}}/{{max}} pour : {{reason}}.",
       max_warnings: group.settings.max_warnings || 5,
       welcome_enabled: !!group.settings.welcome_enabled,
-      welcome_template: group.settings.welcome_template || "Welcome @{{name}} to {{group_name}}!"
+      welcome_template: group.settings.welcome_template || "Bienvenue @{{name}} dans {{group_name}} !"
     })
   }
 
@@ -90,17 +90,24 @@ function ModerationPageContent() {
     try {
       const token = await getToken()
       await api.sessions.updateGroupSettings(sessionId, selectedGroup.id, formData, token || undefined)
-      toast.success("Settings saved")
+      toast.success("Paramètres enregistrés")
       fetchGroups()
     } catch (error) {
-      toast.error("Save failed")
+      toast.error("Échec de l'enregistrement")
     } finally {
       setIsSaving(false)
     }
   }
 
-  if (isLoading) return <div className="p-8 text-center">Loading groups...</div>
-  if (!sessionId) return <div className="p-8 text-center">No session specified.</div>
+  if (isLoading) return <div className="p-8 text-center">Chargement des groupes...</div>
+  if (!sessionId) return <div className="p-8 text-center">Session non spécifiée.</div>
+
+  const sections = [
+    { id: 'intelligence', label: 'Intelligence', icon: Bot },
+    { id: 'automation', label: 'Automatisation', icon: Zap },
+    { id: 'personality', label: 'Personnalité', icon: Sparkles },
+    { id: 'engine', label: 'Moteur', icon: Cpu }
+  ]
 
   return (
     <div className="space-y-6">
@@ -110,13 +117,13 @@ function ModerationPageContent() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold">Moderation</h1>
+            <h1 className="text-xl font-semibold">Modération</h1>
             <Badge variant="secondary">{sessionId}</Badge>
           </div>
         </div>
         <Button onClick={handleSave} disabled={isSaving || !selectedGroup}>
           <Save className="h-4 w-4 mr-2" />
-          Save Settings
+          Enregistrer
         </Button>
       </div>
 
@@ -125,7 +132,7 @@ function ModerationPageContent() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search groups..."
+              placeholder="Rechercher des groupes..."
               className="pl-8 h-9 text-sm"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -155,31 +162,31 @@ function ModerationPageContent() {
         <div className="space-y-8">
           {!selectedGroup ? (
             <div className="p-12 text-center border-dashed border-2 rounded-lg">
-              <p className="text-sm text-muted-foreground">Select a group to configure</p>
+              <p className="text-sm text-muted-foreground">Sélectionnez un groupe à configurer</p>
             </div>
           ) : (
             <div className="space-y-10">
               <section className="space-y-6">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Protection</p>
                 <div className="space-y-1">
-                  <ToggleRow label="Moderation Status" desc="Enable automated moderation for this group." value={formData.is_active} onChange={v => setFormData({...formData, is_active: v})} />
-                  <ToggleRow label="Anti-Link" desc="Automatically delete external links." value={formData.anti_link} onChange={v => setFormData({...formData, anti_link: v})} />
+                  <ToggleRow label="Statut de modération" desc="Activez la modération automatisée pour ce groupe." value={formData.is_active} onChange={v => setFormData({...formData, is_active: v})} />
+                  <ToggleRow label="Anti-Lien" desc="Supprime automatiquement les liens externes." value={formData.anti_link} onChange={v => setFormData({...formData, anti_link: v})} />
                 </div>
               </section>
 
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Warnings</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avertissements</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                   <div className="space-y-2">
-                    <Label className="text-xs">Max Warnings</Label>
+                    <Label className="text-xs">Avertissements max</Label>
                     <Input type="number" value={formData.max_warnings} onChange={e => setFormData({...formData, max_warnings: parseInt(e.target.value) || 1})} className="w-24 h-9" />
                   </div>
                   <div className="space-y-2 flex-1">
                     <div className="flex justify-between text-[10px] font-medium uppercase text-muted-foreground">
-                      <span>Severity</span>
-                      <span>{formData.max_warnings <= 3 ? "High" : "Normal"}</span>
+                      <span>Sévérité</span>
+                      <span>{formData.max_warnings <= 3 ? "Élevée" : "Normale"}</span>
                     </div>
                     <Progress value={Math.min(100, (formData.max_warnings / 10) * 100)} className="h-1.5" />
                   </div>
@@ -189,14 +196,14 @@ function ModerationPageContent() {
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Content Filter</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Filtre de contenu</p>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-xs">Banned Words (comma separated)</Label>
-                    <Textarea value={formData.bad_words} onChange={e => setFormData({...formData, bad_words: e.target.value})} placeholder="scam, insult, spam..." className="min-h-[80px] text-sm" />
+                    <Label className="text-xs">Mots proscrits (séparés par des virgules)</Label>
+                    <Textarea value={formData.bad_words} onChange={e => setFormData({...formData, bad_words: e.target.value})} placeholder="arnaque, insulte, spam..." className="min-h-[80px] text-sm" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Warning Template</Label>
+                    <Label className="text-xs">Template d&apos;avertissement</Label>
                     <Textarea value={formData.warning_template} onChange={e => setFormData({...formData, warning_template: e.target.value})} className="min-h-[80px] text-sm" />
                     <VariableTags tags={['@{{name}}', '{{count}}', '{{max}}', '{{reason}}']} onTagClick={t => setFormData({...formData, warning_template: formData.warning_template + t})} />
                   </div>
@@ -206,9 +213,9 @@ function ModerationPageContent() {
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Welcome Message</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message de bienvenue</p>
                 <div className="space-y-4">
-                  <ToggleRow label="Enable Welcome" desc="Greet new members automatically." value={formData.welcome_enabled} onChange={v => setFormData({...formData, welcome_enabled: v})} />
+                  <ToggleRow label="Activer le bienvenue" desc="Saluez automatiquement les nouveaux membres." value={formData.welcome_enabled} onChange={v => setFormData({...formData, welcome_enabled: v})} />
                   {formData.welcome_enabled && (
                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                       <Textarea value={formData.welcome_template} onChange={e => setFormData({...formData, welcome_template: e.target.value})} className="min-h-[100px] text-sm" />
@@ -251,7 +258,7 @@ function VariableTags({ tags, onTagClick }: { tags: string[]; onTagClick: (t: st
 
 export default function ModerationPage() {
   return (
-    <React.Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+    <React.Suspense fallback={<div className="p-8 text-center">Chargement...</div>}>
       <ModerationPageContent />
     </React.Suspense>
   )

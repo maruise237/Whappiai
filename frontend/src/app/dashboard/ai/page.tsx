@@ -100,7 +100,7 @@ export default function AIPage() {
       }))
       setItems(itemsWithConfig)
     } catch (error) {
-      toast.error("Failed to load AI configurations")
+      toast.error("Échec du chargement des configurations IA")
     } finally {
       setIsLoading(false)
     }
@@ -127,12 +127,12 @@ export default function AIPage() {
     try {
       const token = await getToken()
       await api.sessions.updateAI(formData.sessionId, formData, token || undefined)
-      toast.success("AI Configuration updated")
+      toast.success("Configuration IA mise à jour")
       setIsQuickEditOpen(false)
       fetchData()
       if (formData.enabled) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
     } catch (error: any) {
-      toast.error("Failed to save")
+      toast.error("Échec de l'enregistrement")
     }
   }
 
@@ -140,10 +140,10 @@ export default function AIPage() {
     try {
       const token = await getToken()
       await api.sessions.updateAI(item.sessionId, { ...item.aiConfig, enabled: !item.aiConfig.enabled }, token || undefined)
-      toast.success(`AI Assistant ${!item.aiConfig.enabled ? 'enabled' : 'disabled'}`)
+      toast.success(`Assistant IA ${!item.aiConfig.enabled ? 'activé' : 'désactivé'}`)
       fetchData()
     } catch (error) {
-      toast.error("Failed to toggle AI")
+      toast.error("Échec de la modification")
     }
   }
 
@@ -151,12 +151,12 @@ export default function AIPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">AI Assistant</h1>
-          <p className="text-sm text-muted-foreground">Configure intelligent automation for your sessions.</p>
+          <h1 className="text-xl font-semibold">Assistant IA</h1>
+          <p className="text-sm text-muted-foreground">Configurez l&apos;automatisation intelligente pour vos sessions.</p>
         </div>
         {isAdmin && (
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/ai-models">Manage Models</Link>
+            <Link href="/dashboard/ai-models">Gérer les modèles</Link>
           </Button>
         )}
       </div>
@@ -167,8 +167,8 @@ export default function AIPage() {
         ) : items.length === 0 ? (
           <Card className="col-span-full py-12 text-center border-dashed">
             <Bot className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm font-medium">No sessions found</p>
-            <p className="text-xs text-muted-foreground">Connect a WhatsApp account to enable AI.</p>
+            <p className="text-sm font-medium">Aucune session trouvée</p>
+            <p className="text-xs text-muted-foreground">Connectez un compte WhatsApp pour activer l'IA.</p>
           </Card>
         ) : (
           items.map(item => (
@@ -191,11 +191,11 @@ export default function AIPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => handleOpenQuickEdit(item)}>
-                      <Settings2 className="h-4 w-4 mr-2" /> Quick Edit
+                      <Settings2 className="h-4 w-4 mr-2" /> Modification rapide
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href={`/dashboard/ai/config?session=${item.sessionId}`}>
-                        <Zap className="h-4 w-4 mr-2" /> Advanced Config
+                        <Zap className="h-4 w-4 mr-2" /> Config avancée
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -203,15 +203,15 @@ export default function AIPage() {
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground line-clamp-2 border-l-2 border-primary/40 min-h-[48px]">
-                  {item.aiConfig.prompt || "No prompt configured"}
+                  {item.aiConfig.prompt || "Aucune instruction configurée"}
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" /> Sent</span>
+                  <span className="flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" /> Envoyés</span>
                   <span className="font-semibold text-foreground">{item.aiConfig.stats?.sent || 0} messages</span>
                 </div>
               </CardContent>
               <CardFooter className="p-4 bg-muted/20 border-t flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{item.aiConfig.enabled ? "AI Active" : "AI Inactive"}</span>
+                <span className="text-xs font-medium text-muted-foreground">{item.aiConfig.enabled ? "IA Active" : "IA Inactive"}</span>
                 <Switch checked={item.aiConfig.enabled} onCheckedChange={() => toggleAI(item)} />
               </CardFooter>
             </Card>
@@ -222,32 +222,32 @@ export default function AIPage() {
       <Dialog open={isQuickEditOpen} onOpenChange={setIsQuickEditOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Quick AI Edit</DialogTitle>
-            <DialogDescription>Adjust AI settings for {formData.sessionId}.</DialogDescription>
+            <DialogTitle>Modification rapide de l&apos;IA</DialogTitle>
+            <DialogDescription>Ajustez les paramètres IA pour {formData.sessionId}.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="flex items-center justify-between py-3 border-b border-border">
               <div>
-                <p className="text-sm font-medium">Enabled</p>
-                <p className="text-xs text-muted-foreground">Auto-responses active</p>
+                <p className="text-sm font-medium">Activé</p>
+                <p className="text-xs text-muted-foreground">Réponses automatiques actives</p>
               </div>
               <Switch checked={formData.enabled} onCheckedChange={c => setFormData({...formData, enabled: c})} />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-medium uppercase">Response Mode</Label>
+              <Label className="text-xs font-medium uppercase">Mode de réponse</Label>
               <Select value={formData.mode} onValueChange={v => setFormData({...formData, mode: v})}>
                 <SelectTrigger className="h-9 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="bot">Bot (100% Auto)</SelectItem>
-                  <SelectItem value="hybrid">Hybrid (Delay)</SelectItem>
-                  <SelectItem value="human">Human (Suggestion)</SelectItem>
+                  <SelectItem value="hybrid">Hybride (Délai)</SelectItem>
+                  <SelectItem value="human">Humain (Suggestion)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-medium uppercase">Model</Label>
+              <Label className="text-xs font-medium uppercase">Modèle</Label>
               <Select value={formData.model} onValueChange={v => {
                 const m = availableModels.find(mod => mod.id === v);
                 setFormData({...formData, model: v, endpoint: m?.endpoint || ""})
@@ -265,9 +265,9 @@ export default function AIPage() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" asChild className="flex-1">
-              <Link href={`/dashboard/ai/config?session=${formData.sessionId}`}>Advanced Config</Link>
+              <Link href={`/dashboard/ai/config?session=${formData.sessionId}`}>Config avancée</Link>
             </Button>
-            <Button onClick={handleSave} className="flex-1">Save Changes</Button>
+            <Button onClick={handleSave} className="flex-1">Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

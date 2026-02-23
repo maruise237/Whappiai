@@ -51,7 +51,7 @@ function AnimationPageContent() {
       setFilteredGroups(data || []);
       if (data?.length > 0) handleSelectGroup(data[0]);
     } catch (error) {
-      toast.error("Failed to load groups");
+      toast.error("Échec du chargement des groupes");
     } finally { setIsLoading(false); }
   };
 
@@ -83,8 +83,8 @@ function AnimationPageContent() {
     try {
       const token = await getToken();
       await api.sessions.updateGroupProfile(sessionId, selectedGroup.id, profileData, token || undefined);
-      toast.success("Profile updated");
-    } catch (e) { toast.error("Error saving profile"); } finally { setIsSaving(false); }
+      toast.success("Profil mis à jour");
+    } catch (e) { toast.error("Erreur lors de l'enregistrement du profil"); } finally { setIsSaving(false); }
   };
 
   const handleSaveLinks = async () => {
@@ -93,8 +93,8 @@ function AnimationPageContent() {
     try {
       const token = await getToken();
       await api.sessions.updateGroupLinks(sessionId, selectedGroup.id, productLinks, token || undefined);
-      toast.success("Links updated");
-    } catch (e) { toast.error("Error saving links"); } finally { setIsSaving(false); }
+      toast.success("Liens mis à jour");
+    } catch (e) { toast.error("Erreur lors de l'enregistrement des liens"); } finally { setIsSaving(false); }
   };
 
   const handleGenerateAI = async () => {
@@ -105,8 +105,8 @@ function AnimationPageContent() {
       const res = await api.sessions.generateGroupMessage(sessionId, selectedGroup.id, aiConfig, token || undefined);
       const msg = res.data?.message || res.message || (typeof res === 'string' ? res : "");
       setTaskForm(prev => ({ ...prev, message_content: msg }));
-      toast.success("Message generated");
-    } catch (e) { toast.error("AI error"); } finally { setIsGenerating(false); }
+      toast.success("Message généré");
+    } catch (e) { toast.error("Erreur IA"); } finally { setIsGenerating(false); }
   };
 
   const handleSchedule = async () => {
@@ -114,11 +114,11 @@ function AnimationPageContent() {
     try {
       const token = await getToken();
       await api.sessions.addAnimatorTask(sessionId, selectedGroup.id, taskForm, token || undefined);
-      toast.success("Task scheduled");
+      toast.success("Tâche planifiée");
       setTaskForm({ message_content: "", media_url: "", media_type: "text", scheduled_at: "", recurrence: "none" });
       const response = await api.sessions.getAnimatorTasks(sessionId, selectedGroup.id, token || undefined);
       setTasks(response.data || []);
-    } catch (e) { toast.error("Error scheduling task"); }
+    } catch (e) { toast.error("Erreur lors de la planification"); }
   };
 
   const handleDeleteTask = async (id: number) => {
@@ -126,12 +126,12 @@ function AnimationPageContent() {
       const token = await getToken();
       await api.sessions.deleteAnimatorTask(id, token || undefined);
       setTasks(prev => prev.filter(t => t.id !== id));
-      toast.success("Task deleted");
-    } catch (e) { toast.error("Error deleting task"); }
+      toast.success("Tâche supprimée");
+    } catch (e) { toast.error("Erreur lors de la suppression"); }
   };
 
-  if (isLoading) return <div className="p-8 text-center">Loading groups...</div>;
-  if (!sessionId) return <div className="p-8 text-center">No session specified.</div>;
+  if (isLoading) return <div className="p-8 text-center">Chargement des groupes...</div>;
+  if (!sessionId) return <div className="p-8 text-center">Session non spécifiée.</div>;
 
   return (
     <div className="space-y-6">
@@ -152,7 +152,7 @@ function AnimationPageContent() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search groups..."
+              placeholder="Rechercher des groupes..."
               className="pl-8 h-9 text-sm"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -182,22 +182,22 @@ function AnimationPageContent() {
         <div className="space-y-8">
           {!selectedGroup ? (
             <div className="p-12 text-center border-dashed border-2 rounded-lg">
-              <p className="text-sm text-muted-foreground">Select a group to configure</p>
+              <p className="text-sm text-muted-foreground">Sélectionnez un groupe à configurer</p>
             </div>
           ) : (
             <Tabs defaultValue="profile" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-8">
-                <TabsTrigger value="profile">Profile</TabsTrigger>
-                <TabsTrigger value="links">Links</TabsTrigger>
+                <TabsTrigger value="profile">Profil</TabsTrigger>
+                <TabsTrigger value="links">Liens</TabsTrigger>
                 <TabsTrigger value="animation">Animation</TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile" className="space-y-6">
                 <Card>
-                  <CardHeader><CardTitle className="text-sm font-medium">Group Profile</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="text-sm font-medium">Profil du groupe</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-xs">Theme</Label>
+                      <Label className="text-xs">Thématique</Label>
                       <Input value={profileData.theme} onChange={e => setProfileData({...profileData, theme: e.target.value})} className="h-9" />
                     </div>
                     <div className="space-y-2">
@@ -205,32 +205,32 @@ function AnimationPageContent() {
                       <Textarea value={profileData.mission} onChange={e => setProfileData({...profileData, mission: e.target.value})} className="min-h-[80px]" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs">Rules</Label>
+                      <Label className="text-xs">Règles</Label>
                       <Textarea value={profileData.rules} onChange={e => setProfileData({...profileData, rules: e.target.value})} className="min-h-[80px]" />
                     </div>
                   </CardContent>
                   <CardFooter className="border-t p-4 flex justify-end">
-                    <Button size="sm" onClick={handleSaveProfile} disabled={isSaving}>Save Profile</Button>
+                    <Button size="sm" onClick={handleSaveProfile} disabled={isSaving}>Enregistrer le profil</Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
 
               <TabsContent value="links" className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-medium">Product Links</h3>
-                  <Button size="sm" variant="outline" onClick={() => setProductLinks([...productLinks, { title: "", url: "", cta: "Learn more" }])}>
-                    <Plus className="h-4 w-4 mr-2" /> Add Link
+                  <h3 className="text-sm font-medium">Liens produits</h3>
+                  <Button size="sm" variant="outline" onClick={() => setProductLinks([...productLinks, { title: "", url: "", cta: "En savoir plus" }])}>
+                    <Plus className="h-4 w-4 mr-2" /> Ajouter un lien
                   </Button>
                 </div>
                 <Accordion type="multiple" className="space-y-2">
                   {productLinks.map((link, i) => (
                     <AccordionItem key={i} value={`item-${i}`} className="border rounded-md px-4 bg-card">
                       <AccordionTrigger className="text-sm font-medium hover:no-underline py-3">
-                        {link.title || `Link #${i + 1}`}
+                        {link.title || `Lien #${i + 1}`}
                       </AccordionTrigger>
                       <AccordionContent className="space-y-4 pb-4">
                         <div className="space-y-2">
-                          <Label className="text-xs">Title</Label>
+                          <Label className="text-xs">Titre</Label>
                           <Input value={link.title} onChange={e => { const nl = [...productLinks]; nl[i].title = e.target.value; setProductLinks(nl); }} className="h-9" />
                         </div>
                         <div className="space-y-2">
@@ -238,28 +238,28 @@ function AnimationPageContent() {
                           <Input value={link.url} onChange={e => { const nl = [...productLinks]; nl[i].url = e.target.value; setProductLinks(nl); }} className="h-9" />
                         </div>
                         <Button variant="ghost" size="sm" className="text-destructive h-8 px-0 hover:bg-transparent" onClick={() => setProductLinks(productLinks.filter((_, idx) => idx !== i))}>
-                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Remove Link
+                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer le lien
                         </Button>
                       </AccordionContent>
                     </AccordionItem>
                   ))}
                 </Accordion>
                 <div className="flex justify-end pt-4 border-t">
-                  <Button size="sm" onClick={handleSaveLinks} disabled={isSaving}>Save Links</Button>
+                  <Button size="sm" onClick={handleSaveLinks} disabled={isSaving}>Enregistrer les liens</Button>
                 </div>
               </TabsContent>
 
               <TabsContent value="animation" className="space-y-8">
                 <Card className="border-primary/20 bg-primary/5">
-                  <CardHeader><CardTitle className="text-sm font-medium">AI Generation</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="text-sm font-medium">Génération IA</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-xs">Objective</Label>
+                        <Label className="text-xs">Objectif</Label>
                         <Select value={aiConfig.objective} onValueChange={v => setAiConfig({...aiConfig, objective: v})}>
                           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="annonce">Announcement</SelectItem>
+                            <SelectItem value="annonce">Annonce</SelectItem>
                             <SelectItem value="promotion">Promotion</SelectItem>
                             <SelectItem value="engagement">Engagement</SelectItem>
                           </SelectContent>
@@ -267,7 +267,7 @@ function AnimationPageContent() {
                       </div>
                       <div className="flex items-end">
                         <Button className="w-full h-9" onClick={handleGenerateAI} disabled={isGenerating}>
-                          {isGenerating ? "Generating..." : "Generate with AI"}
+                          {isGenerating ? "Génération..." : "Générer avec l'IA"}
                         </Button>
                       </div>
                     </div>
@@ -275,33 +275,33 @@ function AnimationPageContent() {
                 </Card>
 
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Schedule Message</h3>
+                  <h3 className="text-sm font-medium">Planifier un message</h3>
                   <div className="space-y-4">
-                    <Textarea value={taskForm.message_content} onChange={e => setTaskForm({...taskForm, message_content: e.target.value})} className="min-h-[120px]" placeholder="Type or generate message..." />
+                    <Textarea value={taskForm.message_content} onChange={e => setTaskForm({...taskForm, message_content: e.target.value})} className="min-h-[120px]" placeholder="Saisissez ou générez un message..." />
                     <div className="grid grid-cols-2 gap-4">
                       <Input type="datetime-local" value={taskForm.scheduled_at} onChange={e => setTaskForm({...taskForm, scheduled_at: e.target.value})} className="h-9" />
                       <Select value={taskForm.recurrence} onValueChange={v => setTaskForm({...taskForm, recurrence: v})}>
                         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Once</SelectItem>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="none">Une fois</SelectItem>
+                          <SelectItem value="daily">Quotidien</SelectItem>
+                          <SelectItem value="weekly">Hebdomadaire</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <Button className="w-full" onClick={handleSchedule} disabled={!taskForm.message_content}>
-                      Schedule Task
+                      Planifier la tâche
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-4 pt-6 border-t">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5" /> Queue ({tasks.length})
+                    <Clock className="h-3.5 w-3.5" /> File d&apos;attente ({tasks.length})
                   </h3>
                   <div className="divide-y border rounded-md">
                     {tasks.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-muted-foreground">No pending tasks</div>
+                      <div className="p-8 text-center text-xs text-muted-foreground">Aucune tâche en attente</div>
                     ) : (
                       tasks.map(t => (
                         <div key={t.id} className="p-4 flex items-center justify-between bg-card hover:bg-muted/30 transition-colors">
@@ -327,5 +327,5 @@ function AnimationPageContent() {
 }
 
 export default function AnimationPage() {
-  return <React.Suspense fallback={<div className="p-8 text-center">Loading...</div>}><AnimationPageContent /></React.Suspense>;
+  return <React.Suspense fallback={<div className="p-8 text-center">Chargement...</div>}><AnimationPageContent /></React.Suspense>;
 }

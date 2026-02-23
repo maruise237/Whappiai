@@ -65,7 +65,7 @@ export default function AIModelsPage() {
       const data = await api.ai.admin.list(token || undefined)
       setModels(data || [])
     } catch (error) {
-      toast.error("Failed to load models")
+      toast.error("Échec du chargement des modèles")
     } finally {
       setIsLoading(false)
     }
@@ -86,29 +86,29 @@ export default function AIModelsPage() {
       const token = await getToken()
       if (editingModel) {
         await api.ai.admin.update(editingModel.id, formData, token || undefined)
-        toast.success("Model updated")
+        toast.success("Modèle mis à jour")
       } else {
         await api.ai.admin.create(formData, token || undefined)
-        toast.success("Model created")
+        toast.success("Modèle créé")
       }
       setIsAddingModel(false)
       setEditingModel(null)
       fetchModels()
     } catch (error: any) {
-      toast.error(error.message || "Save failed")
+      toast.error(error.message || "Échec de l'enregistrement")
     }
   }
 
   const handleDeleteModel = async (id: string, name: string) => {
-    const res = await showConfirm("Delete model?", `Remove "${name}"?`, "warning")
+    const res = await showConfirm("Supprimer le modèle ?", `Voulez-vous vraiment supprimer "${name}" ?`, "warning")
     if (!res.isConfirmed) return
     try {
       const token = await getToken()
       await api.ai.admin.delete(id, token || undefined)
-      toast.success("Model deleted")
+      toast.success("Modèle supprimé")
       fetchModels()
     } catch (error: any) {
-      toast.error("Delete failed")
+      toast.error("Échec de la suppression")
     }
   }
 
@@ -116,8 +116,8 @@ export default function AIModelsPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <Lock className="h-12 w-12 text-muted-foreground/40 mb-4" />
-        <h1 className="text-xl font-semibold">Access Denied</h1>
-        <p className="text-sm text-muted-foreground">Admin privileges required.</p>
+        <h1 className="text-xl font-semibold">Accès refusé</h1>
+        <p className="text-sm text-muted-foreground">Privilèges d&apos;administrateur requis.</p>
       </div>
     )
   }
@@ -126,11 +126,11 @@ export default function AIModelsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">AI Models</h1>
-          <p className="text-sm text-muted-foreground">Manage global AI providers and models.</p>
+          <h1 className="text-xl font-semibold">Modèles IA</h1>
+          <p className="text-sm text-muted-foreground">Gérez les fournisseurs et les modèles IA globaux.</p>
         </div>
         <Button size="sm" onClick={() => { setEditingModel(null); setIsAddingModel(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Add Model
+          <Plus className="h-4 w-4 mr-2" /> Ajouter un modèle
         </Button>
       </div>
 
@@ -139,18 +139,18 @@ export default function AIModelsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground">Model & Endpoint</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Provider</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">API Code</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Modèle & Endpoint</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Fournisseur</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Code API</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Statut</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs">Loading models...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs">Chargement des modèles...</TableCell></TableRow>
             ) : models.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground">No models configured.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground">Aucun modèle configuré.</TableCell></TableRow>
             ) : (
               models.map((m) => (
                 <TableRow key={m.id} className="hover:bg-muted/50">
@@ -167,9 +167,9 @@ export default function AIModelsPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Badge className={m.is_active ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20" : "bg-muted text-muted-foreground"}>
-                        {m.is_active ? "Active" : "Inactive"}
+                        {m.is_active ? "Actif" : "Inactif"}
                       </Badge>
-                      {m.is_default && <Badge variant="outline" className="text-[10px]">Default</Badge>}
+                      {m.is_default && <Badge variant="outline" className="text-[10px]">Défaut</Badge>}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -193,8 +193,8 @@ export default function AIModelsPage() {
       <Dialog open={isAddingModel} onOpenChange={setIsAddingModel}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>{editingModel ? "Edit Model" : "Add Model"}</DialogTitle>
-            <DialogDescription>Configure global AI model settings.</DialogDescription>
+            <DialogTitle>{editingModel ? "Modifier le modèle" : "Ajouter un modèle"}</DialogTitle>
+            <DialogDescription>Configurez les paramètres du modèle IA global.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             {!editingModel && (
@@ -204,11 +204,11 @@ export default function AIModelsPage() {
               </div>
             )}
             <div className="col-span-2 space-y-2">
-              <Label className="text-xs uppercase">Display Name</Label>
+              <Label className="text-xs uppercase">Nom d&apos;affichage</Label>
               <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="h-9" />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs uppercase">Provider</Label>
+              <Label className="text-xs uppercase">Fournisseur</Label>
               <Select value={formData.provider} onValueChange={v => setFormData({ ...formData, provider: v })}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -219,29 +219,29 @@ export default function AIModelsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs uppercase">Model API Name</Label>
+              <Label className="text-xs uppercase">Nom API du modèle</Label>
               <Input value={formData.model_name} onChange={e => setFormData({ ...formData, model_name: e.target.value })} className="h-9" />
             </div>
             <div className="col-span-2 space-y-2">
-              <Label className="text-xs uppercase">API Endpoint</Label>
+              <Label className="text-xs uppercase">Endpoint API</Label>
               <Input value={formData.endpoint} onChange={e => setFormData({ ...formData, endpoint: e.target.value })} className="h-9" />
             </div>
             <div className="col-span-2 space-y-2">
-              <Label className="text-xs uppercase">API Key</Label>
-              <Input type="password" value={formData.api_key} onChange={e => setFormData({ ...formData, api_key: e.target.value })} className="h-9" placeholder={editingModel ? "Leave empty to keep current" : "sk-..."} />
+              <Label className="text-xs uppercase">Clé API</Label>
+              <Input type="password" value={formData.api_key} onChange={e => setFormData({ ...formData, api_key: e.target.value })} className="h-9" placeholder={editingModel ? "Laisser vide pour conserver l&apos;actuelle" : "sk-..."} />
             </div>
             <div className="flex items-center justify-between p-3 border rounded-md">
-              <Label className="text-xs">Active</Label>
+              <Label className="text-xs">Actif</Label>
               <Switch checked={formData.is_active} onCheckedChange={c => setFormData({ ...formData, is_active: c })} />
             </div>
             <div className="flex items-center justify-between p-3 border rounded-md">
-              <Label className="text-xs">Default</Label>
+              <Label className="text-xs">Par défaut</Label>
               <Switch checked={formData.is_default} onCheckedChange={c => setFormData({ ...formData, is_default: c })} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsAddingModel(false)}>Cancel</Button>
-            <Button onClick={handleSaveModel}>Save Model</Button>
+            <Button variant="ghost" onClick={() => setIsAddingModel(false)}>Annuler</Button>
+            <Button onClick={handleSaveModel}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

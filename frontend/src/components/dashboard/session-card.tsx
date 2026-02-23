@@ -134,10 +134,10 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
       <Card className="border-border bg-card">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <Smartphone className="h-8 w-8 text-muted-foreground/40 mb-3" />
-          <h3 className="text-sm font-medium mb-1">No session selected</h3>
-          <p className="text-xs text-muted-foreground max-w-xs mb-4">Select an existing session or create a new one to start.</p>
+          <h3 className="text-sm font-medium mb-1">Aucune session sélectionnée</h3>
+          <p className="text-xs text-muted-foreground max-w-xs mb-4">Sélectionnez une session existante ou créez-en une nouvelle pour commencer.</p>
           <Button size="sm" onClick={onCreate}>
-            Create Session
+            Créer une session
           </Button>
         </CardContent>
       </Card>
@@ -155,7 +155,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
             <div>
               <p className="text-sm font-medium">{session.sessionId}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs text-muted-foreground">WhatsApp Session</p>
+                <p className="text-xs text-muted-foreground">Session WhatsApp</p>
                 <button
                   onClick={() => copyToClipboard(session.sessionId, "ID")}
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -170,7 +170,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
               : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
             }>
-              {isConnected ? "Connected" : "Disconnected"}
+              {isConnected ? "Connecté" : "Déconnecté"}
             </Badge>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
@@ -195,35 +195,35 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
                       <RefreshCw className={cn("h-6 w-6", loading && "animate-spin")} />
-                      <span className="text-[10px] font-medium">{loading ? "Generating..." : "Click refresh to get a QR code"}</span>
+                      <span className="text-[10px] font-medium">{loading ? "Génération..." : "Cliquez sur actualiser pour obtenir un QR code"}</span>
                     </div>
                   )}
                 </div>
                 <Button size="sm" variant="outline" className="h-9 px-6" onClick={handleRefreshQr} disabled={loading}>
                   <RefreshCw className={cn("h-3.5 w-3.5 mr-2", loading && "animate-spin")} />
-                  Refresh QR
+                  Actualiser QR
                 </Button>
               </TabsContent>
 
               <TabsContent value="code" className="space-y-6 pt-4">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Phone Number</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Numéro de téléphone</label>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="e.g. 237600000000"
+                      placeholder="ex: 237600000000"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       className="h-10 text-sm"
                     />
                     <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
-                      Get Code
+                      Obtenir le code
                     </Button>
                   </div>
                 </div>
 
                 {pairingCode ? (
                   <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your Pairing Code</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
                     <div className="flex flex-wrap justify-center gap-1.5">
                       {pairingCode.split('').map((char: string, i: number) => (
                         <div key={i} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
@@ -233,13 +233,13 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => copyToClipboard(pairingCode, "Code")}>
                       <Copy className="h-3.5 w-3.5 mr-2" />
-                      Copy Code
+                      Copier le code
                     </Button>
                   </div>
                 ) : (
                    <div className="p-8 text-center border border-dashed rounded-lg bg-muted/20">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                         {loading ? "Requesting code..." : "Enter number to link manually"}
+                         {loading ? "Demande de code..." : "Entrez un numéro pour lier manuellement"}
                       </p>
                    </div>
                 )}
@@ -251,14 +251,14 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
             <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
               <Check className="h-6 w-6 text-green-600" />
             </div>
-            <h4 className="text-sm font-medium">Session Operational</h4>
-            <p className="text-xs text-muted-foreground mt-1">Instance is ready to send and receive messages.</p>
+            <h4 className="text-sm font-medium">Session Opérationnelle</h4>
+            <p className="text-xs text-muted-foreground mt-1">L'instance est prête à envoyer et recevoir des messages.</p>
 
             <div className="w-full mt-6 space-y-2">
               <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
                 <div className="flex items-center gap-2">
                   <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium">Session Token</span>
+                  <span className="text-xs font-medium">Token de Session</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-muted-foreground">
