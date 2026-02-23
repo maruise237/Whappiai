@@ -18,6 +18,7 @@ const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
 const { log } = require('../utils/logger');
+const WebhookService = require('./WebhookService');
 
 // Logger configuration
 const defaultLogLevel = process.env.NODE_ENV === 'production' ? 'silent' : 'warn';
@@ -376,6 +377,13 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 log(`L'utilisateur (propriétaire) a lu un message de ${jid}. Mise en pause de l'IA.`, sessionId, { event: 'ai-auto-pause-read', jid, update: update.update }, 'INFO');
                 
                 aiService.pauseForConversation(sessionId, jid);
+
+                // Dispatch Webhook: human_takeover
+                WebhookService.dispatch(sessionId, 'human_takeover', {
+                    remoteJid: jid,
+                    timestamp: Math.floor(Date.now() / 1000),
+                    reason: 'owner_read_message'
+                });
                
                 // Broadcast to frontend
                 const { broadcastToClients } = require('../../index');
@@ -405,6 +413,13 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             if (session && session.ai_enabled) {
                 log(`Message envoyé par le propriétaire vers ${remoteJid}. Mise en pause de l'IA.`, sessionId, { event: 'ai-auto-pause-sent', remoteJid }, 'INFO');
                 aiService.pauseForConversation(sessionId, remoteJid);
+
+                // Dispatch Webhook: human_takeover
+                WebhookService.dispatch(sessionId, 'human_takeover', {
+                    remoteJid,
+                    timestamp: msg.messageTimestamp,
+                    reason: 'owner_sent_message'
+                });
             }
             return; // Don't process AI for our own messages
         }
@@ -412,6 +427,15 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         if (msg.message) {
             const isGroup = remoteJid.endsWith('@g.us');
             
+            // Dispatch Webhook: message_received
+            WebhookService.dispatch(sessionId, 'message_received', {
+                remoteJid,
+                pushName: msg.pushName,
+                isGroup,
+                message: msg.message,
+                timestamp: msg.messageTimestamp
+            });
+
             log(`Message entrant de ${remoteJid} (${isGroup ? 'Groupe' : 'Direct'})`, sessionId, {
                 event: 'message-received',
                 remoteJid: remoteJid,

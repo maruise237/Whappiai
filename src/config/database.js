@@ -185,7 +185,9 @@ function initializeSchema() {
         { name: 'ai_read_on_reply', type: 'INTEGER DEFAULT 0' },
         { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' },
         { name: 'ai_random_protection_enabled', type: 'INTEGER DEFAULT 1' },
-        { name: 'ai_random_protection_rate', type: 'REAL DEFAULT 0.1' }
+        { name: 'ai_random_protection_rate', type: 'REAL DEFAULT 0.1' },
+        { name: 'ai_constraints', type: 'TEXT' },
+        { name: 'ai_session_window', type: 'INTEGER DEFAULT 5' }
     ];
 
     aiColumns.forEach(col => {
@@ -480,6 +482,61 @@ function initializeSchema() {
         CREATE INDEX IF NOT EXISTS idx_memory_session_jid 
         ON conversation_memory(session_id, remote_jid)
     `);
+
+    // --- Webhooks System ---
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS webhooks (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
+            url TEXT NOT NULL,
+            events TEXT, -- JSON array of events (message_received, ai_response, human_takeover)
+            secret TEXT, -- For signing requests
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // --- Knowledge Base (RAG) ---
+
+    // Main Knowledge Base table
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS knowledge_base (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            type TEXT CHECK(type IN ('file', 'url', 'text')),
+            source TEXT, -- URL or file name
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Knowledge Chunks for FTS5 Search
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS knowledge_chunks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            base_id TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+            session_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            metadata TEXT -- JSON
+        )
+    `);
+
+    // Virtual table for Full Text Search (FTS5)
+    try {
+        db.exec(`
+            CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_search USING fts5(
+                content,
+                session_id UNINDEXED,
+                chunk_id UNINDEXED,
+                tokenize='unicode61 remove_diacritics 1'
+            )
+        `);
+    } catch (e) {
+        log(`Erreur création table FTS5: ${e.message}`, 'SYSTEM', null, 'ERROR');
+    }
 
     // AI Models table (Global configuration by admin)
     db.exec(`

@@ -1,6 +1,8 @@
 const express = require('express');
 const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const { normalizeJid } = require('../utils/phone');
+const KnowledgeService = require('../services/KnowledgeService');
+const WebhookService = require('../services/WebhookService');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -445,6 +447,70 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Initialize recipient list manager
     const recipientListManager = new RecipientListManager(process.env.TOKEN_ENCRYPTION_KEY || 'default-key');
 
+    // --- Webhooks ---
+
+    router.get('/sessions/:sessionId/webhooks', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const list = WebhookService.list(req.params.sessionId);
+            res.json({ status: 'success', data: list });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.post('/sessions/:sessionId/webhooks', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        const { url, events, secret } = req.body;
+        if (!url) return res.status(400).json({ status: 'error', message: 'URL requise' });
+
+        try {
+            const id = WebhookService.add(req.params.sessionId, url, events || [], secret);
+            res.json({ status: 'success', data: { id } });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.delete('/sessions/:sessionId/webhooks/:webhookId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const success = WebhookService.delete(req.params.webhookId, req.params.sessionId);
+            res.json({ status: success ? 'success' : 'error', message: success ? 'Webhook supprimé' : 'Échec' });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    // --- Inbox & Memory ---
+
+    router.get('/sessions/:sessionId/inbox', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const conversations = db.prepare(`
+                SELECT remote_jid, MAX(created_at) as last_message_at,
+                (SELECT content FROM conversation_memory WHERE remote_jid = m.remote_jid AND session_id = m.session_id ORDER BY created_at DESC LIMIT 1) as last_message
+                FROM conversation_memory m
+                WHERE session_id = ?
+                GROUP BY remote_jid
+                ORDER BY last_message_at DESC
+            `).all(req.params.sessionId);
+            res.json({ status: 'success', data: conversations });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.get('/sessions/:sessionId/inbox/:jid', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const history = db.prepare(`
+                SELECT role, content, created_at
+                FROM conversation_memory
+                WHERE session_id = ? AND remote_jid = ?
+                ORDER BY created_at ASC
+            `).all(req.params.sessionId, req.params.jid);
+            res.json({ status: 'success', data: history });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
     // AI Configuration Endpoints
     router.get('/sessions/:sessionId/ai', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
         const { sessionId } = req.params;
@@ -469,6 +535,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 reply_delay: session.ai_reply_delay || 0,
                 read_on_reply: !!session.ai_read_on_reply,
                 reject_calls: !!session.ai_reject_calls,
+                constraints: session.ai_constraints || '',
+                session_window: session.ai_session_window ?? 5,
                 stats: {
                     received: session.ai_messages_received || 0,
                     sent: session.ai_messages_sent || 0,
@@ -736,6 +804,40 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/ai/templates', checkSessionOrTokenAuth, (req, res) => {
         const templates = require('../utils/ai-templates');
         res.json({ status: 'success', data: templates });
+    });
+
+    // --- Knowledge Base (RAG) ---
+
+    router.get('/sessions/:sessionId/knowledge', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const docs = KnowledgeService.listDocuments(req.params.sessionId);
+            res.json({ status: 'success', data: docs });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.post('/sessions/:sessionId/knowledge', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        const { name, type, content, source } = req.body;
+        if (!name || !content) {
+            return res.status(400).json({ status: 'error', message: 'Nom et contenu requis' });
+        }
+
+        try {
+            const id = await KnowledgeService.addDocument(req.params.sessionId, name, type || 'text', content, source);
+            res.json({ status: 'success', data: { id } });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.delete('/sessions/:sessionId/knowledge/:docId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const success = KnowledgeService.deleteDocument(req.params.docId, req.params.sessionId);
+            res.json({ status: success ? 'success' : 'error', message: success ? 'Document supprimé' : 'Échec de la suppression' });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
     });
 
     // Activity Log Endpoints

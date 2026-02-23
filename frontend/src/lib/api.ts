@@ -194,6 +194,36 @@ export const api = {
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    getKnowledge: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/knowledge`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    addKnowledge: (sessionId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/knowledge`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    deleteKnowledge: (sessionId: string, docId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/knowledge/${docId}`, {
+      method: "DELETE",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    getInbox: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    getChatHistory: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    getWebhooks: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/webhooks`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    addWebhook: (sessionId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/webhooks`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    deleteWebhook: (sessionId: string, webhookId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/webhooks/${webhookId}`, {
+      method: "DELETE",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   },
   messages: {
     send: (sessionId: string, data: any, token?: string) => fetchApi(`/api/v1/messages?sessionId=${sessionId}`, {

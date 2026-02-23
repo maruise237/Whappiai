@@ -14,6 +14,9 @@ import {
   ShieldAlert,
   Eye,
   Settings,
+  Book,
+  ShieldCheck,
+  Webhook,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +32,8 @@ import {
   SelectValue
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { KnowledgeBaseManager } from "@/components/dashboard/knowledge-base-manager"
+import { WebhookManager } from "@/components/dashboard/webhook-manager"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
@@ -43,6 +48,7 @@ function AIConfigForm() {
 
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
+  const [isAdvancedMode, setIsAdvancedMode] = React.useState(false)
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
   const [isAdmin, setIsAdmin] = React.useState(false)
 
@@ -56,6 +62,8 @@ function AIConfigForm() {
     deactivate_on_typing: false,
     deactivate_on_read: false,
     trigger_keywords: "",
+    constraints: "",
+    session_window: 5,
     reply_delay: 0,
     read_on_reply: false,
     reject_calls: false,
@@ -103,9 +111,12 @@ function AIConfigForm() {
 
   const sections = [
     { id: 'intelligence', label: 'Intelligence', icon: Bot },
+    { id: 'constraints', label: 'Exigences', icon: ShieldCheck },
+    { id: 'knowledge', label: 'Connaissances', icon: Book },
     { id: 'automation', label: 'Automatisation', icon: Zap },
     { id: 'personality', label: 'Personnalité', icon: Sparkles },
-    { id: 'engine', label: 'Moteur', icon: Cpu }
+    { id: 'integrations', label: 'Intégrations', icon: Webhook },
+    ...(isAdvancedMode ? [{ id: 'engine', label: 'Moteur', icon: Cpu }] : [])
   ]
 
   return (
@@ -120,10 +131,16 @@ function AIConfigForm() {
             <p className="text-sm text-muted-foreground">Session : {sessionId}</p>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={isSaving}>
-          <Save className="h-4 w-4 mr-2" />
-          Enregistrer
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border bg-muted/30">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Mode Expert</span>
+            <Switch checked={isAdvancedMode} onCheckedChange={setIsAdvancedMode} className="scale-75" />
+          </div>
+          <Button onClick={handleSave} disabled={isSaving}>
+            <Save className="h-4 w-4 mr-2" />
+            Enregistrer
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">
@@ -178,6 +195,49 @@ function AIConfigForm() {
             </Card>
           </section>
 
+          {/* Integrations */}
+          <section id="integrations" className="scroll-mt-24 space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <WebhookManager sessionId={sessionId} />
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Constraints (Exigences) */}
+          <section id="constraints" className="scroll-mt-24 space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">Exigences & Limites</h2>
+              <p className="text-sm text-muted-foreground">Définissez des règles strictes que l&apos;IA doit impérativement respecter.</p>
+            </div>
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <Label className="text-xs font-medium uppercase text-muted-foreground">Règles et interdictions</Label>
+                <Textarea
+                  value={formData.constraints}
+                  onChange={e => setFormData({...formData, constraints: e.target.value})}
+                  className="min-h-[150px] text-sm border-amber-500/20 focus-visible:ring-amber-500/50"
+                  placeholder="ex: Ne jamais donner de prix sans devis. Toujours vouvoyer le client. Ne pas parler de la concurrence."
+                />
+                <div className="p-3 rounded-md bg-amber-500/5 border border-amber-500/10 flex items-start gap-3">
+                  <ShieldCheck className="h-4 w-4 text-amber-600 mt-0.5" />
+                  <p className="text-[11px] text-amber-700 leading-relaxed">
+                    Ces consignes sont injectées avec une priorité haute dans le cerveau de l&apos;IA pour garantir le respect de votre image de marque.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Knowledge Base */}
+          <section id="knowledge" className="scroll-mt-24 space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <KnowledgeBaseManager sessionId={sessionId} />
+              </CardContent>
+            </Card>
+          </section>
+
           {/* Automation */}
           <section id="automation" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
@@ -190,6 +250,17 @@ function AIConfigForm() {
                 <ToggleRow label="Arrêt à la lecture" desc="L&apos;IA attend que vous lisiez les messages." value={formData.deactivate_on_read} onChange={v => setFormData({...formData, deactivate_on_read: v})} />
                 <ToggleRow label="Confirmations de lecture" desc="Marquer comme lu quand l&apos;IA répond." value={formData.read_on_reply} onChange={v => setFormData({...formData, read_on_reply: v})} />
                 <ToggleRow label="Rejeter les appels" desc="Bloquer automatiquement les appels entrants." value={formData.reject_calls} onChange={v => setFormData({...formData, reject_calls: v})} />
+
+                <div className="py-6 space-y-4">
+                  <p className="text-sm font-medium">Cohabitation Humain-IA</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase">Fenêtre de silence (minutes)</Label>
+                      <Input type="number" value={formData.session_window} onChange={e => setFormData({...formData, session_window: parseInt(e.target.value) || 0})} className="h-9" />
+                      <p className="text-[10px] text-muted-foreground">Si vous répondez manuellement sur WhatsApp, l&apos;IA attendra ce nombre de minutes avant de reprendre le relais.</p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="py-6 space-y-4">
                   <p className="text-sm font-medium">Simulation humaine</p>
@@ -228,6 +299,7 @@ function AIConfigForm() {
           </section>
 
           {/* Engine */}
+          {isAdvancedMode && (
           <section id="engine" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Moteur</h2>
@@ -266,6 +338,7 @@ function AIConfigForm() {
               </CardContent>
             </Card>
           </section>
+          )}
         </div>
       </div>
     </div>
