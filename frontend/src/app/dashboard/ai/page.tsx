@@ -262,7 +262,7 @@ export default function AIPage() {
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest"
             >
               <Sparkles className="w-3 h-3" />
-              Intelligence Center v4.0
+              Intelligence Center v5.0 — 2025 EDITION
             </motion.div>
 
             <motion.h1
