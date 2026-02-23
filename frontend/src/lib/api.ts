@@ -56,7 +56,9 @@ const getApiBaseUrl = () => {
 export const API_BASE_URL = getApiBaseUrl();
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  NProgress.start();
+  if (typeof window !== 'undefined') {
+    try { NProgress.start(); } catch (e) {}
+  }
   try {
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
     
@@ -91,7 +93,9 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     const data = await res.json();
     return data.data !== undefined ? data.data : data;
   } finally {
-    NProgress.done();
+    if (typeof window !== 'undefined') {
+      try { NProgress.done(); } catch (e) {}
+    }
   }
 }
 

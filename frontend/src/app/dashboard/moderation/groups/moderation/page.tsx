@@ -57,7 +57,11 @@ function ModerationPageContent() {
       const groupsArray = Array.isArray(data) ? data : []
       setGroups(groupsArray)
       setFilteredGroups(groupsArray)
-      if (groupsArray.length > 0) handleSelectGroup(groupsArray[0])
+      if (groupsArray.length > 0) {
+        handleSelectGroup(groupsArray[0])
+      } else {
+        setSelectedGroup(null)
+      }
     } catch (error) {
       toast.error("Échec du chargement des groupes")
     } finally {
@@ -69,7 +73,8 @@ function ModerationPageContent() {
 
   React.useEffect(() => {
     const lower = searchQuery.toLowerCase()
-    setFilteredGroups(groups.filter(g => (g.subject || g.name || '').toLowerCase().includes(lower)))
+    const groupsList = Array.isArray(groups) ? groups : []
+    setFilteredGroups(groupsList.filter(g => (g?.subject || g?.name || '').toLowerCase().includes(lower)))
   }, [searchQuery, groups])
 
   const handleSelectGroup = (group: any) => {

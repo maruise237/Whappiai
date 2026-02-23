@@ -42,9 +42,9 @@ export default function ModerationSessionsPage() {
     fetchSessions()
   }, [fetchSessions])
 
-  const filteredSessions = sessions.filter(s => 
-    s.sessionId.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredSessions = Array.isArray(sessions) ? sessions.filter(s =>
+    s && s.sessionId && s.sessionId.toLowerCase().includes(searchQuery.toLowerCase())
+  ) : []
 
   if (isLoading) return <div className="p-8 text-center">Chargement...</div>
 

@@ -49,9 +49,14 @@ function AnimationPageContent() {
       setIsLoading(true);
       const token = await getToken();
       const data = await api.sessions.getGroups(sessionId, token || undefined);
-      setGroups(data || []);
-      setFilteredGroups(data || []);
-      if (data?.length > 0) handleSelectGroup(data[0]);
+      const groupsArray = Array.isArray(data) ? data : [];
+      setGroups(groupsArray);
+      setFilteredGroups(groupsArray);
+      if (groupsArray.length > 0) {
+        handleSelectGroup(groupsArray[0]);
+      } else {
+        setSelectedGroup(null);
+      }
     } catch (error) {
       toast.error("Échec du chargement des groupes");
     } finally { setIsLoading(false); }
@@ -61,7 +66,8 @@ function AnimationPageContent() {
 
   React.useEffect(() => {
     const lower = searchQuery.toLowerCase();
-    setFilteredGroups(groups.filter(g => (g.subject || g.name || '').toLowerCase().includes(lower)));
+    const groupsList = Array.isArray(groups) ? groups : [];
+    setFilteredGroups(groupsList.filter(g => (g?.subject || g?.name || '').toLowerCase().includes(lower)));
   }, [searchQuery, groups]);
 
   const handleSelectGroup = async (group: any) => {
@@ -81,12 +87,12 @@ function AnimationPageContent() {
   };
 
   const fetchHistory = async (groupId: string) => {
-    if (!sessionId) return;
+    if (!sessionId || !groupId) return;
     setIsLoadingHistory(true);
     try {
       const token = await getToken();
       const res = await api.sessions.getAnimatorHistory(sessionId, groupId, {}, token || undefined);
-      setHistory(res || []);
+      setHistory(Array.isArray(res) ? res : []);
     } catch (e) {
       console.error("Failed to fetch history", e);
     } finally {

@@ -57,10 +57,12 @@ const footerNav = [
 ]
 
 function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
-  const Icon = item.icon
+  const Icon = item?.icon
+  if (!item || !Icon) return null
+
   return (
     <Link
-      href={item.href}
+      href={item.href || "#"}
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
@@ -97,14 +99,14 @@ function SidebarContent({ userRole, pathname, onItemClick }: { userRole: string,
       <ScrollArea className="flex-1 px-3">
         <nav className="space-y-1">
           {filteredNav.map((item) => (
-            <NavItem key={item.href} item={item} isActive={pathname === item.href} onClick={onItemClick} />
+            <NavItem key={item.href || Math.random()} item={item} isActive={pathname === item.href} onClick={onItemClick} />
           ))}
         </nav>
       </ScrollArea>
       <div className="p-3 border-t border-border">
         <nav className="space-y-1">
           {footerNav.map((item) => (
-            <NavItem key={item.href} item={item} isActive={pathname === item.href} onClick={onItemClick} />
+            <NavItem key={item.href || Math.random()} item={item} isActive={pathname === item.href} onClick={onItemClick} />
           ))}
         </nav>
       </div>
