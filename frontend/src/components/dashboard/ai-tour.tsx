@@ -17,17 +17,26 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-config-header',
           popover: {
-            title: 'Configuration Avancée',
-            description: 'Ici, vous pouvez affiner les réglages de l\'IA pour une session spécifique.',
+            title: '🚀 Command Center 2025',
+            description: 'Bienvenue dans l\'interface de pilotage neuronal. Ici, vous allez donner vie à votre assistant.',
             side: "bottom",
             align: 'center'
           }
         },
         {
-          element: '.ai-mode-selector',
+          element: '#intelligence',
           popover: {
-            title: 'Mode de Fonctionnement',
-            description: 'Choisissez entre Robot (100% auto), Hybride (avec délai) ou Humain (suggestions uniquement).',
+            title: '🧠 Neural Engine',
+            description: 'Choisissez le cerveau de votre bot. Mode autonome pour une gestion totale, ou hybride pour garder le contrôle.',
+            side: "top",
+            align: 'center'
+          }
+        },
+        {
+          element: '#automation',
+          popover: {
+            title: '🛡️ Safety Guard',
+            description: 'Configurez les barrières de sécurité : pause automatique quand vous écrivez, anti-bouclage, et protection contre les appels.',
             side: "top",
             align: 'center'
           }
@@ -35,26 +44,17 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-prompt-area',
           popover: {
-            title: 'Instructions Système',
-            description: 'C\'est ici que vous définissez la personnalité et les connaissances de votre assistant. Soyez précis !',
+            title: '🎭 Personality Logic',
+            description: 'C\'est ici que tout se joue. Définissez qui est votre IA, ce qu\'elle vend, et comment elle doit s\'adresser à vos clients.',
             side: "top",
             align: 'center'
           }
         },
         {
-          element: '.ai-model-selector',
+          element: '#advanced',
           popover: {
-            title: 'Moteur d\'Intelligence',
-            description: 'Sélectionnez le modèle d\'IA à utiliser pour cette session.',
-            side: "left",
-            align: 'center'
-          }
-        },
-        {
-          element: '.ai-save-button',
-          popover: {
-            title: 'Enregistrer',
-            description: 'N\'oubliez pas de sauvegarder vos modifications pour les rendre effectives.',
+            title: '⚙️ Advanced Tuning',
+            description: 'Pour les experts : ajustez la température (créativité) et changez de modèle de langage à la volée.',
             side: "left",
             align: 'center'
           }
@@ -63,8 +63,8 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-page-header',
           popover: {
-            title: 'Assistant IA',
-            description: 'Bienvenue dans la gestion de vos assistants intelligents. Ici, vous pouvez automatiser vos interactions WhatsApp.',
+            title: '✨ AI Intelligence Hub',
+            description: 'Découvrez la version 6.0 du centre d\'intelligence. Gérez vos bots WhatsApp avec une précision chirurgicale.',
             side: "bottom",
             align: 'center'
           }
@@ -72,8 +72,8 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-session-card',
           popover: {
-            title: 'Sessions WhatsApp',
-            description: 'Chaque session connectée peut avoir son propre assistant configuré indépendamment.',
+            title: '🤖 Instance Matrix',
+            description: 'Chaque carte représente un cerveau distinct connecté à l\'un de vos numéros WhatsApp.',
             side: "top",
             align: 'center'
           }
@@ -81,8 +81,8 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-quick-settings',
           popover: {
-            title: 'Réglages Rapides',
-            description: 'Accédez rapidement aux paramètres essentiels comme le mode ou le modèle utilisé.',
+            title: '⚡ Quick Tuning',
+            description: 'Ajustez les paramètres vitaux sans quitter le hub principal.',
             side: "left",
             align: 'center'
           }
@@ -90,32 +90,23 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-advanced-config',
           popover: {
-            title: 'Configuration Avancée',
-            description: 'Cliquez ici pour accéder aux réglages détaillés, notamment le prompt système.',
+            title: '🚀 Advanced Matrix',
+            description: 'Plongez dans les réglages profonds pour configurer le prompt système et la sécurité.',
             side: "left",
-            align: 'center'
-          }
-        },
-        {
-          element: '.ai-toggle-switch',
-          popover: {
-            title: 'Activer / Désactiver',
-            description: 'Activez ou désactivez l\'assistant instantanément avec ce commutateur.',
-            side: "top",
             align: 'center'
           }
         }
       ]
 
       const driverObj = driver({
-        popoverClass: 'driverjs-theme',
+        popoverClass: 'whappi-driver-theme',
         showProgress: true,
         animate: true,
         allowClose: true,
-        overlayColor: 'rgba(0, 0, 0, 0.75)',
+        overlayColor: 'rgba(15, 23, 42, 0.85)',
         nextBtnText: 'Suivant',
         prevBtnText: 'Précédent',
-        doneBtnText: 'Terminé',
+        doneBtnText: 'C\'est parti !',
         steps: steps,
         onDestroyStarted: () => {
           onExit()
