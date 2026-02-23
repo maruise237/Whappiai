@@ -55,6 +55,16 @@ function isGroupAdmin(groupMetadata, myJid, myLid, sessionId) {
  * @param {string} sessionId - Session ID
  * @returns {Promise<Array>} List of admin groups
  */
+/**
+ * Get settings for a specific group
+ * @param {string} sessionId
+ * @param {string} groupId
+ * @returns {object|null}
+ */
+function getGroupSettings(sessionId, groupId) {
+    return db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+}
+
 async function getAdminGroups(sock, sessionId) {
     try {
         if (!sock) {
@@ -537,6 +547,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
 
 module.exports = {
     getAdminGroups,
+    getGroupSettings,
     updateGroupSettings,
     handleIncomingMessage,
     handleParticipantUpdate
