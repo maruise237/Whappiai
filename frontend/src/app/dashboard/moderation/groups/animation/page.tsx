@@ -36,6 +36,8 @@ function AnimationPageContent() {
   const [profileData, setProfileData] = React.useState({ mission: "", objectives: "", rules: "", theme: "" });
   const [productLinks, setProductLinks] = React.useState<any[]>([]);
   const [tasks, setTasks] = React.useState<any[]>([]);
+  const [history, setHistory] = React.useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = React.useState(false);
 
   const [aiConfig, setAiConfig] = React.useState({ objective: "annonce", additionalInfo: "", includeLinks: true });
   const [isGenerating, setIsGenerating] = React.useState(false);
@@ -74,7 +76,22 @@ function AnimationPageContent() {
       setTasks(tasksRes.data || []);
       setProfileData(profileRes.data || { mission: "", objectives: "", rules: group.desc || "", theme: "" });
       setProductLinks(linksRes.data || []);
+      fetchHistory(group.id);
     } catch (e) { console.error(e); }
+  };
+
+  const fetchHistory = async (groupId: string) => {
+    if (!sessionId) return;
+    setIsLoadingHistory(true);
+    try {
+      const token = await getToken();
+      const res = await api.sessions.getAnimatorHistory(sessionId, groupId, {}, token || undefined);
+      setHistory(res || []);
+    } catch (e) {
+      console.error("Failed to fetch history", e);
+    } finally {
+      setIsLoadingHistory(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -312,6 +329,33 @@ function AnimationPageContent() {
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteTask(t.id)}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-6 border-t">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <History className="h-3.5 w-3.5" /> Historique des envois
+                  </h3>
+                  <div className="divide-y border rounded-md">
+                    {isLoadingHistory ? (
+                      <div className="p-8 text-center text-xs text-muted-foreground">Chargement de l&apos;historique...</div>
+                    ) : history.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-muted-foreground">Aucun message envoyé précédemment</div>
+                    ) : (
+                      history.map(h => (
+                        <div key={h.id} className="p-4 flex items-center justify-between bg-muted/10">
+                          <div className="min-w-0">
+                            <p className="text-sm truncate max-w-md">{h.message_content}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-[10px] text-muted-foreground">{new Date(h.updated_at || h.scheduled_at).toLocaleString()}</p>
+                              <Badge variant={h.status === 'completed' ? 'default' : 'destructive'} className="text-[8px] px-1 h-3.5">
+                                {h.status === 'completed' ? 'Succès' : 'Échec'}
+                              </Badge>
+                            </div>
+                          </div>
                         </div>
                       ))
                     )}

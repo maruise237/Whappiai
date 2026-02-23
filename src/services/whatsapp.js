@@ -465,16 +465,18 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 return;
             }
 
-            // Call AI Handler if enabled (Personal Bot mode)
-            // Note: Group Assistant is handled inside moderationService.handleIncomingMessage
-            if (!isGroup) {
-                try {
-                    const aiService = require('./ai');
-                    log(`Déclenchement du gestionnaire d'IA personnel pour la session ${sessionId}...`, sessionId, { event: 'ai-trigger' }, 'DEBUG');
+            // Call AI Handler if enabled (Personal Bot mode or Tagged in Group)
+            // Note: Group Assistant is also handled inside moderationService.handleIncomingMessage for questions
+            try {
+                const aiService = require('./ai');
+                const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(sock.user.id.split(':')[0] + '@s.whatsapp.net');
+
+                if (!isGroup || isTagged) {
+                    log(`Déclenchement du gestionnaire d'IA pour la session ${sessionId}${isTagged ? ' (Tag détecté)' : ''}...`, sessionId, { event: 'ai-trigger', isTagged }, 'DEBUG');
                     await aiService.handleIncomingMessage(sock, sessionId, msg);
-                } catch (err) {
-                    log(`Erreur du gestionnaire d'IA pour la session ${sessionId}: ${err.message}`, sessionId, { event: 'ai-handler-error', error: err.message }, 'ERROR');
                 }
+            } catch (err) {
+                log(`Erreur du gestionnaire d'IA pour la session ${sessionId}: ${err.message}`, sessionId, { event: 'ai-handler-error', error: err.message }, 'ERROR');
             }
         }
     });

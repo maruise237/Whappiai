@@ -70,6 +70,7 @@ function AIConfigForm() {
     trigger_keywords: "",
     constraints: "",
     session_window: 5,
+    respond_to_tags: false,
     reply_delay: 0,
     read_on_reply: false,
     reject_calls: false,
@@ -112,170 +113,229 @@ function AIConfigForm() {
     }
   }
 
+  const [activeSection, setActiveSection] = React.useState("intelligence")
+
   if (isLoading) return <div className="p-8 text-center">Chargement...</div>
   if (!sessionId) return <div className="p-8 text-center">Session non spécifiée.</div>
 
+  const sections = [
+    { id: "intelligence", name: "Intelligence", icon: BrainCircuit },
+    { id: "automation", name: "Automation", icon: Zap },
+    { id: "personality", name: "Personnalité", icon: Sparkles },
+    { id: "knowledge", name: "Connaissances", icon: Book },
+    { id: "engine", name: "Moteur IA", icon: Cpu }
+  ]
+
+  const modes = [
+    { id: "bot", name: "Auto", desc: "100% IA", icon: Bot },
+    { id: "hybrid", name: "Hybride", desc: "IA + Main", icon: Cpu },
+    { id: "human", name: "Suggest", desc: "Suggestion", icon: Users }
+  ]
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/ai')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold">Configuration du Bot</h1>
-            <p className="text-xs text-muted-foreground font-mono">{sessionId}</p>
+    <div className="max-w-6xl mx-auto pb-20">
+      {/* Header Sticky */}
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b mb-8 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/ai')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-semibold">Configuration IA</h1>
+              <p className="text-xs text-muted-foreground font-mono">{sessionId}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 mr-4">
+              <span className="text-xs font-medium">IA Active</span>
+              <Switch checked={formData.enabled} onCheckedChange={v => setFormData({...formData, enabled: v})} />
+            </div>
+            <Button onClick={handleSave} disabled={isSaving}>
+              <Save className="h-4 w-4 mr-2" /> Enregistrer
+            </Button>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={isSaving}>
-          <Save className="h-4 w-4 mr-2" /> Enregistrer
-        </Button>
       </div>
 
-      {/* Bloc 1 : Identité & Comportement */}
-      <Card className="border-primary/20">
-        <CardHeader className="bg-primary/5 pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-sm font-semibold">Identité & Intelligence</CardTitle>
-                <CardDescription className="text-[10px]">Définissez qui est votre bot et comment il doit agir.</CardDescription>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-12 items-start">
+        {/* Sidebar Sticky */}
+        <aside className="sticky top-24 space-y-1">
+          {sections.map(s => (
+            <button
+              key={s.id}
+              onClick={() => {
+                setActiveSection(s.id)
+                document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }}
+              data-active={activeSection === s.id}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:font-medium"
+            >
+              <s.icon className="h-4 w-4" />
+              {s.name}
+            </button>
+          ))}
+        </aside>
+
+        {/* Main Content */}
+        <div className="space-y-16">
+          {/* Section Intelligence */}
+          <section id="intelligence" className="scroll-mt-32 space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-muted-foreground">Intelligence</h2>
+              <p className="text-xs text-muted-foreground">Définissez le mode opératoire de votre assistant.</p>
             </div>
-            <Switch checked={formData.enabled} onCheckedChange={v => setFormData({...formData, enabled: v})} />
-          </div>
-        </CardHeader>
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Prompt (Sa personnalité)</Label>
-              <Textarea
-                value={formData.prompt}
-                onChange={e => setFormData({...formData, prompt: e.target.value})}
-                className="min-h-[120px] text-sm leading-relaxed"
-                placeholder="Ex: Tu es un assistant commercial poli et expert en immobilier..."
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {modes.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setFormData({...formData, mode: m.id})}
+                  className={cn(
+                    "flex flex-col gap-2 p-4 text-left border rounded-lg transition-all",
+                    formData.mode === m.id
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border hover:bg-muted/50"
+                  )}
+                >
+                  <m.icon className={cn("h-4 w-4", formData.mode === m.id ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-sm font-semibold">{m.name}</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">{m.desc}</span>
+                </button>
+              ))}
             </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Exigences strictes (Règles d'or)</Label>
-              <Textarea
-                value={formData.constraints}
-                onChange={e => setFormData({...formData, constraints: e.target.value})}
-                className="min-h-[80px] text-sm border-amber-500/20 focus-visible:ring-amber-500/50 bg-amber-500/[0.02]"
-                placeholder="Ex: Ne jamais donner de prix sans devis. Toujours vouvoyer."
-              />
-            </div>
-          </div>
+          </section>
 
           <Separator />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Mode de réponse</Label>
-              <Select value={formData.mode} onValueChange={v => setFormData({...formData, mode: v})}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bot">100% Automatique</SelectItem>
-                  <SelectItem value="hybrid">Hybride (IA + Main humaine)</SelectItem>
-                  <SelectItem value="human">Mode Suggestion uniquement</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Section Automation */}
+          <section id="automation" className="scroll-mt-32 space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-muted-foreground">Automation</h2>
+              <p className="text-xs text-muted-foreground">Paramètres de déclenchement et de simulation humaine.</p>
             </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Modèle d'IA</Label>
-              <Select value={formData.model} onValueChange={v => setFormData({...formData, model: v})}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableModels.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bloc 2 : Savoir (Base de connaissances) */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-              <Book className="h-4 w-4 text-blue-500" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-semibold">Savoir & Connaissances</CardTitle>
-              <CardDescription className="text-[10px]">Ajoutez vos documents ou sites web pour que l'IA connaisse votre entreprise.</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6 pt-0">
-          <KnowledgeBaseManager sessionId={sessionId} />
-        </CardContent>
-      </Card>
-
-      {/* Bloc 3 : Réglages & Automatisation */}
-      <div className="space-y-4">
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Settings className={cn("h-3 w-3", showAdvanced && "animate-spin-slow")} />
-          {showAdvanced ? "Masquer les réglages experts" : "Afficher les réglages experts"}
-        </button>
-
-        {showAdvanced && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Automatisation & Webhooks</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 pt-0 divide-y">
-                <div className="py-4 space-y-4">
+              <CardContent className="p-0 divide-y">
+                <div className="p-6 space-y-1">
+                  <ToggleRow label="Répondre aux tags (@)" desc="L'IA répond lorsqu'elle est mentionnée dans un groupe." value={formData.respond_to_tags} onChange={v => setFormData({...formData, respond_to_tags: v})} />
                   <ToggleRow label="Arrêt à la frappe" desc="Désactive l'IA si vous écrivez sur WhatsApp." value={formData.deactivate_on_typing} onChange={v => setFormData({...formData, deactivate_on_typing: v})} />
                   <ToggleRow label="Arrêt à la lecture" desc="L'IA attend que vous lisiez pour répondre." value={formData.deactivate_on_read} onChange={v => setFormData({...formData, deactivate_on_read: v})} />
-
-                  <div className="grid grid-cols-2 gap-4 pt-2">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase text-muted-foreground">Fenêtre de silence (min)</Label>
-                      <Input type="number" value={formData.session_window} onChange={e => setFormData({...formData, session_window: parseInt(e.target.value) || 0})} className="h-8 text-xs" />
+                  <ToggleRow label="Rejet d'appels" desc="Rejeter automatiquement les appels vocaux/vidéo." value={formData.reject_calls} onChange={v => setFormData({...formData, reject_calls: v})} />
+                </div>
+                <div className="p-6 bg-muted/30 space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">Simulation Humaine</Label>
+                      <Badge variant="outline" className="text-[10px] bg-background">Expert</Badge>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase text-muted-foreground">Délai de réponse (sec)</Label>
-                      <Input type="number" value={formData.reply_delay} onChange={e => setFormData({...formData, reply_delay: parseInt(e.target.value) || 0})} className="h-8 text-xs" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <Label className="text-[10px] text-muted-foreground font-medium">Fenêtre de silence (min)</Label>
+                          <span className="text-[10px] font-mono">{formData.session_window}m</span>
+                        </div>
+                        <Input type="number" value={formData.session_window} onChange={e => setFormData({...formData, session_window: parseInt(e.target.value) || 0})} className="h-9 text-sm" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <Label className="text-[10px] text-muted-foreground font-medium">Délai de réponse (sec)</Label>
+                          <span className="text-[10px] font-mono">{formData.reply_delay}s</span>
+                        </div>
+                        <Input type="number" value={formData.reply_delay} onChange={e => setFormData({...formData, reply_delay: parseInt(e.target.value) || 0})} className="h-9 text-sm" />
+                      </div>
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </section>
 
-                <div className="py-6">
-                  <WebhookManager sessionId={sessionId} />
+          <Separator />
+
+          {/* Section Personality */}
+          <section id="personality" className="scroll-mt-32 space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-muted-foreground">Personnalité</h2>
+              <p className="text-xs text-muted-foreground">Définissez l&apos;identité et les règles de conduite.</p>
+            </div>
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold">Instruction principale (Prompt)</Label>
+                <Textarea
+                  value={formData.prompt}
+                  onChange={e => setFormData({...formData, prompt: e.target.value})}
+                  className="h-[240px] overflow-y-auto text-sm leading-relaxed resize-none bg-card shadow-inner"
+                  placeholder="Tu es un assistant..."
+                />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold">Contraintes & Règles strictes</Label>
+                <Textarea
+                  value={formData.constraints}
+                  onChange={e => setFormData({...formData, constraints: e.target.value})}
+                  className="h-[120px] overflow-y-auto text-sm border-amber-500/20 focus-visible:ring-amber-500/50 bg-amber-500/[0.02] resize-none"
+                  placeholder="Ne jamais donner de prix..."
+                />
+              </div>
+            </div>
+          </section>
+
+          <Separator />
+
+          {/* Section Knowledge */}
+          <section id="knowledge" className="scroll-mt-32 space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-muted-foreground">Connaissances</h2>
+              <p className="text-xs text-muted-foreground">Base de données RAG pour des réponses précises.</p>
+            </div>
+            <Card>
+              <CardContent className="p-6">
+                <KnowledgeBaseManager sessionId={sessionId} />
+              </CardContent>
+            </Card>
+          </section>
+
+          <Separator />
+
+          {/* Section Engine */}
+          <section id="engine" className="scroll-mt-32 space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-muted-foreground">Moteur IA</h2>
+              <p className="text-xs text-muted-foreground">Configuration technique de l&apos;API.</p>
+            </div>
+            <Card>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-xs font-semibold">Modèle sélectionné</Label>
+                  <Select value={formData.model} onValueChange={v => setFormData({...formData, model: v})}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableModels.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {isAdmin && (
-                  <div className="py-6 space-y-4">
-                    <p className="text-[10px] font-bold uppercase text-destructive">Paramètres API (Admin uniquement)</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Endpoint personnalisé</Label>
-                        <Input value={formData.endpoint} onChange={e => setFormData({...formData, endpoint: e.target.value})} className="h-8 text-[10px] font-mono" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Clé API</Label>
-                        <Input type="password" value={formData.key} onChange={e => setFormData({...formData, key: e.target.value})} className="h-8 text-[10px] font-mono" />
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-dashed">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] text-muted-foreground font-medium">API Endpoint</Label>
+                      <Input value={formData.endpoint} onChange={e => setFormData({...formData, endpoint: e.target.value})} className="h-9 text-xs font-mono" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] text-muted-foreground font-medium">API Key</Label>
+                      <Input type="password" value={formData.key} onChange={e => setFormData({...formData, key: e.target.value})} className="h-9 text-xs font-mono" />
                     </div>
                   </div>
                 )}
+
+                <div className="pt-4">
+                  <WebhookManager sessionId={sessionId} />
+                </div>
               </CardContent>
             </Card>
-          </div>
-        )}
+          </section>
+        </div>
       </div>
     </div>
   )

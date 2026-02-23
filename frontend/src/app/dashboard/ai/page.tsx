@@ -44,6 +44,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import { useUser, useAuth } from "@clerk/nextjs"
 import { api } from "@/lib/api"
 import { toast } from "sonner"

@@ -129,7 +129,7 @@ class Session {
             deactivate_on_typing, deactivate_on_read, trigger_keywords,
             reply_delay, read_on_reply, reject_calls,
             random_protection_enabled, random_protection_rate,
-            constraints, session_window
+            constraints, session_window, respond_to_tags
         } = aiConfig;
 
         // Handle undefined values to prevent overwriting existing ones with null if not provided
@@ -143,7 +143,7 @@ class Session {
                 ai_deactivate_on_typing = ?, ai_deactivate_on_read = ?, ai_trigger_keywords = ?,
                 ai_reply_delay = ?, ai_read_on_reply = ?, ai_reject_calls = ?,
                 ai_random_protection_enabled = ?, ai_random_protection_rate = ?,
-                ai_constraints = ?, ai_session_window = ?,
+                ai_constraints = ?, ai_session_window = ?, ai_respond_to_tags = ?,
                 updated_at = datetime('now')
             WHERE id = ?
         `);
@@ -167,6 +167,7 @@ class Session {
             random_protection_rate !== undefined ? random_protection_rate : (existing.ai_random_protection_rate ?? 0.1),
             constraints !== undefined ? constraints : existing.ai_constraints,
             session_window !== undefined ? session_window : (existing.ai_session_window ?? 5),
+            respond_to_tags !== undefined ? (respond_to_tags ? 1 : 0) : existing.ai_respond_to_tags,
             sessionId
         );
         return this.findById(sessionId);

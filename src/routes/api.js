@@ -541,6 +541,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 reject_calls: !!session.ai_reject_calls,
                 constraints: session.ai_constraints || '',
                 session_window: session.ai_session_window ?? 5,
+                respond_to_tags: !!session.ai_respond_to_tags,
                 stats: {
                     received: session.ai_messages_received || 0,
                     sent: session.ai_messages_sent || 0,
