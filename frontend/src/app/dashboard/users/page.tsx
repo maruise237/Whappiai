@@ -76,8 +76,9 @@ export default function UsersPage() {
   
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 5
-  const totalPages = Math.ceil(users.length / itemsPerPage)
-  const paginatedUsers = users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const usersList = Array.isArray(users) ? users : []
+  const totalPages = Math.ceil(usersList.length / itemsPerPage)
+  const paginatedUsers = usersList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   const form = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
@@ -89,7 +90,7 @@ export default function UsersPage() {
     try {
       const token = await getToken()
       const data = await api.users.list(token || undefined)
-      setUsers(data || [])
+      setUsers(Array.isArray(data) ? data : [])
     } catch (e) {} finally { setIsLoading(false) }
   }
 

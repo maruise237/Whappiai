@@ -35,10 +35,16 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
         let wsUrl: string
         
-        if (API_BASE_URL) {
-          const url = new URL(API_BASE_URL)
-          const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-          wsUrl = `${protocol}//${url.host}?token=${token}`
+        if (API_BASE_URL && API_BASE_URL.includes('://')) {
+          try {
+            const url = new URL(API_BASE_URL)
+            const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+            wsUrl = `${protocol}//${url.host}?token=${token}`
+          } catch (e) {
+            console.error("Invalid API_BASE_URL for WebSocket:", API_BASE_URL)
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+            wsUrl = `${protocol}//${window.location.host}?token=${token}`
+          }
         } else {
           const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
           wsUrl = `${protocol}//${window.location.host}?token=${token}`

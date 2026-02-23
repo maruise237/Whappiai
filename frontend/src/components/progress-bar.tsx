@@ -10,10 +10,18 @@ export default function ProgressBar() {
 
   useEffect(() => {
     // This will run on every route change
-    NProgress.done();
+    if (typeof window !== 'undefined') {
+      try {
+        NProgress.done();
+      } catch (e) {}
+    }
     
     return () => {
-      NProgress.start();
+      if (typeof window !== 'undefined') {
+        try {
+          NProgress.start();
+        } catch (e) {}
+      }
     };
   }, [pathname, searchParams]);
 

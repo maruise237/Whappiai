@@ -49,7 +49,7 @@ export default function ActivitiesPage() {
         api.activities.list(token || undefined),
         api.activities.summary(7, token || undefined)
       ])
-      setActivities(activitiesData || [])
+      setActivities(Array.isArray(activitiesData) ? activitiesData : [])
       setSummary(summaryData?.data || summaryData || summary)
     } catch (error: any) {
       toast.error("Échec du chargement des activités: " + (error.message || "Erreur inconnue"))
@@ -110,7 +110,7 @@ export default function ActivitiesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {activities.length === 0 ? (
+            {!Array.isArray(activities) || activities.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-64 text-center py-12">
                   <Activity className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />

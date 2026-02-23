@@ -88,11 +88,11 @@ export default function DashboardPage() {
         api.activities.list(token || undefined),
         api.activities.summary(7, token || undefined)
       ])
-      setRecentActivities((list || []).slice(0, 5))
+      setRecentActivities(Array.isArray(list) ? list.slice(0, 5) : [])
       setSummary({
         totalActivities: summ?.totalActivities || 0,
         successRate: summ?.successRate || 0,
-        activeSessions: sessions.filter(s => s.isConnected).length,
+        activeSessions: Array.isArray(sessions) ? sessions.filter(s => s?.isConnected).length : 0,
         messagesSent: summ?.byAction?.send_message || 0
       })
     } catch (e) {} finally { setActivitiesLoading(false) }
@@ -125,12 +125,14 @@ export default function DashboardPage() {
     if (!lastMessage) return
 
     if (lastMessage.type === 'session-update') {
-      const updates = lastMessage.data
+      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : (lastMessage.data ? [lastMessage.data] : [])
       setSessions(prev => {
-        const sessionsMap = new Map(prev.map(s => [s.sessionId, s]));
+        const currentSessions = Array.isArray(prev) ? prev : []
+        const sessionsMap = new Map(currentSessions.map(s => [s.sessionId, s]));
         let changed = false;
 
         updates.forEach((update: any) => {
+          if (!update || !update.sessionId) return;
           const existing = sessionsMap.get(update.sessionId);
           if (existing) {
             const oldStatus = existing.isConnected;
@@ -178,7 +180,7 @@ export default function DashboardPage() {
     } catch (e) { toast.error("Échec de la création", { id: t }) }
   }
 
-  const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
+  const selectedSession = Array.isArray(sessions) ? sessions.find(s => s && s.sessionId === selectedSessionId) : null
 
   return (
     <div className="space-y-6">

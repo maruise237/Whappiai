@@ -95,8 +95,10 @@ export default function AIPage() {
       const sessionsData = await api.sessions.list(token || undefined)
       const sessions = sessionsData || []
       
-      const itemsWithConfig = await Promise.all(sessions.map(async (s: any) => {
+      const sessionsList = Array.isArray(sessions) ? sessions : []
+      const itemsWithConfig = await Promise.all(sessionsList.map(async (s: any) => {
         try {
+          if (!s || !s.sessionId) return null
           const config = await api.sessions.getAI(s.sessionId, token || undefined)
           return {
             sessionId: s.sessionId,
@@ -115,7 +117,7 @@ export default function AIPage() {
           }
         }
       }))
-      setItems(itemsWithConfig)
+      setItems(itemsWithConfig.filter(i => i !== null))
     } catch (error) {
       toast.error("Échec du chargement des configurations IA")
     } finally {
@@ -128,6 +130,7 @@ export default function AIPage() {
   }, [isLoaded, user, fetchData])
 
   const handleOpenMemory = async (sessionId: string) => {
+    if (!sessionId) return
     setSelectedSessionMemory(sessionId)
     setIsMemoryOpen(true)
     setSelectedChat(null)
@@ -135,7 +138,7 @@ export default function AIPage() {
     try {
       const token = await getToken()
       const response = await api.sessions.getInbox(sessionId, token || undefined)
-      setConversations(response || [])
+      setConversations(Array.isArray(response) ? response : [])
     } catch (e: any) {
       toast.error("Échec du chargement de la mémoire: " + (e.message || "Erreur inconnue"))
     }
@@ -147,7 +150,7 @@ export default function AIPage() {
     try {
       const token = await getToken()
       const response = await api.sessions.getChatHistory(selectedSessionMemory, jid, token || undefined)
-      setHistory(response || [])
+      setHistory(Array.isArray(response) ? response : [])
       setSelectedChat(jid)
     } catch (e: any) {
       toast.error("Erreur historique: " + (e.message || "Erreur inconnue"))
@@ -376,7 +379,7 @@ export default function AIPage() {
             <div className="w-[300px] flex flex-col min-h-0">
               <ScrollArea className="flex-1">
                 <div className="divide-y">
-                  {conversations.length === 0 ? (
+                  {!Array.isArray(conversations) || conversations.length === 0 ? (
                     <div className="p-8 text-center text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Vide</div>
                   ) : (
                     conversations.map(conv => (
@@ -421,8 +424,8 @@ export default function AIPage() {
                 <>
                   <ScrollArea className="flex-1 p-6">
                     <div className="space-y-6">
-                      {history.map((msg, i) => (
-                        <div key={msg.id || i} className={cn(
+                      {Array.isArray(history) && history.map((msg, i) => (
+                        <div key={msg?.id || i} className={cn(
                           "group flex flex-col max-w-[85%] relative",
                           msg.role === 'user' ? "mr-auto" : "ml-auto items-end"
                         )}>
