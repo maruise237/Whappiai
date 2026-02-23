@@ -70,10 +70,9 @@ import { cn } from "@/lib/utils"
 
 interface Group {
   id: string
-  subject: string
-  name?: string // Backend uses 'subject', keeping 'name' for safety
+  name: string
   participantsCount: number
-  sessionId?: string
+  sessionId: string
   isActive?: boolean
 }
 
@@ -131,7 +130,6 @@ export default function UnifiedModerationHub() {
   const [profile, setProfile] = React.useState<GroupProfile | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [activeTab, setActiveTab] = React.useState("overview")
-  const [searchQuery, setSearchQuery] = React.useState("")
 
   const fetchData = React.useCallback(async () => {
     try {
@@ -305,12 +303,7 @@ export default function UnifiedModerationHub() {
               </div>
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  className="h-8 pl-8 text-xs bg-background/50 border-border/50"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+                <Input placeholder="Rechercher..." className="h-8 pl-8 text-xs bg-background/50 border-border/50" />
               </div>
             </CardHeader>
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -322,9 +315,7 @@ export default function UnifiedModerationHub() {
                   <p className="text-xs text-muted-foreground">Aucun groupe trouvé.</p>
                 </div>
               ) : (
-                groups
-                  .filter(g => (g.subject || g.name || "").toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map(group => (
+                groups.map(group => (
                   <button
                     key={group.id}
                     onClick={() => setSelectedGroupId(group.id)}
@@ -339,10 +330,10 @@ export default function UnifiedModerationHub() {
                       "w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-transform group-hover:scale-105",
                       selectedGroupId === group.id ? "bg-white/20" : "bg-muted"
                     )}>
-                      {(group.subject || group.name || "?").charAt(0)}
+                      {group.name.charAt(0)}
                     </div>
                     <div className="flex-1 text-left overflow-hidden">
-                      <p className="text-xs font-semibold truncate">{group.subject || group.name}</p>
+                      <p className="text-xs font-semibold truncate">{group.name}</p>
                       <p className={cn(
                         "text-[10px] flex items-center gap-1",
                         selectedGroupId === group.id ? "text-primary-foreground/70" : "text-muted-foreground/60"
