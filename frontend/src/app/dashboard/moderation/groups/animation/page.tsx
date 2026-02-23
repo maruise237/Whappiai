@@ -80,7 +80,7 @@ function AnimationPageContent() {
 
   React.useEffect(() => {
     const lower = searchQuery.toLowerCase();
-    setFilteredGroups(groups.filter(g => (g.subject || "").toLowerCase().includes(lower)));
+    setFilteredGroups(groups.filter(g => g.subject.toLowerCase().includes(lower)));
   }, [searchQuery, groups]);
 
   const handleSelectGroup = async (group: Group) => {
@@ -204,7 +204,7 @@ function AnimationPageContent() {
               {filteredGroups.map(g => (
                 <button key={g.id} onClick={() => handleSelectGroup(g)} className={cn("w-full flex items-center gap-4 p-4 rounded-xl transition-all mb-1", selectedGroup?.id === g.id ? "bg-primary text-white shadow-lg" : "hover:bg-secondary/80 text-muted-foreground")}>
                   <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", selectedGroup?.id === g.id ? "bg-white/20" : "bg-primary/10 text-primary")}><Users className="w-5 h-5" /></div>
-                  <div className="flex-1 min-w-0"><div className="text-[11px] font-black uppercase truncate">{g.subject || "Sans nom"}</div></div>
+                  <div className="flex-1 min-w-0"><div className="text-[11px] font-black uppercase truncate">{g.subject}</div></div>
                   <ChevronRight className="w-4 h-4 opacity-20" />
                 </button>
               ))}
@@ -219,7 +219,7 @@ function AnimationPageContent() {
               {/* Group Info */}
               <div className="p-8 rounded-3xl bg-primary/5 border border-primary/10 flex items-center gap-8 relative overflow-hidden">
                 <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl"><ShieldCheck className="w-8 h-8" /></div>
-                <div className="flex-1"><h2 className="text-xl font-black uppercase">{selectedGroup.subject || "Groupe"}</h2><Badge variant="outline" className="text-[8px]">{selectedGroup.participantsCount} MEMBRES</Badge></div>
+                <div className="flex-1"><h2 className="text-xl font-black uppercase">{selectedGroup.subject}</h2><Badge variant="outline" className="text-[8px]">{selectedGroup.participantsCount} MEMBRES</Badge></div>
               </div>
 
               {/* Tabs */}
@@ -327,13 +327,5 @@ function AnimationPageContent() {
 }
 
 export default function AnimationPage() {
-  return (
-    <React.Suspense fallback={
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    }>
-      <AnimationPageContent />
-    </React.Suspense>
-  );
+  return <React.Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><AnimationPageContent /></React.Suspense>;
 }

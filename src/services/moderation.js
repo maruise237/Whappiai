@@ -50,16 +50,6 @@ function isGroupAdmin(groupMetadata, myJid, myLid, sessionId) {
 }
 
 /**
- * Get settings for a specific group
- * @param {string} sessionId
- * @param {string} groupId
- * @returns {object|null}
- */
-function getGroupSettings(sessionId, groupId) {
-    return db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
-}
-
-/**
  * Get all groups where the session is an admin
  * @param {object} sock - Baileys socket instance
  * @param {string} sessionId - Session ID
