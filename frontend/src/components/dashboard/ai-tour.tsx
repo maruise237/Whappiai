@@ -17,17 +17,26 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-config-header',
           popover: {
-            title: '🚀 Centre de Commande IA',
-            description: 'Bienvenue dans la configuration avancée. Ici, vous allez donner une âme à votre assistant WhatsApp.',
+            title: '🚀 Command Center 2025',
+            description: 'Bienvenue dans l\'interface de pilotage neuronal. Ici, vous allez donner vie à votre assistant.',
             side: "bottom",
             align: 'center'
           }
         },
         {
-          element: '.ai-mode-selector',
+          element: '#intelligence',
           popover: {
-            title: '🧠 Stratégie Opérationnelle',
-            description: 'Choisissez comment l\'IA doit intervenir. **Autonome** pour une réactivité totale, ou **Hybride** pour garder le contrôle.',
+            title: '🧠 Neural Engine',
+            description: 'Choisissez le cerveau de votre bot. Mode autonome pour une gestion totale, ou hybride pour garder le contrôle.',
+            side: "top",
+            align: 'center'
+          }
+        },
+        {
+          element: '#automation',
+          popover: {
+            title: '🛡️ Safety Guard',
+            description: 'Configurez les barrières de sécurité : pause automatique quand vous écrivez, anti-bouclage, et protection contre les appels.',
             side: "top",
             align: 'center'
           }
@@ -35,26 +44,17 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-prompt-area',
           popover: {
-            title: '✍️ Matrice Neuronale',
-            description: 'C\'est ici que tout se joue. Définissez l\'identité, le ton et les connaissances de votre assistant. Soyez aussi précis que possible !',
+            title: '🎭 Personality Logic',
+            description: 'C\'est ici que tout se joue. Définissez qui est votre IA, ce qu\'elle vend, et comment elle doit s\'adresser à vos clients.',
             side: "top",
             align: 'center'
           }
         },
         {
-          element: '.ai-model-selector',
+          element: '#advanced',
           popover: {
-            title: '⚡ Moteur d\'Intelligence',
-            description: 'Sélectionnez la puissance de calcul. DeepSeek offre un excellent rapport performance/prix pour le support WhatsApp.',
-            side: "left",
-            align: 'center'
-          }
-        },
-        {
-          element: '.ai-save-button',
-          popover: {
-            title: '💾 Synchronisation',
-            description: 'Une fois vos réglages terminés, cliquez ici pour déployer la nouvelle configuration sur votre numéro.',
+            title: '⚙️ Advanced Tuning',
+            description: 'Pour les experts : ajustez la température (créativité) et changez de modèle de langage à la volée.',
             side: "left",
             align: 'center'
           }
@@ -63,8 +63,8 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-page-header',
           popover: {
-            title: '🤖 Vos Assistants IA',
-            description: 'Gérez toute votre flotte d\'IA en un seul endroit. Chaque numéro WhatsApp peut avoir sa propre intelligence.',
+            title: '✨ AI Intelligence Hub',
+            description: 'Découvrez la version 6.0 du centre d\'intelligence. Gérez vos bots WhatsApp avec une précision chirurgicale.',
             side: "bottom",
             align: 'center'
           }
@@ -72,8 +72,8 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-session-card',
           popover: {
-            title: '📱 Vos Instances',
-            description: 'Chaque carte représente un numéro connecté. Vous pouvez voir en un coup d\'œil son statut et ses performances.',
+            title: '🤖 Instance Matrix',
+            description: 'Chaque carte représente un cerveau distinct connecté à l\'un de vos numéros WhatsApp.',
             side: "top",
             align: 'center'
           }
@@ -81,8 +81,8 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-quick-settings',
           popover: {
-            title: '⚙️ Réglages Rapides',
-            description: 'Modifiez les paramètres essentiels sans quitter la page principale.',
+            title: '⚡ Quick Tuning',
+            description: 'Ajustez les paramètres vitaux sans quitter le hub principal.',
             side: "left",
             align: 'center'
           }
@@ -90,18 +90,9 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         {
           element: '.ai-advanced-config',
           popover: {
-            title: '💎 Configuration Pro',
-            description: 'Accédez au "Command Center" pour personnaliser les règles de sécurité et la personnalité de l\'IA.',
+            title: '🚀 Advanced Matrix',
+            description: 'Plongez dans les réglages profonds pour configurer le prompt système et la sécurité.',
             side: "left",
-            align: 'center'
-          }
-        },
-        {
-          element: '.ai-toggle-switch',
-          popover: {
-            title: '⚡ Activation Instantanée',
-            description: 'Basculez entre le mode manuel et l\'automatisation complète en un clic.',
-            side: "top",
             align: 'center'
           }
         }
@@ -112,10 +103,10 @@ export function AITour({ enabled, onExit, isConfigPage = false }: AITourProps) {
         showProgress: true,
         animate: true,
         allowClose: true,
-        overlayColor: 'rgba(0, 0, 0, 0.75)',
+        overlayColor: 'rgba(15, 23, 42, 0.85)',
         nextBtnText: 'Suivant',
         prevBtnText: 'Précédent',
-        doneBtnText: 'Terminé',
+        doneBtnText: 'C\'est parti !',
         steps: steps,
         onDestroyStarted: () => {
           onExit()

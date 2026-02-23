@@ -232,7 +232,7 @@ function AIConfigForm() {
             </Button>
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">Command <span className="text-primary">Center</span></h1>
+                <h1 className="text-2xl font-black tracking-tight uppercase leading-none">Command <span className="text-primary">Center</span></h1>
                 <Badge variant="outline" className="font-black text-[10px] uppercase tracking-[0.2em] bg-primary/5 text-primary border-primary/10 px-3 h-6">
                   {sessionId}
                 </Badge>
@@ -344,6 +344,7 @@ function AIConfigForm() {
                   <div className="space-y-6 ai-mode-selector">
                     <div className="flex items-center gap-2 ml-2">
                       <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Mode de déploiement</Label>
+                      <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <HelpCircle className="w-3 h-3 text-muted-foreground/40 cursor-help" />
@@ -352,6 +353,7 @@ function AIConfigForm() {
                           <p className="text-[10px]">Détermine si l'IA répond seule ou vous laisse la main.</p>
                         </TooltipContent>
                       </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {[
@@ -463,6 +465,7 @@ function AIConfigForm() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Label className="text-xs font-black uppercase tracking-widest">Anti-Loop Protection</Label>
+                        <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <HelpCircle className="w-3 h-3 text-muted-foreground/40 cursor-help" />
@@ -471,6 +474,7 @@ function AIConfigForm() {
                             <p className="text-[10px]">Empêche deux IA de se répondre à l'infini en simulant une "hésitation" humaine.</p>
                           </TooltipContent>
                         </Tooltip>
+                        </TooltipProvider>
                       </div>
                       <Switch
                         checked={formData.random_protection_enabled}
@@ -545,6 +549,7 @@ function AIConfigForm() {
                   <div className="flex items-center justify-between px-2">
                     <div className="flex items-center gap-2">
                       <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Neural Matrix (System Prompt)</Label>
+                      <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <HelpCircle className="w-3 h-3 text-muted-foreground/40 cursor-help" />
@@ -553,6 +558,7 @@ function AIConfigForm() {
                           <p className="text-[10px]">La "bible" de votre assistant. Décrivez son rôle, ce qu'il sait, et comment il doit s'adresser aux clients.</p>
                         </TooltipContent>
                       </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <Badge variant="outline" className="text-[8px] font-black px-4">Beta Pro</Badge>
                   </div>
@@ -670,6 +676,7 @@ function AIConfigForm() {
                       <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Creativity (Temp)</span>
+                        <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <HelpCircle className="w-3 h-3 text-muted-foreground/40 cursor-help" />
@@ -678,6 +685,7 @@ function AIConfigForm() {
                             <p className="text-[10px]">Contrôle le hasard. **0.0** est très sérieux et répétitif, **1.0** et plus est créatif et imprévisible.</p>
                           </TooltipContent>
                         </Tooltip>
+                        </TooltipProvider>
                       </div>
                         <span className="text-lg font-black text-primary">{formData.temperature}</span>
                       </div>
@@ -732,7 +740,7 @@ function AIConfigForm() {
               </CardContent>
             </Card>
           </section>
-        </div>
+        </main>
       </div>
     </div>
   )

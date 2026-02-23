@@ -50,12 +50,6 @@ function isGroupAdmin(groupMetadata, myJid, myLid, sessionId) {
 }
 
 /**
- * Get all groups where the session is an admin
- * @param {object} sock - Baileys socket instance
- * @param {string} sessionId - Session ID
- * @returns {Promise<Array>} List of admin groups
- */
-/**
  * Get settings for a specific group
  * @param {string} sessionId
  * @param {string} groupId
@@ -65,6 +59,12 @@ function getGroupSettings(sessionId, groupId) {
     return db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
 }
 
+/**
+ * Get all groups where the session is an admin
+ * @param {object} sock - Baileys socket instance
+ * @param {string} sessionId - Session ID
+ * @returns {Promise<Array>} List of admin groups
+ */
 async function getAdminGroups(sock, sessionId) {
     try {
         if (!sock) {

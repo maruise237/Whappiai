@@ -556,9 +556,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 ai_max_tokens: config.ai_max_tokens || config.max_tokens
             };
 
-            const result = await aiService.callAI(callConfig, "Hello, this is a connection test.");
+            const testMessage = req.body.message || "Hello, this is a connection test.";
+            const result = await aiService.callAI(callConfig, testMessage);
             if (result) {
-                res.json({ status: 'success', message: 'Connection successful', preview: result });
+                res.json({ status: 'success', message: 'Connection successful', preview: result, data: result });
             } else {
                 res.status(400).json({ status: 'error', message: 'AI failed to respond' });
             }

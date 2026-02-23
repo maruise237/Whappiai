@@ -107,7 +107,7 @@ function ModerationPageContent() {
 
   React.useEffect(() => {
     const lower = searchQuery.toLowerCase()
-    const filtered = groups.filter(g => g.subject.toLowerCase().includes(lower))
+    const filtered = groups.filter(g => (g.subject || "").toLowerCase().includes(lower))
     setFilteredGroups(filtered)
   }, [searchQuery, groups])
 
@@ -250,7 +250,7 @@ function ModerationPageContent() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[11px] font-black uppercase tracking-tight truncate">
-                          {group.subject}
+                          {group.subject || "Sans nom"}
                         </div>
                         <div className={cn(
                           "text-[9px] font-bold uppercase tracking-tighter opacity-60",
@@ -292,7 +292,7 @@ function ModerationPageContent() {
                   <ShieldCheck className="w-8 h-8" />
                 </div>
                 <div className="space-y-1 flex-1 text-center md:text-left z-10">
-                  <h2 className="text-xl font-black uppercase tracking-tighter">{selectedGroup.subject}</h2>
+                  <h2 className="text-xl font-black uppercase tracking-tighter">{selectedGroup.subject || "Groupe"}</h2>
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                     <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black tracking-widest uppercase h-5">
                       {selectedGroup.id}
