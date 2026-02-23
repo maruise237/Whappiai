@@ -2,9 +2,6 @@
 
 import * as React from "react"
 import { Terminal, Copy, Check } from "lucide-react"
-import Prism from "prismjs"
-import "prismjs/components/prism-bash"
-import "prismjs/themes/prism-tomorrow.css"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -101,13 +98,8 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
       </CardHeader>
       <CardContent className="p-4">
         <ScrollArea className="h-64 w-full bg-slate-950 rounded-md p-4">
-          <pre className="font-mono text-xs text-slate-300">
-            <code
-              className="language-bash"
-              dangerouslySetInnerHTML={{
-                __html: Prism.highlight(curlExample, Prism.languages.bash, 'bash')
-              }}
-            />
+          <pre className="font-mono text-xs text-slate-300 whitespace-pre-wrap">
+            {curlExample}
           </pre>
         </ScrollArea>
         <div className="mt-4 flex items-center gap-2">

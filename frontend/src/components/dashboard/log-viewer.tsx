@@ -16,9 +16,6 @@ import {
 } from "@/components/ui/select"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { cn } from "@/lib/utils"
-import Prism from "prismjs"
-import "prismjs/components/prism-json"
-import "prismjs/themes/prism-tomorrow.css"
 
 interface LogEntry {
   type: string;
