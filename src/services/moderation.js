@@ -547,7 +547,6 @@ async function handleIncomingMessage(sock, sessionId, msg) {
 
 module.exports = {
     getAdminGroups,
-    getGroupSettings,
     updateGroupSettings,
     handleIncomingMessage,
     handleParticipantUpdate

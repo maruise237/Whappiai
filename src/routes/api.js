@@ -587,17 +587,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.get('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        const { sessionId, groupId } = req.params;
-        try {
-            const moderationService = require('../services/moderation');
-            const settings = moderationService.getGroupSettings(sessionId, groupId);
-            res.json({ status: 'success', data: settings });
-        } catch (err) {
-            res.status(500).json({ status: 'error', message: err.message });
-        }
-    });
-
     router.post('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
