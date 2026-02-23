@@ -307,37 +307,5 @@ export const api = {
     stats: (token?: string) => fetchApi("/api/v1/stats", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-  },
-  recipientLists: {
-    list: (token?: string) => fetchApi("/api/v1/recipient-lists", {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    get: (id: string, token?: string) => fetchApi(`/api/v1/recipient-lists/${id}`, {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    create: (data: any, token?: string) => fetchApi("/api/v1/recipient-lists", {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    delete: (id: string, token?: string) => fetchApi(`/api/v1/recipient-lists/${id}`, {
-      method: "DELETE",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    addRecipient: (id: string, recipient: any, token?: string) => fetchApi(`/api/v1/recipient-lists/${id}/recipients`, {
-      method: "POST",
-      body: JSON.stringify(recipient),
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    removeRecipient: (id: string, number: string, token?: string) => fetchApi(`/api/v1/recipient-lists/${id}/recipients/${number}`, {
-      method: "DELETE",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    search: (query: string, token?: string) => fetchApi(`/api/v1/recipient-lists/search/${query}`, {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    stats: (token?: string) => fetchApi("/api/v1/recipient-lists-stats", {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
   }
 };
