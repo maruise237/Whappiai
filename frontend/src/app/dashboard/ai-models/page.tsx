@@ -134,7 +134,8 @@ export default function AIModelsPage() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -186,6 +187,7 @@ export default function AIModelsPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
 
       <Dialog open={isAddingModel} onOpenChange={setIsAddingModel}>

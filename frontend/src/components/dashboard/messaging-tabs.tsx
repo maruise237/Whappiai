@@ -139,8 +139,8 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
       </CardHeader>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); onTabChange?.(v); }} className="w-full">
-        <div className="px-4 py-2 border-b bg-muted/30">
-          <TabsList className="bg-transparent h-auto p-0 gap-4">
+        <div className="px-4 py-2 border-b bg-muted/30 overflow-x-auto no-scrollbar">
+          <TabsList className="bg-transparent h-auto p-0 gap-6 flex w-max min-w-full">
             {[
               { value: "text", icon: Type, label: "Text" },
               { value: "image", icon: ImageIcon, label: "Image" },
@@ -151,7 +151,7 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 py-2 text-xs font-medium gap-2"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 py-2.5 text-xs font-semibold gap-2 whitespace-nowrap"
               >
                 <tab.icon className="h-3.5 w-3.5" />
                 {tab.label}

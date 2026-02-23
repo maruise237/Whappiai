@@ -189,17 +189,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Sessions" value={sessions.length} />
         <StatCard label="Success Rate" value={`${summary.successRate}%`} />
         <StatCard label="Messages Sent" value={summary.messagesSent} />
         {userRole === 'admin' && <StatCard label="System Activities" value={summary.totalActivities} />}
       </div>
 
-      <div className="flex items-center justify-between gap-4 p-4 border rounded-lg bg-card">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
-            <SelectTrigger className="w-48 h-9 text-xs">
+            <SelectTrigger className="flex-1 sm:w-48 h-9 text-xs">
               <SelectValue placeholder="Select Session" />
             </SelectTrigger>
             <SelectContent>
@@ -209,15 +209,17 @@ export default function DashboardPage() {
             </SelectContent>
           </Select>
           {selectedSession && (
-            <Badge className={selectedSession.isConnected
-              ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
-              : "border-border text-muted-foreground"
-            }>
+            <Badge className={cn(
+              "text-[10px] px-2 h-6 font-medium whitespace-nowrap",
+              selectedSession.isConnected
+                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+                : "bg-muted text-muted-foreground"
+            )}>
               {selectedSession.isConnected ? "Active" : "Offline"}
             </Badge>
           )}
         </div>
-        <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+        <Button size="sm" className="w-full sm:w-auto h-9" onClick={() => setIsCreateOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> New Session
         </Button>
       </div>

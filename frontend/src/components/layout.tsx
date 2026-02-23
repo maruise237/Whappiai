@@ -56,11 +56,12 @@ const footerNav = [
   { name: "Settings", href: "/dashboard/profile", icon: Settings },
 ]
 
-function NavItem({ item, isActive }: { item: any, isActive: boolean }) {
+function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
   const Icon = item.icon
   return (
     <Link
       href={item.href}
+      onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
         isActive
@@ -88,7 +89,7 @@ function LiveIndicator() {
   )
 }
 
-function SidebarContent({ userRole, pathname }: { userRole: string, pathname: string }) {
+function SidebarContent({ userRole, pathname, onItemClick }: { userRole: string, pathname: string, onItemClick?: () => void }) {
   const filteredNav = navigation.filter(item => !item.adminOnly || userRole === 'admin')
   return (
     <div className="flex flex-col h-full bg-card">
@@ -96,14 +97,14 @@ function SidebarContent({ userRole, pathname }: { userRole: string, pathname: st
       <ScrollArea className="flex-1 px-3">
         <nav className="space-y-1">
           {filteredNav.map((item) => (
-            <NavItem key={item.href} item={item} isActive={pathname === item.href} />
+            <NavItem key={item.href} item={item} isActive={pathname === item.href} onClick={onItemClick} />
           ))}
         </nav>
       </ScrollArea>
       <div className="p-3 border-t border-border">
         <nav className="space-y-1">
           {footerNav.map((item) => (
-            <NavItem key={item.href} item={item} isActive={pathname === item.href} />
+            <NavItem key={item.href} item={item} isActive={pathname === item.href} onClick={onItemClick} />
           ))}
         </nav>
       </div>
@@ -119,6 +120,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   const userEmail = user?.primaryEmailAddress?.emailAddress
   const userName = user?.firstName || userEmail?.split("@")[0] || "User"
@@ -185,12 +187,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-20">
             <div className="flex items-center gap-4">
               <div className="md:hidden">
-                <Sheet>
-                  <SheetTrigger asChild><Button variant="ghost" size="icon"><Menu className="h-5 w-5" /></Button></SheetTrigger>
-                  <SheetContent side="left" className="p-0 w-64"><SidebarContent userRole={userRole} pathname={pathname} /></SheetContent>
+                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="p-0 w-64">
+                    <SidebarContent
+                      userRole={userRole}
+                      pathname={pathname}
+                      onItemClick={() => setIsMobileMenuOpen(false)}
+                    />
+                  </SheetContent>
                 </Sheet>
               </div>
-              <h2 className="text-sm font-semibold text-foreground">
+              <h2 className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
                 {[...navigation, ...footerNav].find(n => n.href === pathname)?.name || "Dashboard"}
               </h2>
             </div>
