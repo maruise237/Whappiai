@@ -90,8 +90,14 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
       throw new Error(errorMessage);
     }
 
-    const data = await res.json();
-    return data.data !== undefined ? data.data : data;
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      // If response is not JSON, but was ok, just return empty object
+      return {};
+    }
+    return (data && data.data !== undefined) ? data.data : data;
   } finally {
     if (typeof window !== 'undefined') {
       try { NProgress.done(); } catch (e) {}
@@ -100,6 +106,15 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 }
 
 export const api = {
+  get: (endpoint: string, token?: string) => fetchApi(endpoint, {
+    method: "GET",
+    headers: token ? { "Authorization": `Bearer ${token}` } : {},
+  }),
+  post: (endpoint: string, body: any, token?: string) => fetchApi(endpoint, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: token ? { "Authorization": `Bearer ${token}` } : {},
+  }),
   auth: {
     check: (token?: string) => fetchApi("/api/v1/me", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},

@@ -40,6 +40,7 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 const navigation = [
   { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
@@ -226,7 +227,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </header>
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
-              {children}
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
             </div>
           </main>
         </div>

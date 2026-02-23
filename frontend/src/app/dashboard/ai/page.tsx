@@ -194,14 +194,16 @@ export default function AIPage() {
   }
 
   const handleOpenQuickEdit = (item: any) => {
+    if (!item) return
+    const config = item.aiConfig || {}
     setFormData({
-      sessionId: item.sessionId,
-      enabled: item.aiConfig.enabled,
-      mode: item.aiConfig.mode || "bot",
-      model: item.aiConfig.model,
-      endpoint: item.aiConfig.endpoint,
-      key: item.aiConfig.key || "",
-      prompt: item.aiConfig.prompt || ""
+      sessionId: item.sessionId || "",
+      enabled: !!config.enabled,
+      mode: config.mode || "bot",
+      model: config.model || "",
+      endpoint: config.endpoint || "",
+      key: config.key || "",
+      prompt: config.prompt || ""
     })
     setIsQuickEditOpen(true)
   }
@@ -220,10 +222,12 @@ export default function AIPage() {
   }
 
   const toggleAI = async (item: any) => {
+    if (!item || !item.sessionId) return
+    const config = item.aiConfig || {}
     try {
       const token = await getToken()
-      await api.sessions.updateAI(item.sessionId, { ...item.aiConfig, enabled: !item.aiConfig.enabled }, token || undefined)
-      toast.success(`Assistant IA ${!item.aiConfig.enabled ? 'activé' : 'désactivé'}`)
+      await api.sessions.updateAI(item.sessionId, { ...config, enabled: !config.enabled }, token || undefined)
+      toast.success(`Assistant IA ${!config.enabled ? 'activé' : 'désactivé'}`)
       fetchData()
     } catch (error) {
       toast.error("Échec de la modification")

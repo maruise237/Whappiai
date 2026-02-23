@@ -47,7 +47,7 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
     try {
       const token = await getToken()
       const response = await api.sessions.getKnowledge(sessionId, token || undefined)
-      setDocs(response || [])
+      setDocs(Array.isArray(response) ? response : [])
     } catch (error) {
       console.error("Failed to fetch knowledge base", error)
     } finally {
@@ -105,7 +105,7 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {isLoading ? (
           <div className="col-span-full py-12 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></div>
-        ) : docs.length === 0 ? (
+        ) : (!Array.isArray(docs) || docs.length === 0) ? (
           <div className="col-span-full p-12 text-center border-dashed border-2 rounded-lg bg-muted/20">
             <AlertCircle className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">Aucun document dans la base de connaissances.</p>
