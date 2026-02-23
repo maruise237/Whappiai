@@ -1,40 +1,23 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, CircleCheck, CircleX, Trash2, Smartphone, QrCode, Copy, Check, Eye, EyeOff, ExternalLink, Hash } from "lucide-react"
+import { RefreshCw, Smartphone, QrCode, Trash2, Eye, EyeOff, Copy, Check } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/lib/api"
-import { showConfirm, showAlert, showLoading } from "@/lib/swal"
-import MySwal from "@/lib/swal"
+import { showConfirm } from "@/lib/swal"
 import { cn, copyToClipboard as copyUtil } from "@/lib/utils"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
   const [loading, setLoading] = React.useState(false)
   const [showToken, setShowToken] = React.useState(false)
-  const [copiedId, setCopiedId] = React.useState(false)
-  const [copiedToken, setCopiedToken] = React.useState(false)
   const [phoneNumber, setPhoneNumber] = React.useState("")
-  const [pairingCode, setPairingCode] = React.useState<string | null>(null)
   const [activeTab, setActiveTab] = React.useState("qr")
-
-  // Update pairing code if it comes from session status
-  React.useEffect(() => {
-    if (session?.pairingCode) {
-      setPairingCode(session.pairingCode)
-    }
-  }, [session?.pairingCode])
 
   const handleRequestPairingCode = async () => {
     if (!phoneNumber) {
@@ -47,26 +30,20 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
     try {
       if (!session) {
-        // Create new session with phone number
         const newSessionId = `session_${Math.random().toString(36).substring(2, 9)}`
         await api.sessions.create(newSessionId, phoneNumber)
         onRefresh()
-
-        // Célébration de création
         confetti({
           particleCount: 100,
           spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#3b82f6', '#60a5fa', '#93c5fd', '#ffffff']
+          origin: { y: 0.6 }
         })
       } else {
-        // Relancer avec numéro de téléphone
         await api.sessions.create(session.sessionId, phoneNumber)
         onRefresh()
       }
-      toast.success("Demande envoyée. Attendez le code...", { id: toastId })
+      toast.success("Demande envoyée", { id: toastId })
     } catch (error: any) {
-      console.error("Failed to request pairing code:", error)
       toast.error("Échec de la demande", {
         id: toastId,
         description: error.message || "Impossible de générer le code"
@@ -76,19 +53,10 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
   }
 
-  const copyToClipboard = async (text: string, type: 'id' | 'token' | 'pairing') => {
+  const copyToClipboard = async (text: string, label: string) => {
     const success = await copyUtil(text)
     if (success) {
-      if (type === 'id') {
-        setCopiedId(true)
-        setTimeout(() => setCopiedId(false), 2000)
-      } else if (type === 'token') {
-        setCopiedToken(true)
-        setTimeout(() => setCopiedToken(false), 2000)
-      }
-      toast.success(`${type === 'id' ? 'ID' : type === 'token' ? 'Token' : 'Code'} copié dans le presse-papier`)
-    } else {
-      toast.error("Échec de la copie")
+      toast.success(`${label} copié`)
     }
   }
 
@@ -104,9 +72,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     try {
       await api.sessions.qr(session.sessionId)
       onRefresh()
-      toast.success("QR Code généré avec succès", { id: toastId })
+      toast.success("QR Code généré", { id: toastId })
     } catch (error: any) {
-      console.error("Failed to refresh QR:", error)
       toast.error("Échec de la génération", {
         id: toastId,
         description: error.message || "Impossible de générer le QR Code"
@@ -121,228 +88,166 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
     const result = await showConfirm(
       "Supprimer la session ?",
-      `Voulez-vous vraiment supprimer la session "${session.sessionId}" ? Cette action est irréversible.`,
+      `Voulez-vous vraiment supprimer la session "${session.sessionId}" ?`,
       "warning"
     )
 
     if (!result.isConfirmed) return
 
     setLoading(true)
-    const toastId = toast.loading("Suppression de la session...")
+    const toastId = toast.loading("Suppression...")
     try {
       await api.sessions.delete(session.sessionId, session.token)
       onRefresh()
       toast.success("Session supprimée", { id: toastId })
     } catch (error: any) {
-      console.error("Failed to delete session:", error)
-      toast.error("Échec de la suppression", {
-        id: toastId,
-        description: error.message || "Impossible de supprimer la session"
-      })
+      toast.error("Échec de la suppression", { id: toastId })
     } finally {
       setLoading(false)
     }
   }
 
-  const status = (session?.isConnected && !loading) ? "connected" : (session?.status === "GENERATING_QR" || session?.status === "GENERATING_CODE" || session?.status === "CONNECTING" || loading) ? "connecting" : "disconnected"
+  const isConnected = session?.isConnected && !loading
   const qrCode = session?.qr
-  const pairingCodeValue = session?.pairingCode || pairingCode
+  const pairingCode = session?.pairingCode
+
+  if (!session) {
+    return (
+      <Card className="border-border bg-card">
+        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+          <Smartphone className="h-8 w-8 text-muted-foreground/40 mb-3" />
+          <h3 className="text-sm font-medium mb-1">No session selected</h3>
+          <p className="text-xs text-muted-foreground max-w-xs mb-4">Select an existing session or create a new one to start.</p>
+          <Button size="sm" onClick={onCreate}>
+            Create Session
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
-    <Card className="overflow-hidden border border-border bg-card shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-muted/30 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "p-2 rounded-md border",
-            status === 'connected' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-primary/5 text-primary border-primary/10"
-          )}>
-            <Smartphone className="w-4 h-4" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold tracking-tight">{session ? session.sessionId : "No Session Selected"}</span>
-              {session && (
-                <Badge
-                  variant={status === "connected" ? "default" : status === "connecting" ? "secondary" : "destructive"}
-                  className={cn(
-                    "text-[10px] h-4.5 px-2 font-medium",
-                    status === 'connected' && "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20"
-                  )}
-                >
-                  {status === 'connected' ? 'Connected' : status === 'connecting' ? 'Initializing...' : 'Disconnected'}
-                </Badge>
-              )}
+    <Card className="border-border bg-card">
+      <CardHeader className="p-4 border-b">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <Smartphone className="h-4 w-4 text-primary" />
             </div>
-            {session && (
-              <div className="flex items-center gap-x-4 w-full overflow-x-auto no-scrollbar scroll-smooth py-1">
-                <div className="flex items-center gap-1 group/id border border-border/50 bg-secondary/30 px-2 py-1 rounded shrink-0">
-                  <span className="whitespace-nowrap">ID: {session.sessionId}</span>
-                  <button onClick={() => copyToClipboard(session.sessionId, 'id')} className="opacity-0 group-hover/id:opacity-100 transition-opacity">
-                    {copiedId ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
-                  </button>
-                </div>
-                {session?.token && (
-                  <div className="flex items-center gap-1 group/token border border-border/50 bg-secondary/30 px-2 py-1 rounded shrink-0">
-                    <span className="whitespace-nowrap">TOKEN: {showToken ? session.token : "••••••••"}</span>
-                    <button onClick={() => setShowToken(!showToken)} className="opacity-40 hover:opacity-100 transition-opacity p-1">
-                      {showToken ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
-                    </button>
-                    <button onClick={() => copyToClipboard(session.token, 'token')} className="opacity-0 group-hover/token:opacity-100 transition-opacity p-1">
-                      {copiedToken ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
-                    </button>
-                  </div>
-                )}
+            <div>
+              <p className="text-sm font-medium">{session.sessionId}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-muted-foreground">WhatsApp Session</p>
+                <button
+                  onClick={() => copyToClipboard(session.sessionId, "ID")}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
               </div>
-            )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className={isConnected
+              ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+              : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+            }>
+              {isConnected ? "Connected" : "Disconnected"}
+            </Badge>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-
-        {session && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={loading}
-              className="h-10 sm:h-8 text-xs font-bold uppercase tracking-widest gap-2 border-border"
-            >
-              <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
-              <span className="hidden sm:inline">{status === 'connected' ? 'Sync' : 'Retry'}</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDelete}
-              disabled={loading}
-              className="h-10 sm:h-8 px-3 text-xs font-medium gap-2 border-destructive/20 text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        )}
       </CardHeader>
 
-      <CardContent className="p-0">
-        <div className={cn(
-          "grid transition-all duration-200",
-          status === 'connected' ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
-        )}>
-          <div className="overflow-hidden">
-            <div className="p-4 sm:p-6 lg:p-10">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-8 h-10 bg-muted/50 p-1 border border-border">
-                  <TabsTrigger value="qr" className="text-xs font-semibold uppercase tracking-widest gap-2">
-                    <QrCode className="w-3.5 h-3.5" />
-                    QR SCAN
-                  </TabsTrigger>
-                  <TabsTrigger value="code" className="text-xs font-semibold uppercase tracking-widest gap-2">
-                    <Smartphone className="w-3.5 h-3.5" />
-                    PAIRING CODE
-                  </TabsTrigger>
-                </TabsList>
+      <CardContent className="p-4">
+        {!isConnected ? (
+          <div className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="qr" className="text-xs">QR Code</TabsTrigger>
+                <TabsTrigger value="code" className="text-xs">Pairing Code</TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="qr" className="mt-0">
-                  <div className="flex flex-col items-center gap-8">
-                    <div className="relative aspect-square w-full max-w-[280px] border border-border rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shadow-inner">
-                      {qrCode ? (
-                        <div className="w-full h-full p-6 bg-white flex items-center justify-center">
-                          <img src={qrCode} alt="QR Code" className="w-full h-full object-contain" />
-                        </div>
-                      ) : status === "connecting" ? (
-                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                          <RefreshCw className="w-8 h-8 animate-spin opacity-20" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Generating QR...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-4 text-muted-foreground text-center p-8">
-                          <QrCode className="w-12 h-12 opacity-10" />
-                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-40 leading-relaxed">
-                            Select a session or click retry<br />to generate a QR code.
-                          </p>
-                        </div>
-                      )}
+              <TabsContent value="qr" className="flex flex-col items-center space-y-4">
+                <div className="relative aspect-square w-48 border rounded-lg flex items-center justify-center bg-muted/20">
+                  {qrCode ? (
+                    <img src={qrCode} alt="QR Code" className="w-full h-full p-2 bg-white rounded-md" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <RefreshCw className={cn("h-6 w-6", loading && "animate-spin")} />
+                      <span className="text-[10px] font-medium">Generating...</span>
                     </div>
+                  )}
+                </div>
+                <Button size="sm" variant="outline" onClick={handleRefresh} disabled={loading}>
+                  <RefreshCw className={cn("h-3.5 w-3.5 mr-2", loading && "animate-spin")} />
+                  Refresh QR
+                </Button>
+              </TabsContent>
 
-                    {!loading && session && !qrCode && (
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600/60 text-center">
-                        Hit "Retry" to get a new QR code.
-                      </p>
-                    )}
+              <TabsContent value="code" className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-medium text-muted-foreground uppercase">Phone Number</label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g. 237600000000"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className="h-9 text-sm"
+                    />
+                    <Button size="sm" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                      Get Code
+                    </Button>
                   </div>
-                </TabsContent>
+                </div>
 
-                <TabsContent value="code" className="mt-0">
-                  <div className="flex flex-col items-center gap-6 max-w-sm mx-auto">
-                    <div className="w-full space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-1">Phone Number</label>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="+237 600..."
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            className="h-10 text-xs font-medium border-border shadow-none focus-visible:ring-1"
-                          />
-                          <Button
-                            onClick={handleRequestPairingCode}
-                            disabled={loading || !phoneNumber}
-                            size="sm"
-                            className="h-10 px-4 text-xs font-bold uppercase tracking-widest"
-                          >
-                            Get Code
-                          </Button>
+                {pairingCode && (
+                  <div className="p-4 rounded-lg bg-muted border flex flex-col items-center space-y-3">
+                    <p className="text-xs font-medium text-muted-foreground">Your Pairing Code</p>
+                    <div className="flex gap-1">
+                      {pairingCode.split('').map((char: string, i: number) => (
+                        <div key={i} className="w-8 h-10 border bg-card rounded flex items-center justify-center text-lg font-bold text-primary">
+                          {char}
                         </div>
-                      </div>
-
-                      {pairingCodeValue ? (
-                        <div className="space-y-6 pt-4">
-                          <div className="space-y-3">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-primary text-center block">Your Pairing Code</label>
-                            <div className="flex flex-wrap justify-center gap-2 group/code w-full py-2">
-                              {pairingCodeValue.split('').map((char: string, i: number) => (
-                                <div key={i} className="flex-1 min-w-[32px] max-w-[40px] h-10 sm:h-12 border border-border bg-card rounded flex items-center justify-center text-sm sm:text-lg font-black text-primary shadow-sm hover:border-primary/30 transition-colors">
-                                  {char}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => copyToClipboard(pairingCodeValue, 'pairing')}
-                            variant="outline"
-                            className="w-full h-10 text-[10px] font-bold uppercase tracking-widest border-border"
-                          >
-                            <Copy className="w-3.5 h-3.5 mr-2" />
-                            Copy Code
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="p-8 text-center space-y-4 bg-muted/30 rounded-lg border border-dashed border-border">
-                          <Smartphone className="w-8 h-8 mx-auto opacity-10" />
-                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-40 leading-relaxed">
-                            Enter number to<br />link account manually.
-                          </p>
-                        </div>
-                      )}
+                      ))}
                     </div>
+                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(pairingCode, "Code")}>
+                      <Copy className="h-3.5 w-3.5 mr-2" />
+                      Copy Code
+                    </Button>
                   </div>
-                </TabsContent>
-              </Tabs>
-            </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
-        </div>
-
-        {status === 'connected' && (
-          <div className="px-6 py-12 bg-emerald-500/[0.02] flex flex-col items-center justify-center gap-4 border-t border-border">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-              <CircleCheck className="w-6 h-6 text-emerald-500" />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
+              <Check className="h-6 w-6 text-green-600" />
             </div>
-            <div className="space-y-1 text-center">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-600">
-                Session Operational
-              </p>
-              <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest">
-                API is ready to process messages.
-              </p>
+            <h4 className="text-sm font-medium">Session Operational</h4>
+            <p className="text-xs text-muted-foreground mt-1">Instance is ready to send and receive messages.</p>
+
+            <div className="w-full mt-6 space-y-2">
+              <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium">Session Token</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {showToken ? session.token : "••••••••••••"}
+                  </span>
+                  <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
+                    {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </button>
+                  <button onClick={() => copyToClipboard(session.token, "Token")} className="text-muted-foreground hover:text-foreground">
+                    <Copy className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

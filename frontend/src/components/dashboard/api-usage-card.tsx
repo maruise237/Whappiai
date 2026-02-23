@@ -21,9 +21,9 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
   const [copied, setCopied] = React.useState(false)
 
   const getCurlExample = (tab: string) => {
-    const sId = sessionId || "ID_SESSION";
-    const tkn = token || "VOTRE_TOKEN";
-    const base = `curl -X POST "http://localhost:3000/api/v1/messages?sessionId=${sId}" \\
+    const sId = sessionId || "SESSION_ID";
+    const tkn = token || "YOUR_TOKEN";
+    const base = `curl -X POST "http://localhost:3010/api/v1/messages?sessionId=${sId}" \\
   -H "Authorization: Bearer ${tkn}" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -35,7 +35,7 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
     "type": "image",
     "image": {
       "link": "https://example.com/image.jpg",
-      "caption": "Regardez ça !"
+      "caption": "Check this out!"
     }
   }'`
       case "video":
@@ -43,7 +43,7 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
     "type": "video",
     "video": {
       "link": "https://example.com/video.mp4",
-      "caption": "Visionnez ceci !"
+      "caption": "Watch this!"
     }
   }'`
       case "audio":
@@ -64,7 +64,7 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
       default:
         return `${base}
     "type": "text",
-    "text": "Bonjour depuis l'API Whappi !"
+    "text": "Hello from Whappi API!"
   }'`
     }
   }
@@ -76,61 +76,45 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
     if (success) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      toast.success("Copié dans le presse-papier")
-    } else {
-      toast.error("Échec de la copie")
+      toast.success("Copied to clipboard")
     }
   }
 
   return (
-    <Card className="overflow-hidden bg-card border border-border rounded-lg shadow-sm group">
-      <CardHeader className="bg-muted/30 p-6 border-b border-border relative z-10">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="p-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
-              <Terminal className="w-5 h-5" />
+    <Card className="border-border bg-card">
+      <CardHeader className="p-4 border-b">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <Terminal className="h-4 w-4 text-primary" />
             </div>
-            <div className="space-y-0.5">
-              <CardTitle className="text-lg font-semibold tracking-tight">API Interface</CardTitle>
-              <CardDescription className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Reference cURL implementation</CardDescription>
+            <div>
+              <p className="text-sm font-medium">API Example</p>
+              <p className="text-xs text-muted-foreground">cURL implementation</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className={cn(
-              "gap-2.5 h-9 px-4 rounded-md transition-all w-full sm:w-auto text-xs font-medium",
-              copied
-                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                : "border-border hover:bg-muted"
-            )}
-            onClick={copyToClipboard}
-          >
-            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? "Copied" : "Copy Code"}</span>
+          <Button variant="outline" size="sm" className="h-8 gap-2" onClick={copyToClipboard}>
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copied ? "Copied" : "Copy"}
           </Button>
         </div>
       </CardHeader>
-
-      <CardContent className="p-6 relative z-10">
-        <div className="relative group/code">
-          <ScrollArea className="h-[280px] w-full bg-slate-950 rounded-md border border-border p-5 shadow-inner">
-            <pre className="font-mono text-[12px] text-slate-300 whitespace-pre-wrap leading-relaxed">
-              <code
-                className="language-bash"
-                dangerouslySetInnerHTML={{
-                  __html: Prism.highlight(curlExample, Prism.languages.bash, 'bash')
-                }}
-              />
-            </pre>
-          </ScrollArea>
-        </div>
-        <div className="mt-6 flex items-center gap-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 px-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm" />
-          <span className="flex items-center gap-2">
-            Active Endpoint: <span className="text-primary font-semibold">POST</span>
-            <span className="px-2 py-0.5 rounded bg-primary/5 text-primary/70 border border-primary/10 font-mono">/api/v1/messages</span>
-          </span>
+      <CardContent className="p-4">
+        <ScrollArea className="h-64 w-full bg-slate-950 rounded-md p-4">
+          <pre className="font-mono text-xs text-slate-300">
+            <code
+              className="language-bash"
+              dangerouslySetInnerHTML={{
+                __html: Prism.highlight(curlExample, Prism.languages.bash, 'bash')
+              }}
+            />
+          </pre>
+        </ScrollArea>
+        <div className="mt-4 flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <p className="text-[10px] text-muted-foreground font-medium">
+            Endpoint: <span className="text-foreground">POST /api/v1/messages</span>
+          </p>
         </div>
       </CardContent>
     </Card>

@@ -1,25 +1,22 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
 import { Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { fetchApi } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 
 const plans = [
   {
     id: "starter",
     name: "Starter",
-    price: {
-      monthly: "2,500 FCFA",
-      monthlyValue: 2500,
-    },
+    price: "2,500 FCFA",
     features: [
       "500 AI messages / month",
-      "1 WhatsApp session connected",
+      "1 WhatsApp session",
       "24/7 Smart auto-responses",
       "Email technical support",
       "Standard API access"
@@ -30,14 +27,11 @@ const plans = [
   {
     id: "pro",
     name: "Pro",
-    price: {
-      monthly: "5,000 FCFA",
-      monthlyValue: 5000,
-    },
+    price: "5,000 FCFA",
     features: [
       "2,000 AI messages / month",
       "Unlimited WhatsApp groups",
-      "Advanced Analytics dashboard",
+      "Advanced Analytics",
       "Intelligent anti-spam",
       "Priority customer support",
       "Data export (CSV/JSON)"
@@ -48,14 +42,11 @@ const plans = [
   {
     id: "business",
     name: "Business",
-    price: {
-      monthly: "10,000 FCFA",
-      monthlyValue: 10000,
-    },
+    price: "10,000 FCFA",
     features: [
       "10,000 AI messages / month",
       "Everything in Pro",
-      "Dedicated 24/7 account manager",
+      "Dedicated account manager",
       "Custom API integrations",
       "Audit logs & Security",
       "Team training sessions"
@@ -73,20 +64,17 @@ export function BillingPlans() {
     try {
       setLoading(planId)
       const token = await getToken()
-
       const response = await fetchApi('/api/v1/payments/checkout', {
         method: 'POST',
         body: JSON.stringify({ planId }),
         headers: { Authorization: `Bearer ${token}` }
       })
-
       if (response.url) {
         window.location.href = response.url
       } else {
         toast.error("Unable to initialize payment")
       }
     } catch (error) {
-      console.error(error)
       toast.error("An unexpected error occurred")
     } finally {
       setLoading(null)
@@ -94,74 +82,45 @@ export function BillingPlans() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start max-w-6xl mx-auto py-8">
-      {plans.map((plan, index) => (
-        <motion.div
-          key={plan.id}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: index * 0.1 }}
-          className={cn(
-            "relative rounded-lg p-8 transition-all duration-200 bg-card border shadow-sm",
-            plan.highlighted
-              ? "border-primary shadow-md z-10 scale-[1.02]"
-              : "border-border hover:border-border/80 z-0"
-          )}
-        >
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {plans.map((plan) => (
+        <Card key={plan.id} className={cn(
+          "relative flex flex-col h-full border-border bg-card",
+          plan.highlighted && "border-primary ring-1 ring-primary"
+        )}>
           {plan.highlighted && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded text-[10px] font-bold tracking-wider uppercase shadow-sm whitespace-nowrap">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
               Most Popular
             </div>
           )}
-
-          <div className="mb-8">
-            <h3 className={cn("text-lg font-bold tracking-tight mb-2", plan.highlighted ? "text-primary uppercase" : "text-foreground")}>
-              {plan.name}
-            </h3>
-            <div className="flex items-baseline gap-1 mb-2">
-              <span className="text-3xl font-bold tracking-tighter text-foreground">
-                {plan.price.monthly}
-              </span>
-              <span className="text-muted-foreground text-xs font-medium">
-                /month
-              </span>
+          <CardHeader className="p-6 pb-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">{plan.name}</CardTitle>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-3xl font-bold">{plan.price}</span>
+              <span className="text-xs text-muted-foreground">/mo</span>
             </div>
-          </div>
-
-          <div className="space-y-3.5 mb-8">
-            {plan.features.map((feature, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className={cn(
-                  "mt-1 p-0.5 rounded-full shrink-0",
-                  plan.highlighted ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                )}>
-                  <Check className="w-2.5 h-2.5" strokeWidth={3} />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium leading-tight">{feature}</span>
-              </div>
-            ))}
-          </div>
-
-          <Button
-            className={cn(
-              "w-full h-10 rounded-md text-sm font-semibold transition-all duration-200",
-              plan.highlighted
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            )}
-            onClick={() => handleSubscribe(plan.id)}
-            disabled={loading === plan.id}
-          >
-            {loading === plan.id ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              plan.cta
-            )}
-          </Button>
-        </motion.div>
+          </CardHeader>
+          <CardContent className="p-6 flex-1">
+            <ul className="space-y-3">
+              {plan.features.map((feature, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <Check className="h-3.5 w-3.5 text-primary mt-0.5" />
+                  <span className="text-xs text-muted-foreground">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+          <CardFooter className="p-6 pt-0">
+            <Button
+              className="w-full"
+              variant={plan.highlighted ? "default" : "outline"}
+              onClick={() => handleSubscribe(plan.id)}
+              disabled={loading === plan.id}
+            >
+              {loading === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : plan.cta}
+            </Button>
+          </CardFooter>
+        </Card>
       ))}
     </div>
   )
