@@ -6,6 +6,8 @@
 
 const { User, Session, ActivityLog, AIModel } = require('../models');
 const CreditService = require('./CreditService');
+const KnowledgeService = require('./KnowledgeService');
+const WebhookService = require('./WebhookService');
 const { log } = require('../utils/logger');
 const { db } = require('../config/database');
 
@@ -349,6 +351,13 @@ class AIService {
             // Store assistant response in memory
             await this.storeMemory(sessionId, remoteJid, 'assistant', response);
 
+            // Dispatch Webhook: ai_response
+            WebhookService.dispatch(sessionId, 'ai_response', {
+                remoteJid,
+                response,
+                originalMessage: messageText
+            });
+
             log(`AI Response for ${remoteJid}: "${response.substring(0, 50)}${response.length > 50 ? '...' : ''}"`, sessionId, {
                 event: 'ai-response',
                 remoteJid,
@@ -380,7 +389,15 @@ class AIService {
      * Calls the configured AI endpoint
      */
     static async callAI(user, userMessage, systemPrompt = null, history = []) {
-        let { ai_endpoint, ai_key, ai_model, ai_prompt, ai_temperature, ai_max_tokens } = user;
+        let { id: sessionId, ai_endpoint, ai_key, ai_model, ai_prompt, ai_temperature, ai_max_tokens, ai_constraints } = user;
+
+        // RAG: Search knowledge base
+        const knowledge = KnowledgeService.search(sessionId, userMessage);
+        let ragContext = "";
+        if (knowledge.length > 0) {
+            ragContext = "\n\nCONTEXTE DE CONNAISSANCES RÉCUPÉRÉ :\n" + knowledge.join("\n---\n");
+            log(`RAG: ${knowledge.length} extraits trouvés pour la réponse.`, sessionId, { query: userMessage }, 'DEBUG');
+        }
         
         // If no model is set, try to get the global default model
         if (!ai_model) {
@@ -443,8 +460,20 @@ class AIService {
             const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30s timeout
 
             // Prepare messages array
+            let finalSystemPrompt = (systemPrompt || ai_prompt || 'You are a helpful assistant.');
+
+            // Inject strict constraints (user requirements)
+            if (ai_constraints) {
+                finalSystemPrompt += "\n\nEXIGENCES STRICTES À RESPECTER :\n" + ai_constraints;
+            }
+
+            if (ragContext) {
+                finalSystemPrompt += "\n\nIMPORTANT : Utilise les informations du CONTEXTE DE CONNAISSANCES ci-dessus pour répondre de manière précise. Si l'information n'est pas dans le contexte, réponds avec tes connaissances générales ou demande plus de précisions.";
+                finalSystemPrompt += ragContext;
+            }
+
             const messages = [
-                { role: 'system', content: systemPrompt || ai_prompt || 'You are a helpful assistant.' }
+                { role: 'system', content: finalSystemPrompt }
             ];
 
             // Add history if present
