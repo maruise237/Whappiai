@@ -119,8 +119,8 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
   }
 
   return (
-    <Card className="border-border bg-card">
-      <CardHeader className="p-4 sm:p-6 border-b">
+    <Card id="messaging-area" className="border-border bg-card">
+      <CardHeader className="p-4 border-b">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-sm font-semibold">Messagerie directe</CardTitle>
