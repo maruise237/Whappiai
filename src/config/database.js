@@ -83,8 +83,7 @@ function initializeSchema() {
         { name: 'organization_name', type: 'TEXT' },
         { name: 'double_opt_in', type: 'INTEGER DEFAULT 0' },
         { name: 'utm_tracking', type: 'INTEGER DEFAULT 0' },
-        { name: 'bot_detection', type: 'INTEGER DEFAULT 0' },
-        { name: 'sound_notifications', type: 'INTEGER DEFAULT 1' }
+        { name: 'bot_detection', type: 'INTEGER DEFAULT 0' }
     ];
 
     userColumns.forEach(col => {

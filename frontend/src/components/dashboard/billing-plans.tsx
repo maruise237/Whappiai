@@ -82,35 +82,35 @@ export function BillingPlans() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {plans.map((plan) => (
         <Card key={plan.id} className={cn(
           "relative flex flex-col h-full border-border bg-card",
           plan.highlighted && "border-primary ring-1 ring-primary"
         )}>
           {plan.highlighted && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold z-10">
               Le plus populaire
             </div>
           )}
-          <CardHeader className="p-6 pb-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">{plan.name}</CardTitle>
+          <CardHeader className="p-4 sm:p-6 pb-0">
+            <CardTitle className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">{plan.name}</CardTitle>
             <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-3xl font-bold">{plan.price}</span>
-              <span className="text-xs text-muted-foreground">/mois</span>
+              <span className="text-xl sm:text-2xl font-bold">{plan.price}</span>
+              <span className="text-[10px] text-muted-foreground">/mois</span>
             </div>
           </CardHeader>
-          <CardContent className="p-6 flex-1">
+          <CardContent className="p-4 sm:p-6 flex-1">
             <ul className="space-y-3">
               {plan.features.map((feature, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <Check className="h-3.5 w-3.5 text-primary mt-0.5" />
+                  <Check className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
                   <span className="text-xs text-muted-foreground">{feature}</span>
                 </li>
               ))}
             </ul>
           </CardContent>
-          <CardFooter className="p-6 pt-0">
+          <CardFooter className="p-4 sm:p-6 pt-0">
             <Button
               className="w-full"
               variant={plan.highlighted ? "default" : "outline"}

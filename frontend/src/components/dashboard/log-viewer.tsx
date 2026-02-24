@@ -95,40 +95,44 @@ export function LogViewer() {
 
   return (
     <Card className="border-border bg-card">
-      <CardHeader className="p-4 border-b">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <CardHeader className="p-4 sm:p-6 border-b">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Terminal className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-sm font-semibold">Logs Système</CardTitle>
             <Badge variant="secondary" className="text-[10px]">{logs.length}</Badge>
           </div>
-          <div className="flex flex-1 items-center gap-2 max-w-md">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row flex-1 items-center gap-2 lg:max-w-xl">
+            <div className="relative flex-1 w-full">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Filtrer les logs..."
-                className="pl-8 h-8 text-xs"
+                className="pl-8 h-8 text-xs w-full"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <Select value={levelFilter} onValueChange={setLevelFilter}>
-              <SelectTrigger className="w-24 h-8 text-xs">
-                <SelectValue placeholder="Niveau" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="warn">Avertissement</SelectItem>
-                <SelectItem value="error">Erreur</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsAutoScroll(!isAutoScroll)}>
-              {isAutoScroll ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setLogs([])}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Select value={levelFilter} onValueChange={setLevelFilter}>
+                <SelectTrigger className="flex-1 sm:w-24 h-8 text-xs">
+                  <SelectValue placeholder="Niveau" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warn">Warn</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setIsAutoScroll(!isAutoScroll)}>
+                  {isAutoScroll ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8 text-destructive" onClick={() => setLogs([])}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </CardHeader>

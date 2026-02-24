@@ -822,11 +822,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId, groupId } = req.params;
         try {
             const animatorService = require('../services/animator');
-            const history = animatorService.getHistory({
-                session_id: sessionId,
-                group_id: groupId,
-                ...req.query
-            });
+            const history = animatorService.getHistory(sessionId, groupId);
             res.json({ status: 'success', data: history });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -870,38 +866,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             res.json({ status: success ? 'success' : 'error', message: success ? 'Document supprimé' : 'Échec de la suppression' });
         } catch (error) {
             res.status(500).json({ status: 'error', message: error.message });
-        }
-    });
-
-    // Notifications Endpoints
-    router.get('/notifications', checkSessionOrTokenAuth, async (req, res) => {
-        try {
-            const NotificationService = require('../services/NotificationService');
-            const unreadOnly = req.query.unread === 'true';
-            const notifications = NotificationService.getUserNotifications(req.currentUser.id, unreadOnly);
-            res.json({ status: 'success', data: notifications });
-        } catch (err) {
-            res.status(500).json({ status: 'error', message: err.message });
-        }
-    });
-
-    router.put('/notifications/:id/read', checkSessionOrTokenAuth, async (req, res) => {
-        try {
-            const NotificationService = require('../services/NotificationService');
-            NotificationService.markAsRead(req.params.id, req.currentUser.id);
-            res.json({ status: 'success', message: 'Marqué comme lu' });
-        } catch (err) {
-            res.status(500).json({ status: 'error', message: err.message });
-        }
-    });
-
-    router.put('/notifications/read-all', checkSessionOrTokenAuth, async (req, res) => {
-        try {
-            const NotificationService = require('../services/NotificationService');
-            NotificationService.markAllAsRead(req.currentUser.id);
-            res.json({ status: 'success', message: 'Tout a été marqué comme lu' });
-        } catch (err) {
-            res.status(500).json({ status: 'error', message: err.message });
         }
     });
 
