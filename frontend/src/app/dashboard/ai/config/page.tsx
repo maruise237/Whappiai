@@ -14,6 +14,7 @@ import {
   Webhook,
   Settings,
   BrainCircuit,
+  Users,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -50,7 +51,7 @@ function AIConfigForm() {
   const router = useRouter()
   const sessionId = searchParams.get('session')
   const { getToken } = useAuth()
-  const { user: clerkUser } = useUser()
+  const { user: clerkUser, isLoaded } = useUser()
 
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
@@ -84,6 +85,7 @@ function AIConfigForm() {
   })
 
   React.useEffect(() => {
+    if (!isLoaded) return
     const loadData = async () => {
       if (!sessionId) return
       try {
@@ -116,7 +118,7 @@ function AIConfigForm() {
       }
     }
     loadData()
-  }, [sessionId, getToken, clerkUser])
+  }, [sessionId, getToken, clerkUser, isLoaded])
 
   const toggleAdvanced = () => {
     const newValue = !showAdvanced

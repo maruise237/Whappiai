@@ -5,8 +5,9 @@
 
 /* NProgress Custom Styles */
 #nprogress .bar {
-  background: var(--primary) !important;
-  height: 2px !important;
+  background: #25d366 !important; /* WhatsApp Green */
+  height: 3px !important;
+  box-shadow: 0 0 10px #25d366, 0 0 5px #25d366;
 }
 
 /* Base Styles */

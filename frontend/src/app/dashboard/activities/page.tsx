@@ -50,13 +50,13 @@ export default function ActivitiesPage() {
         api.activities.summary(7, token || undefined)
       ])
       setActivities(Array.isArray(activitiesData) ? activitiesData : [])
-      setSummary(summaryData?.data || summaryData || summary)
+      setSummary((prev: any) => summaryData?.data || summaryData || prev)
     } catch (error: any) {
       toast.error("Échec du chargement des activités: " + (error.message || "Erreur inconnue"))
     } finally {
       setIsLoading(false)
     }
-  }, [getToken, summary])
+  }, [getToken])
 
   React.useEffect(() => {
     fetchActivities()
