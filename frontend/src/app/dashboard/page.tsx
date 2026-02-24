@@ -73,16 +73,16 @@ export default function DashboardPage() {
     }
   }, [isLoaded, user])
 
-  const fetchSessions = async () => {
+  const fetchSessions = React.useCallback(async () => {
     try {
       const token = await getToken()
       const data = await api.sessions.list(token || undefined)
       setSessions(data || [])
       if (data?.length > 0 && !selectedSessionId) setSelectedSessionId(data[0].sessionId)
     } catch (e) {} finally { setLoading(false) }
-  }
+  }, [getToken, selectedSessionId])
 
-  const fetchRecentActivities = async () => {
+  const fetchRecentActivities = React.useCallback(async () => {
     setActivitiesLoading(true)
     try {
       const token = await getToken()
@@ -91,25 +91,32 @@ export default function DashboardPage() {
         api.activities.summary(7, token || undefined)
       ])
       setRecentActivities(Array.isArray(list) ? list.slice(0, 5) : [])
-      setSummary({
+      setSummary(prev => ({
+        ...prev,
         totalActivities: summ?.totalActivities || 0,
         successRate: summ?.successRate || 0,
-        activeSessions: Array.isArray(sessions) ? sessions.filter(s => s?.isConnected).length : 0,
         messagesSent: summ?.byAction?.send_message || 0
-      })
+      }))
     } catch (e) {} finally { setActivitiesLoading(false) }
-  }
+  }, [getToken])
 
-  const fetchCredits = async () => {
+  const fetchCredits = React.useCallback(async () => {
     try {
       const token = await getToken()
       const response = await api.credits.get(token || undefined)
-      // fetchApi unwraps data.data if it exists
       setCredits(response?.data || response)
     } catch (e) {
       console.error("Fetch credits error:", e)
     }
-  }
+  }, [getToken])
+
+  // Update activeSessions whenever sessions changes
+  React.useEffect(() => {
+    setSummary(prev => ({
+      ...prev,
+      activeSessions: Array.isArray(sessions) ? sessions.filter(s => s?.isConnected).length : 0
+    }))
+  }, [sessions])
 
   React.useEffect(() => {
     fetchSessions()
@@ -123,7 +130,7 @@ export default function DashboardPage() {
     }, 30000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchSessions, fetchRecentActivities, fetchCredits])
 
   // Handle real-time updates
   React.useEffect(() => {

@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import {
-  ArrowLeft, Users, Search, Save, Calendar, Plus, Trash2, Clock, Zap, Pencil, ShieldCheck, ChevronRight
+  ArrowLeft, Users, Search, Save, Calendar, Plus, Trash2, Clock, Zap, Pencil, ShieldCheck, ChevronRight, History
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/nextjs"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -25,6 +25,7 @@ function AnimationPageContent() {
   const router = useRouter();
   const sessionId = searchParams.get('session');
   const { getToken } = useAuth();
+  const { isLoaded } = useUser();
 
   const [groups, setGroups] = React.useState<any[]>([]);
   const [filteredGroups, setFilteredGroups] = React.useState<any[]>([]);
@@ -62,7 +63,7 @@ function AnimationPageContent() {
     } finally { setIsLoading(false); }
   };
 
-  React.useEffect(() => { fetchGroups(); }, [sessionId]);
+  React.useEffect(() => { if (isLoaded) fetchGroups(); }, [sessionId, isLoaded]);
 
   React.useEffect(() => {
     const lower = searchQuery.toLowerCase();
