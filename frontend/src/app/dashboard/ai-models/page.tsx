@@ -124,12 +124,12 @@ export default function AIModelsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Modèles IA</h1>
+          <h1 className="text-lg sm:text-xl font-semibold">Modèles IA</h1>
           <p className="text-sm text-muted-foreground">Gérez les fournisseurs et les modèles IA globaux.</p>
         </div>
-        <Button size="sm" onClick={() => { setEditingModel(null); setIsAddingModel(true); }}>
+        <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditingModel(null); setIsAddingModel(true); }}>
           <Plus className="h-4 w-4 mr-2" /> Ajouter un modèle
         </Button>
       </div>
@@ -139,9 +139,9 @@ export default function AIModelsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground">Modèle & Endpoint</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Fournisseur</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Code API</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">Modèle & Endpoint</TableHead>
+              <TableHead className="hidden sm:table-cell text-xs font-medium text-muted-foreground">Fournisseur</TableHead>
+              <TableHead className="hidden md:table-cell text-xs font-medium text-muted-foreground">Code API</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Statut</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
@@ -155,15 +155,15 @@ export default function AIModelsPage() {
               models.map((m) => (
                 <TableRow key={m?.id || Math.random()} className="hover:bg-muted/50">
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{m?.name || 'Sans nom'}</span>
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{m?.endpoint}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium truncate">{m?.name || 'Sans nom'}</span>
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[150px] sm:max-w-[300px]">{m?.endpoint}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <Badge variant="secondary" className="text-[10px] uppercase">{m?.provider || 'N/A'}</Badge>
                   </TableCell>
-                  <TableCell><code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{m?.model_name}</code></TableCell>
+                  <TableCell className="hidden md:table-cell"><code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{m?.model_name}</code></TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Badge className={m?.is_active ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20" : "bg-muted text-muted-foreground"}>
@@ -191,12 +191,12 @@ export default function AIModelsPage() {
       </Card>
 
       <Dialog open={isAddingModel} onOpenChange={setIsAddingModel}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[600px]">
+          <DialogHeader className="p-4 sm:p-6 pb-0">
             <DialogTitle>{editingModel ? "Modifier le modèle" : "Ajouter un modèle"}</DialogTitle>
             <DialogDescription>Configurez les paramètres du modèle IA global.</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 sm:p-6">
             {!editingModel && (
               <div className="col-span-2 flex gap-2 mb-2">
                 <Button size="xs" variant="outline" className="text-[10px]" onClick={() => setFormData({ ...formData, name: "DeepSeek Chat", provider: "deepseek", model_name: "deepseek-chat", endpoint: "https://api.deepseek.com/v1/chat/completions" })}>DeepSeek</Button>
@@ -239,9 +239,9 @@ export default function AIModelsPage() {
               <Switch checked={formData.is_default} onCheckedChange={c => setFormData({ ...formData, is_default: c })} />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsAddingModel(false)}>Annuler</Button>
-            <Button onClick={handleSaveModel}>Enregistrer</Button>
+          <DialogFooter className="p-4 sm:p-6 pt-0 flex-col sm:flex-row gap-2">
+            <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setIsAddingModel(false)}>Annuler</Button>
+            <Button className="w-full sm:w-auto" onClick={handleSaveModel}>Enregistrer le modèle</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

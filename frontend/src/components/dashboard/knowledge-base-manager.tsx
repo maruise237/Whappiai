@@ -90,19 +90,19 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Book className="h-5 w-5 text-primary" /> Base de Connaissances
           </h2>
           <p className="text-sm text-muted-foreground">Ajoutez des informations spécifiques pour que l&apos;IA réponde avec précision.</p>
         </div>
-        <Button size="sm" onClick={() => setIsAdding(true)}>
+        <Button size="sm" className="w-full sm:w-auto" onClick={() => setIsAdding(true)}>
           <Plus className="h-4 w-4 mr-2" /> Ajouter
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {isLoading ? (
           <div className="col-span-full py-12 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></div>
         ) : (!Array.isArray(docs) || docs.length === 0) ? (
@@ -136,12 +136,12 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
       </div>
 
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[600px]">
+          <DialogHeader className="p-4 sm:p-6 pb-0">
             <DialogTitle>Ajouter à la base de connaissances</DialogTitle>
             <DialogDescription>Copiez-collez du texte ou des informations clés.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 p-4 sm:p-6">
             <div className="space-y-2">
               <Label className="text-xs uppercase">Nom du document</Label>
               <Input placeholder="ex: Tarifs 2024, FAQ Livraison..." value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-9" />
@@ -155,9 +155,9 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
               <Input placeholder="ex: https://monsite.com/faq" value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} className="h-9" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsAdding(false)}>Annuler</Button>
-            <Button onClick={handleAdd} disabled={isSubmitting}>
+          <DialogFooter className="p-4 sm:p-6 pt-0 flex-col sm:flex-row gap-2">
+            <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setIsAdding(false)}>Annuler</Button>
+            <Button className="w-full sm:w-auto" onClick={handleAdd} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Enregistrer
             </Button>

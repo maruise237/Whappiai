@@ -160,7 +160,7 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
           </TabsList>
         </div>
 
-        <CardContent className="p-4">
+        <CardContent className="p-4 sm:p-6">
           <div className="min-h-[200px]">
             <TabsContent value="text" className="mt-0">
               <Textarea
@@ -249,11 +249,11 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
             </TabsContent>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-            <Button variant="ghost" size="sm" onClick={() => { setMessage(""); setImageUrl(""); setDocUrl(""); setAudioUrl(""); setVideoUrl(""); }}>
+          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t">
+            <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => { setMessage(""); setImageUrl(""); setDocUrl(""); setAudioUrl(""); setVideoUrl(""); }}>
               Effacer
             </Button>
-            <Button size="sm" onClick={handleSend} disabled={loading || !isConnected || !to}>
+            <Button size="sm" className="w-full sm:w-auto" onClick={handleSend} disabled={loading || !isConnected || !to}>
               {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin mr-2" /> : <SendHorizontal className="h-3.5 w-3.5 mr-2" />}
               Envoyer le message
             </Button>
