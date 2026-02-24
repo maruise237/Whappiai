@@ -236,19 +236,19 @@ export default function AIPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-lg sm:text-xl font-semibold">Assistant IA</h1>
+          <h1 className="text-xl font-semibold">Assistant IA</h1>
           <p className="text-sm text-muted-foreground">Configurez l&apos;automatisation intelligente pour vos sessions.</p>
         </div>
         {isAdmin && (
-          <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
+          <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard/ai-models">Gérer les modèles</Link>
           </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
           [1, 2, 3].map(i => <Card key={i} className="h-48 animate-pulse bg-muted/20" />)
         ) : items.length === 0 ? (
@@ -259,20 +259,20 @@ export default function AIPage() {
           </Card>
         ) : (
           items.map(item => (
-            <Card key={item.sessionId} className="border-border bg-card overflow-hidden flex flex-col">
-              <CardHeader className="p-4 sm:p-6 border-b flex flex-row items-center justify-between space-y-0">
+            <Card key={item.sessionId} className="border-border bg-card overflow-hidden">
+              <CardHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
                 <div className="flex items-center gap-3">
                   <div className={cn("h-8 w-8 rounded-full flex items-center justify-center", item.aiConfig.enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
                     <Bot className="h-4 w-4" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{item.sessionId}</p>
+                  <div>
+                    <p className="text-sm font-medium">{item.sessionId}</p>
                     <Badge variant="outline" className="text-[10px] uppercase">{item.aiConfig.mode}</Badge>
                   </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -291,7 +291,7 @@ export default function AIPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 space-y-4 flex-1">
+              <CardContent className="p-4 space-y-4">
                 <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground line-clamp-2 border-l-2 border-primary/40 min-h-[48px]">
                   {item.aiConfig.prompt || "Aucune instruction configurée"}
                 </div>
@@ -300,7 +300,7 @@ export default function AIPage() {
                   <span className="font-semibold text-foreground">{item.aiConfig.stats?.sent || 0} messages</span>
                 </div>
               </CardContent>
-              <CardFooter className="p-4 sm:p-6 bg-muted/20 border-t flex items-center justify-between">
+              <CardFooter className="p-4 bg-muted/20 border-t flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">{item.aiConfig.enabled ? "IA Active" : "IA Inactive"}</span>
                 <Switch checked={item.aiConfig.enabled} onCheckedChange={() => toggleAI(item)} />
               </CardFooter>
@@ -310,7 +310,7 @@ export default function AIPage() {
       </div>
 
       <Dialog open={isQuickEditOpen} onOpenChange={setIsQuickEditOpen}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg">
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Modification rapide de l&apos;IA</DialogTitle>
             <DialogDescription>Ajustez les paramètres IA pour {formData.sessionId}.</DialogDescription>
@@ -353,19 +353,19 @@ export default function AIPage() {
               </Select>
             </div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" asChild className="w-full sm:w-auto">
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" asChild className="flex-1">
               <Link href={`/dashboard/ai/config?session=${formData.sessionId}`}>Config avancée</Link>
             </Button>
-            <Button onClick={handleSave} className="w-full sm:w-auto">Enregistrer les modifications</Button>
+            <Button onClick={handleSave} className="flex-1">Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog Mémoire IA */}
       <Dialog open={isMemoryOpen} onOpenChange={setIsMemoryOpen}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[900px] h-[80vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="p-4 sm:p-6 pb-2 border-b">
+        <DialogContent className="sm:max-w-[900px] h-[80vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2 border-b">
             <DialogTitle className="flex items-center gap-2">
               <BrainCircuit className="h-5 w-5 text-primary" />
               Mémoire de l&apos;IA : {selectedSessionMemory}

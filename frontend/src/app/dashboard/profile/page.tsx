@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -21,7 +20,7 @@ import {
   Smartphone,
   Volume2,
   Building,
-  User as UserIcon
+  User
 } from "lucide-react"
 import { useUser, useAuth, useClerk } from "@clerk/nextjs"
 import {
@@ -33,7 +32,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Select,
   SelectContent,
@@ -45,7 +43,7 @@ import {
 export default function ProfilePage() {
   const router = useRouter()
   const { signOut } = useClerk()
-  const [user, setUser] = React.useState<any>(null)
+  const [dbUser, setDbUser] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser()
   const { getToken } = useAuth()
@@ -54,7 +52,6 @@ export default function ProfilePage() {
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [deleteConfirm, setDeleteConfirm] = React.useState("")
 
-  const [activeSection, setActiveSection] = React.useState("general")
   const [formData, setFormData] = React.useState({
     name: "",
     organization_name: "",
@@ -71,7 +68,7 @@ export default function ProfilePage() {
     try {
       const token = await getToken()
       const data = await api.users.getProfile(token || undefined)
-      setUser(data)
+      setDbUser(data)
       setFormData({
         name: data.name || "",
         organization_name: data.organization_name || "",
@@ -89,7 +86,11 @@ export default function ProfilePage() {
     }
   }, [getToken, isClerkLoaded])
 
-  React.useEffect(() => { fetchProfile() }, [fetchProfile])
+  React.useEffect(() => {
+    if (isClerkLoaded) {
+      fetchProfile()
+    }
+  }, [fetchProfile, isClerkLoaded])
 
   const handleUpdate = async () => {
     setIsSaving(true)
@@ -112,7 +113,7 @@ export default function ProfilePage() {
     if (deleteConfirm !== "SUPPRIMER") return
     try {
       const token = await getToken()
-      await api.users.delete(user.email, token || undefined)
+      await api.users.delete(dbUser.email, token || undefined)
       await signOut(() => router.push("/login"))
     } catch (error) {
       toast.error("Échec de la suppression")
@@ -121,9 +122,9 @@ export default function ProfilePage() {
 
   if (loading) return <div className="p-8 text-center text-sm text-muted-foreground">Chargement du profil...</div>
 
-  const userEmail = clerkUser?.primaryEmailAddress?.emailAddress || user?.email
+  const userEmail = clerkUser?.primaryEmailAddress?.emailAddress || dbUser?.email
   const userName = clerkUser?.firstName || formData.name || userEmail?.split('@')[0]
-  const userRole = (clerkUser?.publicMetadata?.role as string) || user?.role || "user"
+  const userRole = String(clerkUser?.publicMetadata?.role || dbUser?.role || "user")
 
   const timezones = [
     "UTC",
@@ -144,16 +145,8 @@ export default function ProfilePage() {
     "Australia/Sydney"
   ]
 
-  const sections = [
-    { id: "general", name: "Général", icon: UserIcon },
-    { id: "preferences", name: "Préférences", icon: ShieldCheck },
-    { id: "account", name: "Compte & Facturation", icon: Building },
-    { id: "danger", name: "Danger Zone", icon: Trash2 },
-  ]
-
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-32 pt-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Paramètres</h1>
@@ -167,11 +160,10 @@ export default function ProfilePage() {
       </div>
 
       <div className="space-y-8">
-        {/* Profile Image Card */}
         <Card className="border-border bg-card shadow-sm overflow-hidden">
           <CardHeader className="pb-4 bg-muted/30 border-b">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <UserIcon className="h-4 w-4 text-primary" /> Image de profil
+              <User className="h-4 w-4 text-primary" /> Image de profil
             </CardTitle>
             <CardDescription className="text-xs">Identité visuelle de votre compte Whappi.</CardDescription>
           </CardHeader>
@@ -189,8 +181,9 @@ export default function ProfilePage() {
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">JPG, PNG ou GIF. 1MB max.</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-        {/* Name Card */}
         <Card className="border-border bg-card shadow-sm overflow-hidden">
           <CardHeader className="pb-4 bg-muted/30 border-b">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -208,7 +201,6 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Timezone Card */}
         <Card className="border-border bg-card shadow-sm overflow-hidden">
           <CardHeader className="pb-4 bg-muted/30 border-b">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -236,7 +228,6 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Address Card */}
         <Card className="border-border bg-card shadow-sm overflow-hidden">
           <CardHeader className="pb-4 bg-muted/30 border-b">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -254,7 +245,6 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Sound Notifications Card */}
         <Card className="border-border bg-card shadow-sm overflow-hidden">
           <CardContent className="p-0">
             <div className="p-6 flex items-center justify-between">
@@ -262,21 +252,10 @@ export default function ProfilePage() {
                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                     <Volume2 className="h-6 w-6 text-primary" />
                 </div>
-                <Switch
-                  checked={formData.utm_tracking}
-                  onCheckedChange={v => setFormData({...formData, utm_tracking: v})}
-                />
-              </div>
-
-              <div className="p-4 sm:p-6 flex items-center justify-between">
                 <div className="space-y-1">
                     <p className="text-base font-semibold">Notifications Sonores</p>
                     <p className="text-xs text-muted-foreground">Ring audio lors de la réception d&apos;un nouveau message sur le dashboard.</p>
                 </div>
-                <Switch
-                  checked={formData.bot_detection}
-                  onCheckedChange={v => setFormData({...formData, bot_detection: v})}
-                />
               </div>
               <Switch
                 checked={formData.sound_notifications}
@@ -284,8 +263,9 @@ export default function ProfilePage() {
                 className="data-[state=checked]:bg-primary"
               />
             </div>
+          </CardContent>
+        </Card>
 
-        {/* Connection Status & Account Card */}
         <Card className="border-border bg-muted/20 shadow-sm border-dashed">
             <CardHeader className="pb-4">
                 <CardTitle className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Compte Whappi</CardTitle>
@@ -303,10 +283,9 @@ export default function ProfilePage() {
                         <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Numéro WhatsApp</Label>
                         <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/60 text-sm font-medium">
                             <Smartphone className="h-4 w-4 text-muted-foreground/60" />
-                            {user?.whatsapp_number || "Non configuré"}
+                            {dbUser?.whatsapp_number || "Non configuré"}
                         </div>
                     </div>
-                  </div>
                 </div>
 
                 <div className="pt-4 flex gap-4">
@@ -317,7 +296,6 @@ export default function ProfilePage() {
             </CardContent>
         </Card>
 
-        {/* Danger Zone */}
         <div className="pt-8 border-t border-destructive/10">
             <Card className="border-destructive/20 bg-destructive/[0.02] shadow-sm overflow-hidden">
                 <CardHeader className="pb-4 bg-destructive/[0.04] border-b border-destructive/10">
@@ -338,7 +316,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Floating Save Action Bar */}
       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
         <div className="p-2 bg-background/60 backdrop-blur-xl border border-border/60 rounded-full shadow-2xl ring-1 ring-black/5">
             <Button

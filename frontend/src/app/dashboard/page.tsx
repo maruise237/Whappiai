@@ -211,21 +211,21 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-lg sm:text-xl font-semibold">Vue d&apos;ensemble</h1>
+          <h1 className="text-xl font-semibold">Vue d&apos;ensemble</h1>
           <p className="text-sm text-muted-foreground">Gérez vos sessions et surveillez l&apos;activité.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Total Sessions" value={sessions.length} />
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Sessions totales" value={sessions.length} />
         <StatCard label="Taux de succès" value={`${summary.successRate}%`} />
         <StatCard label="Messages envoyés" value={summary.messagesSent} />
         {userRole === 'admin' && <StatCard label="Activités Système" value={summary.totalActivities} />}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 border rounded-lg bg-card shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
             <SelectTrigger className="flex-1 sm:w-48 h-9 text-xs">
@@ -327,9 +327,9 @@ export default function DashboardPage() {
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <Card>
-      <CardContent className="p-4 sm:p-6">
+      <CardContent className="p-4">
         <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p className="text-lg sm:text-2xl font-bold mt-1">{value}</p>
+        <p className="text-2xl font-bold mt-1">{value}</p>
       </CardContent>
     </Card>
   )

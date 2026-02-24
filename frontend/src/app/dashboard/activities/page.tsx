@@ -66,18 +66,18 @@ export default function ActivitiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-lg sm:text-xl font-semibold">Activités</h1>
-          <p className="text-sm text-muted-foreground">Journal système en temps réel et piste d&apos;audit.</p>
+          <h1 className="text-xl font-semibold">Activités</h1>
+          <p className="text-sm text-muted-foreground">Journal système en temps réel et piste d'audit.</p>
         </div>
-        <Button size="sm" className="w-full sm:w-auto" onClick={() => fetchActivities()} disabled={isLoading}>
+        <Button size="sm" onClick={() => fetchActivities()} disabled={isLoading}>
           <RefreshCcw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
           Actualiser
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Activités" value={summary.totalActivities} />
         <StatCard label="Utilisateurs Actifs" value={summary.activeUsers} />
         <StatCard label="Sessions" value={summary.sessionsCreated} />
@@ -85,7 +85,7 @@ export default function ActivitiesPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6 border-b">
+        <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
           <div className="flex items-center gap-4">
             <CardTitle className="text-sm font-medium">Journal d'activité</CardTitle>
             <div className="flex items-center gap-2">
@@ -101,11 +101,11 @@ export default function ActivitiesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">Horodatage</TableHead>
-              <TableHead className="hidden md:table-cell text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Horodatage</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Action</TableHead>
-              <TableHead className="hidden md:table-cell text-xs font-medium text-muted-foreground">Ressource</TableHead>
-              <TableHead className="hidden lg:table-cell text-xs font-medium text-muted-foreground">Détails</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Ressource</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Détails</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground text-right">Statut</TableHead>
             </TableRow>
           </TableHeader>
@@ -124,14 +124,14 @@ export default function ActivitiesPage() {
                   <TableCell className="text-sm font-mono text-muted-foreground whitespace-nowrap">
                     {a?.timestamp ? new Date(a.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Date inconnue'}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-sm">{a?.userEmail || 'Inconnu'}</TableCell>
+                  <TableCell className="text-sm">{a?.userEmail || 'Inconnu'}</TableCell>
                   <TableCell>
                     <span className="text-xs font-medium uppercase tracking-wider">{String(a?.action || 'Action').replace(/_/g, ' ')}</span>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell>
                     <Badge variant="outline" className="text-[10px] font-medium uppercase">{a?.resource || 'N/A'}</Badge>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell text-xs text-muted-foreground max-w-xs truncate">
+                  <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
                     {a?.details ? JSON.stringify(a.details) : ''}
                   </TableCell>
                   <TableCell className="text-right">
@@ -156,9 +156,9 @@ export default function ActivitiesPage() {
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <Card>
-      <CardContent className="p-4 sm:p-6">
+      <CardContent className="p-4">
         <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p className="text-lg sm:text-2xl font-bold mt-1">{value}</p>
+        <p className="text-2xl font-bold mt-1">{value}</p>
       </CardContent>
     </Card>
   )
