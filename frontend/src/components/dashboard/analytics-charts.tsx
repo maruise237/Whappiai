@@ -56,7 +56,7 @@ export function AnalyticsCharts() {
   }
 
   return (
-    <div className="space-y-6">
+    <div id="performance-charts" className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" /> Performance
