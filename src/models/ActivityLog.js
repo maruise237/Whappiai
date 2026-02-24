@@ -301,6 +301,94 @@ class ActivityLog {
     }
 
     /**
+     * Get daily analytics for a user
+     * @param {string} userEmail - User email
+     * @param {number} days - Number of days
+     * @returns {array} Daily data points
+     */
+    static getAnalytics(userEmail = null, days = 7) {
+        const data = [];
+        const now = new Date();
+
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+
+            // Stats for this day
+            const dateStart = `${dateStr} 00:00:00`;
+            const dateEnd = `${dateStr} 23:59:59`;
+
+            const params = [dateStart, dateEnd];
+            let userFilter = '';
+            if (userEmail) {
+                userFilter = ' AND user_email = ?';
+                params.push(userEmail);
+            }
+
+            // 1. Messages sent
+            const msgStmt = db.prepare(`
+                SELECT COUNT(*) as count FROM activity_logs
+                WHERE created_at BETWEEN ? AND ?
+                AND (action = 'MESSAGE_SEND' OR action = 'CAMPAIGN_MESSAGE')
+                ${userFilter}
+            `);
+            const messages = msgStmt.get(...params).count;
+
+            // 2. AI Success Rate
+            const aiTotalStmt = db.prepare(`
+                SELECT COUNT(*) as count FROM activity_logs
+                WHERE created_at BETWEEN ? AND ?
+                AND action LIKE 'AI_%'
+                ${userFilter}
+            `);
+            const aiTotal = aiTotalStmt.get(...params).count;
+
+            const aiSuccessStmt = db.prepare(`
+                SELECT COUNT(*) as count FROM activity_logs
+                WHERE created_at BETWEEN ? AND ?
+                AND action LIKE 'AI_%' AND success = 1
+                ${userFilter}
+            `);
+            const aiSuccess = aiSuccessStmt.get(...params).count;
+            const aiRate = aiTotal > 0 ? Math.round((aiSuccess / aiTotal) * 100) : 100;
+
+            // 3. Credits used (from credit_history)
+            let creditParams = [dateStart, dateEnd];
+            let creditUserFilter = '';
+            if (userEmail) {
+                // We need the user ID for credit_history, but we have userEmail
+                // In a real app, we'd join or resolve ID. Let's assume we can resolve ID.
+                const user = db.prepare('SELECT id FROM users WHERE email = ?').get(userEmail);
+                if (user) {
+                    creditUserFilter = ' AND user_id = ?';
+                    creditParams.push(user.id);
+                } else {
+                    // User not found, skip credits for this user
+                    creditUserFilter = ' AND 1=0';
+                }
+            }
+
+            const creditStmt = db.prepare(`
+                SELECT SUM(amount) as total FROM credit_history
+                WHERE created_at BETWEEN ? AND ?
+                AND type = 'debit'
+                ${creditUserFilter}
+            `);
+            const credits = creditStmt.get(...creditParams).total || 0;
+
+            data.push({
+                date: dateStr,
+                messages,
+                aiRate,
+                credits
+            });
+        }
+
+        return data;
+    }
+
+    /**
      * Clean old logs
      * @param {number} daysToKeep - Number of days to keep
      * @returns {number} Number of deleted logs

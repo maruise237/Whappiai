@@ -6,6 +6,7 @@ import { SessionCard } from "@/components/dashboard/session-card"
 import { MessagingTabs } from "@/components/dashboard/messaging-tabs"
 import { LogViewer } from "@/components/dashboard/log-viewer"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
+import { AnalyticsCharts } from "@/components/dashboard/analytics-charts"
 import { api } from "@/lib/api"
 import {
   Sheet,
@@ -222,8 +223,10 @@ export default function DashboardPage() {
         <StatCard label="Sessions totales" value={sessions.length} />
         <StatCard label="Taux de succès" value={`${summary.successRate}%`} />
         <StatCard label="Messages envoyés" value={summary.messagesSent} />
-        {userRole === 'admin' && <StatCard label="Activités Système" value={summary.totalActivities} />}
+        <StatCard label="Crédits restants" value={credits?.balance || 0} />
       </div>
+
+      <AnalyticsCharts />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
         <div className="flex items-center gap-3 w-full sm:w-auto">
