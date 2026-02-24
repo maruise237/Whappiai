@@ -104,8 +104,11 @@ export default function DashboardPage() {
     try {
       const token = await getToken()
       const response = await api.credits.get(token || undefined)
-      if (response?.data) setCredits(response.data)
-    } catch (e) {}
+      // fetchApi unwraps data.data if it exists
+      setCredits(response?.data || response)
+    } catch (e) {
+      console.error("Fetch credits error:", e)
+    }
   }
 
   React.useEffect(() => {
@@ -210,9 +213,15 @@ export default function DashboardPage() {
               <SelectValue placeholder="Sélectionner une session" />
             </SelectTrigger>
             <SelectContent>
-              {sessions.map((s) => (
-                <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>
-              ))}
+              {Array.isArray(sessions) && sessions.length > 0 ? (
+                sessions.map((s) => (
+                  <SelectItem key={s?.sessionId || Math.random()} value={s?.sessionId || "unknown"} className="text-xs">
+                    {s?.sessionId || "Inconnu"}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>Aucune session</SelectItem>
+              )}
             </SelectContent>
           </Select>
           {selectedSession && (
@@ -332,11 +341,13 @@ function ActivityCard({ activities, loading }: { activities: any[]; loading: boo
             activities.map((a, i) => (
               <div key={i} className="p-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">{a.action.replace(/_/g, ' ')}</p>
-                  <p className="text-[10px] text-muted-foreground">{new Date(a.timestamp).toLocaleTimeString()}</p>
+                  <p className="text-xs font-medium truncate">{String(a?.action || 'Action').replace(/_/g, ' ')}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {a?.timestamp ? new Date(a.timestamp).toLocaleTimeString() : 'Heure inconnue'}
+                  </p>
                 </div>
-                <Badge variant={a.success ? "default" : "destructive"} className="text-[9px] h-4">
-                  {a.success ? "OK" : "ERR"}
+                <Badge variant={a?.success ? "default" : "destructive"} className="text-[9px] h-4">
+                  {a?.success ? "OK" : "ERR"}
                 </Badge>
               </div>
             ))

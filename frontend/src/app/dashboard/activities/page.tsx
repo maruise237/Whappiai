@@ -122,24 +122,24 @@ export default function ActivitiesPage() {
               activities.map((a, i) => (
                 <TableRow key={i} className="hover:bg-muted/50">
                   <TableCell className="text-sm font-mono text-muted-foreground whitespace-nowrap">
-                    {new Date(a.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                    {a?.timestamp ? new Date(a.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Date inconnue'}
                   </TableCell>
-                  <TableCell className="text-sm">{a.userEmail}</TableCell>
+                  <TableCell className="text-sm">{a?.userEmail || 'Inconnu'}</TableCell>
                   <TableCell>
-                    <span className="text-xs font-medium uppercase tracking-wider">{a.action.replace(/_/g, ' ')}</span>
+                    <span className="text-xs font-medium uppercase tracking-wider">{String(a?.action || 'Action').replace(/_/g, ' ')}</span>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-[10px] font-medium uppercase">{a.resource}</Badge>
+                    <Badge variant="outline" className="text-[10px] font-medium uppercase">{a?.resource || 'N/A'}</Badge>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
-                    {JSON.stringify(a.details)}
+                    {a?.details ? JSON.stringify(a.details) : ''}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Badge className={a.success
+                    <Badge className={a?.success
                       ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
                       : "bg-destructive/10 text-destructive border-destructive/20"
                     }>
-                      {a.success ? "Succès" : "Erreur"}
+                      {a?.success ? "Succès" : "Erreur"}
                     </Badge>
                   </TableCell>
                 </TableRow>

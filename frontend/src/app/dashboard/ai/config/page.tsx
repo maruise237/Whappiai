@@ -94,9 +94,23 @@ function AIConfigForm() {
         const models = await api.ai.listModels(token || undefined)
         setAvailableModels(models || [])
         const config = await api.sessions.getAI(sessionId, token || undefined)
-        setFormData(prev => ({ ...prev, ...config }))
+        if (config && typeof config === 'object') {
+          // Normalize some boolean values that might come as 0/1 from SQLite
+          const normalized = {
+            ...config,
+            enabled: config.ai_enabled === 1 || config.enabled === true,
+            respond_to_tags: config.ai_respond_to_tags === 1 || config.respond_to_tags === true,
+            deactivate_on_typing: config.ai_deactivate_on_typing === 1 || config.deactivate_on_typing === true,
+            deactivate_on_read: config.ai_deactivate_on_read === 1 || config.deactivate_on_read === true,
+            reject_calls: config.ai_reject_calls === 1 || config.reject_calls === true,
+            read_on_reply: config.ai_read_on_reply === 1 || config.read_on_reply === true,
+            random_protection_enabled: config.ai_random_protection_enabled === 1 || config.random_protection_enabled !== false,
+          }
+          setFormData(prev => ({ ...prev, ...normalized }))
+        }
       } catch (error) {
-        toast.error("Échec du chargement")
+        console.error("Load AI config error:", error)
+        toast.error("Échec du chargement de la configuration")
       } finally {
         setIsLoading(false)
       }
@@ -333,12 +347,23 @@ function AIConfigForm() {
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-3">
                   <Label className="text-xs font-semibold">Modèle sélectionné</Label>
-                  <Select value={formData.model} onValueChange={v => setFormData({...formData, model: v})}>
+                  <Select
+                    value={formData.model || "deepseek-chat"}
+                    onValueChange={v => setFormData({...formData, model: v})}
+                  >
                     <SelectTrigger className="h-10">
-                      <SelectValue />
+                      <SelectValue placeholder="Choisir un modèle" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableModels.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                      {Array.isArray(availableModels) && availableModels.length > 0 ? (
+                        availableModels.map(m => (
+                          <SelectItem key={m?.id || Math.random()} value={m?.id || "unknown"}>
+                            {m?.name || m?.id || "Modèle sans nom"}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="deepseek-chat">DeepSeek Chat (Default)</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
