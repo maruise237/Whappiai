@@ -77,7 +77,13 @@ function initializeSchema() {
         { name: 'message_limit', type: 'INTEGER DEFAULT 100' }, // Free tier limit
         { name: 'message_used', type: 'INTEGER DEFAULT 0' },
         { name: 'subscription_expiry', type: 'DATETIME' },
-        { name: 'chariow_license_key', type: 'TEXT' }
+        { name: 'chariow_license_key', type: 'TEXT' },
+        { name: 'timezone', type: "TEXT DEFAULT 'UTC'" },
+        { name: 'address', type: 'TEXT' },
+        { name: 'organization_name', type: 'TEXT' },
+        { name: 'double_opt_in', type: 'INTEGER DEFAULT 0' },
+        { name: 'utm_tracking', type: 'INTEGER DEFAULT 0' },
+        { name: 'bot_detection', type: 'INTEGER DEFAULT 0' }
     ];
 
     userColumns.forEach(col => {

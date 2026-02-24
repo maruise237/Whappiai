@@ -180,7 +180,10 @@ class User {
         delete updates.created_by;
         delete updates.created_at;
 
-        const allowedFields = ['email', 'name', 'role', 'is_active', 'bio', 'location', 'website', 'phone'];
+        const allowedFields = [
+            'email', 'name', 'role', 'is_active', 'bio', 'location', 'website', 'phone',
+            'timezone', 'address', 'organization_name', 'double_opt_in', 'utm_tracking', 'bot_detection'
+        ];
         const fieldsToUpdate = Object.keys(updates).filter(k => allowedFields.includes(k));
 
         if (fieldsToUpdate.length === 0) return user;
