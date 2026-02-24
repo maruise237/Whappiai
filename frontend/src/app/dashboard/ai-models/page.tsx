@@ -153,23 +153,23 @@ export default function AIModelsPage() {
               <TableRow><TableCell colSpan={5} className="h-32 text-center text-xs text-muted-foreground">Aucun modèle configuré.</TableCell></TableRow>
             ) : (
               models.map((m) => (
-                <TableRow key={m.id} className="hover:bg-muted/50">
+                <TableRow key={m?.id || Math.random()} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">{m.name}</span>
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{m.endpoint}</span>
+                      <span className="text-sm font-medium">{m?.name || 'Sans nom'}</span>
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{m?.endpoint}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="text-[10px] uppercase">{m.provider}</Badge>
+                    <Badge variant="secondary" className="text-[10px] uppercase">{m?.provider || 'N/A'}</Badge>
                   </TableCell>
-                  <TableCell><code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{m.model_name}</code></TableCell>
+                  <TableCell><code className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{m?.model_name}</code></TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Badge className={m.is_active ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20" : "bg-muted text-muted-foreground"}>
-                        {m.is_active ? "Actif" : "Inactif"}
+                      <Badge className={m?.is_active ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20" : "bg-muted text-muted-foreground"}>
+                        {m?.is_active ? "Actif" : "Inactif"}
                       </Badge>
-                      {m.is_default && <Badge variant="outline" className="text-[10px]">Défaut</Badge>}
+                      {m?.is_default && <Badge variant="outline" className="text-[10px]">Défaut</Badge>}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -177,7 +177,7 @@ export default function AIModelsPage() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingModel(m); setFormData({ ...m, api_key: "" }); setIsAddingModel(true); }}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteModel(m.id, m.name)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => m?.id && handleDeleteModel(m.id, m.name || "")}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

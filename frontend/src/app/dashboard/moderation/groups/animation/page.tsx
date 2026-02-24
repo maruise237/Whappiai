@@ -71,6 +71,7 @@ function AnimationPageContent() {
   }, [searchQuery, groups]);
 
   const handleSelectGroup = async (group: any) => {
+    if (!group?.id) return;
     setSelectedGroup(group);
     try {
       const token = await getToken();
@@ -79,11 +80,17 @@ function AnimationPageContent() {
         api.sessions.getGroupProfile(sessionId!, group.id, token || undefined),
         api.sessions.getGroupLinks(sessionId!, group.id, token || undefined)
       ]);
-      setTasks(tasksRes.data || []);
-      setProfileData(profileRes.data || { mission: "", objectives: "", rules: group.desc || "", theme: "" });
-      setProductLinks(linksRes.data || []);
+
+      // Defensive handling of API responses (fetchApi unwraps data.data if it exists)
+      setTasks(Array.isArray(tasksRes) ? tasksRes : (tasksRes?.data || []));
+      setProfileData(profileRes?.data || profileRes || { mission: "", objectives: "", rules: group.desc || "", theme: "" });
+      setProductLinks(Array.isArray(linksRes) ? linksRes : (linksRes?.data || []));
+
       fetchHistory(group.id);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error("Error loading group data:", e);
+      toast.error("Échec du chargement des détails du groupe");
+    }
   };
 
   const fetchHistory = async (groupId: string) => {
@@ -327,16 +334,18 @@ function AnimationPageContent() {
                     <Clock className="h-3.5 w-3.5" /> File d&apos;attente ({tasks.length})
                   </h3>
                   <div className="divide-y border rounded-md">
-                    {tasks.length === 0 ? (
+                    {!Array.isArray(tasks) || tasks.length === 0 ? (
                       <div className="p-8 text-center text-xs text-muted-foreground">Aucune tâche en attente</div>
                     ) : (
                       tasks.map(t => (
-                        <div key={t.id} className="p-4 flex items-center justify-between bg-card hover:bg-muted/30 transition-colors">
+                        <div key={t?.id || Math.random()} className="p-4 flex items-center justify-between bg-card hover:bg-muted/30 transition-colors">
                           <div className="min-w-0">
-                            <p className="text-sm truncate max-w-md">{t.message_content}</p>
-                            <p className="text-[10px] text-muted-foreground">{new Date(t.scheduled_at).toLocaleString()}</p>
+                            <p className="text-sm truncate max-w-md">{t?.message_content || 'Sans contenu'}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {t?.scheduled_at ? new Date(t.scheduled_at).toLocaleString() : 'Non planifié'}
+                            </p>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteTask(t.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => t?.id && handleDeleteTask(t.id)}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -352,17 +361,19 @@ function AnimationPageContent() {
                   <div className="divide-y border rounded-md">
                     {isLoadingHistory ? (
                       <div className="p-8 text-center text-xs text-muted-foreground">Chargement de l&apos;historique...</div>
-                    ) : history.length === 0 ? (
+                    ) : (!Array.isArray(history) || history.length === 0) ? (
                       <div className="p-8 text-center text-xs text-muted-foreground">Aucun message envoyé précédemment</div>
                     ) : (
                       history.map(h => (
-                        <div key={h.id} className="p-4 flex items-center justify-between bg-muted/10">
+                        <div key={h?.id || Math.random()} className="p-4 flex items-center justify-between bg-muted/10">
                           <div className="min-w-0">
-                            <p className="text-sm truncate max-w-md">{h.message_content}</p>
+                            <p className="text-sm truncate max-w-md">{h?.message_content || 'Message vide'}</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <p className="text-[10px] text-muted-foreground">{new Date(h.updated_at || h.scheduled_at).toLocaleString()}</p>
-                              <Badge variant={h.status === 'completed' ? 'default' : 'destructive'} className="text-[8px] px-1 h-3.5">
-                                {h.status === 'completed' ? 'Succès' : 'Échec'}
+                              <p className="text-[10px] text-muted-foreground">
+                                {(h?.updated_at || h?.scheduled_at) ? new Date(h.updated_at || h.scheduled_at).toLocaleString() : 'Date inconnue'}
+                              </p>
+                              <Badge variant={h?.status === 'completed' ? 'default' : 'destructive'} className="text-[8px] px-1 h-3.5">
+                                {h?.status === 'completed' ? 'Succès' : 'Échec'}
                               </Badge>
                             </div>
                           </div>

@@ -125,8 +125,10 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ajouté le {new Date(doc.created_at).toLocaleDateString()}</p>
-                {doc.source && <p className="text-xs text-blue-500 truncate mt-1">{doc.source}</p>}
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Ajouté le {doc?.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Date inconnue'}
+                </p>
+                {doc?.source && <p className="text-xs text-blue-500 truncate mt-1">{doc.source}</p>}
               </CardContent>
             </Card>
           ))

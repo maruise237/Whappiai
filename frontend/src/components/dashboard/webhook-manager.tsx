@@ -122,11 +122,19 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
                     <CheckCircle2 className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate max-w-md">{wh.url}</p>
+                    <p className="text-sm font-medium truncate max-w-md">{wh?.url || 'URL manquante'}</p>
                     <div className="flex gap-2 mt-1">
-                      {(typeof wh.events === 'string' ? JSON.parse(wh.events || '[]') : (wh.events || [])).map((ev: string) => (
-                        <Badge key={ev} variant="secondary" className="text-[9px] uppercase">{ev.replace('_', ' ')}</Badge>
-                      ))}
+                      {(() => {
+                        try {
+                          const events = typeof wh?.events === 'string' ? JSON.parse(wh.events || '[]') : (wh?.events || []);
+                          if (!Array.isArray(events)) return null;
+                          return events.map((ev: string) => (
+                            <Badge key={ev} variant="secondary" className="text-[9px] uppercase">{String(ev).replace('_', ' ')}</Badge>
+                          ));
+                        } catch (e) {
+                          return <Badge variant="destructive" className="text-[9px]">ERR_PARSE</Badge>;
+                        }
+                      })()}
                     </div>
                   </div>
                 </div>
