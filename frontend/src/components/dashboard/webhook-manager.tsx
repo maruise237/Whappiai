@@ -52,7 +52,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
     try {
       const token = await getToken()
       const response = await api.sessions.getWebhooks(sessionId, token || undefined)
-      setWebhooks(response || [])
+      setWebhooks(Array.isArray(response) ? response : [])
     } catch (error) {
       console.error("Failed to fetch webhooks", error)
     } finally {
@@ -108,7 +108,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
       <div className="space-y-3">
         {isLoading ? (
           <div className="py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></div>
-        ) : webhooks.length === 0 ? (
+        ) : (!Array.isArray(webhooks) || webhooks.length === 0) ? (
           <div className="p-12 text-center border-dashed border-2 rounded-lg bg-muted/20">
             <ExternalLink className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">Aucun webhook configuré.</p>
@@ -124,7 +124,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate max-w-md">{wh.url}</p>
                     <div className="flex gap-2 mt-1">
-                      {JSON.parse(wh.events || '[]').map((ev: string) => (
+                      {(typeof wh.events === 'string' ? JSON.parse(wh.events || '[]') : (wh.events || [])).map((ev: string) => (
                         <Badge key={ev} variant="secondary" className="text-[9px] uppercase">{ev.replace('_', ' ')}</Badge>
                       ))}
                     </div>

@@ -40,6 +40,8 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
+import { ErrorBoundary } from "@/components/error-boundary"
+import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
 
 const navigation = [
   { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
@@ -208,7 +210,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 {[...navigation, ...footerNav].find(n => n.href === pathname)?.name || "Tableau de bord"}
               </h2>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <LiveIndicator />
               <Button
                 variant="ghost"
@@ -220,13 +222,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Changer de thème</span>
               </Button>
-              <button className="text-muted-foreground hover:text-foreground transition-colors"><Bell className="h-5 w-5" /></button>
+              <NotificationDropdown />
               <UserButton afterSignOutUrl="/login" />
             </div>
           </header>
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
-              {children}
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
             </div>
           </main>
         </div>

@@ -54,7 +54,12 @@ function AIConfigForm() {
 
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
-  const [showAdvanced, setShowAdvanced] = React.useState(false)
+  const [showAdvanced, setShowAdvanced] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('whappi_expert_mode') === 'true'
+    }
+    return false
+  })
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
   const [isAdmin, setIsAdmin] = React.useState(false)
 
@@ -99,6 +104,14 @@ function AIConfigForm() {
     loadData()
   }, [sessionId, getToken, clerkUser])
 
+  const toggleAdvanced = () => {
+    const newValue = !showAdvanced
+    setShowAdvanced(newValue)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('whappi_expert_mode', String(newValue))
+    }
+  }
+
   const handleSave = async () => {
     if (!sessionId) return
     setIsSaving(true)
@@ -120,10 +133,10 @@ function AIConfigForm() {
 
   const sections = [
     { id: "intelligence", name: "Intelligence", icon: BrainCircuit },
-    { id: "automation", name: "Automation", icon: Zap },
+    ...(showAdvanced ? [{ id: "automation", name: "Automation", icon: Zap }] : []),
     { id: "personality", name: "Personnalité", icon: Sparkles },
     { id: "knowledge", name: "Connaissances", icon: Book },
-    { id: "engine", name: "Moteur IA", icon: Cpu }
+    ...(showAdvanced ? [{ id: "engine", name: "Moteur IA", icon: Cpu }] : [])
   ]
 
   const modes = [
@@ -160,21 +173,31 @@ function AIConfigForm() {
 
       <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-12 items-start">
         {/* Sidebar Sticky */}
-        <aside className="sticky top-24 space-y-1">
-          {sections.map(s => (
-            <button
-              key={s.id}
-              onClick={() => {
-                setActiveSection(s.id)
-                document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }}
-              data-active={activeSection === s.id}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:font-medium"
-            >
-              <s.icon className="h-4 w-4" />
-              {s.name}
-            </button>
-          ))}
+        <aside className="sticky top-24 space-y-6">
+          <nav className="space-y-1">
+            {sections.map(s => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setActiveSection(s.id)
+                  document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }}
+                data-active={activeSection === s.id}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:font-medium"
+              >
+                <s.icon className="h-4 w-4" />
+                {s.name}
+              </button>
+            ))}
+          </nav>
+
+          <div className="px-3 py-4 border-t border-dashed">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mode Expert</span>
+              <Switch size="sm" checked={showAdvanced} onCheckedChange={toggleAdvanced} />
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">Activez pour accéder aux réglages techniques et à l'automatisation avancée.</p>
+          </div>
         </aside>
 
         {/* Main Content */}
@@ -205,10 +228,11 @@ function AIConfigForm() {
             </div>
           </section>
 
-          <Separator />
-
-          {/* Section Automation */}
-          <section id="automation" className="scroll-mt-32 space-y-6">
+          {showAdvanced && (
+            <>
+              <Separator />
+              {/* Section Automation */}
+              <section id="automation" className="scroll-mt-32 space-y-6">
             <div className="space-y-1">
               <h2 className="text-sm font-semibold text-muted-foreground">Automation</h2>
               <p className="text-xs text-muted-foreground">Paramètres de déclenchement et de simulation humaine.</p>
@@ -246,8 +270,10 @@ function AIConfigForm() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
-          </section>
+                </Card>
+              </section>
+            </>
+          )}
 
           <Separator />
 
@@ -294,10 +320,11 @@ function AIConfigForm() {
             </Card>
           </section>
 
-          <Separator />
-
-          {/* Section Engine */}
-          <section id="engine" className="scroll-mt-32 space-y-6">
+          {showAdvanced && (
+            <>
+              <Separator />
+              {/* Section Engine */}
+              <section id="engine" className="scroll-mt-32 space-y-6">
             <div className="space-y-1">
               <h2 className="text-sm font-semibold text-muted-foreground">Moteur IA</h2>
               <p className="text-xs text-muted-foreground">Configuration technique de l&apos;API.</p>
@@ -333,8 +360,10 @@ function AIConfigForm() {
                   <WebhookManager sessionId={sessionId} />
                 </div>
               </CardContent>
-            </Card>
-          </section>
+                </Card>
+              </section>
+            </>
+          )}
         </div>
       </div>
     </div>

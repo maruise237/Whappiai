@@ -55,9 +55,10 @@ export default function CreditsPage() {
         api.get("/api/v1/credits/history", token || undefined),
         api.get("/api/v1/credits/stats?days=7", token || undefined)
       ])
-      setBalance(balanceRes.balance || 0)
-      setHistory(historyRes.history || [])
-      setStats(statsRes.stats || [])
+
+      setBalance(balanceRes?.balance || 0)
+      setHistory(Array.isArray(historyRes) ? historyRes : (historyRes?.history || []))
+      setStats(Array.isArray(statsRes) ? statsRes : (statsRes?.stats || []))
     } catch (error) {
       console.error(error)
     } finally {

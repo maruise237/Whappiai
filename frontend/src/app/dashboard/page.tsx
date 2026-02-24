@@ -33,6 +33,7 @@ import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useNotificationSound } from "@/hooks/use-notification-sound"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -56,6 +57,7 @@ export default function DashboardPage() {
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
+  const { play: playNotificationSound } = useNotificationSound()
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
@@ -158,6 +160,9 @@ export default function DashboardPage() {
 
         return changed ? Array.from(sessionsMap.values()) : prev;
       });
+    } else if (lastMessage.type === 'message_received') {
+      // Play sound for incoming message
+      playNotificationSound()
     } else if (lastMessage.type === 'session-deleted') {
       const { sessionId } = lastMessage.data
       setSessions(prev => prev.filter(s => s.sessionId !== sessionId))
