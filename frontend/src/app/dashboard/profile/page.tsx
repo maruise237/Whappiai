@@ -11,18 +11,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import {
-  User as UserIcon,
-  Globe,
-  MapPin,
   Save,
   LogOut,
   Trash2,
-  ShieldCheck,
-  Zap,
   Clock,
-  Building,
+  MapPin,
   Mail,
   Smartphone,
+  Volume2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUser, useAuth, useClerk } from "@clerk/nextjs"
@@ -60,9 +56,7 @@ export default function ProfilePage() {
     organization_name: "",
     timezone: "UTC",
     address: "",
-    double_opt_in: false,
-    utm_tracking: false,
-    bot_detection: false,
+    sound_notifications: true,
     bio: "",
     phone: "",
     location: ""
@@ -79,9 +73,7 @@ export default function ProfilePage() {
         organization_name: data.organization_name || "",
         timezone: data.timezone || "UTC",
         address: data.address || "",
-        double_opt_in: !!data.double_opt_in,
-        utm_tracking: !!data.utm_tracking,
-        bot_detection: !!data.bot_detection,
+        sound_notifications: data.sound_notifications !== 0,
         bio: data.bio || "",
         phone: data.phone || "",
         location: data.location || ""
@@ -99,12 +91,9 @@ export default function ProfilePage() {
     setIsSaving(true)
     try {
       const token = await getToken()
-      // Convert booleans to integers for SQLite
       const payload = {
         ...formData,
-        double_opt_in: formData.double_opt_in ? 1 : 0,
-        utm_tracking: formData.utm_tracking ? 1 : 0,
-        bot_detection: formData.bot_detection ? 1 : 0
+        sound_notifications: formData.sound_notifications ? 1 : 0
       }
       await api.users.updateProfile(payload, token || undefined)
       toast.success("Paramètres mis à jour")
@@ -156,7 +145,7 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between mb-8">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Paramètres</h1>
-          <p className="text-sm text-muted-foreground">Gérez les informations de votre compte et de votre organisation.</p>
+          <p className="text-sm text-muted-foreground">Gérez les informations de votre compte et de votre organisation Whappi.</p>
         </div>
         <div className="flex items-center gap-2">
             <Badge variant="secondary" className="uppercase text-[10px]">{userRole}</Badge>
@@ -247,49 +236,22 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Double opt-in Card */}
+        {/* Notifications Card */}
         <Card className="border-border bg-card">
           <CardContent className="p-0">
             <div className="p-6 flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-base font-semibold">Validation en deux étapes</p>
-                <p className="text-xs text-muted-foreground">Exiger que les destinataires confirment leur intérêt avant de recevoir des messages automatisés.</p>
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Volume2 className="h-5 w-5 text-primary" />
+                </div>
+                <div className="space-y-1">
+                    <p className="text-base font-semibold">Notifications Sonores</p>
+                    <p className="text-xs text-muted-foreground">Activer le son lors de l&apos;arrivée de nouveaux messages sur le dashboard.</p>
+                </div>
               </div>
               <Switch
-                checked={formData.double_opt_in}
-                onCheckedChange={v => setFormData({...formData, double_opt_in: v})}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Suivi UTM Card */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-0">
-            <div className="p-6 flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-base font-semibold">Suivi des liens (UTM)</p>
-                <p className="text-xs text-muted-foreground">Ajout automatique des paramètres UTM aux liens envoyés via WhatsApp pour le suivi des performances.</p>
-              </div>
-              <Switch
-                checked={formData.utm_tracking}
-                onCheckedChange={v => setFormData({...formData, utm_tracking: v})}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Détection de bots Card */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-0">
-            <div className="p-6 flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-base font-semibold">Filtrage anti-spam</p>
-                <p className="text-xs text-muted-foreground">Détecter et filtrer les messages provenant de systèmes automatisés pour protéger votre compte.</p>
-              </div>
-              <Switch
-                checked={formData.bot_detection}
-                onCheckedChange={v => setFormData({...formData, bot_detection: v})}
+                checked={formData.sound_notifications}
+                onCheckedChange={v => setFormData({...formData, sound_notifications: v})}
               />
             </div>
           </CardContent>
@@ -336,7 +298,7 @@ export default function ProfilePage() {
         </Card>
       </div>
 
-      {/* Fixed Save Bar or Bottom Action */}
+      {/* Fixed Save Bar */}
       <div className="fixed bottom-8 right-8 z-50">
         <Button
           size="lg"
