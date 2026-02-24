@@ -119,18 +119,18 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
   }
 
   return (
-    <Card className="border-border bg-card">
-      <CardHeader className="p-4 sm:p-6 border-b">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <Card className="border-border/50 bg-card shadow-none">
+      <CardHeader className="p-3 sm:p-6 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="text-sm font-semibold">Messagerie directe</CardTitle>
-            <CardDescription className="text-xs">Envoyez des messages instantanément via WhatsApp.</CardDescription>
+            <CardTitle className="text-sm font-semibold">Messagerie</CardTitle>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Direct Message</p>
           </div>
           <div className="relative w-full sm:w-64">
             <Smartphone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Destinataire (ex: 237...)"
-              className="pl-8 h-9 text-sm"
+              placeholder="Destinataire (237...)"
+              className="pl-8 h-8 text-[11px]"
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />
@@ -139,8 +139,8 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
       </CardHeader>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); onTabChange?.(v); }} className="w-full">
-        <div className="px-4 py-2 border-b bg-muted/30 overflow-x-auto no-scrollbar">
-          <TabsList className="bg-transparent h-auto p-0 gap-6 flex w-max min-w-full">
+        <div className="px-3 sm:px-6 py-0 border-b bg-muted/20 overflow-x-auto no-scrollbar">
+          <TabsList className="bg-transparent h-10 p-0 gap-6 flex w-max min-w-full">
             {[
               { value: "text", icon: Type, label: "Texte" },
               { value: "image", icon: ImageIcon, label: "Image" },
@@ -160,12 +160,12 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
           </TabsList>
         </div>
 
-        <CardContent className="p-4 sm:p-6">
-          <div className="min-h-[200px]">
+        <CardContent className="p-3 sm:p-6">
+          <div className="min-h-[150px]">
             <TabsContent value="text" className="mt-0">
               <Textarea
                 placeholder="Écrivez votre message..."
-                className="min-h-[150px] text-sm"
+                className="min-h-[120px] text-[13px] bg-muted/10 border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary/20"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
@@ -249,13 +249,13 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
             </TabsContent>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t">
-            <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => { setMessage(""); setImageUrl(""); setDocUrl(""); setAudioUrl(""); setVideoUrl(""); }}>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4 pt-4 border-t">
+            <Button variant="ghost" size="sm" className="w-full sm:w-auto h-8 text-[11px] font-bold uppercase tracking-widest" onClick={() => { setMessage(""); setImageUrl(""); setDocUrl(""); setAudioUrl(""); setVideoUrl(""); }}>
               Effacer
             </Button>
-            <Button size="sm" className="w-full sm:w-auto" onClick={handleSend} disabled={loading || !isConnected || !to}>
-              {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin mr-2" /> : <SendHorizontal className="h-3.5 w-3.5 mr-2" />}
-              Envoyer le message
+            <Button size="sm" className="w-full sm:w-auto h-8 text-[11px] font-bold uppercase tracking-widest" onClick={handleSend} disabled={loading || !isConnected || !to}>
+              {loading ? <RefreshCw className="h-3 w-3 animate-spin mr-2" /> : <SendHorizontal className="h-3 w-3 mr-2" />}
+              Envoyer
             </Button>
           </div>
         </CardContent>

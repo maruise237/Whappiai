@@ -6,7 +6,6 @@ import { SessionCard } from "@/components/dashboard/session-card"
 import { MessagingTabs } from "@/components/dashboard/messaging-tabs"
 import { LogViewer } from "@/components/dashboard/log-viewer"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
-import { AnalyticsCharts } from "@/components/dashboard/analytics-charts"
 import { api } from "@/lib/api"
 import {
   Sheet,
@@ -200,32 +199,30 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Vue d&apos;ensemble</h1>
+          <h1 className="text-lg sm:text-xl font-semibold">Vue d&apos;ensemble</h1>
           <p className="text-sm text-muted-foreground">Gérez vos sessions et surveillez l&apos;activité.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Sessions totales" value={sessions.length} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <StatCard label="Sessions" value={sessions.length} />
         <StatCard label="Taux de succès" value={`${summary.successRate}%`} />
-        <StatCard label="Messages envoyés" value={summary.messagesSent} />
-        <StatCard label="Crédits restants" value={credits?.balance || 0} />
+        <StatCard label="Messages" value={summary.messagesSent} />
+        {userRole === 'admin' && <StatCard label="Logs" value={summary.totalActivities} />}
       </div>
 
-      <AnalyticsCharts />
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 border rounded-xl bg-card shadow-sm">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
-            <SelectTrigger className="flex-1 sm:w-48 h-9 text-xs">
+            <SelectTrigger className="flex-1 sm:w-48 h-8 text-[11px] font-medium">
               <SelectValue placeholder="Sélectionner une session" />
             </SelectTrigger>
             <SelectContent>
               {Array.isArray(sessions) && sessions.length > 0 ? (
                 sessions.map((s) => (
-                  <SelectItem key={s?.sessionId || Math.random()} value={s?.sessionId || "unknown"} className="text-xs">
+                  <SelectItem key={s?.sessionId || Math.random()} value={s?.sessionId || "unknown"} className="text-[11px]">
                     {s?.sessionId || "Inconnu"}
                   </SelectItem>
                 ))
@@ -236,17 +233,17 @@ export default function DashboardPage() {
           </Select>
           {selectedSession && (
             <Badge className={cn(
-              "text-[10px] px-2 h-6 font-medium whitespace-nowrap",
+              "text-[9px] px-1.5 h-5 font-bold uppercase tracking-wider whitespace-nowrap",
               selectedSession.isConnected
-                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+                ? "bg-primary/10 text-primary border-primary/20"
                 : "bg-muted text-muted-foreground"
             )}>
-              {selectedSession.isConnected ? "Connecté" : "Hors ligne"}
+              {selectedSession.isConnected ? "On" : "Off"}
             </Badge>
           )}
         </div>
-        <Button id="new-session-btn" size="sm" className="w-full sm:w-auto h-9" onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
+        <Button size="sm" className="w-full sm:w-auto h-8 text-[11px] font-semibold" onClick={() => setIsCreateOpen(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" /> Nouvelle Session
         </Button>
       </div>
 
@@ -317,10 +314,10 @@ export default function DashboardPage() {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <Card>
-      <CardContent className="p-4">
-        <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
+    <Card className="shadow-none border-border/50">
+      <CardContent className="p-3 sm:p-6">
+        <p className="text-[10px] sm:text-xs uppercase font-bold tracking-widest text-muted-foreground">{label}</p>
+        <p className="text-lg sm:text-2xl font-black mt-1 text-foreground">{value}</p>
       </CardContent>
     </Card>
   )
@@ -328,18 +325,18 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 
 function ActivityCard({ activities, loading }: { activities: any[]; loading: boolean }) {
   return (
-    <Card>
-      <CardHeader className="p-4 border-b">
+    <Card className="shadow-none border-border/50">
+      <CardHeader className="p-3 sm:p-4 border-b">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
           </span>
-          <p className="text-sm font-medium">Activités en direct</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Live</p>
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="divide-y">
+        <div className="divide-y divide-border/40">
           {loading ? (
             <div className="p-4 text-xs text-muted-foreground">Chargement...</div>
           ) : activities.length === 0 ? (

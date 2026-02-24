@@ -82,8 +82,8 @@ export default function CreditsPage() {
           <span className="text-muted-foreground">Crédits</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-lg sm:text-xl font-semibold">Crédits & Utilisation</h1>
-          <Badge variant="secondary" className="w-fit uppercase text-[10px] font-bold">Plan Pro</Badge>
+          <h1 className="text-lg sm:text-xl font-semibold">Portefeuille</h1>
+          <Badge variant="secondary" className="w-fit uppercase text-[9px] font-bold px-1.5 h-4 tracking-tighter">Plan Pro</Badge>
         </div>
       </div>
 
@@ -189,11 +189,11 @@ export default function CreditsPage() {
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; subText?: string; sub?: string }) {
   return (
-    <Card>
-      <CardContent className="p-4 sm:p-6">
-        <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p className="text-lg sm:text-2xl font-bold mt-1">{value}</p>
-        <p className="text-[10px] text-muted-foreground mt-1">{sub}</p>
+    <Card className="shadow-none border-border/50">
+      <CardContent className="p-3 sm:p-6">
+        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">{label}</p>
+        <p className="text-lg sm:text-2xl font-black mt-1 text-foreground">{value}</p>
+        <p className="text-[9px] text-muted-foreground uppercase font-medium mt-1">{sub}</p>
       </CardContent>
     </Card>
   )

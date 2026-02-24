@@ -43,6 +43,7 @@ import {
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -148,25 +149,25 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Utilisateurs</h1>
-          <p className="text-sm text-muted-foreground">Gérez votre équipe et les permissions.</p>
+          <h1 className="text-lg sm:text-xl font-semibold">Utilisateurs</h1>
+          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Équipe & Accès</p>
         </div>
-        <Button size="sm" onClick={() => { setEditingUser(null); form.reset({ email: "", password: "", role: "user", isActive: true }); setIsAddingUser(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Ajouter un utilisateur
+        <Button size="sm" className="w-full sm:w-auto h-8 text-[11px] font-bold uppercase tracking-widest" onClick={() => { setEditingUser(null); form.reset({ email: "", password: "", role: "user", isActive: true }); setIsAddingUser(true); }}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" /> Ajouter un utilisateur
         </Button>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden shadow-none border-border/50">
         <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">Utilisateur</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Rôle</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Statut</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Inscrit le</TableHead>
+              <TableHead className="hidden sm:table-cell text-xs font-medium text-muted-foreground">Statut</TableHead>
+              <TableHead className="hidden lg:table-cell text-xs font-medium text-muted-foreground">Inscrit le</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -180,21 +181,21 @@ export default function UsersPage() {
                 <TableRow key={u.email} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8"><AvatarFallback className="text-[10px]">{u.email.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{u.email}</span>
-                        <Badge variant="outline" className="w-fit text-[9px] h-4">UID: {u.email.split('@')[0]}</Badge>
+                      <Avatar className="h-8 w-8 border border-border/50 shadow-xs"><AvatarFallback className="text-[10px] font-bold">{u.email.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[13px] font-semibold truncate max-w-[120px] sm:max-w-none">{u.email}</span>
+                        <p className="text-[9px] text-muted-foreground uppercase font-medium">ID: {u.email.split('@')[0]}</p>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="secondary" className="text-[10px] uppercase">{u.role}</Badge></TableCell>
-                  <TableCell>
+                  <TableCell><Badge variant="secondary" className="text-[9px] uppercase font-bold tracking-tighter h-4 px-1">{u.role}</Badge></TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <div className="flex items-center gap-2">
                       <div className={cn("h-1.5 w-1.5 rounded-full", u.isActive ? "bg-primary" : "bg-muted-foreground/30")} />
                       <span className="text-xs">{u.isActive ? "Actif" : "Inactif"}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -211,14 +212,30 @@ export default function UsersPage() {
         </Table>
         </div>
         {totalPages > 1 && (
-          <div className="p-4 border-t">
+          <div className="p-4 border-t flex justify-center">
             <Pagination>
               <PaginationContent>
-                <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <PaginationItem key={i}><PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1} className="cursor-pointer">{i + 1}</PaginationLink></PaginationItem>
-                ))}
-                <PaginationItem><PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    className={cn("cursor-pointer", currentPage === 1 && "pointer-events-none opacity-50")}
+                  />
+                </PaginationItem>
+                <div className="hidden sm:flex items-center">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1} className="cursor-pointer">
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                </div>
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    className={cn("cursor-pointer", currentPage === totalPages && "pointer-events-none opacity-50")}
+                  />
+                </PaginationItem>
               </PaginationContent>
             </Pagination>
           </div>
@@ -226,7 +243,7 @@ export default function UsersPage() {
       </Card>
 
       <Dialog open={isAddingUser} onOpenChange={setIsAddingUser}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSaveUser)} className="space-y-4">
               <DialogHeader>
@@ -249,9 +266,9 @@ export default function UsersPage() {
                   )} />
                 )}
               </div>
-              <DialogFooter>
-                <Button variant="ghost" type="button" onClick={() => setIsAddingUser(false)}>Annuler</Button>
-                <Button type="submit">Enregistrer</Button>
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button variant="ghost" type="button" className="w-full sm:w-auto" onClick={() => setIsAddingUser(false)}>Annuler</Button>
+                <Button type="submit" className="w-full sm:w-auto">Enregistrer</Button>
               </DialogFooter>
             </form>
           </Form>
