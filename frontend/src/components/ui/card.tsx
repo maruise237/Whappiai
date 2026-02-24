@@ -12,7 +12,7 @@ function Card({
       data-slot="card"
       data-size={size}
       suppressHydrationWarning
-      className={cn("ring-foreground/10 bg-card text-card-foreground gap-6 overflow-hidden rounded-lg py-6 text-sm shadow-xs ring-1 has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg group/card flex flex-col transition-all duration-200", className)}
+      className={cn("ring-foreground/10 bg-card text-card-foreground gap-6 overflow-hidden rounded-lg py-4 sm:py-6 text-sm shadow-xs ring-1 has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg group/card flex flex-col transition-all duration-200", className)}
       {...props}
     />
   )
@@ -24,7 +24,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="card-header"
       suppressHydrationWarning
       className={cn(
-        "gap-1 rounded-t-lg px-6 group-data-[size=sm]/card:px-4 [.border-b]:pb-6 group-data-[size=sm]/card:[.border-b]:pb-4 group/card-header @container/card-header grid auto-rows-min items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto]",
+        "gap-1 rounded-t-lg px-4 sm:px-6 group-data-[size=sm]/card:px-4 [.border-b]:pb-4 sm:[.border-b]:pb-6 group-data-[size=sm]/card:[.border-b]:pb-4 group/card-header @container/card-header grid auto-rows-min items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto]",
         className
       )}
       {...props}
@@ -72,7 +72,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-content"
       suppressHydrationWarning
-      className={cn("px-6 pb-6 group-data-[size=sm]/card:px-4 group-data-[size=sm]/card:pb-4", className)}
+      className={cn("px-4 pb-4 sm:px-6 sm:pb-6 group-data-[size=sm]/card:px-4 group-data-[size=sm]/card:pb-4", className)}
       {...props}
     />
   )
@@ -83,7 +83,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-footer"
       suppressHydrationWarning
-      className={cn("flex items-center px-6 pb-6 group-data-[size=sm]/card:px-4 group-data-[size=sm]/card:pb-4", className)}
+      className={cn("flex items-center px-4 pb-4 sm:px-6 sm:pb-6 group-data-[size=sm]/card:px-4 group-data-[size=sm]/card:pb-4", className)}
       {...props}
     />
   )
