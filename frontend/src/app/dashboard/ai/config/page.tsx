@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { KnowledgeBaseManager } from "@/components/dashboard/knowledge-base-manager"
 import { WebhookManager } from "@/components/dashboard/webhook-manager"
 import { api } from "@/lib/api"
@@ -164,8 +165,8 @@ function AIConfigForm() {
   return (
     <div className="max-w-6xl mx-auto pb-20">
       {/* Header Sticky */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b mb-8 py-4">
-        <div className="flex items-center justify-between">
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b mb-8 py-4 px-4 sm:px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/ai')}>
               <ArrowLeft className="h-4 w-4" />
@@ -175,21 +176,42 @@ function AIConfigForm() {
               <p className="text-xs text-muted-foreground font-mono">{sessionId}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 mr-4">
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
               <span className="text-xs font-medium">IA Active</span>
               <Switch checked={formData.enabled} onCheckedChange={v => setFormData({...formData, enabled: v})} />
             </div>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
               <Save className="h-4 w-4 mr-2" /> Enregistrer
             </Button>
           </div>
         </div>
       </div>
 
+      {/* Mobile Navigation */}
+      <div className="md:hidden sticky top-[104px] z-20 bg-background/95 backdrop-blur-sm border-b mb-8 -mx-4 px-4 overflow-x-auto no-scrollbar">
+        <Tabs value={activeSection} onValueChange={(v) => {
+          setActiveSection(v);
+          document.getElementById(v)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }}>
+          <TabsList className="h-12 bg-transparent gap-4 p-0">
+            {sections.map(s => (
+              <TabsTrigger
+                key={s.id}
+                value={s.id}
+                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 h-12 text-xs font-medium"
+              >
+                <s.icon className="h-3.5 w-3.5 mr-2" />
+                {s.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-12 items-start">
-        {/* Sidebar Sticky */}
-        <aside className="sticky top-24 space-y-6">
+        {/* Sidebar Sticky - Hidden on mobile */}
+        <aside className="hidden md:block sticky top-24 space-y-6">
           <nav className="space-y-1">
             {sections.map(s => (
               <button
@@ -212,7 +234,7 @@ function AIConfigForm() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mode Expert</span>
               <Switch size="sm" checked={showAdvanced} onCheckedChange={toggleAdvanced} />
             </div>
-            <p className="text-[10px] text-muted-foreground leading-relaxed">Activez pour accéder aux réglages techniques et à l'automatisation avancée.</p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">Activez pour accéder aux réglages techniques et à l&apos;automatisation avancée.</p>
           </div>
         </aside>
 

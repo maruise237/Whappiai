@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -32,6 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Select,
   SelectContent,
@@ -52,6 +54,7 @@ export default function ProfilePage() {
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [deleteConfirm, setDeleteConfirm] = React.useState("")
 
+  const [activeSection, setActiveSection] = React.useState("general")
   const [formData, setFormData] = React.useState({
     name: "",
     organization_name: "",
@@ -141,6 +144,13 @@ export default function ProfilePage() {
     "Australia/Sydney"
   ]
 
+  const sections = [
+    { id: "general", name: "Général", icon: UserIcon },
+    { id: "preferences", name: "Préférences", icon: ShieldCheck },
+    { id: "account", name: "Compte & Facturation", icon: Building },
+    { id: "danger", name: "Danger Zone", icon: Trash2 },
+  ]
+
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-32 pt-4">
       {/* Header */}
@@ -179,8 +189,6 @@ export default function ProfilePage() {
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">JPG, PNG ou GIF. 1MB max.</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
         {/* Name Card */}
         <Card className="border-border bg-card shadow-sm overflow-hidden">
@@ -254,10 +262,21 @@ export default function ProfilePage() {
                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                     <Volume2 className="h-6 w-6 text-primary" />
                 </div>
+                <Switch
+                  checked={formData.utm_tracking}
+                  onCheckedChange={v => setFormData({...formData, utm_tracking: v})}
+                />
+              </div>
+
+              <div className="p-4 sm:p-6 flex items-center justify-between">
                 <div className="space-y-1">
                     <p className="text-base font-semibold">Notifications Sonores</p>
                     <p className="text-xs text-muted-foreground">Ring audio lors de la réception d&apos;un nouveau message sur le dashboard.</p>
                 </div>
+                <Switch
+                  checked={formData.bot_detection}
+                  onCheckedChange={v => setFormData({...formData, bot_detection: v})}
+                />
               </div>
               <Switch
                 checked={formData.sound_notifications}
@@ -265,8 +284,6 @@ export default function ProfilePage() {
                 className="data-[state=checked]:bg-primary"
               />
             </div>
-          </CardContent>
-        </Card>
 
         {/* Connection Status & Account Card */}
         <Card className="border-border bg-muted/20 shadow-sm border-dashed">
@@ -289,6 +306,7 @@ export default function ProfilePage() {
                             {user?.whatsapp_number || "Non configuré"}
                         </div>
                     </div>
+                  </div>
                 </div>
 
                 <div className="pt-4 flex gap-4">

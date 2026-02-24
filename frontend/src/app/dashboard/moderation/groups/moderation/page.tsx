@@ -113,47 +113,64 @@ function ModerationPageContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold">Modération</h1>
-            <Badge variant="secondary">{sessionId}</Badge>
+            <h1 className="text-lg sm:text-xl font-semibold">Modération</h1>
+            <Badge variant="secondary" className="text-[10px] font-mono">{sessionId}</Badge>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={isSaving || !selectedGroup}>
+        <Button onClick={handleSave} disabled={isSaving || !selectedGroup} className="w-full sm:w-auto">
           <Save className="h-4 w-4 mr-2" />
           Enregistrer
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8 items-start">
-        <div className="space-y-4">
+      {/* Mobile Group Selector */}
+      <div className="lg:hidden">
+        <Select value={selectedGroup?.id} onValueChange={(id) => handleSelectGroup(groups.find(g => g.id === id))}>
+          <SelectTrigger className="w-full h-11">
+            <SelectValue placeholder="Sélectionner un groupe" />
+          </SelectTrigger>
+          <SelectContent>
+            {groups.map(g => (
+              <SelectItem key={g.id} value={g.id}>{g.subject || g.name || 'Sans titre'}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
+        {/* Desktop Sidebar List */}
+        <div className="hidden lg:block sticky top-24 space-y-4">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher des groupes..."
-              className="pl-8 h-9 text-sm"
+              placeholder="Filtrer..."
+              className="pl-8 h-9 text-xs"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-          <Card>
-            <ScrollArea className="h-[500px]">
-              <div className="p-2 space-y-1">
+          <Card className="border-none shadow-none bg-transparent">
+            <ScrollArea className="h-[calc(100vh-16rem)] pr-4">
+              <div className="space-y-1">
                 {filteredGroups.map(g => (
                   <button
                     key={g.id}
                     onClick={() => handleSelectGroup(g)}
                     className={cn(
-                      "w-full flex items-center justify-between p-3 text-sm rounded-md transition-colors text-left",
-                      selectedGroup?.id === g.id ? "bg-muted font-medium" : "hover:bg-muted/50 text-muted-foreground"
+                      "w-full flex items-center justify-between p-2.5 text-xs rounded-md transition-all text-left group",
+                      selectedGroup?.id === g.id
+                        ? "bg-primary/5 text-primary font-semibold ring-1 ring-primary/20"
+                        : "hover:bg-muted text-muted-foreground"
                     )}
                   >
                     <span className="truncate flex-1">{g.subject || g.name || 'Sans titre'}</span>
-                    <ChevronRight className="h-3 w-3 opacity-50" />
+                    <ChevronRight className={cn("h-3 w-3 transition-transform", selectedGroup?.id === g.id ? "translate-x-0.5" : "opacity-0 group-hover:opacity-100")} />
                   </button>
                 ))}
               </div>
@@ -161,7 +178,7 @@ function ModerationPageContent() {
           </Card>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-12">
           {!selectedGroup ? (
             <div className="p-12 text-center border-dashed border-2 rounded-lg">
               <p className="text-sm text-muted-foreground">Sélectionnez un groupe à configurer</p>
@@ -169,8 +186,8 @@ function ModerationPageContent() {
           ) : (
             <div className="space-y-10">
               <section className="space-y-6">
-                <p className="text-xs font-semibold text-muted-foreground">Protection</p>
-                <div className="space-y-1">
+                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Protection</p>
+                <div className="space-y-1 border rounded-lg bg-card">
                   <ToggleRow label="Statut de modération" desc="Activez la modération automatisée pour ce groupe." value={formData.is_active} onChange={v => setFormData({...formData, is_active: v})} />
                   <ToggleRow label="Anti-Lien" desc="Supprime automatiquement les liens externes." value={formData.anti_link} onChange={v => setFormData({...formData, anti_link: v})} />
                 </div>
@@ -179,8 +196,9 @@ function ModerationPageContent() {
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold text-muted-foreground">Avertissements</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Avertissements</p>
+                <Card className="p-4 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
                   <div className="space-y-2">
                     <Label className="text-xs font-medium">Avertissements max</Label>
                     <Input type="number" value={formData.max_warnings} onChange={e => setFormData({...formData, max_warnings: parseInt(e.target.value) || 1})} className="w-24 h-9" />
@@ -193,36 +211,39 @@ function ModerationPageContent() {
                     <Progress value={Math.min(100, (formData.max_warnings / 10) * 100)} className="h-1.5" />
                   </div>
                 </div>
+                </Card>
               </section>
 
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold text-muted-foreground">Filtre de contenu</p>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Mots proscrits (séparés par des virgules)</Label>
-                    <Textarea value={formData.bad_words} onChange={e => setFormData({...formData, bad_words: e.target.value})} placeholder="arnaque, insulte, spam..." className="min-h-[80px] text-sm" />
+                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Filtre de contenu</p>
+                <Card className="p-4 sm:p-6 space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Mots proscrits (séparés par des virgules)</Label>
+                    <Textarea value={formData.bad_words} onChange={e => setFormData({...formData, bad_words: e.target.value})} placeholder="arnaque, insulte, spam..." className="h-[120px] text-sm resize-none" />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Template d&apos;avertissement</Label>
-                    <Textarea value={formData.warning_template} onChange={e => setFormData({...formData, warning_template: e.target.value})} className="min-h-[80px] text-sm" />
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Template d&apos;avertissement</Label>
+                    <Textarea value={formData.warning_template} onChange={e => setFormData({...formData, warning_template: e.target.value})} className="h-[120px] text-sm resize-none" />
                     <VariableTags tags={['@{{name}}', '{{count}}', '{{max}}', '{{reason}}']} onTagClick={t => setFormData({...formData, warning_template: formData.warning_template + t})} />
                   </div>
-                </div>
+                </Card>
               </section>
 
               <Separator />
 
               <section className="space-y-6">
-                <p className="text-xs font-semibold text-muted-foreground">Message de bienvenue</p>
+                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Message de bienvenue</p>
                 <div className="space-y-4">
-                  <ToggleRow label="Activer le bienvenue" desc="Saluez automatiquement les nouveaux membres." value={formData.welcome_enabled} onChange={v => setFormData({...formData, welcome_enabled: v})} />
+                  <div className="border rounded-lg bg-card">
+                    <ToggleRow label="Activer le bienvenue" desc="Saluez automatiquement les nouveaux membres." value={formData.welcome_enabled} onChange={v => setFormData({...formData, welcome_enabled: v})} />
+                  </div>
                   {formData.welcome_enabled && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                      <Textarea value={formData.welcome_template} onChange={e => setFormData({...formData, welcome_template: e.target.value})} className="min-h-[100px] text-sm" />
+                    <Card className="p-4 sm:p-6 animate-in fade-in slide-in-from-top-2">
+                      <Textarea value={formData.welcome_template} onChange={e => setFormData({...formData, welcome_template: e.target.value})} className="h-[120px] text-sm resize-none" />
                       <VariableTags tags={['@{{name}}', '{{group_name}}', '{{date}}']} onTagClick={t => setFormData({...formData, welcome_template: formData.welcome_template + t})} />
-                    </div>
+                    </Card>
                   )}
                 </div>
               </section>
@@ -236,7 +257,7 @@ function ModerationPageContent() {
 
 function ToggleRow({ label, desc, value, onChange }: { label: string; desc: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
+    <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border last:border-0">
       <div>
         <p className="text-sm font-medium">{label}</p>
         <p className="text-xs text-muted-foreground">{desc}</p>
