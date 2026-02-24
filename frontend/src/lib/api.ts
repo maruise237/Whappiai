@@ -364,6 +364,9 @@ export const api = {
     stats: (token?: string) => fetchApi("/api/v1/stats", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    analytics: (days = 7, token?: string) => fetchApi(`/api/v1/analytics?days=${days}`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   },
   notifications: {
     list: (unreadOnly = false, token?: string) => fetchApi(`/api/v1/notifications?unread=${unreadOnly}`, {
