@@ -48,6 +48,7 @@ const navigation = [
   { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
   { name: "Activités", href: "/dashboard/activities", icon: History, adminOnly: true },
   { name: "Assistant IA", href: "/dashboard/ai", icon: Bot },
+  { name: "Réponses Auto", href: "/dashboard/ai/keywords", icon: Zap },
   { name: "Gestion des Groupes", href: "/dashboard/moderation", icon: Shield },
   { name: "Crédits", href: "/dashboard/credits", icon: Zap },
   { name: "Utilisateurs", href: "/dashboard/users", icon: Users, adminOnly: true },

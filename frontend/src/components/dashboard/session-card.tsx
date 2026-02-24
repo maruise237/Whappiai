@@ -146,16 +146,16 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   return (
     <Card className="border-border bg-card">
-      <CardHeader className="p-4 sm:p-6 border-b">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <CardHeader className="p-4 border-b">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Smartphone className="h-4 w-4 text-primary" />
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{session.sessionId}</p>
+            <div>
+              <p className="text-sm font-medium">{session.sessionId}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Session WhatsApp</p>
+                <p className="text-xs text-muted-foreground">Session WhatsApp</p>
                 <button
                   onClick={() => copyToClipboard(session.sessionId, "ID")}
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -165,33 +165,31 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between sm:justify-end gap-2">
-            <Badge className={cn(
-              "text-[10px] px-2 h-6 font-medium whitespace-nowrap",
-              isConnected
-                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
-                : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
-            )}>
+          <div className="flex items-center gap-2">
+            <Badge className={isConnected
+              ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+              : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+            }>
               {isConnected ? "Connecté" : "Déconnecté"}
             </Badge>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={handleDelete}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-4 sm:p-6">
+      <CardContent id="connection-area" className="p-4">
         {!isConnected ? (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-11 bg-muted/50 p-1">
-                <TabsTrigger value="qr" className="text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">QR Code</TabsTrigger>
-                <TabsTrigger value="code" className="text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">Code d&apos;appairage</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="qr" className="text-xs">QR Code</TabsTrigger>
+                <TabsTrigger value="code" className="text-xs">Pairing Code</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="qr" className="flex flex-col items-center space-y-6 pt-6">
-                <div className="relative aspect-square w-full max-w-[240px] border rounded-xl flex items-center justify-center bg-muted/20 overflow-hidden shadow-inner">
+              <TabsContent value="qr" className="flex flex-col items-center space-y-4 pt-4">
+                <div className="relative aspect-square w-full max-w-[240px] border rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shadow-inner">
                   {qrCode ? (
                     <img src={qrCode} alt="QR Code" className="w-full h-full p-4 bg-white rounded-md object-contain" />
                   ) : (
@@ -207,18 +205,18 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 </Button>
               </TabsContent>
 
-              <TabsContent value="code" className="space-y-6 pt-6">
+              <TabsContent value="code" className="space-y-6 pt-4">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Numéro de téléphone</label>
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Numéro de téléphone</label>
+                  <div className="flex gap-2">
                     <Input
                       placeholder="ex: 237600000000"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="h-10 text-sm flex-1"
+                      className="h-10 text-sm"
                     />
-                    <Button size="sm" className="h-10 px-6 whitespace-nowrap w-full sm:w-auto" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
-                      Générer le code
+                    <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                      Obtenir le code
                     </Button>
                   </div>
                 </div>

@@ -79,24 +79,24 @@ export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps)
 
   return (
     <Card className="border-border bg-card">
-      <CardHeader className="p-4 sm:p-6 border-b">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <CardHeader className="p-4 border-b">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Terminal className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium">Exemple d&apos;API</p>
+              <p className="text-sm font-medium">Exemple d'API</p>
               <p className="text-xs text-muted-foreground">Implémentation cURL</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="h-8 gap-2 w-full sm:w-auto" onClick={copyToClipboard}>
+          <Button variant="outline" size="sm" className="h-8 gap-2" onClick={copyToClipboard}>
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            {copied ? "Copié" : "Copier l'exemple"}
+            {copied ? "Copié" : "Copier"}
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-4 sm:p-6">
+      <CardContent className="p-4">
         <ScrollArea className="h-64 w-full bg-slate-950 rounded-md p-4">
           <pre className="font-mono text-xs text-slate-300 whitespace-pre-wrap">
             {curlExample}

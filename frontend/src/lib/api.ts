@@ -251,6 +251,23 @@ export const api = {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    getKeywords: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/keywords`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    addKeyword: (sessionId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/keywords`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    updateKeyword: (sessionId: string, ruleId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/keywords/${ruleId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    deleteKeyword: (sessionId: string, ruleId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/keywords/${ruleId}`, {
+      method: "DELETE",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   },
   messages: {
     send: (sessionId: string, data: any, token?: string) => fetchApi(`/api/v1/messages?sessionId=${sessionId}`, {

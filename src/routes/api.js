@@ -14,6 +14,7 @@ const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
 const Session = require('../models/Session');
 const AIModel = require('../models/AIModel');
+const KeywordResponder = require('../models/KeywordResponder');
 const ActivityLog = require('../models/ActivityLog');
 const CreditService = require('../services/CreditService');
 const { db } = require('../config/database');
@@ -822,7 +823,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId, groupId } = req.params;
         try {
             const animatorService = require('../services/animator');
-            const history = animatorService.getHistory(sessionId, groupId);
+            const history = animatorService.getHistory({
+                session_id: sessionId,
+                group_id: groupId,
+                ...req.query
+            });
             res.json({ status: 'success', data: history });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -836,6 +841,46 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // --- Knowledge Base (RAG) ---
+
+    // --- Keyword Responders ---
+    router.get('/sessions/:sessionId/keywords', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const rules = KeywordResponder.findBySessionId(req.params.sessionId);
+            res.json({ status: 'success', data: rules });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.post('/sessions/:sessionId/keywords', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const rule = KeywordResponder.create({
+                ...req.body,
+                session_id: req.params.sessionId
+            });
+            res.status(201).json({ status: 'success', data: rule });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.put('/sessions/:sessionId/keywords/:id', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const rule = KeywordResponder.update(req.params.id, req.body);
+            res.json({ status: 'success', data: rule });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.delete('/sessions/:sessionId/keywords/:id', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            KeywordResponder.delete(req.params.id);
+            res.json({ status: 'success', message: 'Règle supprimée' });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
 
     router.get('/sessions/:sessionId/knowledge', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         try {
@@ -866,6 +911,38 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             res.json({ status: success ? 'success' : 'error', message: success ? 'Document supprimé' : 'Échec de la suppression' });
         } catch (error) {
             res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    // Notifications Endpoints
+    router.get('/notifications', checkSessionOrTokenAuth, async (req, res) => {
+        try {
+            const NotificationService = require('../services/NotificationService');
+            const unreadOnly = req.query.unread === 'true';
+            const notifications = NotificationService.getUserNotifications(req.currentUser.id, unreadOnly);
+            res.json({ status: 'success', data: notifications });
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
+    router.put('/notifications/:id/read', checkSessionOrTokenAuth, async (req, res) => {
+        try {
+            const NotificationService = require('../services/NotificationService');
+            NotificationService.markAsRead(req.params.id, req.currentUser.id);
+            res.json({ status: 'success', message: 'Marqué comme lu' });
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
+    router.put('/notifications/read-all', checkSessionOrTokenAuth, async (req, res) => {
+        try {
+            const NotificationService = require('../services/NotificationService');
+            NotificationService.markAllAsRead(req.currentUser.id);
+            res.json({ status: 'success', message: 'Tout a été marqué comme lu' });
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
         }
     });
 

@@ -19,6 +19,7 @@ const fs = require('fs');
 const QRCode = require('qrcode');
 const { log } = require('../utils/logger');
 const WebhookService = require('./WebhookService');
+const KeywordService = require('./KeywordService');
 
 // Logger configuration
 const defaultLogLevel = process.env.NODE_ENV === 'production' ? 'silent' : 'warn';
@@ -401,6 +402,11 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
         const remoteJid = msg.key.remoteJid;
+
+        // --- EXCLUSION DES CHAINES (@newsletter) ---
+        if (remoteJid && remoteJid.endsWith('@newsletter')) {
+            return; // On ignore totalement les messages provenant de chaînes
+        }
         
         // If message is FROM ME, it means the owner is chatting.
         // We should pause the AI to let the owner take over.
@@ -446,6 +452,17 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             // Call standard message handler if provided
             if (onMessage) {
                 onMessage(sessionId, msg);
+            }
+
+            // --- GESTION DES MOTS-CLÉS (NON-IA) ---
+            try {
+                const keywordMatched = await KeywordService.processMessage(sock, sessionId, msg);
+                if (keywordMatched) {
+                    log(`Réponse par mot-clé envoyée, arrêt du traitement pour ce message.`, sessionId, { event: 'keyword-processed' }, 'DEBUG');
+                    return; // Arrêt du flux : pas de modération ni d'IA si un mot-clé a matché
+                }
+            } catch (err) {
+                log(`Erreur KeywordService: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
             }
 
             // Call Moderation Handler

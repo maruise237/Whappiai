@@ -93,14 +93,14 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Webhook className="h-5 w-5 text-primary" /> Webhooks
           </h2>
           <p className="text-sm text-muted-foreground">Connectez Whappi à vos outils (Zapier, Make, CRM) en temps réel.</p>
         </div>
-        <Button size="sm" className="w-full sm:w-auto" onClick={() => setIsAdding(true)}>
+        <Button size="sm" onClick={() => setIsAdding(true)}>
           <Plus className="h-4 w-4 mr-2" /> Nouveau
         </Button>
       </div>
@@ -148,12 +148,12 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
       </div>
 
       <Dialog open={isAdding} onOpenChange={setIsAdding}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[500px]">
-          <DialogHeader className="p-4 sm:p-6 pb-0">
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
             <DialogTitle>Configurer un Webhook</DialogTitle>
             <DialogDescription>Les événements seront envoyés en JSON via POST.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 p-4 sm:p-6">
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-xs uppercase">URL de destination</Label>
               <Input placeholder="https://votre-api.com/webhook" value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})} className="h-9" />
@@ -183,9 +183,9 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
               <Input placeholder="Clé pour vérifier l'authenticité" value={formData.secret} onChange={e => setFormData({...formData, secret: e.target.value})} className="h-9" />
             </div>
           </div>
-          <DialogFooter className="p-4 sm:p-6 pt-0 flex-col sm:flex-row gap-2">
-            <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setIsAdding(false)}>Annuler</Button>
-            <Button className="w-full sm:w-auto" onClick={handleAdd} disabled={isSubmitting}>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsAdding(false)}>Annuler</Button>
+            <Button onClick={handleAdd} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Enregistrer
             </Button>
