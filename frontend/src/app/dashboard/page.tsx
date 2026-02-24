@@ -52,7 +52,6 @@ export default function DashboardPage() {
   const [activitiesLoading, setActivitiesLoading] = React.useState(true)
   const [summary, setSummary] = React.useState({ totalActivities: 0, successRate: 0, activeSessions: 0, messagesSent: 0 })
   const [credits, setCredits] = React.useState<any>(null)
-  const [dbUser, setDbUser] = React.useState<any>(null)
   const [userRole, setUserRole] = React.useState<string | null>(null)
 
   const { isLoaded, user } = useUser()
@@ -111,14 +110,6 @@ export default function DashboardPage() {
     }
   }, [getToken])
 
-  const fetchDbUser = React.useCallback(async () => {
-    try {
-      const token = await getToken()
-      const data = await api.users.getProfile(token || undefined)
-      setDbUser(data)
-    } catch (e) {}
-  }, [getToken])
-
   // Update activeSessions whenever sessions changes
   React.useEffect(() => {
     setSummary(prev => ({
@@ -131,7 +122,6 @@ export default function DashboardPage() {
     fetchSessions()
     fetchRecentActivities()
     fetchCredits()
-    fetchDbUser()
 
     const interval = setInterval(() => {
       fetchSessions()
@@ -140,7 +130,7 @@ export default function DashboardPage() {
     }, 30000)
 
     return () => clearInterval(interval)
-  }, [fetchSessions, fetchRecentActivities, fetchCredits, fetchDbUser])
+  }, [fetchSessions, fetchRecentActivities, fetchCredits])
 
   // Handle real-time updates
   React.useEffect(() => {
@@ -181,10 +171,8 @@ export default function DashboardPage() {
         return changed ? Array.from(sessionsMap.values()) : prev;
       });
     } else if (lastMessage.type === 'message_received') {
-      // Play sound for incoming message if enabled (default to true)
-      if (dbUser?.sound_notifications !== 0) {
-        playNotificationSound()
-      }
+      // Play sound for incoming message
+      playNotificationSound()
     } else if (lastMessage.type === 'session-deleted') {
       const { sessionId } = lastMessage.data
       setSessions(prev => prev.filter(s => s.sessionId !== sessionId))

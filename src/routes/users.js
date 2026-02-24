@@ -58,7 +58,7 @@ router.put('/profile', requireAuth, asyncHandler(async (req, res) => {
     // Only allow updating email, password, name, bio, location, website and phone from this endpoint for security
     const allowedUpdates = [
         'email', 'password', 'name', 'bio', 'location', 'website', 'phone',
-        'timezone', 'address', 'organization_name', 'sound_notifications'
+        'timezone', 'address', 'organization_name', 'double_opt_in', 'utm_tracking', 'bot_detection'
     ];
     const filteredUpdates = {};
     

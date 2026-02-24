@@ -28,7 +28,7 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
 
   return (
     <Card className="border-border bg-card">
-      <CardHeader className="p-4 border-b">
+      <CardHeader className="p-4 sm:p-6 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
@@ -36,21 +36,21 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
             </div>
             <div>
               <p className="text-sm font-medium">Portefeuille</p>
-              <p className="text-xs text-muted-foreground">Crédits IA</p>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Crédits IA</p>
             </div>
           </div>
-          <Badge variant="secondary" className="text-xs uppercase">
+          <Badge variant="secondary" className="text-[10px] uppercase font-bold">
             {credits.plan}
           </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="p-4 space-y-6">
-        <div className="text-center py-4 bg-muted/30 rounded-lg border">
-          <p className="text-xs text-muted-foreground font-medium">Solde actuel</p>
+      <CardContent className="p-4 sm:p-6 space-y-6">
+        <div className="text-center py-6 bg-muted/30 rounded-xl border">
+          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Solde actuel</p>
           <div className="flex items-baseline justify-center gap-1 mt-1">
-            <span className="text-3xl font-bold text-primary">{credits.balance}</span>
-            <span className="text-xs text-muted-foreground">crédits</span>
+            <span className="text-2xl font-bold text-primary">{credits.balance}</span>
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">crédits</span>
           </div>
         </div>
 
