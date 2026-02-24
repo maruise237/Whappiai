@@ -179,7 +179,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         </div>
       </CardHeader>
 
-      <CardContent className="p-4">
+      <CardContent id="connection-area" className="p-4">
         {!isConnected ? (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

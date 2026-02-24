@@ -42,6 +42,7 @@ import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
+import { OnboardingTour } from "@/components/dashboard/onboarding-tour"
 
 const navigation = [
   { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
@@ -62,9 +63,12 @@ function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, on
   const Icon = item?.icon
   if (!item || !Icon) return null
 
+  const id = item.href ? `nav-${item.href.replace(/\//g, '-')}` : undefined
+
   return (
     <Link
       href={item.href || "#"}
+      id={id}
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
@@ -157,6 +161,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <WebSocketProvider>
+      <OnboardingTour />
       <div className="flex h-screen bg-background overflow-hidden">
         <aside className="hidden md:flex w-64 flex-col border-r border-border">
           <SidebarContent userRole={userRole} pathname={pathname} />

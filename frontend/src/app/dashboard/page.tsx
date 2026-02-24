@@ -257,7 +257,7 @@ export default function DashboardPage() {
             </Badge>
           )}
         </div>
-        <Button size="sm" className="w-full sm:w-auto h-9" onClick={() => setIsCreateOpen(true)}>
+        <Button id="new-session-btn" size="sm" className="w-full sm:w-auto h-9" onClick={() => setIsCreateOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
         </Button>
       </div>

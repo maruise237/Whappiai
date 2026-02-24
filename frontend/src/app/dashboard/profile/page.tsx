@@ -20,7 +20,8 @@ import {
   Smartphone,
   Volume2,
   Building,
-  User
+  User,
+  HelpCircle
 } from "lucide-react"
 import { useUser, useAuth, useClerk } from "@clerk/nextjs"
 import {
@@ -114,7 +115,7 @@ export default function ProfilePage() {
     try {
       const token = await getToken()
       await api.users.delete(dbUser.email, token || undefined)
-      await signOut(() => router.push("/login"))
+      await signOut({ redirectUrl: "/login" })
     } catch (error) {
       toast.error("Échec de la suppression")
     }
@@ -288,9 +289,22 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                <div className="pt-4 flex gap-4">
-                    <Button variant="outline" size="sm" onClick={() => signOut(() => router.push("/login"))} className="h-9 px-4 border-border/60 bg-card hover:bg-muted">
+                <div className="pt-4 flex flex-wrap gap-4">
+                    <Button variant="outline" size="sm" onClick={() => signOut({ redirectUrl: "/login" })} className="h-9 px-4 border-border/60 bg-card hover:bg-muted">
                       <LogOut className="h-4 w-4 mr-2 text-muted-foreground" /> Déconnexion
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            router.push('/dashboard');
+                            setTimeout(() => {
+                                if ((window as any).startWhappiTour) (window as any).startWhappiTour();
+                            }, 500);
+                        }}
+                        className="h-9 px-4 border-border/60 bg-card hover:bg-muted"
+                    >
+                      <HelpCircle className="h-4 w-4 mr-2 text-muted-foreground" /> Revoir le tour guidé
                     </Button>
                 </div>
             </CardContent>
