@@ -12,18 +12,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import {
-  User as UserIcon,
-  Globe,
-  MapPin,
   Save,
   LogOut,
   Trash2,
-  ShieldCheck,
-  Zap,
   Clock,
-  Building,
+  MapPin,
   Mail,
   Smartphone,
+  Volume2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUser, useAuth, useClerk } from "@clerk/nextjs"
@@ -63,9 +59,7 @@ export default function ProfilePage() {
     organization_name: "",
     timezone: "UTC",
     address: "",
-    double_opt_in: false,
-    utm_tracking: false,
-    bot_detection: false,
+    sound_notifications: true,
     bio: "",
     phone: "",
     location: ""
@@ -82,9 +76,7 @@ export default function ProfilePage() {
         organization_name: data.organization_name || "",
         timezone: data.timezone || "UTC",
         address: data.address || "",
-        double_opt_in: !!data.double_opt_in,
-        utm_tracking: !!data.utm_tracking,
-        bot_detection: !!data.bot_detection,
+        sound_notifications: data.sound_notifications !== 0,
         bio: data.bio || "",
         phone: data.phone || "",
         location: data.location || ""
@@ -102,12 +94,9 @@ export default function ProfilePage() {
     setIsSaving(true)
     try {
       const token = await getToken()
-      // Convert booleans to integers for SQLite
       const payload = {
         ...formData,
-        double_opt_in: formData.double_opt_in ? 1 : 0,
-        utm_tracking: formData.utm_tracking ? 1 : 0,
-        bot_detection: formData.bot_detection ? 1 : 0
+        sound_notifications: formData.sound_notifications ? 1 : 0
       }
       await api.users.updateProfile(payload, token || undefined)
       toast.success("Paramètres mis à jour")
