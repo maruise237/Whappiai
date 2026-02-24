@@ -43,7 +43,6 @@ import {
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -149,12 +148,12 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-lg sm:text-xl font-semibold">Utilisateurs</h1>
+          <h1 className="text-xl font-semibold">Utilisateurs</h1>
           <p className="text-sm text-muted-foreground">Gérez votre équipe et les permissions.</p>
         </div>
-        <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditingUser(null); form.reset({ email: "", password: "", role: "user", isActive: true }); setIsAddingUser(true); }}>
+        <Button size="sm" onClick={() => { setEditingUser(null); form.reset({ email: "", password: "", role: "user", isActive: true }); setIsAddingUser(true); }}>
           <Plus className="h-4 w-4 mr-2" /> Ajouter un utilisateur
         </Button>
       </div>
@@ -164,10 +163,10 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">Utilisateur</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Rôle</TableHead>
-              <TableHead className="hidden sm:table-cell text-xs font-medium text-muted-foreground">Statut</TableHead>
-              <TableHead className="hidden lg:table-cell text-xs font-medium text-muted-foreground">Inscrit le</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Statut</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Inscrit le</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -182,20 +181,20 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8"><AvatarFallback className="text-[10px]">{u.email.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-none">{u.email}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{u.email}</span>
                         <Badge variant="outline" className="w-fit text-[9px] h-4">UID: {u.email.split('@')[0]}</Badge>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell><Badge variant="secondary" className="text-[10px] uppercase">{u.role}</Badge></TableCell>
-                  <TableCell className="hidden sm:table-cell">
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       <div className={cn("h-1.5 w-1.5 rounded-full", u.isActive ? "bg-primary" : "bg-muted-foreground/30")} />
                       <span className="text-xs">{u.isActive ? "Actif" : "Inactif"}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -212,30 +211,14 @@ export default function UsersPage() {
         </Table>
         </div>
         {totalPages > 1 && (
-          <div className="p-4 border-t flex justify-center">
+          <div className="p-4 border-t">
             <Pagination>
               <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    className={cn("cursor-pointer", currentPage === 1 && "pointer-events-none opacity-50")}
-                  />
-                </PaginationItem>
-                <div className="hidden sm:flex items-center">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <PaginationItem key={i}>
-                      <PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1} className="cursor-pointer">
-                        {i + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                </div>
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    className={cn("cursor-pointer", currentPage === totalPages && "pointer-events-none opacity-50")}
-                  />
-                </PaginationItem>
+                <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <PaginationItem key={i}><PaginationLink onClick={() => setCurrentPage(i + 1)} isActive={currentPage === i + 1} className="cursor-pointer">{i + 1}</PaginationLink></PaginationItem>
+                ))}
+                <PaginationItem><PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>
               </PaginationContent>
             </Pagination>
           </div>
@@ -243,7 +226,7 @@ export default function UsersPage() {
       </Card>
 
       <Dialog open={isAddingUser} onOpenChange={setIsAddingUser}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg">
+        <DialogContent className="sm:max-w-[425px]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSaveUser)} className="space-y-4">
               <DialogHeader>
@@ -266,9 +249,9 @@ export default function UsersPage() {
                   )} />
                 )}
               </div>
-              <DialogFooter className="flex-col sm:flex-row gap-2">
-                <Button variant="ghost" type="button" className="w-full sm:w-auto" onClick={() => setIsAddingUser(false)}>Annuler</Button>
-                <Button type="submit" className="w-full sm:w-auto">Enregistrer</Button>
+              <DialogFooter>
+                <Button variant="ghost" type="button" onClick={() => setIsAddingUser(false)}>Annuler</Button>
+                <Button type="submit">Enregistrer</Button>
               </DialogFooter>
             </form>
           </Form>

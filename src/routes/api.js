@@ -896,6 +896,18 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
+    router.get('/analytics', checkSessionOrTokenAuth, async (req, res) => {
+        try {
+            const days = parseInt(req.query.days) || 7;
+            const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
+
+            const data = ActivityLog.getAnalytics(userEmail, days);
+            res.json({ status: 'success', data });
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
     router.get('/activities/summary', checkSessionOrTokenAuth, async (req, res) => {
         try {
             if (!activityLogger) {

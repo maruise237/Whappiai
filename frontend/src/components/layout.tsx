@@ -25,6 +25,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -41,6 +42,7 @@ import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
+import { OnboardingTour } from "@/components/dashboard/onboarding-tour"
 
 const navigation = [
   { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
@@ -61,9 +63,12 @@ function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, on
   const Icon = item?.icon
   if (!item || !Icon) return null
 
+  const id = item.href ? `nav-${item.href.replace(/\//g, '-')}` : undefined
+
   return (
     <Link
       href={item.href || "#"}
+      id={id}
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
@@ -123,7 +128,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
-  const [sidebarOpen, setSidebarOpen] = React.useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   const userEmail = user?.primaryEmailAddress?.emailAddress
   const userName = user?.firstName || userEmail?.split("@")[0] || "User"
@@ -156,16 +161,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <WebSocketProvider>
+      <OnboardingTour />
       <div className="flex h-screen bg-background overflow-hidden">
-        {/* Sidebar */}
-        <aside className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col",
-          "transform transition-transform duration-200 ease-in-out",
-          "lg:relative lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}>
-          <SidebarContent userRole={userRole} pathname={pathname} onItemClick={() => setSidebarOpen(false)} />
-
+        <aside className="hidden md:flex w-64 flex-col border-r border-border">
+          <SidebarContent userRole={userRole} pathname={pathname} />
           <div className="p-4 border-t border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -193,21 +192,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        {/* Overlay mobile */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Topbar */}
-          <header className="h-14 flex items-center justify-between px-4 border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-20">
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-20">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
-                <Menu className="h-5 w-5" />
-              </Button>
+              <div className="md:hidden">
+                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="p-0 w-64">
+                    <SidebarContent
+                      userRole={userRole}
+                      pathname={pathname}
+                      onItemClick={() => setIsMobileMenuOpen(false)}
+                    />
+                  </SheetContent>
+                </Sheet>
+              </div>
               <h2 className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
                 {[...navigation, ...footerNav].find(n => n.href === pathname)?.name || "Tableau de bord"}
               </h2>
@@ -228,7 +231,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <UserButton afterSignOutUrl="/login" />
             </div>
           </header>
-
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
               <ErrorBoundary>
