@@ -30,7 +30,7 @@ const benefits = [
 
 export function ValueProposition() {
   return (
-    <section className="py-12 lg:py-24 px-4 bg-background relative overflow-hidden transition-colors duration-300">
+    <section className="py-24 px-4 bg-background relative overflow-hidden transition-colors duration-300">
       {/* Background Gradients */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full mix-blend-multiply dark:mix-blend-normal" />
@@ -43,9 +43,9 @@ export function ValueProposition() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-8 lg:mb-16"
+          className="text-center mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-6 tracking-tight max-w-4xl mx-auto leading-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6 tracking-tight max-w-4xl mx-auto leading-tight">
             Et si on vous disait que vous pouviez avoir un assistant virtuel qui...
           </h2>
         </motion.div>

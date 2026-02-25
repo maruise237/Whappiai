@@ -64,7 +64,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Button 
             type="submit" 
-            className="w-full h-12 bg-primary text-primary-foreground font-bold text-[15px] relative overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] rounded-xl shadow-[0_0_20px_hsl(var(--primary)/0.3)]"
+            className="w-full h-12 bg-green-500 hover:bg-green-400 text-black font-bold text-[15px] relative overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
             disabled={loading}
           >
             <div className="absolute left-4">
@@ -82,7 +82,7 @@ export default function LoginPage() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 placeholder="Entrez votre email"
-                className="h-12 bg-background border-input focus:border-primary text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
+                className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                 required
               />
             </div>
@@ -93,7 +93,7 @@ export default function LoginPage() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="Mot de passe" 
-                className="h-12 bg-background border-input focus:border-primary text-foreground pr-10 placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
+                className="h-12 bg-background border-input focus:border-green-500 text-foreground pr-10 placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                 required
               />
               <button
@@ -126,9 +126,9 @@ export default function LoginPage() {
 
         {/* Section Nouveau Compte - SaaS 2026 Best Practice */}
         <div className="mt-8 pt-6 border-t border-dashed border-border/60">
-          <div className="bg-gradient-to-br from-primary/5 to-emerald-500/5 rounded-2xl p-5 border border-primary/10 hover:border-primary/20 transition-colors group">
+          <div className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-2xl p-5 border border-green-500/10 hover:border-green-500/20 transition-colors group">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg text-primary mt-0.5 group-hover:scale-110 transition-transform duration-300">
+              <div className="p-2 bg-green-500/10 rounded-lg text-green-600 dark:text-green-400 mt-0.5 group-hover:scale-110 transition-transform duration-300">
                 <Sparkles size={18} />
               </div>
               <div className="space-y-1">
@@ -141,7 +141,7 @@ export default function LoginPage() {
             
             <Button 
               variant="ghost" 
-              className="w-full mt-4 h-10 border border-primary/20 hover:border-primary/40 hover:bg-primary/10 text-primary transition-all text-xs uppercase tracking-wide font-bold flex items-center justify-between px-4 group/btn"
+              className="w-full mt-4 h-10 border border-green-500/20 hover:border-green-500/40 hover:bg-green-500/10 text-green-700 dark:text-green-300 transition-all text-xs uppercase tracking-wide font-bold flex items-center justify-between px-4 group/btn"
               onClick={() => router.push('/register')}
             >
               <span>Commencer l'inscription</span>

@@ -171,7 +171,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <OnboardingTour />
       <div className="flex h-screen bg-background overflow-hidden">
         <aside className="hidden md:flex w-64 flex-col border-r border-border">
-          <SidebarContent userRole={userRole} pathname={pathname} />
+          <SidebarContent userRole={userRole} pathname={pathname} t={t} />
           <div className="p-4 border-t border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

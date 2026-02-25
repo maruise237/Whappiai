@@ -193,12 +193,12 @@ const ALL_TESTIMONIALS = [
    return (
      <section 
        ref={containerRef} 
-       className="py-12 lg:py-24 relative overflow-hidden bg-background"
+       className="py-24 relative overflow-hidden bg-background"
        aria-label="Témoignages clients"
      >
       <div className="container px-4 mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-8 lg:mb-16 space-y-4">
+        <div className="text-center mb-16 space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -207,7 +207,7 @@ const ALL_TESTIMONIALS = [
             <Badge variant="outline" className="mb-4 px-4 py-1 rounded-full bg-primary/5 text-primary border-primary/20">
               Wall of Love
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
               Ils adorent <span className="text-primary">Whappi</span>
             </h2>
             <p className="text-muted-foreground text-lg mt-4 max-w-2xl mx-auto">

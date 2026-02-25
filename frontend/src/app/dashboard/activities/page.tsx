@@ -77,7 +77,7 @@ export default function ActivitiesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Activités" value={summary.totalActivities} />
         <StatCard label="Utilisateurs Actifs" value={summary.activeUsers} />
         <StatCard label="Sessions" value={summary.sessionsCreated} />
@@ -102,10 +102,10 @@ export default function ActivitiesPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="text-xs font-medium text-muted-foreground">Horodatage</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground hidden sm:table-cell">Utilisateur</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Action</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground hidden md:table-cell">Ressource</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground hidden lg:table-cell">Détails</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Ressource</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Détails</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground text-right">Statut</TableHead>
             </TableRow>
           </TableHeader>
@@ -124,14 +124,14 @@ export default function ActivitiesPage() {
                   <TableCell className="text-sm font-mono text-muted-foreground whitespace-nowrap">
                     {a?.timestamp ? new Date(a.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Date inconnue'}
                   </TableCell>
-                  <TableCell className="text-sm hidden sm:table-cell">{a?.userEmail || 'Inconnu'}</TableCell>
+                  <TableCell className="text-sm">{a?.userEmail || 'Inconnu'}</TableCell>
                   <TableCell>
                     <span className="text-xs font-medium uppercase tracking-wider">{String(a?.action || 'Action').replace(/_/g, ' ')}</span>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell>
                     <Badge variant="outline" className="text-[10px] font-medium uppercase">{a?.resource || 'N/A'}</Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-xs truncate hidden lg:table-cell">
+                  <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
                     {a?.details ? JSON.stringify(a.details) : ''}
                   </TableCell>
                   <TableCell className="text-right">

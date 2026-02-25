@@ -87,7 +87,7 @@ export default function CreditsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Solde actuel" value={balance} sub="crédits disponibles" />
         <StatCard label="Usage (7j)" value={usageLast7Days} sub="crédits consommés" />
         <StatCard label="Messages envoyés" value={balance} sub="capacité restante" />
@@ -142,7 +142,7 @@ export default function CreditsPage() {
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                           {new Date(item.created_at).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-xs font-medium truncate max-w-[150px] sm:max-w-none">{item.description}</TableCell>
+                        <TableCell className="text-xs font-medium">{item.description}</TableCell>
                         <TableCell className={cn("text-xs font-bold text-right", item.type === 'add' ? "text-green-600" : "text-foreground")}>
                           {item.type === 'add' ? "+" : "-"}{Math.abs(item.amount)}
                         </TableCell>
