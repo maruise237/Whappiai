@@ -74,16 +74,16 @@ export function MainFeatures() {
   const [activeFeature, setActiveFeature] = useState(0)
 
   return (
-    <section id="features" className="py-24 px-4 bg-background overflow-hidden">
+    <section id="features" className="py-12 lg:py-24 px-4 bg-background overflow-hidden">
       <div className="container mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: false }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-8 lg:mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-4 tracking-tight">
             Fonctionnalités principales
           </h2>
         </motion.div>

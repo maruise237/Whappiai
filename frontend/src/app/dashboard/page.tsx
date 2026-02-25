@@ -219,7 +219,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Sessions totales" value={sessions.length} />
         <StatCard label="Taux de succès" value={`${summary.successRate}%`} />
         <StatCard label="Messages envoyés" value={summary.messagesSent} />
