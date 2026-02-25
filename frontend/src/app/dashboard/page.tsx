@@ -4,7 +4,6 @@ import * as React from "react"
 import { Plus, Zap, Activity, MessageCircle, Smartphone, Brain, Sparkles, Loader2, ArrowRight } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
-import { AnalyticsCharts } from "@/components/dashboard/analytics-charts"
 import { api } from "@/lib/api"
 import {
   Sheet,
@@ -151,102 +150,74 @@ export default function DashboardPage() {
   if (loading) return <div className="p-12 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></div>
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-20">
-      {/* Welcome & Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+    <div className="space-y-6 max-w-5xl mx-auto pb-20">
+      {/* Pilotage Hub */}
+      <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Bonjour, {user?.firstName || 'utilisateur'}</h1>
-          <p className="text-sm text-muted-foreground">Voici l&apos;état de votre automatisation aujourd&apos;hui.</p>
+          <h1 className="text-xl font-bold tracking-tight">Pilotage Whappi</h1>
+          <p className="text-xs text-muted-foreground">Gérez vos automatisations en un coup d&apos;œil.</p>
         </div>
-        <div className="flex items-center gap-3">
-           <div className="flex -space-x-2 mr-2">
-              <div className="h-8 w-8 rounded-full border-2 border-background bg-primary/10 flex items-center justify-center"><Smartphone className="h-4 w-4 text-primary" /></div>
-              <div className="h-8 w-8 rounded-full border-2 border-background bg-green-500/10 flex items-center justify-center"><Brain className="h-4 w-4 text-green-600" /></div>
-           </div>
-           <Button size="sm" id="new-session-btn" onClick={() => setIsCreateOpen(true)} className="rounded-full shadow-lg shadow-primary/20">
-              <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
-           </Button>
-        </div>
+        <Button size="sm" id="new-session-btn" onClick={() => setIsCreateOpen(true)} className="rounded-full h-8 px-4">
+           <Plus className="h-3 w-3 mr-2" /> Session
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Messages" value={summary.messagesSent} />
-        <StatCard label="Taux de Succès" value={`${summary.successRate}%`} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Messages" value={summary.messagesSent} />
+        <StatCard label="Succès" value={`${summary.successRate}%`} />
         <StatCard label="Crédits" value={credits?.balance || 0} />
         <StatCard label="Sessions" value={sessions.length} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-8">
-        {/* Main Status Area */}
-        <div className="space-y-8">
-           <Card className="border-none shadow-none bg-transparent">
-              <div className="flex items-center justify-between mb-4 px-2">
-                 <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Pilotage en direct</h2>
-                 <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
-                    <SelectTrigger className="w-[180px] h-8 text-[11px] bg-background">
-                       <SelectValue placeholder="Choisir une session" />
-                    </SelectTrigger>
-                    <SelectContent>
-                       {sessions.map(s => <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>)}
-                    </SelectContent>
-                 </Select>
-              </div>
-              <SessionCard session={selectedSession} onRefresh={fetchSessions} onCreate={() => setIsCreateOpen(true)} />
-           </Card>
+      <div className="grid grid-cols-1 gap-6">
+         {/* Active Session Control */}
+         <Card className="border-none shadow-none bg-muted/20">
+            <div className="p-4 flex items-center justify-between">
+               <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center"><Smartphone className="h-4 w-4 text-primary" /></div>
+                  <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
+                     <SelectTrigger className="w-[160px] h-8 text-[11px] bg-background border-none shadow-sm">
+                        <SelectValue placeholder="Choisir une session" />
+                     </SelectTrigger>
+                     <SelectContent>
+                        {sessions.map(s => <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>)}
+                     </SelectContent>
+                  </Select>
+               </div>
+               {selectedSessionAI && (
+                  <div className="flex items-center gap-3 px-3 py-1.5 bg-background rounded-full shadow-sm">
+                     <span className="text-[10px] font-bold uppercase text-muted-foreground">IA {selectedSessionAI.enabled ? "Active" : "Pause"}</span>
+                     <Switch size="sm" checked={!!selectedSessionAI.enabled} onCheckedChange={toggleAI} disabled={isAiLoading} />
+                  </div>
+               )}
+            </div>
+            <CardContent className="px-4 pb-4">
+               <SessionCard session={selectedSession} onRefresh={fetchSessions} onCreate={() => setIsCreateOpen(true)} />
+            </CardContent>
+         </Card>
 
-           <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground px-2">Performance</h2>
-              <Card><CardContent className="p-6"><AnalyticsCharts /></CardContent></Card>
-           </div>
-        </div>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-none bg-muted/10">
+               <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+                     <Zap className="h-3 w-3 text-primary" /> Intelligence Rapide
+                  </CardTitle>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                  <div className="p-3 rounded bg-background border border-border/50">
+                     <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Prompt Actuel</p>
+                     <p className="text-[11px] line-clamp-3 italic text-muted-foreground">
+                        {selectedSessionAI?.prompt || "Aucun prompt configuré."}
+                     </p>
+                  </div>
+                  <Button variant="link" size="sm" className="p-0 h-auto text-[11px] font-bold" asChild>
+                     <Link href="/dashboard/ai">Modifier les réglages intelligence →</Link>
+                  </Button>
+               </CardContent>
+            </Card>
 
-        {/* Quick Controls Sidebar */}
-        <div className="space-y-8">
-           {/* IA Quick Toggle */}
-           <Card className={cn(
-              "border-2 transition-all",
-              selectedSessionAI?.enabled ? "border-primary/20 bg-primary/[0.02]" : "border-muted"
-           )}>
-              <CardHeader className="pb-3">
-                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                       <Brain className={cn("h-4 w-4", selectedSessionAI?.enabled ? "text-primary" : "text-muted-foreground")} />
-                       Assistant IA
-                    </CardTitle>
-                    <Switch checked={!!selectedSessionAI?.enabled} onCheckedChange={toggleAI} disabled={!selectedSessionId || isAiLoading} />
-                 </div>
-                 <CardDescription className="text-[11px]">
-                    {selectedSessionAI?.enabled ? "Le cerveau IA répond à vos messages." : "L'IA est actuellement en veille."}
-                 </CardDescription>
-              </CardHeader>
-              <CardContent className="pb-4">
-                 <div className="rounded-lg bg-muted/50 p-3 mb-4">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Instruction Actuelle</p>
-                    <p className="text-[11px] line-clamp-2 italic text-muted-foreground">
-                       {selectedSessionAI?.prompt || "Aucune instruction configurée."}
-                    </p>
-                 </div>
-                 <Button variant="outline" size="sm" className="w-full h-8 text-[11px]" asChild>
-                    <Link href="/dashboard/ai">Gérer l&apos;Intelligence <ArrowRight className="ml-2 h-3 w-3" /></Link>
-                 </Button>
-              </CardContent>
-           </Card>
-
-           <CreditCardUI credits={credits} userRole={userRole} />
-
-           <Card className="bg-muted/30 border-none">
-              <CardHeader className="pb-2">
-                 <CardTitle className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="h-3 w-3 text-amber-500" /> Astuce MicroSaaS
-                 </CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Utilisez les **Réponses par Mots-clés** dans l&apos;onglet Intelligence pour répondre aux questions simples et économiser vos crédits IA.
-                 </p>
-              </CardContent>
-           </Card>
-        </div>
+            <CreditCardUI credits={credits} userRole={userRole} />
+         </div>
       </div>
 
       {/* Sheet remains the same */}

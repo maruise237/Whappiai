@@ -232,31 +232,34 @@ export default function InboxPage() {
 
       <Card className="flex-1 flex overflow-hidden border-border bg-card shadow-lg">
         {/* Sidebar: Conversations */}
-        <div className="w-full sm:w-[320px] flex flex-col border-r bg-muted/5">
-          <div className="p-4 border-b space-y-4">
+        <div className={cn(
+          "w-full md:w-[300px] lg:w-[350px] flex flex-col border-r bg-muted/5 shrink-0 transition-all",
+          selectedChat && "hidden md:flex"
+        )}>
+          <div className="p-4 border-b">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder={t("inbox.search")}
-                className="pl-8 h-9 text-xs"
+                className="pl-8 h-8 text-[11px] bg-background border-none shadow-none focus-visible:ring-1 ring-primary/20"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
           <ScrollArea className="flex-1">
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-border/30">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="p-4 space-y-2 animate-pulse">
-                    <div className="h-4 w-24 bg-muted rounded" />
-                    <div className="h-3 w-48 bg-muted rounded" />
+                    <div className="h-3 w-20 bg-muted rounded" />
+                    <div className="h-2 w-32 bg-muted rounded" />
                   </div>
                 ))
               ) : filteredConversations.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                  <p className="text-xs">Aucune conversation</p>
+                <div className="p-12 text-center text-muted-foreground opacity-30">
+                  <MessageSquare className="h-10 w-10 mx-auto mb-3" />
+                  <p className="text-[10px] uppercase font-bold tracking-widest">Vide</p>
                 </div>
               ) : (
                 filteredConversations.map(conv => (
@@ -264,20 +267,20 @@ export default function InboxPage() {
                     key={conv.remote_jid}
                     onClick={() => fetchHistory(conv.remote_jid)}
                     className={cn(
-                      "group p-4 text-left hover:bg-muted/50 transition-all cursor-pointer relative",
-                      selectedChat === conv.remote_jid && "bg-muted border-l-2 border-primary"
+                      "group p-4 text-left hover:bg-muted/50 transition-all cursor-pointer relative border-l-2 border-transparent",
+                      selectedChat === conv.remote_jid && "bg-primary/[0.03] border-primary"
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-bold truncate">
+                    <div className="flex items-center justify-between gap-3 mb-1 min-w-0">
+                      <span className="text-[12px] font-bold truncate flex-1 min-w-0">
                         {conv.remote_jid.includes('@g.us') ? "👥 " : ""}
-                        {conv.remote_jid.split('@')[0]}
+                        {conv.remote_jid.split('@')[0].substring(0, 15)}
                       </span>
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      <span className="text-[9px] text-muted-foreground/60 whitespace-nowrap">
                         {new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground line-clamp-1 pr-4">
+                    <p className="text-[11px] text-muted-foreground/80 line-clamp-1 pr-6 overflow-hidden">
                       {conv.last_message || "Fichier média"}
                     </p>
                     <button
@@ -294,9 +297,12 @@ export default function InboxPage() {
         </div>
 
         {/* Main Content: Chat View */}
-        <div className="hidden sm:flex flex-1 flex-col bg-background relative">
+        <div className={cn(
+          "flex-1 flex flex-col bg-background relative min-w-0",
+          !selectedChat && "hidden md:flex"
+        )}>
           {!selectedChat ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/30 p-12 text-center">
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/20 p-12 text-center">
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <MessageCircle className="h-8 w-8" />
               </div>
@@ -307,12 +313,15 @@ export default function InboxPage() {
             <>
               {/* Chat Header */}
               <div className="h-14 flex items-center justify-between px-6 border-b bg-card">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Button variant="ghost" size="icon" className="md:hidden h-8 w-8" onClick={() => setSelectedChat(null)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
                     <User className="h-4 w-4" />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold">{selectedChat.split('@')[0]}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate">{selectedChat.split('@')[0]}</p>
                     <p className="text-[10px] text-muted-foreground">WhatsApp {selectedChat.includes('@g.us') ? 'Groupe' : 'Direct'}</p>
                   </div>
                 </div>

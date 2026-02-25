@@ -269,12 +269,12 @@ export default function ProfilePage() {
 
         <Card className="border-border bg-muted/20 shadow-sm border-dashed">
             <CardHeader className="pb-4">
-                <CardTitle className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Compte Whappi</CardTitle>
+                <CardTitle className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">Informations Compte</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Email associé</Label>
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">Email associé</Label>
                         <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/60 text-sm font-medium">
                             <Mail className="h-4 w-4 text-muted-foreground/60" />
                             {userEmail}
@@ -365,7 +365,7 @@ export default function ProfilePage() {
                 value={deleteConfirm}
                 onChange={e => setDeleteConfirm(e.target.value)}
                 placeholder="SUPPRIMER"
-                className="h-12 text-center font-black tracking-[0.3em] border-destructive/30 focus-visible:ring-destructive/20 uppercase"
+                className="h-10 text-center font-bold border-destructive/30 focus-visible:ring-destructive/20 uppercase"
             />
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
