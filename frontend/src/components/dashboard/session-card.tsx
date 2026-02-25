@@ -166,12 +166,19 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className={isConnected
-              ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
-              : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
-            }>
-              {isConnected ? "Connecté" : "Déconnecté"}
-            </Badge>
+            <div className="flex flex-col items-end gap-1">
+              <Badge className={isConnected
+                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+                : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+              }>
+                {isConnected ? "Connecté" : "Déconnecté"}
+              </Badge>
+              {session?.detail && !isConnected && (
+                 <span className="text-[9px] text-destructive font-bold uppercase tracking-tight">
+                    {session.detail.includes('conflict') ? "Conflit (ouvert ailleurs)" : session.detail}
+                 </span>
+              )}
+            </div>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
             </Button>

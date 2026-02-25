@@ -50,33 +50,24 @@ const getNavGroups = (t: any) => [
   {
     title: "Pilotage",
     items: [
-      { name: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { name: "Messagerie", href: "/dashboard/inbox", icon: MessageCircle },
     ]
   },
   {
-    title: "Configuration",
+    title: "Configuration Bot",
     items: [
-      { name: "Intelligence IA", href: "/dashboard/ai", icon: Bot },
-      { name: "Gestion Groupes", href: "/dashboard/moderation", icon: Shield },
+      { name: "Intelligence & IA", href: "/dashboard/ai", icon: Bot },
+      { name: "Modération Groupes", href: "/dashboard/moderation", icon: Shield },
     ]
   },
   {
-    title: "Mon Compte",
+    title: "Compte & Facture",
     items: [
-      { name: "Facturation", href: "/dashboard/billing", icon: CreditCard },
-      { name: "Profil", href: "/dashboard/profile", icon: Settings },
+      { name: "Abonnement", href: "/dashboard/billing", icon: CreditCard },
+      { name: "Réglages", href: "/dashboard/profile", icon: Settings },
     ]
   },
-  {
-    title: "Admin",
-    adminOnly: true,
-    items: [
-      { name: "Journal", href: "/dashboard/activities", icon: History },
-      { name: "Users", href: "/dashboard/users", icon: Users },
-      { name: "Modèles", href: "/dashboard/ai-models", icon: Settings2 },
-    ]
-  }
 ]
 
 function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
@@ -247,21 +238,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center bg-muted rounded-md p-0.5">
-                <button
-                  onClick={() => setLocale('fr')}
-                  className={cn("px-2 py-0.5 text-[10px] rounded transition-all", locale === 'fr' ? "bg-background shadow-sm font-bold" : "text-muted-foreground")}
-                >
-                  FR
-                </button>
-                <button
-                  onClick={() => setLocale('en')}
-                  className={cn("px-2 py-0.5 text-[10px] rounded transition-all", locale === 'en' ? "bg-background shadow-sm font-bold" : "text-muted-foreground")}
-                >
-                  EN
-                </button>
+              <div className="hidden md:flex items-center gap-2 mr-2 border-r pr-2">
+                 <LiveIndicator />
               </div>
-              <LiveIndicator />
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
