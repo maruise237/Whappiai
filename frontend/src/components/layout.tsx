@@ -48,40 +48,33 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 const getNavGroups = (t: any) => [
   {
-    title: "Conversations",
+    title: "Pilotage",
     items: [
-      { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
-      { name: t("nav.inbox"), href: "/dashboard/inbox", icon: MessageCircle },
+      { name: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Messagerie", href: "/dashboard/inbox", icon: MessageCircle },
     ]
   },
   {
-    title: "Automatisations",
+    title: "Configuration",
     items: [
-      { name: t("nav.ai_assistant"), href: "/dashboard/ai", icon: Bot },
-      { name: t("nav.auto_responses"), href: "/dashboard/ai/keywords", icon: Zap },
-      { name: t("nav.group_management"), href: "/dashboard/moderation", icon: Shield },
+      { name: "Intelligence IA", href: "/dashboard/ai", icon: Bot },
+      { name: "Gestion Groupes", href: "/dashboard/moderation", icon: Shield },
     ]
   },
   {
-    title: "Finance",
+    title: "Mon Compte",
     items: [
-      { name: t("nav.credits"), href: "/dashboard/credits", icon: Zap },
-      { name: t("nav.billing"), href: "/dashboard/billing", icon: CreditCard },
+      { name: "Facturation", href: "/dashboard/billing", icon: CreditCard },
+      { name: "Profil", href: "/dashboard/profile", icon: Settings },
     ]
   },
   {
-    title: "Administration",
+    title: "Admin",
     adminOnly: true,
     items: [
-      { name: t("nav.activities"), href: "/dashboard/activities", icon: History },
-      { name: t("nav.users"), href: "/dashboard/users", icon: Users },
-      { name: t("nav.ai_models"), href: "/dashboard/ai-models", icon: Settings2 },
-    ]
-  },
-  {
-    title: "Compte",
-    items: [
-      { name: t("nav.settings"), href: "/dashboard/profile", icon: Settings },
+      { name: "Journal", href: "/dashboard/activities", icon: History },
+      { name: "Users", href: "/dashboard/users", icon: Users },
+      { name: "Modèles", href: "/dashboard/ai-models", icon: Settings2 },
     ]
   }
 ]
@@ -253,8 +246,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 {getNavGroups(t).flatMap(g => g.items).find(n => n.href === pathname)?.name || "Tableau de bord"}
               </h2>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="flex items-center bg-muted rounded-md p-0.5 mr-2">
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center bg-muted rounded-md p-0.5">
                 <button
                   onClick={() => setLocale('fr')}
                   className={cn("px-2 py-0.5 text-[10px] rounded transition-all", locale === 'fr' ? "bg-background shadow-sm font-bold" : "text-muted-foreground")}
@@ -269,18 +262,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
               <LiveIndicator />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground"
-                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Changer de thème</span>
-              </Button>
-              <NotificationDropdown />
-              <UserButton afterSignOutUrl="/login" />
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground"
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                >
+                  {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+                <NotificationDropdown />
+                <div className="pl-1 border-l ml-1">
+                   <UserButton afterSignOutUrl="/login" />
+                </div>
+              </div>
             </div>
           </header>
           <main className="flex-1 overflow-y-auto">

@@ -202,7 +202,7 @@ export default function InboxPage() {
   if (!isLoaded) return null
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
+    <div className="h-[calc(100vh-7rem)] flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -211,28 +211,20 @@ export default function InboxPage() {
           <p className="text-sm text-muted-foreground">{t("inbox.desc")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 gap-1 hidden sm:flex">
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 gap-1 hidden sm:flex h-8">
             <Bot className="h-3 w-3" /> {t("inbox.human_takeover")}
           </Badge>
-          <div className="flex bg-muted rounded-md p-0.5">
-            {sessions.map(s => (
-              <button
-                key={s.sessionId}
-                onClick={() => {
-                   setSelectedSession(s.sessionId)
-                   setSelectedChat(null)
-                   setHistory([])
-                }}
-                className={cn(
-                  "px-3 py-1.5 text-xs rounded-md transition-all",
-                  selectedSession === s.sessionId ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {s.sessionId}
-              </button>
-            ))}
-          </div>
-          <Button variant="ghost" size="icon" onClick={() => fetchInbox(selectedSession)} disabled={isLoading}>
+
+          <Select value={selectedSession} onValueChange={v => { setSelectedSession(v); setSelectedChat(null); setHistory([]); }}>
+             <SelectTrigger className="w-[140px] h-8 text-[11px] bg-muted/30 border-none shadow-none focus:ring-0">
+                <SelectValue placeholder="Session" />
+             </SelectTrigger>
+             <SelectContent>
+                {sessions.map(s => <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>)}
+             </SelectContent>
+          </Select>
+
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => fetchInbox(selectedSession)} disabled={isLoading}>
             <RefreshCcw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
         </div>
