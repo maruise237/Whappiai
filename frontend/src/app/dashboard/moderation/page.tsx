@@ -101,7 +101,7 @@ export default function ModerationSessionsPage() {
                   Modération
                 </Button>
                 <Button size="sm" variant="outline" disabled={!session.isConnected} onClick={() => router.push(`/dashboard/moderation/groups/animation?session=${session.sessionId}`)}>
-                  Animation
+                  Engagement
                 </Button>
               </CardFooter>
             </Card>

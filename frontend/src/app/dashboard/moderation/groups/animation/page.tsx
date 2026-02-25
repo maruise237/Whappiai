@@ -172,7 +172,7 @@ function AnimationPageContent() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold">Animation</h1>
+            <h1 className="text-xl font-semibold">Engagement</h1>
             <Badge variant="secondary">{sessionId}</Badge>
           </div>
         </div>
@@ -220,7 +220,7 @@ function AnimationPageContent() {
               <TabsList className="grid w-full grid-cols-3 mb-8">
                 <TabsTrigger value="profile">Profil</TabsTrigger>
                 <TabsTrigger value="links">Liens</TabsTrigger>
-                <TabsTrigger value="animation">Animation</TabsTrigger>
+                <TabsTrigger value="animation">Engagement</TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile" className="space-y-6">

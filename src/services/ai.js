@@ -83,6 +83,16 @@ class AIService {
     }
 
     /**
+     * Reset owner activity to immediately allow AI
+     * @param {string} sessionId
+     * @param {string} remoteJid
+     */
+    static resetOwnerActivity(sessionId, remoteJid) {
+        const key = `${sessionId}:${remoteJid}`;
+        lastOwnerActivity.set(key, 0);
+    }
+
+    /**
      * Track that the bot is reading a specific message to avoid self-pausing
      * @param {string} sessionId 
      * @param {string} messageId 
