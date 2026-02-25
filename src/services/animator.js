@@ -5,6 +5,7 @@ const User = require('../models/User');
 const CreditService = require('./CreditService');
 const whatsappService = require('./whatsapp');
 const aiService = require('./ai');
+const QueueService = require('./QueueService');
 
 /**
  * Animator Service
@@ -139,7 +140,7 @@ class AnimatorService {
                     messageOptions.mimetype = 'audio/mp4';
                 }
                 
-                await sock.sendMessage(group_id, messageOptions);
+                await QueueService.enqueue(session_id, sock, group_id, messageOptions);
                 
                 // Log activity
                 const session = Session.findById(session_id);
@@ -166,7 +167,7 @@ class AnimatorService {
                 // Format text for WhatsApp
                 const formattedText = aiService.formatForWhatsApp(text);
                 
-                await sock.sendMessage(group_id, { text: formattedText });
+                await QueueService.enqueue(session_id, sock, group_id, { text: formattedText });
 
                 // Log activity
                 const session = Session.findById(session_id);

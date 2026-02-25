@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "inbox": "Inbox",
+    "activities": "Activities",
+    "ai_assistant": "AI Assistant",
+    "auto_responses": "Auto Responses",
+    "group_management": "Group Management",
+    "credits": "Credits",
+    "users": "Users",
+    "ai_models": "AI Models",
+    "billing": "Billing",
+    "settings": "Settings",
+    "logout": "Log Out"
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "overview_title": "Overview",
+    "overview_desc": "Manage your sessions and monitor activity.",
+    "stats": {
+      "total_sessions": "Total Sessions",
+      "success_rate": "Success Rate",
+      "messages_sent": "Messages Sent",
+      "remaining_credits": "Remaining Credits"
+    }
+  },
+  "inbox": {
+    "title": "Interactive Inbox",
+    "desc": "Chat live and manage AI memory.",
+    "search": "Search...",
+    "human_takeover": "Human Takeover active",
+    "live": "LIVE",
+    "type_message": "Type your message...",
+    "ai_pause_notice": "Sending a message pauses AI for 5 min (Human Priority)."
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "connected": "Connected",
+    "offline": "Offline",
+    "new_session": "New Session"
+  }
+}

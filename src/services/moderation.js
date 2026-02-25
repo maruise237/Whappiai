@@ -4,6 +4,7 @@ const { Session, ActivityLog, User } = require('../models');
 const { log } = require('../utils/logger');
 const aiService = require('./ai');
 const CreditService = require('./CreditService');
+const QueueService = require('./QueueService');
 
 /**
  * Moderation Service
@@ -276,7 +277,7 @@ async function handleParticipantUpdate(sock, sessionId, update) {
             }
 
             try {
-                await sock.sendMessage(groupId, { 
+                await QueueService.enqueue(sessionId, sock, groupId, {
                     text: aiService.formatForWhatsApp(message),
                     mentions: [jid]
                 });
@@ -430,8 +431,8 @@ async function handleIncomingMessage(sock, sessionId, msg) {
             }
             
             try {
-                // 1. Delete Message
-                await sock.sendMessage(groupId, { delete: msg.key });
+                // 1. Delete Message (High priority for moderation)
+                await QueueService.enqueue(sessionId, sock, groupId, { delete: msg.key }, { priority: 'high' });
                 
                 // 2. Increment Warnings
                 // Note: session_id est requis pour la PK et la contrainte
@@ -456,10 +457,10 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         warnings: currentCount
                     }, 'ERROR');
                     await sock.groupParticipantsUpdate(groupId, [senderJid], 'remove');
-                    await sock.sendMessage(groupId, { 
+                    await QueueService.enqueue(sessionId, sock, groupId, {
                         text: `@${senderJid.split('@')[0]} a été exclu après ${currentCount} avertissements.`,
                         mentions: [senderJid]
-                    });
+                    }, { priority: 'high' });
 
                     // Log activity
                     const session = Session.findById(sessionId);
@@ -486,10 +487,10 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         .replace(/{{max}}/g, maxWarnings)
                         .replace(/{{reason}}/g, violation);
 
-                    await sock.sendMessage(groupId, { 
+                    await QueueService.enqueue(sessionId, sock, groupId, {
                         text: aiService.formatForWhatsApp(warningMsg),
                         mentions: [senderJid]
-                    });
+                    }, { priority: 'high' });
                     
                     // Log activity
                     const session = Session.findById(sessionId);

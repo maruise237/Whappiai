@@ -7,6 +7,7 @@ import { useUser, UserButton, useClerk, useAuth } from "@clerk/nextjs"
 import { useTheme } from "next-themes"
 import {
   LayoutDashboard,
+  MessageCircle,
   History,
   Bot,
   Shield,
@@ -43,21 +44,23 @@ import { Logo } from "@/components/ui/logo"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
 import { OnboardingTour } from "@/components/dashboard/onboarding-tour"
+import { useI18n } from "@/i18n/i18n-provider"
 
-const navigation = [
-  { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Activités", href: "/dashboard/activities", icon: History, adminOnly: true },
-  { name: "Assistant IA", href: "/dashboard/ai", icon: Bot },
-  { name: "Réponses Auto", href: "/dashboard/ai/keywords", icon: Zap },
-  { name: "Gestion des Groupes", href: "/dashboard/moderation", icon: Shield },
-  { name: "Crédits", href: "/dashboard/credits", icon: Zap },
-  { name: "Utilisateurs", href: "/dashboard/users", icon: Users, adminOnly: true },
-  { name: "Modèles IA", href: "/dashboard/ai-models", icon: Settings2, adminOnly: true },
+const getNavigation = (t: any) => [
+  { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
+  { name: t("nav.inbox"), href: "/dashboard/inbox", icon: MessageCircle },
+  { name: t("nav.activities"), href: "/dashboard/activities", icon: History, adminOnly: true },
+  { name: t("nav.ai_assistant"), href: "/dashboard/ai", icon: Bot },
+  { name: t("nav.auto_responses"), href: "/dashboard/ai/keywords", icon: Zap },
+  { name: t("nav.group_management"), href: "/dashboard/moderation", icon: Shield },
+  { name: t("nav.credits"), href: "/dashboard/credits", icon: Zap },
+  { name: t("nav.users"), href: "/dashboard/users", icon: Users, adminOnly: true },
+  { name: t("nav.ai_models"), href: "/dashboard/ai-models", icon: Settings2, adminOnly: true },
 ]
 
-const footerNav = [
-  { name: "Facturation", href: "/dashboard/billing", icon: CreditCard },
-  { name: "Paramètres", href: "/dashboard/profile", icon: Settings },
+const getFooterNav = (t: any) => [
+  { name: t("nav.billing"), href: "/dashboard/billing", icon: CreditCard },
+  { name: t("nav.settings"), href: "/dashboard/profile", icon: Settings },
 ]
 
 function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
@@ -98,7 +101,9 @@ function LiveIndicator() {
   )
 }
 
-function SidebarContent({ userRole, pathname, onItemClick }: { userRole: string, pathname: string, onItemClick?: () => void }) {
+function SidebarContent({ userRole, pathname, onItemClick, t }: { userRole: string, pathname: string, onItemClick?: () => void, t: any }) {
+  const navigation = getNavigation(t)
+  const footerNav = getFooterNav(t)
   const filteredNav = navigation.filter(item => !item.adminOnly || userRole === 'admin')
   return (
     <div className="flex flex-col h-full bg-card">
@@ -122,6 +127,7 @@ function SidebarContent({ userRole, pathname, onItemClick }: { userRole: string,
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { t, locale, setLocale } = useI18n()
   const pathname = usePathname()
   const router = useRouter()
   const { user, isLoaded } = useUser()
@@ -187,7 +193,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}><UserCircle className="h-4 w-4 mr-2" /> Profil</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}><CreditCard className="h-4 w-4 mr-2" /> Facturation</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut(() => router.push("/login"))} className="text-destructive"><LogOut className="h-4 w-4 mr-2" /> Déconnexion</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive"><LogOut className="h-4 w-4 mr-2" /> {t("nav.logout")}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -208,15 +214,30 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                       userRole={userRole}
                       pathname={pathname}
                       onItemClick={() => setIsMobileMenuOpen(false)}
+                      t={t}
                     />
                   </SheetContent>
                 </Sheet>
               </div>
               <h2 className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
-                {[...navigation, ...footerNav].find(n => n.href === pathname)?.name || "Tableau de bord"}
+                {[...getNavigation(t), ...getFooterNav(t)].find(n => n.href === pathname)?.name || "Tableau de bord"}
               </h2>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center bg-muted rounded-md p-0.5 mr-2">
+                <button
+                  onClick={() => setLocale('fr')}
+                  className={cn("px-2 py-0.5 text-[10px] rounded transition-all", locale === 'fr' ? "bg-background shadow-sm font-bold" : "text-muted-foreground")}
+                >
+                  FR
+                </button>
+                <button
+                  onClick={() => setLocale('en')}
+                  className={cn("px-2 py-0.5 text-[10px] rounded transition-all", locale === 'en' ? "bg-background shadow-sm font-bold" : "text-muted-foreground")}
+                >
+                  EN
+                </button>
+              </div>
               <LiveIndicator />
               <Button
                 variant="ghost"

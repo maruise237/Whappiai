@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import ProgressBar from "@/components/progress-bar";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { I18nProvider } from "@/i18n/i18n-provider";
 
 export const metadata: Metadata = {
   title: "Whappi | Passerelle WhatsApp",
@@ -34,11 +35,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ClerkProvider localization={frFR}>
-            <Suspense fallback={null}>
-              <ProgressBar />
-            </Suspense>
-            {children}
-            <Toaster />
+            <I18nProvider>
+              <Suspense fallback={null}>
+                <ProgressBar />
+              </Suspense>
+              {children}
+              <Toaster />
+            </I18nProvider>
           </ClerkProvider>
         </ThemeProvider>
       </body>
