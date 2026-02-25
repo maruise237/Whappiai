@@ -48,24 +48,24 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 const getNavGroups = (t: any) => [
   {
-    title: "Pilotage",
+    title: "Pilotage Hub",
     items: [
       { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { name: "Messagerie", href: "/dashboard/inbox", icon: MessageCircle },
     ]
   },
   {
-    title: "Configuration Bot",
+    title: "Paramètres Bot",
     items: [
       { name: "Intelligence & IA", href: "/dashboard/ai", icon: Bot },
-      { name: "Modération Groupes", href: "/dashboard/moderation", icon: Shield },
+      { name: "Gestion Groupes", href: "/dashboard/ai?tab=groups", icon: Shield },
     ]
   },
   {
-    title: "Compte & Facture",
+    title: "Espace Client",
     items: [
       { name: "Abonnement", href: "/dashboard/billing", icon: CreditCard },
-      { name: "Réglages", href: "/dashboard/profile", icon: Settings },
+      { name: "Profil", href: "/dashboard/profile", icon: Settings },
     ]
   },
 ]

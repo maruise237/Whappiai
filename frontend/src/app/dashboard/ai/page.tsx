@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { 
   Brain,
   MessageSquare,
@@ -63,9 +64,11 @@ import { cn } from "@/lib/utils"
 import confetti from "canvas-confetti"
 import Link from "next/link"
 
-export default function IntelligenceHub() {
+function IntelligenceHubContent() {
   const { getToken } = useAuth()
   const { user } = useUser()
+  const searchParams = useSearchParams()
+  const defaultTab = searchParams.get('tab') || 'ia'
 
   const [sessions, setSessions] = React.useState<any[]>([])
   const [selectedSessionId, setSelectedSessionId] = React.useState<string>("")
@@ -228,7 +231,7 @@ export default function IntelligenceHub() {
           </Button>
         </Card>
       ) : (
-        <Tabs defaultValue="ia" className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="flex bg-muted/30 p-1 rounded-lg h-auto gap-1">
             <TabsTrigger value="ia" className="flex-1 py-2 text-xs gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"><Sparkles className="h-3 w-3" /> IA & Prompt</TabsTrigger>
             <TabsTrigger value="keywords" className="flex-1 py-2 text-xs gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"><Zap className="h-3 w-3" /> Mots-clés</TabsTrigger>
@@ -287,14 +290,24 @@ export default function IntelligenceHub() {
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <Label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Réglages rapides</Label>
-                    <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Réglages rapides</Label>
+                      <Badge variant="secondary" className="text-[9px] uppercase font-bold">Bot Intelligent</Badge>
+                    </div>
+                    <div className="space-y-4 p-4 rounded-lg bg-muted/30 border border-dashed">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs">Répondre aux tags (@)</span>
+                        <div className="space-y-0.5">
+                          <p className="text-[11px] font-semibold">Réponse aux Tags</p>
+                          <p className="text-[9px] text-muted-foreground">Réagir quand cité via @bot</p>
+                        </div>
                         <Switch size="sm" checked={!!aiConfig?.respond_to_tags} onCheckedChange={v => setAiConfig({...aiConfig, respond_to_tags: v})} />
                       </div>
+                      <Separator className="bg-border/40" />
                       <div className="flex items-center justify-between">
-                        <span className="text-xs">Rejet d&apos;appels auto</span>
+                        <div className="space-y-0.5">
+                           <p className="text-[11px] font-semibold">Rejet d&apos;appels</p>
+                           <p className="text-[9px] text-muted-foreground">Raccrocher automatiquement</p>
+                        </div>
                         <Switch size="sm" checked={!!aiConfig?.reject_calls} onCheckedChange={v => setAiConfig({...aiConfig, reject_calls: v})} />
                       </div>
                     </div>
@@ -358,7 +371,8 @@ export default function IntelligenceHub() {
                                         await api.sessions.updateGroupSettings(selectedSessionId, selectedGroupId, group.settings, token || undefined);
                                         toast.success("Réglages groupe enregistrés");
                                         fetchGroups(selectedSessionId);
-                                     }}>Appliquer</Button>
+                                        confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } });
+                                     }}>Appliquer les réglages</Button>
                                   </div>
                                   <Separator />
                                   <div className="grid grid-cols-1 gap-4">
@@ -513,5 +527,13 @@ export default function IntelligenceHub() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function IntelligenceHub() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center">Chargement...</div>}>
+      <IntelligenceHubContent />
+    </React.Suspense>
   )
 }

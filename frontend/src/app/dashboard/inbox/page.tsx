@@ -202,31 +202,33 @@ export default function InboxPage() {
   if (!isLoaded) return null
 
   return (
-    <div className="h-[calc(100vh-7rem)] flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold flex items-center gap-2">
+    <div className="h-[calc(100vh-7.5rem)] flex flex-col gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-0.5">
+          <h1 className="text-lg font-bold flex items-center gap-2">
             <MessageCircle className="h-5 w-5 text-primary" /> {t("inbox.title")}
           </h1>
-          <p className="text-sm text-muted-foreground">{t("inbox.desc")}</p>
+          <p className="text-xs text-muted-foreground hidden sm:block">{t("inbox.desc")}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 gap-1 hidden sm:flex h-8">
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 gap-1 h-7 text-[10px] hidden lg:flex">
             <Bot className="h-3 w-3" /> {t("inbox.human_takeover")}
           </Badge>
 
-          <Select value={selectedSession} onValueChange={v => { setSelectedSession(v); setSelectedChat(null); setHistory([]); }}>
-             <SelectTrigger className="w-[140px] h-8 text-[11px] bg-muted/30 border-none shadow-none focus:ring-0">
-                <SelectValue placeholder="Session" />
-             </SelectTrigger>
-             <SelectContent>
-                {sessions.map(s => <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>)}
-             </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-md border">
+            <Select value={selectedSession} onValueChange={v => { setSelectedSession(v); setSelectedChat(null); setHistory([]); }}>
+               <SelectTrigger className="w-[120px] h-7 text-[10px] bg-transparent border-none shadow-none focus:ring-0">
+                  <SelectValue placeholder="Session" />
+               </SelectTrigger>
+               <SelectContent>
+                  {sessions.map(s => <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>)}
+               </SelectContent>
+            </Select>
 
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => fetchInbox(selectedSession)} disabled={isLoading}>
-            <RefreshCcw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-          </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => fetchInbox(selectedSession)} disabled={isLoading}>
+              <RefreshCcw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+            </Button>
+          </div>
         </div>
       </div>
 
