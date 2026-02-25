@@ -83,7 +83,8 @@ function initializeSchema() {
         { name: 'organization_name', type: 'TEXT' },
         { name: 'double_opt_in', type: 'INTEGER DEFAULT 0' },
         { name: 'utm_tracking', type: 'INTEGER DEFAULT 0' },
-        { name: 'bot_detection', type: 'INTEGER DEFAULT 0' }
+        { name: 'bot_detection', type: 'INTEGER DEFAULT 0' },
+        { name: 'sound_notifications', type: 'INTEGER DEFAULT 1' }
     ];
 
     userColumns.forEach(col => {
@@ -634,6 +635,22 @@ function initializeSchema() {
             is_read INTEGER DEFAULT 0,
             metadata TEXT, -- JSON
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Keyword Responders table
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS keyword_responders (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
+            keyword TEXT NOT NULL,
+            match_type TEXT DEFAULT 'contains' CHECK(match_type IN ('exact', 'contains', 'regex')),
+            response_type TEXT DEFAULT 'text' CHECK(response_type IN ('text', 'image', 'document', 'audio', 'video')),
+            response_content TEXT NOT NULL,
+            file_name TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
 

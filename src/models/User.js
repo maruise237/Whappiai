@@ -182,7 +182,7 @@ class User {
 
         const allowedFields = [
             'email', 'name', 'role', 'is_active', 'bio', 'location', 'website', 'phone',
-            'timezone', 'address', 'organization_name', 'double_opt_in', 'utm_tracking', 'bot_detection'
+            'timezone', 'address', 'organization_name', 'sound_notifications'
         ];
         const fieldsToUpdate = Object.keys(updates).filter(k => allowedFields.includes(k));
 

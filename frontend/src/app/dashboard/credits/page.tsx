@@ -74,20 +74,20 @@ export default function CreditsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <LayoutDashboard className="h-3 w-3" />
           <span>Tableau de bord</span>
           <span>/</span>
-          <span className="text-muted-foreground">Crédits</span>
+          <span className="text-foreground">Crédits</span>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-lg sm:text-xl font-semibold">Crédits & Utilisation</h1>
-          <Badge variant="secondary" className="w-fit uppercase text-[10px] font-bold">Plan Pro</Badge>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Crédits & Utilisation</h1>
+          <Badge variant="secondary" className="uppercase">Plan Pro</Badge>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Solde actuel" value={balance} sub="crédits disponibles" />
         <StatCard label="Usage (7j)" value={usageLast7Days} sub="crédits consommés" />
         <StatCard label="Messages envoyés" value={balance} sub="capacité restante" />
@@ -190,9 +190,9 @@ export default function CreditsPage() {
 function StatCard({ label, value, sub }: { label: string; value: string | number; subText?: string; sub?: string }) {
   return (
     <Card>
-      <CardContent className="p-4 sm:p-6">
+      <CardContent className="p-4">
         <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p className="text-lg sm:text-2xl font-bold mt-1">{value}</p>
+        <p className="text-2xl font-bold mt-1">{value}</p>
         <p className="text-[10px] text-muted-foreground mt-1">{sub}</p>
       </CardContent>
     </Card>
