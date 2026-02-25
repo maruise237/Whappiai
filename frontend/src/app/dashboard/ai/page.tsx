@@ -456,11 +456,11 @@ export default function AIPage() {
                       {isChatLoading && <div className="py-4 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></div>}
                     </div>
                   </ScrollArea>
-                  <div className="p-4 border-t bg-card">
-                    <div className="flex gap-2">
-                      <Input placeholder="Répondre sur WhatsApp..." className="h-9 text-xs" />
-                      <Button size="icon" className="h-9 w-9 shrink-0"><Send className="h-3.5 w-3.5" /></Button>
-                    </div>
+                  <div className="p-4 border-t bg-card flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Mode lecture seule dans cet aperçu.</p>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={`/dashboard/inbox`}>Ouvrir l&apos;Inbox Interactive</Link>
+                    </Button>
                   </div>
                 </>
               )}

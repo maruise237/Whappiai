@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "overview": "Vue d'ensemble",
+    "inbox": "Inbox",
+    "activities": "Activités",
+    "ai_assistant": "Assistant IA",
+    "auto_responses": "Réponses Auto",
+    "group_management": "Gestion des Groupes",
+    "credits": "Crédits",
+    "users": "Utilisateurs",
+    "ai_models": "Modèles IA",
+    "billing": "Facturation",
+    "settings": "Paramètres",
+    "logout": "Déconnexion"
+  },
+  "dashboard": {
+    "welcome": "Bienvenue",
+    "overview_title": "Vue d'ensemble",
+    "overview_desc": "Gérez vos sessions et surveillez l'activité.",
+    "stats": {
+      "total_sessions": "Sessions totales",
+      "success_rate": "Taux de succès",
+      "messages_sent": "Messages envoyés",
+      "remaining_credits": "Crédits restants"
+    }
+  },
+  "inbox": {
+    "title": "Inbox Interactive",
+    "desc": "Discutez en direct et gérez la mémoire de l'IA.",
+    "search": "Rechercher...",
+    "human_takeover": "Human Takeover actif",
+    "live": "EN DIRECT",
+    "type_message": "Tapez votre message...",
+    "ai_pause_notice": "L'envoi d'un message met l'IA en pause pendant 5 min (Priorité Humaine)."
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "loading": "Chargement...",
+    "connected": "Connecté",
+    "offline": "Hors ligne",
+    "new_session": "Nouvelle Session"
+  }
+}

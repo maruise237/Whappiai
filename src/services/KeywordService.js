@@ -5,6 +5,7 @@
 
 const { KeywordResponder } = require('../models');
 const { log } = require('../utils/logger');
+const QueueService = require('./QueueService');
 
 class KeywordService {
     /**
@@ -76,31 +77,27 @@ class KeywordService {
      */
     static async sendResponse(sock, jid, rule, sessionId) {
         try {
-            // Simulate typing for a short duration
-            await sock.presenceSubscribe(jid);
-            await sock.sendPresenceUpdate('composing', jid);
-            await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-            await sock.sendPresenceUpdate('paused', jid);
-
             const content = rule.response_content;
             const type = rule.response_type;
 
-            let result;
+            let message;
             if (type === 'text') {
-                result = await sock.sendMessage(jid, { text: content });
+                message = { text: content };
             } else if (type === 'image') {
-                result = await sock.sendMessage(jid, { image: { url: content } });
+                message = { image: { url: content } };
             } else if (type === 'document') {
-                result = await sock.sendMessage(jid, {
+                message = {
                     document: { url: content },
                     fileName: rule.file_name || 'Document.pdf',
-                    mimetype: 'application/pdf' // Generic, Baileys usually handles this or we could store it
-                });
+                    mimetype: 'application/pdf'
+                };
             } else if (type === 'audio') {
-                result = await sock.sendMessage(jid, { audio: { url: content }, ptt: true });
+                message = { audio: { url: content }, ptt: true };
             } else if (type === 'video') {
-                result = await sock.sendMessage(jid, { video: { url: content } });
+                message = { video: { url: content } };
             }
+
+            const result = await QueueService.enqueue(sessionId, sock, jid, message);
 
             if (result) {
                 log(`Réponse automatique par mot-clé envoyée à ${jid}`, sessionId, { event: 'keyword-sent', ruleId: rule.id }, 'INFO');

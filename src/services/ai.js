@@ -8,6 +8,7 @@ const { User, Session, ActivityLog, AIModel } = require('../models');
 const CreditService = require('./CreditService');
 const KnowledgeService = require('./KnowledgeService');
 const WebhookService = require('./WebhookService');
+const QueueService = require('./QueueService');
 const { log } = require('../utils/logger');
 const { db } = require('../config/database');
 
@@ -704,12 +705,9 @@ class AIService {
             
             await new Promise(resolve => setTimeout(resolve, typingDelay));
 
-            try {
-                // Stop typing status before sending
-                await sock.sendPresenceUpdate('paused', jid);
-            } catch (pError) {}
-
-            const result = await sock.sendMessage(jid, { text: formattedText });
+            const result = await QueueService.enqueue(sessionId, sock, jid, { text: formattedText }, {
+                skipTyping: false // QueueService handles typing simulation
+            });
             
             if (result) {
                 log(`Message envoyé avec succès à ${jid}`, sessionId, { event: 'ai-sent', jid }, 'INFO');

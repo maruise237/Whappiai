@@ -38,6 +38,7 @@ import { useNotificationSound } from "@/hooks/use-notification-sound"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useI18n } from "@/i18n/i18n-provider"
 
 const sessionSchema = z.object({
   sessionId: z.string().min(3, "L'ID de session doit comporter au moins 3 caractères").regex(/^[a-z0-9-]+$/, "Seuls les minuscules, les chiffres et les traits d'union sont autorisés"),
@@ -45,6 +46,7 @@ const sessionSchema = z.object({
 })
 
 export default function DashboardPage() {
+  const { t } = useI18n()
   const [sessions, setSessions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null)
@@ -214,16 +216,16 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Vue d&apos;ensemble</h1>
-          <p className="text-sm text-muted-foreground">Gérez vos sessions et surveillez l&apos;activité.</p>
+          <h1 className="text-xl font-semibold">{t("dashboard.overview_title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("dashboard.overview_desc")}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Sessions totales" value={sessions.length} />
-        <StatCard label="Taux de succès" value={`${summary.successRate}%`} />
-        <StatCard label="Messages envoyés" value={summary.messagesSent} />
-        <StatCard label="Crédits restants" value={credits?.balance || 0} />
+      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label={t("dashboard.stats.total_sessions")} value={sessions.length} />
+        <StatCard label={t("dashboard.stats.success_rate")} value={`${summary.successRate}%`} />
+        <StatCard label={t("dashboard.stats.messages_sent")} value={summary.messagesSent} />
+        <StatCard label={t("dashboard.stats.remaining_credits")} value={credits?.balance || 0} />
       </div>
 
       <AnalyticsCharts />
@@ -257,9 +259,14 @@ export default function DashboardPage() {
             </Badge>
           )}
         </div>
-        <Button id="new-session-btn" size="sm" className="w-full sm:w-auto h-9" onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none h-9" asChild>
+            <Link href="/dashboard/inbox"><MessageCircle className="h-4 w-4 mr-2" /> Inbox</Link>
+          </Button>
+          <Button id="new-session-btn" size="sm" className="flex-1 sm:flex-none h-9" onClick={() => setIsCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

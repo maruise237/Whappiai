@@ -20,6 +20,8 @@ const QRCode = require('qrcode');
 const { log } = require('../utils/logger');
 const WebhookService = require('./WebhookService');
 const KeywordService = require('./KeywordService');
+const aiService = require('./ai');
+const moderationService = require('./moderation');
 
 // Logger configuration
 const defaultLogLevel = process.env.NODE_ENV === 'production' ? 'silent' : 'warn';
@@ -332,7 +334,6 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 if (presence.lastKnownPresence === 'composing') {
                     log(`Détection d'écriture de ${jid}, mise en pause temporaire de l'IA pour cette conversation`, sessionId, { event: 'ai-auto-pause-typing', jid }, 'INFO');
                     
-                    const aiService = require('./ai');
                     aiService.pauseForConversation(sessionId, jid);
                     
                     // Broadcast to frontend (optional: update to show "paused" status instead of "disabled")
@@ -367,8 +368,6 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             );
 
             if (isReadByMe) {
-                const aiService = require('./ai');
-                
                 // CRITICAL BUG FIX: Ignore read events triggered by the bot itself
                 if (aiService.isReadByBot(sessionId, update.key.id)) {
                     // log(`Read event ignoré car déclenché par le bot lui-même`, sessionId, { event: 'ai-ignore-self-read' }, 'DEBUG');
@@ -411,7 +410,6 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         // If message is FROM ME, it means the owner is chatting.
         // We should pause the AI to let the owner take over.
         if (msg.key.fromMe) {
-            const aiService = require('./ai');
             // Record activity for Human Priority (Session Window)
             aiService.recordOwnerActivity(sessionId, remoteJid);
 
@@ -468,7 +466,6 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             // Call Moderation Handler
             let blocked = false;
             try {
-                const moderationService = require('./moderation');
                 blocked = await moderationService.handleIncomingMessage(sock, sessionId, msg);
             } catch (err) {
                 log(`Erreur de modération pour la session ${sessionId}: ${err.message}`, sessionId, { event: 'moderation-error', error: err.message }, 'ERROR');
@@ -485,7 +482,6 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             // Call AI Handler if enabled (Personal Bot mode or Tagged in Group)
             // Note: Group Assistant is also handled inside moderationService.handleIncomingMessage for questions
             try {
-                const aiService = require('./ai');
                 const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(sock.user.id.split(':')[0] + '@s.whatsapp.net');
 
                 if (!isGroup || isTagged) {

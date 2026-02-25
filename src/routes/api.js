@@ -17,6 +17,7 @@ const AIModel = require('../models/AIModel');
 const KeywordResponder = require('../models/KeywordResponder');
 const ActivityLog = require('../models/ActivityLog');
 const CreditService = require('../services/CreditService');
+const QueueService = require('../services/QueueService');
 const { db } = require('../config/database');
 // Security: csurf removed (deprecated) - use modern CSRF protection if needed
 
@@ -1396,7 +1397,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // Log message structure for debugging
             log(`[API] Structure du message: ${JSON.stringify(message)}`, 'SYSTEM', { message }, 'DEBUG');
 
-            const result = await sock.sendMessage(jid, message);
+            const result = await QueueService.enqueue(sessionId, sock, jid, message, {
+                priority: 'high' // Manual messages get high priority
+            });
 
             if (!result) {
                 throw new Error('Baileys a retourné un résultat vide');
