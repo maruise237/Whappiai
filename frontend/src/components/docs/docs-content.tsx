@@ -78,8 +78,8 @@ function Endpoint({ method, path, children }: { method: string, path: string, ch
   }[method] || "bg-slate-500/10 text-slate-500 border-slate-500/20"
 
   return (
-    <div className="mb-16 last:mb-0 bg-card/20 backdrop-blur-sm rounded-lg p-8 border-2 border-primary/5 hover:border-primary/10 transition-all duration-200 group">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="mb-12 last:mb-0 bg-card/20 backdrop-blur-sm rounded-lg p-4 sm:p-8 border-2 border-primary/5 hover:border-primary/10 transition-all duration-200 group">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
         <Badge variant="outline" className={`${methodColor} font-black px-3 py-1 rounded-lg text-[10px] tracking-[0.2em] border-2`}>
           {method}
         </Badge>
@@ -99,11 +99,11 @@ export function DocsContent() {
     <div className="space-y-20 max-w-5xl mx-auto">
       {/* Overview */}
       <section id="overview" className="scroll-mt-24">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-primary/10 rounded-lg shadow-inner">
-            <Book className="w-8 h-8 text-primary" />
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-2.5 bg-primary/10 rounded-lg shadow-inner">
+            <Book className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
           </div>
-          <h2 className="text-3xl font-black tracking-tight uppercase">Vue d'ensemble</h2>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight uppercase">Vue d'ensemble</h2>
         </div>
         <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8 uppercase tracking-wide opacity-70">
           Ce document fournit des instructions détaillées et axées sur les développeurs pour l'utilisation de l'API WhatsApp. Pour des tests interactifs, nous vous recommandons d'utiliser l'outil <strong>Quick Message</strong> sur le tableau de bord.
@@ -226,12 +226,12 @@ export function DocsContent() {
           </p>
 
           <Tabs defaultValue="text" className="w-full">
-            <TabsList className="bg-muted/50 p-1.5 h-14 rounded-lg border-2 mb-8 grid grid-cols-5">
-              <TabsTrigger value="text" className="rounded-lg font-black text-[10px] uppercase tracking-widest transition-all duration-200">Texte</TabsTrigger>
-              <TabsTrigger value="image" className="rounded-lg font-black text-[10px] uppercase tracking-widest transition-all duration-200">Image</TabsTrigger>
-              <TabsTrigger value="audio" className="rounded-lg font-black text-[10px] uppercase tracking-widest transition-all duration-200">Audio</TabsTrigger>
-              <TabsTrigger value="video" className="rounded-lg font-black text-[10px] uppercase tracking-widest transition-all duration-200">Vidéo</TabsTrigger>
-              <TabsTrigger value="document" className="rounded-lg font-black text-[10px] uppercase tracking-widest transition-all duration-200">Doc</TabsTrigger>
+          <TabsList className="bg-muted/50 p-1.5 h-auto rounded-lg border-2 mb-8 grid grid-cols-2 sm:grid-cols-5 gap-1">
+            <TabsTrigger value="text" className="rounded-md font-bold text-[10px] uppercase tracking-widest h-9">Texte</TabsTrigger>
+            <TabsTrigger value="image" className="rounded-md font-bold text-[10px] uppercase tracking-widest h-9">Image</TabsTrigger>
+            <TabsTrigger value="audio" className="rounded-md font-bold text-[10px] uppercase tracking-widest h-9">Audio</TabsTrigger>
+            <TabsTrigger value="video" className="rounded-md font-bold text-[10px] uppercase tracking-widest h-9">Vidéo</TabsTrigger>
+            <TabsTrigger value="document" className="rounded-md font-bold text-[10px] uppercase tracking-widest h-9">Doc</TabsTrigger>
             </TabsList>
             
             <TabsContent value="text" className="animate-in fade-in slide-in-from-bottom-4 duration-300">

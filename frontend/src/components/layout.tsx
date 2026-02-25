@@ -96,18 +96,20 @@ function SidebarContent({ userRole, pathname, onItemClick }: { userRole: string,
   const filteredNav = navigation.filter(item => !item.adminOnly || userRole === 'admin')
   return (
     <div className="flex flex-col h-full bg-card">
-      <div className="p-4"><Logo orientation="horizontal" size={20} showText /></div>
+      <div className="p-6">
+        <Logo orientation="horizontal" size={20} showText />
+      </div>
       <ScrollArea className="flex-1 px-3">
         <nav className="space-y-1">
           {filteredNav.map((item) => (
-            <NavItem key={item.href || Math.random()} item={item} isActive={pathname === item.href} onClick={onItemClick} />
+            <NavItem key={item.href} item={item} isActive={pathname === item.href} onClick={onItemClick} />
           ))}
         </nav>
       </ScrollArea>
-      <div className="p-3 border-t border-border">
+      <div className="px-3 py-4 border-t border-border">
         <nav className="space-y-1">
           {footerNav.map((item) => (
-            <NavItem key={item.href || Math.random()} item={item} isActive={pathname === item.href} onClick={onItemClick} />
+            <NavItem key={item.href} item={item} isActive={pathname === item.href} onClick={onItemClick} />
           ))}
         </nav>
       </div>
@@ -121,7 +123,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
   const { getToken } = useAuth()
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
 
@@ -166,7 +168,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}>
           <SidebarContent userRole={userRole} pathname={pathname} onItemClick={() => setSidebarOpen(false)} />
 
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2">
+                <LiveIndicator />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground"
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                >
+                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                </Button>
+              </div>
+              <NotificationDropdown />
+            </div>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors text-left outline-none">
@@ -182,7 +200,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mon Compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}><UserCircle className="h-4 w-4 mr-2" /> Profil</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}><CreditCard className="h-4 w-4 mr-2" /> Facturation</DropdownMenuItem>
@@ -202,35 +220,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Topbar */}
-          <header className="h-14 flex items-center justify-between px-4 border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-20">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+          {/* Topbar mobile */}
+          <header className="flex items-center justify-between h-14 px-4 border-b border-border bg-card lg:hidden">
+            <div className="flex items-center">
+              <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
                 <Menu className="h-5 w-5" />
               </Button>
-              <h2 className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
-                {[...navigation, ...footerNav].find(n => n.href === pathname)?.name || "Tableau de bord"}
-              </h2>
+              <span className="ml-3 text-sm font-semibold">Whappi</span>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <LiveIndicator />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground"
-                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Changer de thème</span>
-              </Button>
-              <NotificationDropdown />
-              <UserButton afterSignOutUrl="/login" />
-            </div>
+            <UserButton afterSignOutUrl="/login" />
           </header>
 
           <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8 animate-in fade-in duration-500">
+            <div className="p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
               <ErrorBoundary>
                 {children}
               </ErrorBoundary>

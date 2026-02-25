@@ -162,11 +162,11 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-32">
+    <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-32">
       {/* Profile Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b pb-8">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4">
-          <Avatar className="h-20 w-20 border-2 border-background shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+          <Avatar className="h-20 w-20 border-4 border-background shadow-xl">
             <AvatarImage src={clerkUser?.imageUrl} />
             <AvatarFallback className="text-xl font-black">{userName?.charAt(0)}</AvatarFallback>
           </Avatar>
@@ -196,7 +196,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Mobile Navigation Tabs */}
-      <div className="lg:hidden sticky top-[56px] z-20 bg-background/95 backdrop-blur-sm border-b -mx-4 px-4 overflow-x-auto no-scrollbar">
+      <div className="lg:hidden sticky top-[104px] z-20 bg-background/95 backdrop-blur-sm border-b -mx-4 px-4 overflow-x-auto no-scrollbar">
         <Tabs value={activeSection} onValueChange={(v) => {
           setActiveSection(v);
           document.getElementById(v)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -215,7 +215,7 @@ export default function ProfilePage() {
         </Tabs>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-12 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 lg:gap-12 items-start">
         {/* Desktop Sidebar Nav */}
         <aside className="hidden lg:block sticky top-24 space-y-1">
           {sections.map(s => (
@@ -238,9 +238,9 @@ export default function ProfilePage() {
         </aside>
 
         {/* Content Sections */}
-        <div className="space-y-16">
+        <div className="space-y-8 lg:space-y-12">
           {/* Section Général */}
-          <section id="general" className="scroll-mt-32 space-y-6">
+          <section id="general" className="scroll-mt-32 space-y-4">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Général</h2>
               <p className="text-sm text-muted-foreground">Informations de base sur votre identité et organisation.</p>
@@ -273,7 +273,7 @@ export default function ProfilePage() {
           </section>
 
           {/* Section Préférences */}
-          <section id="preferences" className="scroll-mt-32 space-y-6">
+          <section id="preferences" className="scroll-mt-32 space-y-4">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Préférences</h2>
               <p className="text-sm text-muted-foreground">Paramètres système et automatisations par défaut.</p>
@@ -337,7 +337,7 @@ export default function ProfilePage() {
           </section>
 
           {/* Section Compte & Facturation */}
-          <section id="account" className="scroll-mt-32 space-y-6">
+          <section id="account" className="scroll-mt-32 space-y-4">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Compte & Facturation</h2>
               <p className="text-sm text-muted-foreground">Gérez vos adresses et informations de paiement.</p>

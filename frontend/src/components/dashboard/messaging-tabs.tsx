@@ -120,17 +120,17 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
 
   return (
     <Card className="border-border/50 bg-card shadow-none">
-      <CardHeader className="p-3 sm:p-6 border-b">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
+      <CardHeader className="p-4 sm:p-6 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
             <CardTitle className="text-sm font-semibold">Messagerie</CardTitle>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Direct Message</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Message Direct</p>
           </div>
           <div className="relative w-full sm:w-64">
-            <Smartphone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Destinataire (237...)"
-              className="pl-8 h-8 text-[11px]"
+              className="pl-9 h-9 text-xs"
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />
@@ -139,8 +139,8 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
       </CardHeader>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); onTabChange?.(v); }} className="w-full">
-        <div className="px-3 sm:px-6 py-0 border-b bg-muted/20 overflow-x-auto no-scrollbar">
-          <TabsList className="bg-transparent h-10 p-0 gap-6 flex w-max min-w-full">
+        <div className="px-4 sm:px-6 py-0 border-b bg-muted/20 overflow-x-auto no-scrollbar">
+          <TabsList className="bg-transparent h-11 p-0 gap-6 flex w-max min-w-full">
             {[
               { value: "text", icon: Type, label: "Texte" },
               { value: "image", icon: ImageIcon, label: "Image" },
@@ -153,14 +153,14 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
                 value={tab.value}
                 className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 py-2.5 text-xs font-semibold gap-2 whitespace-nowrap"
               >
-                <tab.icon className="h-3.5 w-3.5" />
+                <tab.icon className="h-4 w-4" />
                 {tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
         </div>
 
-        <CardContent className="p-3 sm:p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="min-h-[150px]">
             <TabsContent value="text" className="mt-0">
               <Textarea

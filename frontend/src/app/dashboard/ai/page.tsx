@@ -248,7 +248,7 @@ export default function AIPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {isLoading ? (
           [1, 2, 3].map(i => <Card key={i} className="h-48 animate-pulse bg-muted/20" />)
         ) : items.length === 0 ? (
@@ -260,7 +260,7 @@ export default function AIPage() {
         ) : (
           items.map(item => (
             <Card key={item.sessionId} className="border-border/50 bg-card overflow-hidden flex flex-col shadow-none">
-              <CardHeader className="p-3 sm:p-6 border-b flex flex-row items-center justify-between space-y-0">
+              <CardHeader className="p-4 sm:p-6 border-b flex flex-row items-center justify-between space-y-0">
                 <div className="flex items-center gap-3">
                   <div className={cn("h-8 w-8 rounded-full flex items-center justify-center", item.aiConfig.enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
                     <Bot className="h-4 w-4" />
@@ -291,8 +291,8 @@ export default function AIPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
-              <CardContent className="p-3 sm:p-6 space-y-4 flex-1">
-                <div className="rounded-xl bg-muted/30 p-3 text-[11px] text-muted-foreground line-clamp-2 border border-border/50 min-h-[48px] italic">
+              <CardContent className="p-4 sm:p-6 space-y-4 flex-1">
+                <div className="rounded-xl bg-muted/30 p-4 text-[11px] text-muted-foreground line-clamp-2 border border-border/50 min-h-[56px] italic">
                   &ldquo;{item.aiConfig.prompt || "Aucune instruction configurée"}&rdquo;
                 </div>
                 <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
@@ -300,9 +300,9 @@ export default function AIPage() {
                   <span className="text-foreground">{item.aiConfig.stats?.sent || 0} messages</span>
                 </div>
               </CardContent>
-              <CardFooter className="p-3 sm:p-4 bg-muted/10 border-t flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{item.aiConfig.enabled ? "Active" : "Inactive"}</span>
-                <Switch size="sm" checked={item.aiConfig.enabled} onCheckedChange={() => toggleAI(item)} />
+              <CardFooter className="p-4 sm:p-6 bg-muted/10 border-t flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{item.aiConfig.enabled ? "Assistant Actif" : "Assistant Inactif"}</span>
+                <Switch checked={item.aiConfig.enabled} onCheckedChange={() => toggleAI(item)} />
               </CardFooter>
             </Card>
           ))

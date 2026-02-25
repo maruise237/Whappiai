@@ -109,7 +109,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
         {isLoading ? (
           <div className="py-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></div>
         ) : (!Array.isArray(webhooks) || webhooks.length === 0) ? (
-          <div className="p-12 text-center border-dashed border-2 rounded-lg bg-muted/20">
+          <div className="p-8 sm:p-12 text-center border-dashed border-2 rounded-lg bg-muted/20">
             <ExternalLink className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">Aucun webhook configuré.</p>
           </div>

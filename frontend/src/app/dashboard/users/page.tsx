@@ -164,11 +164,11 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">Utilisateur</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Rôle</TableHead>
-              <TableHead className="hidden sm:table-cell text-xs font-medium text-muted-foreground">Statut</TableHead>
-              <TableHead className="hidden lg:table-cell text-xs font-medium text-muted-foreground">Inscrit le</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">Utilisateur</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Rôle</TableHead>
+              <TableHead className="hidden sm:table-cell text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Statut</TableHead>
+              <TableHead className="hidden lg:table-cell text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Inscrit le</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -181,14 +181,14 @@ export default function UsersPage() {
                 <TableRow key={u.email} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8 border border-border/50 shadow-xs"><AvatarFallback className="text-[10px] font-bold">{u.email.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+                      <Avatar className="h-9 w-9 border border-border/50 shadow-sm"><AvatarFallback className="text-[10px] font-bold">{u.email.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-[13px] font-semibold truncate max-w-[120px] sm:max-w-none">{u.email}</span>
-                        <p className="text-[9px] text-muted-foreground uppercase font-medium">ID: {u.email.split('@')[0]}</p>
+                        <span className="text-sm font-semibold truncate max-w-[140px] sm:max-w-none">{u.email}</span>
+                        <p className="text-[9px] text-muted-foreground uppercase font-medium tracking-wider">ID: {u.email.split('@')[0]}</p>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="secondary" className="text-[9px] uppercase font-bold tracking-tighter h-4 px-1">{u.role}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter h-5 px-1.5">{u.role}</Badge></TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <div className="flex items-center gap-2">
                       <div className={cn("h-1.5 w-1.5 rounded-full", u.isActive ? "bg-primary" : "bg-muted-foreground/30")} />
@@ -212,7 +212,7 @@ export default function UsersPage() {
         </Table>
         </div>
         {totalPages > 1 && (
-          <div className="p-4 border-t flex justify-center">
+          <div className="p-4 border-t flex items-center justify-center">
             <Pagination>
               <PaginationContent>
                 <PaginationItem>

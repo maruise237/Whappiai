@@ -206,23 +206,23 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Sessions" value={sessions.length} />
         <StatCard label="Taux de succès" value={`${summary.successRate}%`} />
         <StatCard label="Messages" value={summary.messagesSent} />
         {userRole === 'admin' && <StatCard label="Logs" value={summary.totalActivities} />}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 border rounded-xl bg-card shadow-sm">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 border rounded-xl bg-card shadow-sm">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
-            <SelectTrigger className="flex-1 sm:w-48 h-8 text-[11px] font-medium">
+            <SelectTrigger className="flex-1 sm:w-48 h-9 text-xs font-medium">
               <SelectValue placeholder="Sélectionner une session" />
             </SelectTrigger>
             <SelectContent>
               {Array.isArray(sessions) && sessions.length > 0 ? (
                 sessions.map((s) => (
-                  <SelectItem key={s?.sessionId || Math.random()} value={s?.sessionId || "unknown"} className="text-[11px]">
+                  <SelectItem key={s?.sessionId || Math.random()} value={s?.sessionId || "unknown"} className="text-xs">
                     {s?.sessionId || "Inconnu"}
                   </SelectItem>
                 ))
@@ -233,17 +233,17 @@ export default function DashboardPage() {
           </Select>
           {selectedSession && (
             <Badge className={cn(
-              "text-[9px] px-1.5 h-5 font-bold uppercase tracking-wider whitespace-nowrap",
+              "text-[10px] px-2 h-6 font-bold uppercase tracking-wider whitespace-nowrap",
               selectedSession.isConnected
                 ? "bg-primary/10 text-primary border-primary/20"
                 : "bg-muted text-muted-foreground"
             )}>
-              {selectedSession.isConnected ? "On" : "Off"}
+              {selectedSession.isConnected ? "Actif" : "Inactif"}
             </Badge>
           )}
         </div>
-        <Button size="sm" className="w-full sm:w-auto h-8 text-[11px] font-semibold" onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" /> Nouvelle Session
+        <Button size="sm" className="w-full sm:w-auto h-9 text-xs font-semibold" onClick={() => setIsCreateOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
         </Button>
       </div>
 
@@ -315,9 +315,9 @@ export default function DashboardPage() {
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <Card className="shadow-none border-border/50">
-      <CardContent className="p-3 sm:p-6">
+      <CardContent className="p-4 sm:p-6">
         <p className="text-[10px] sm:text-xs uppercase font-bold tracking-widest text-muted-foreground">{label}</p>
-        <p className="text-lg sm:text-2xl font-black mt-1 text-foreground">{value}</p>
+        <p className="text-xl sm:text-2xl font-bold mt-1 text-foreground">{value}</p>
       </CardContent>
     </Card>
   )
@@ -326,13 +326,13 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 function ActivityCard({ activities, loading }: { activities: any[]; loading: boolean }) {
   return (
     <Card className="shadow-none border-border/50">
-      <CardHeader className="p-3 sm:p-4 border-b">
+      <CardHeader className="p-4 sm:p-6 border-b">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
           </span>
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Live</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Direct</p>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -346,7 +346,7 @@ function ActivityCard({ activities, loading }: { activities: any[]; loading: boo
             </div>
           ) : (
             activities.map((a, i) => (
-              <div key={i} className="p-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
+              <div key={i} className="p-3 sm:p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="min-w-0">
                   <p className="text-xs font-medium truncate">{String(a?.action || 'Action').replace(/_/g, ' ')}</p>
                   <p className="text-[10px] text-muted-foreground">
@@ -360,7 +360,7 @@ function ActivityCard({ activities, loading }: { activities: any[]; loading: boo
             ))
           )}
         </div>
-        <Link href="/dashboard/activities" className="block w-full p-2 text-center text-[10px] font-medium text-muted-foreground hover:text-foreground border-t">
+        <Link href="/dashboard/activities" className="block w-full p-3 text-center text-[11px] font-medium text-muted-foreground hover:text-foreground border-t transition-colors">
           Voir tout l&apos;historique
         </Link>
       </CardContent>

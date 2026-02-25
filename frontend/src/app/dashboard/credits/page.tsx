@@ -128,9 +128,9 @@ export default function CreditsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs font-medium">Date</TableHead>
-                    <TableHead className="text-xs font-medium">Description</TableHead>
-                    <TableHead className="text-xs font-medium text-right">Montant</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Date</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right">Montant</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -190,9 +190,9 @@ export default function CreditsPage() {
 function StatCard({ label, value, sub }: { label: string; value: string | number; subText?: string; sub?: string }) {
   return (
     <Card className="shadow-none border-border/50">
-      <CardContent className="p-3 sm:p-6">
+      <CardContent className="p-4 sm:p-6">
         <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">{label}</p>
-        <p className="text-lg sm:text-2xl font-black mt-1 text-foreground">{value}</p>
+        <p className="text-xl sm:text-2xl font-bold mt-1 text-foreground">{value}</p>
         <p className="text-[9px] text-muted-foreground uppercase font-medium mt-1">{sub}</p>
       </CardContent>
     </Card>

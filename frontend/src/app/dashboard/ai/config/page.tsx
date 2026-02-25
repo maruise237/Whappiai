@@ -163,9 +163,9 @@ function AIConfigForm() {
   ]
 
   return (
-    <div className="max-w-6xl mx-auto pb-20">
+    <div className="max-w-7xl mx-auto pb-20">
       {/* Header Sticky */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b mb-8 py-4 px-4 sm:px-0">
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b mb-6 py-4 px-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/ai')}>
@@ -189,12 +189,12 @@ function AIConfigForm() {
       </div>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden sticky top-[104px] z-20 bg-background/95 backdrop-blur-sm border-b mb-8 -mx-4 px-4 overflow-x-auto no-scrollbar">
+      <div className="lg:hidden sticky top-[104px] z-20 bg-background/95 backdrop-blur-sm border-b mb-8 -mx-4 px-4 overflow-x-auto no-scrollbar">
         <Tabs value={activeSection} onValueChange={(v) => {
           setActiveSection(v);
           document.getElementById(v)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }}>
-          <TabsList className="h-12 bg-transparent gap-4 p-0">
+          <TabsList className="h-12 bg-transparent gap-6 p-0">
             {sections.map(s => (
               <TabsTrigger
                 key={s.id}
@@ -209,9 +209,9 @@ function AIConfigForm() {
         </Tabs>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-12 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 lg:gap-12 items-start">
         {/* Sidebar Sticky - Hidden on mobile */}
-        <aside className="hidden md:block sticky top-24 space-y-6">
+        <aside className="hidden lg:block sticky top-24 space-y-6">
           <nav className="space-y-1">
             {sections.map(s => (
               <button
@@ -239,9 +239,9 @@ function AIConfigForm() {
         </aside>
 
         {/* Main Content */}
-        <div className="space-y-16">
+        <div className="space-y-8 lg:space-y-12">
           {/* Section Intelligence */}
-          <section id="intelligence" className="scroll-mt-32 space-y-6">
+          <section id="intelligence" className="scroll-mt-32 space-y-4">
             <div className="space-y-1">
               <h2 className="text-sm font-semibold text-muted-foreground">Intelligence</h2>
               <p className="text-xs text-muted-foreground">Définissez le mode opératoire de votre assistant.</p>
@@ -277,13 +277,13 @@ function AIConfigForm() {
             </div>
             <Card>
               <CardContent className="p-0 divide-y">
-                <div className="p-6 space-y-1">
+                <div className="p-4 sm:p-6 space-y-1">
                   <ToggleRow label="Répondre aux tags (@)" desc="L'IA répond lorsqu'elle est mentionnée dans un groupe." value={formData.respond_to_tags} onChange={v => setFormData({...formData, respond_to_tags: v})} />
                   <ToggleRow label="Arrêt à la frappe" desc="Désactive l'IA si vous écrivez sur WhatsApp." value={formData.deactivate_on_typing} onChange={v => setFormData({...formData, deactivate_on_typing: v})} />
                   <ToggleRow label="Arrêt à la lecture" desc="L'IA attend que vous lisiez pour répondre." value={formData.deactivate_on_read} onChange={v => setFormData({...formData, deactivate_on_read: v})} />
                   <ToggleRow label="Rejet d'appels" desc="Rejeter automatiquement les appels vocaux/vidéo." value={formData.reject_calls} onChange={v => setFormData({...formData, reject_calls: v})} />
                 </div>
-                <div className="p-6 bg-muted/30 space-y-6">
+                <div className="p-4 sm:p-6 bg-muted/30 space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-semibold">Simulation Humaine</Label>
@@ -316,12 +316,12 @@ function AIConfigForm() {
           <Separator />
 
           {/* Section Personality */}
-          <section id="personality" className="scroll-mt-32 space-y-6">
+          <section id="personality" className="scroll-mt-32 space-y-4">
             <div className="space-y-1">
               <h2 className="text-sm font-semibold text-muted-foreground">Personnalité</h2>
               <p className="text-xs text-muted-foreground">Définissez l&apos;identité et les règles de conduite.</p>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="space-y-3">
                 <Label className="text-xs font-semibold">Instruction principale (Prompt)</Label>
                 <Textarea
@@ -346,13 +346,13 @@ function AIConfigForm() {
           <Separator />
 
           {/* Section Knowledge */}
-          <section id="knowledge" className="scroll-mt-32 space-y-6">
+          <section id="knowledge" className="scroll-mt-32 space-y-4">
             <div className="space-y-1">
               <h2 className="text-sm font-semibold text-muted-foreground">Connaissances</h2>
               <p className="text-xs text-muted-foreground">Base de données RAG pour des réponses précises.</p>
             </div>
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <KnowledgeBaseManager sessionId={sessionId} />
               </CardContent>
             </Card>
@@ -362,13 +362,13 @@ function AIConfigForm() {
             <>
               <Separator />
               {/* Section Engine */}
-              <section id="engine" className="scroll-mt-32 space-y-6">
+              <section id="engine" className="scroll-mt-32 space-y-4">
             <div className="space-y-1">
               <h2 className="text-sm font-semibold text-muted-foreground">Moteur IA</h2>
               <p className="text-xs text-muted-foreground">Configuration technique de l&apos;API.</p>
             </div>
             <Card>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="p-4 sm:p-6 space-y-6">
                 <div className="space-y-3">
                   <Label className="text-xs font-semibold">Modèle sélectionné</Label>
                   <Select

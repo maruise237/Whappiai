@@ -146,11 +146,11 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   return (
     <Card className="border-border/50 bg-card shadow-none">
-      <CardHeader className="p-3 sm:p-6 border-b">
+      <CardHeader className="p-4 sm:p-6 border-b">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Smartphone className="h-3.5 w-3.5 text-primary" />
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Smartphone className="h-4 w-4 text-primary" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate">{session.sessionId}</p>
@@ -165,29 +165,29 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between sm:justify-end gap-2 border-t sm:border-0 pt-3 sm:pt-0">
+          <div className="flex items-center justify-between sm:justify-end gap-2 border-t sm:border-0 pt-4 sm:pt-0">
             <Badge className={cn(
-              "text-[9px] px-1.5 h-5 font-bold uppercase tracking-widest whitespace-nowrap shadow-none",
+              "text-[10px] px-2 h-6 font-bold uppercase tracking-widest whitespace-nowrap shadow-none",
               isConnected
                 ? "bg-primary/10 text-primary border-primary/20"
                 : "bg-amber-500/10 text-amber-600 border-amber-500/20"
             )}>
               {isConnected ? "Active" : "Inactive"}
             </Badge>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0" onClick={handleDelete}>
-              <Trash2 className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" onClick={handleDelete}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-3 sm:p-6">
+      <CardContent className="p-4 sm:p-6">
         {!isConnected ? (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-9 bg-muted/30 p-1 rounded-lg">
-                <TabsTrigger value="qr" className="text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-xs">QR Code</TabsTrigger>
-                <TabsTrigger value="code" className="text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-xs">Appairage</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-10 bg-muted/30 p-1 rounded-lg">
+                <TabsTrigger value="qr" className="text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm">QR Code</TabsTrigger>
+                <TabsTrigger value="code" className="text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm">Appairage</TabsTrigger>
               </TabsList>
 
               <TabsContent value="qr" className="flex flex-col items-center space-y-6 pt-6">

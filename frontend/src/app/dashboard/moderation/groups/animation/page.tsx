@@ -212,7 +212,7 @@ function AnimationPageContent() {
 
         <div className="space-y-8">
           {!selectedGroup ? (
-            <div className="p-12 text-center border-dashed border-2 rounded-lg">
+            <div className="p-8 sm:p-12 text-center border-dashed border-2 rounded-lg">
               <p className="text-sm text-muted-foreground">Sélectionnez un groupe à configurer</p>
             </div>
           ) : (

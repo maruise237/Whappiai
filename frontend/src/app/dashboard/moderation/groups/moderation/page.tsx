@@ -178,16 +178,16 @@ function ModerationPageContent() {
           </Card>
         </div>
 
-        <div className="space-y-12">
+        <div className="space-y-8 lg:space-y-12">
           {!selectedGroup ? (
-            <div className="p-12 text-center border-dashed border-2 rounded-lg">
+            <div className="p-8 sm:p-12 text-center border-dashed border-2 rounded-lg">
               <p className="text-sm text-muted-foreground">Sélectionnez un groupe à configurer</p>
             </div>
           ) : (
-            <div className="space-y-10">
-              <section className="space-y-6">
+            <div className="space-y-8 lg:space-y-12">
+              <section className="space-y-4">
                 <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Protection</p>
-                <div className="space-y-1 border rounded-lg bg-card">
+                <div className="space-y-1 border rounded-lg bg-card overflow-hidden">
                   <ToggleRow label="Statut de modération" desc="Activez la modération automatisée pour ce groupe." value={formData.is_active} onChange={v => setFormData({...formData, is_active: v})} />
                   <ToggleRow label="Anti-Lien" desc="Supprime automatiquement les liens externes." value={formData.anti_link} onChange={v => setFormData({...formData, anti_link: v})} />
                 </div>
@@ -195,7 +195,7 @@ function ModerationPageContent() {
 
               <Separator />
 
-              <section className="space-y-6">
+              <section className="space-y-4">
                 <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Avertissements</p>
                 <Card className="p-4 sm:p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
@@ -216,16 +216,16 @@ function ModerationPageContent() {
 
               <Separator />
 
-              <section className="space-y-6">
+              <section className="space-y-4">
                 <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Filtre de contenu</p>
                 <Card className="p-4 sm:p-6 space-y-6">
                   <div className="space-y-3">
-                    <Label className="text-sm font-medium">Mots proscrits (séparés par des virgules)</Label>
-                    <Textarea value={formData.bad_words} onChange={e => setFormData({...formData, bad_words: e.target.value})} placeholder="arnaque, insulte, spam..." className="h-[120px] text-sm resize-none" />
+                    <Label className="text-xs font-semibold uppercase">Mots proscrits (séparés par des virgules)</Label>
+                    <Textarea value={formData.bad_words} onChange={e => setFormData({...formData, bad_words: e.target.value})} placeholder="arnaque, insulte, spam..." className="h-[120px] text-sm resize-none shadow-inner" />
                   </div>
                   <div className="space-y-3">
-                    <Label className="text-sm font-medium">Template d&apos;avertissement</Label>
-                    <Textarea value={formData.warning_template} onChange={e => setFormData({...formData, warning_template: e.target.value})} className="h-[120px] text-sm resize-none" />
+                    <Label className="text-xs font-semibold uppercase">Template d&apos;avertissement</Label>
+                    <Textarea value={formData.warning_template} onChange={e => setFormData({...formData, warning_template: e.target.value})} className="h-[120px] text-sm resize-none shadow-inner" />
                     <VariableTags tags={['@{{name}}', '{{count}}', '{{max}}', '{{reason}}']} onTagClick={t => setFormData({...formData, warning_template: formData.warning_template + t})} />
                   </div>
                 </Card>
@@ -233,10 +233,10 @@ function ModerationPageContent() {
 
               <Separator />
 
-              <section className="space-y-6">
+              <section className="space-y-4">
                 <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Message de bienvenue</p>
                 <div className="space-y-4">
-                  <div className="border rounded-lg bg-card">
+                  <div className="border rounded-lg bg-card overflow-hidden">
                     <ToggleRow label="Activer le bienvenue" desc="Saluez automatiquement les nouveaux membres." value={formData.welcome_enabled} onChange={v => setFormData({...formData, welcome_enabled: v})} />
                   </div>
                   {formData.welcome_enabled && (

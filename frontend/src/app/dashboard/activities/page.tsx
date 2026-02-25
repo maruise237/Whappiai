@@ -77,7 +77,7 @@ export default function ActivitiesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Total Activités" value={summary.totalActivities} />
         <StatCard label="Utilisateurs Actifs" value={summary.activeUsers} />
         <StatCard label="Sessions" value={summary.sessionsCreated} />
@@ -101,12 +101,12 @@ export default function ActivitiesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-xs font-medium text-muted-foreground whitespace-nowrap">Horodatage</TableHead>
-              <TableHead className="hidden md:table-cell text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Action</TableHead>
-              <TableHead className="hidden md:table-cell text-xs font-medium text-muted-foreground">Ressource</TableHead>
-              <TableHead className="hidden lg:table-cell text-xs font-medium text-muted-foreground">Détails</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground text-right">Statut</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">Horodatage</TableHead>
+              <TableHead className="hidden sm:table-cell text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Utilisateur</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Action</TableHead>
+              <TableHead className="hidden sm:table-cell text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ressource</TableHead>
+              <TableHead className="hidden lg:table-cell text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Détails</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right">Statut</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -120,25 +120,27 @@ export default function ActivitiesPage() {
               </TableRow>
             ) : (
               activities.map((a, i) => (
-                <TableRow key={i} className="hover:bg-muted/50">
-                  <TableCell className="text-sm font-mono text-muted-foreground whitespace-nowrap">
+                <TableRow key={i} className="hover:bg-muted/50 transition-colors">
+                  <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
                     {a?.timestamp ? new Date(a.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Date inconnue'}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-sm">{a?.userEmail || 'Inconnu'}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-xs font-medium max-w-[150px] truncate">{a?.userEmail || 'Inconnu'}</TableCell>
                   <TableCell>
-                    <span className="text-xs font-medium uppercase tracking-wider">{String(a?.action || 'Action').replace(/_/g, ' ')}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider">{String(a?.action || 'Action').replace(/_/g, ' ')}</span>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <Badge variant="outline" className="text-[10px] font-medium uppercase">{a?.resource || 'N/A'}</Badge>
+                  <TableCell className="hidden sm:table-cell">
+                    <Badge variant="secondary" className="text-[9px] font-bold uppercase tracking-wider">{a?.resource || 'N/A'}</Badge>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell text-xs text-muted-foreground max-w-xs truncate">
+                  <TableCell className="hidden lg:table-cell text-[11px] text-muted-foreground max-w-xs truncate">
                     {a?.details ? JSON.stringify(a.details) : ''}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Badge className={a?.success
-                      ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
-                      : "bg-destructive/10 text-destructive border-destructive/20"
-                    }>
+                    <Badge className={cn(
+                      "text-[9px] font-bold uppercase tracking-widest",
+                      a?.success
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-destructive/10 text-destructive border-destructive/20"
+                    )}>
                       {a?.success ? "Succès" : "Erreur"}
                     </Badge>
                   </TableCell>
@@ -156,9 +158,9 @@ export default function ActivitiesPage() {
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <Card className="shadow-none border-border/50">
-      <CardContent className="p-3 sm:p-6">
+      <CardContent className="p-4 sm:p-6">
         <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">{label}</p>
-        <p className="text-lg sm:text-2xl font-black mt-1 text-foreground">{value}</p>
+        <p className="text-xl sm:text-2xl font-bold mt-1 text-foreground">{value}</p>
       </CardContent>
     </Card>
   )

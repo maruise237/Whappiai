@@ -9,7 +9,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-24 max-w-6xl">
+      <main className="container mx-auto px-4 py-12 sm:py-24 max-w-6xl">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -57,7 +57,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="text-center bg-muted/30 rounded-3xl p-12">
+        <div className="text-center bg-muted/30 rounded-3xl p-8 sm:p-12">
             <h2 className="text-3xl font-bold mb-6">Rejoignez l'aventure</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
                 Nous recrutons des talents passionnés par l'IA et la communication.
