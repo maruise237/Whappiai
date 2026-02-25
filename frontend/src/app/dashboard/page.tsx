@@ -3,8 +3,6 @@
 import * as React from "react"
 import { Plus, Zap, Activity, MessageCircle } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
-import { MessagingTabs } from "@/components/dashboard/messaging-tabs"
-import { LogViewer } from "@/components/dashboard/log-viewer"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts"
 import { api } from "@/lib/api"
@@ -272,11 +270,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
           <SessionCard session={selectedSession} onRefresh={fetchSessions} onCreate={() => setIsCreateOpen(true)} />
-          <MessagingTabs session={selectedSession} sessions={sessions} onSessionChange={setSelectedSessionId} />
-          {userRole === 'admin' && <LogViewer />}
         </div>
         <div className="lg:col-span-4 space-y-6">
-          {userRole === 'admin' && <ActivityCard activities={recentActivities} loading={activitiesLoading} />}
           <CreditCardUI credits={credits} userRole={userRole} />
         </div>
       </div>
@@ -345,47 +340,3 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   )
 }
 
-function ActivityCard({ activities, loading }: { activities: any[]; loading: boolean }) {
-  return (
-    <Card>
-      <CardHeader className="p-4 border-b">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-          </span>
-          <p className="text-sm font-medium">Activités en direct</p>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="divide-y">
-          {loading ? (
-            <div className="p-4 text-xs text-muted-foreground">Chargement...</div>
-          ) : activities.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Activity className="h-8 w-8 text-muted-foreground/40 mb-3" />
-              <p className="text-xs text-muted-foreground">Aucune activité récente</p>
-            </div>
-          ) : (
-            activities.map((a, i) => (
-              <div key={i} className="p-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">{String(a?.action || 'Action').replace(/_/g, ' ')}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {a?.timestamp ? new Date(a.timestamp).toLocaleTimeString() : 'Heure inconnue'}
-                  </p>
-                </div>
-                <Badge variant={a?.success ? "default" : "destructive"} className="text-[9px] h-4">
-                  {a?.success ? "OK" : "ERR"}
-                </Badge>
-              </div>
-            ))
-          )}
-        </div>
-        <Link href="/dashboard/activities" className="block w-full p-2 text-center text-[10px] font-medium text-muted-foreground hover:text-foreground border-t">
-          Voir tout l&apos;historique
-        </Link>
-      </CardContent>
-    </Card>
-  )
-}

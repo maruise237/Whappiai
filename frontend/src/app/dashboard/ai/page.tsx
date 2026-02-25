@@ -61,13 +61,6 @@ export default function AIPage() {
   const [items, setItems] = React.useState<any[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isQuickEditOpen, setIsQuickEditOpen] = React.useState(false)
-  const [isMemoryOpen, setIsMemoryOpen] = React.useState(false)
-  const [selectedSessionMemory, setSelectedSessionMemory] = React.useState<string | null>(null)
-  const [conversations, setConversations] = React.useState<any[]>([])
-  const [selectedChat, setSelectedChat] = React.useState<string | null>(null)
-  const [history, setHistory] = React.useState<any[]>([])
-  const [isChatLoading, setIsChatLoading] = React.useState(false)
-  const [isDeleting, setIsDeleting] = React.useState(false)
   const [availableModels, setAvailableModels] = React.useState<any[]>([])
   const [isAdmin, setIsAdmin] = React.useState(false)
   
@@ -129,69 +122,6 @@ export default function AIPage() {
     if (isLoaded && user) fetchData()
   }, [isLoaded, user, fetchData])
 
-  const handleOpenMemory = async (sessionId: string) => {
-    if (!sessionId) return
-    setSelectedSessionMemory(sessionId)
-    setIsMemoryOpen(true)
-    setSelectedChat(null)
-    setHistory([])
-    try {
-      const token = await getToken()
-      const response = await api.sessions.getInbox(sessionId, token || undefined)
-      setConversations(Array.isArray(response) ? response : [])
-    } catch (e: any) {
-      toast.error("Échec du chargement de la mémoire: " + (e.message || "Erreur inconnue"))
-    }
-  }
-
-  const handleFetchHistory = async (jid: string) => {
-    if (!selectedSessionMemory) return
-    setIsChatLoading(true)
-    try {
-      const token = await getToken()
-      const response = await api.sessions.getChatHistory(selectedSessionMemory, jid, token || undefined)
-      setHistory(Array.isArray(response) ? response : [])
-      setSelectedChat(jid)
-    } catch (e: any) {
-      toast.error("Erreur historique: " + (e.message || "Erreur inconnue"))
-    } finally {
-      setIsChatLoading(false)
-    }
-  }
-
-  const handleDeleteChat = async (e: React.MouseEvent, jid: string) => {
-    e.stopPropagation()
-    if (!selectedSessionMemory || !confirm("Supprimer toute cette conversation de la mémoire ?")) return
-
-    setIsDeleting(true)
-    try {
-      const token = await getToken()
-      await api.sessions.deleteChat(selectedSessionMemory, jid, token || undefined)
-      setConversations(prev => prev.filter(c => c.remote_jid !== jid))
-      if (selectedChat === jid) {
-        setSelectedChat(null)
-        setHistory([])
-      }
-      toast.success("Conversation oubliée")
-    } catch (e: any) {
-      toast.error("Échec de la suppression")
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleDeleteMessage = async (messageId: number) => {
-    if (!selectedSessionMemory || !selectedChat || !confirm("Supprimer ce message ?")) return
-
-    try {
-      const token = await getToken()
-      await api.sessions.deleteMessage(selectedSessionMemory, selectedChat, messageId, token || undefined)
-      setHistory(prev => prev.filter(m => m.id !== messageId))
-      toast.success("Message supprimé")
-    } catch (e: any) {
-      toast.error("Échec de la suppression")
-    }
-  }
 
   const handleOpenQuickEdit = (item: any) => {
     if (!item) return
@@ -280,8 +210,10 @@ export default function AIPage() {
                     <DropdownMenuItem onClick={() => handleOpenQuickEdit(item)}>
                       <Settings2 className="h-4 w-4 mr-2" /> Modification rapide
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleOpenMemory(item.sessionId)}>
-                      <MessageSquare className="h-4 w-4 mr-2" /> Voir la mémoire
+                    <DropdownMenuItem asChild>
+                      <Link href={`/dashboard/inbox?session=${item.sessionId}`}>
+                        <MessageSquare className="h-4 w-4 mr-2" /> Voir la mémoire (Inbox)
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href={`/dashboard/ai/config?session=${item.sessionId}`}>
@@ -362,112 +294,6 @@ export default function AIPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Mémoire IA */}
-      <Dialog open={isMemoryOpen} onOpenChange={setIsMemoryOpen}>
-        <DialogContent className="sm:max-w-[900px] h-[80vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-2 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <BrainCircuit className="h-5 w-5 text-primary" />
-              Mémoire de l&apos;IA : {selectedSessionMemory}
-            </DialogTitle>
-            <DialogDescription>Consultez les derniers échanges mémorisés par l&apos;IA Whappi.</DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 flex min-h-0 divide-x relative">
-            {isDeleting && (
-              <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-50 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-            {/* Liste convos */}
-            <div className="w-[300px] flex flex-col min-h-0">
-              <ScrollArea className="flex-1">
-                <div className="divide-y">
-                  {!Array.isArray(conversations) || conversations.length === 0 ? (
-                    <div className="p-8 text-center text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Vide</div>
-                  ) : (
-                    conversations.map(conv => (
-                      <div
-                        key={conv.remote_jid}
-                        className={cn(
-                          "group relative w-full p-4 text-left hover:bg-muted/50 transition-colors cursor-pointer flex flex-col gap-1",
-                          selectedChat === conv.remote_jid && "bg-muted"
-                        )}
-                        onClick={() => handleFetchHistory(conv.remote_jid)}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-semibold truncate">{conv.remote_jid.split('@')[0]}</span>
-                          <span className="text-[9px] text-muted-foreground">
-                            {new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground truncate pr-6">{conv.last_message}</p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-2 bottom-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                          onClick={(e) => handleDeleteChat(e, conv.remote_jid)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
-
-            {/* Chat history */}
-            <div className="flex-1 flex flex-col min-h-0 bg-muted/5">
-              {!selectedChat ? (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground/30 flex-col gap-2">
-                  <MessageSquare className="h-10 w-10" />
-                  <p className="text-xs">Sélectionnez un contact</p>
-                </div>
-              ) : (
-                <>
-                  <ScrollArea className="flex-1 p-6">
-                    <div className="space-y-6">
-                      {Array.isArray(history) && history.map((msg, i) => (
-                        <div key={msg?.id || i} className={cn(
-                          "group flex flex-col max-w-[85%] relative",
-                          msg.role === 'user' ? "mr-auto" : "ml-auto items-end"
-                        )}>
-                          <div className={cn(
-                            "rounded-lg p-3 text-xs shadow-sm relative",
-                            msg.role === 'user' ? "bg-card border" : "bg-primary text-primary-foreground"
-                          )}>
-                            {msg.content}
-                            <button
-                              onClick={() => handleDeleteMessage(msg.id)}
-                              className={cn(
-                                "absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-white items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity flex shadow-sm hover:scale-110",
-                                msg.role !== 'user' && "-left-2 right-auto"
-                              )}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                          <span className="text-[9px] text-muted-foreground mt-1 px-1">
-                            {new Date(msg.created_at).toLocaleTimeString()}
-                          </span>
-                        </div>
-                      ))}
-                      {isChatLoading && <div className="py-4 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></div>}
-                    </div>
-                  </ScrollArea>
-                  <div className="p-4 border-t bg-card flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">Mode lecture seule dans cet aperçu.</p>
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href={`/dashboard/inbox`}>Ouvrir l&apos;Inbox Interactive</Link>
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

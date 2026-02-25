@@ -46,21 +46,44 @@ import { NotificationDropdown } from "@/components/dashboard/notification-dropdo
 import { OnboardingTour } from "@/components/dashboard/onboarding-tour"
 import { useI18n } from "@/i18n/i18n-provider"
 
-const getNavigation = (t: any) => [
-  { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
-  { name: t("nav.inbox"), href: "/dashboard/inbox", icon: MessageCircle },
-  { name: t("nav.activities"), href: "/dashboard/activities", icon: History, adminOnly: true },
-  { name: t("nav.ai_assistant"), href: "/dashboard/ai", icon: Bot },
-  { name: t("nav.auto_responses"), href: "/dashboard/ai/keywords", icon: Zap },
-  { name: t("nav.group_management"), href: "/dashboard/moderation", icon: Shield },
-  { name: t("nav.credits"), href: "/dashboard/credits", icon: Zap },
-  { name: t("nav.users"), href: "/dashboard/users", icon: Users, adminOnly: true },
-  { name: t("nav.ai_models"), href: "/dashboard/ai-models", icon: Settings2, adminOnly: true },
-]
-
-const getFooterNav = (t: any) => [
-  { name: t("nav.billing"), href: "/dashboard/billing", icon: CreditCard },
-  { name: t("nav.settings"), href: "/dashboard/profile", icon: Settings },
+const getNavGroups = (t: any) => [
+  {
+    title: "Conversations",
+    items: [
+      { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
+      { name: t("nav.inbox"), href: "/dashboard/inbox", icon: MessageCircle },
+    ]
+  },
+  {
+    title: "Automatisations",
+    items: [
+      { name: t("nav.ai_assistant"), href: "/dashboard/ai", icon: Bot },
+      { name: t("nav.auto_responses"), href: "/dashboard/ai/keywords", icon: Zap },
+      { name: t("nav.group_management"), href: "/dashboard/moderation", icon: Shield },
+    ]
+  },
+  {
+    title: "Finance",
+    items: [
+      { name: t("nav.credits"), href: "/dashboard/credits", icon: Zap },
+      { name: t("nav.billing"), href: "/dashboard/billing", icon: CreditCard },
+    ]
+  },
+  {
+    title: "Administration",
+    adminOnly: true,
+    items: [
+      { name: t("nav.activities"), href: "/dashboard/activities", icon: History },
+      { name: t("nav.users"), href: "/dashboard/users", icon: Users },
+      { name: t("nav.ai_models"), href: "/dashboard/ai-models", icon: Settings2 },
+    ]
+  },
+  {
+    title: "Compte",
+    items: [
+      { name: t("nav.settings"), href: "/dashboard/profile", icon: Settings },
+    ]
+  }
 ]
 
 function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
@@ -102,26 +125,33 @@ function LiveIndicator() {
 }
 
 function SidebarContent({ userRole, pathname, onItemClick, t }: { userRole: string, pathname: string, onItemClick?: () => void, t: any }) {
-  const navigation = getNavigation(t)
-  const footerNav = getFooterNav(t)
-  const filteredNav = navigation.filter(item => !item.adminOnly || userRole === 'admin')
+  const groups = getNavGroups(t)
+  const filteredGroups = groups.filter(group => !group.adminOnly || userRole === 'admin')
+
   return (
     <div className="flex flex-col h-full bg-card">
       <div className="p-6"><Logo orientation="horizontal" size={24} showText /></div>
       <ScrollArea className="flex-1 px-3">
-        <nav className="space-y-1">
-          {filteredNav.map((item) => (
-            <NavItem key={item.href || Math.random()} item={item} isActive={pathname === item.href} onClick={onItemClick} />
+        <div className="space-y-6 pb-6">
+          {filteredGroups.map((group, i) => (
+            <div key={i} className="space-y-2">
+              <h3 className="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                {group.title}
+              </h3>
+              <nav className="space-y-1">
+                {group.items.map((item) => (
+                  <NavItem
+                    key={item.href || Math.random()}
+                    item={item}
+                    isActive={pathname === item.href || pathname.startsWith(item.href + '/')}
+                    onClick={onItemClick}
+                  />
+                ))}
+              </nav>
+            </div>
           ))}
-        </nav>
+        </div>
       </ScrollArea>
-      <div className="p-3 border-t border-border">
-        <nav className="space-y-1">
-          {footerNav.map((item) => (
-            <NavItem key={item.href || Math.random()} item={item} isActive={pathname === item.href} onClick={onItemClick} />
-          ))}
-        </nav>
-      </div>
     </div>
   )
 }
@@ -220,7 +250,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </Sheet>
               </div>
               <h2 className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
-                {[...getNavigation(t), ...getFooterNav(t)].find(n => n.href === pathname)?.name || "Tableau de bord"}
+                {getNavGroups(t).flatMap(g => g.items).find(n => n.href === pathname)?.name || "Tableau de bord"}
               </h2>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">

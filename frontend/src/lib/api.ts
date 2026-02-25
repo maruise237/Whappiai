@@ -141,6 +141,10 @@ export const api = {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    resumeAI: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}/resume`, {
+      method: "POST",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
     qr: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/qr`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),

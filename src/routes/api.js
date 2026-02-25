@@ -444,18 +444,24 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    // Recipient Management Endpoints
-    const RecipientListManager = require('../services/recipient-lists');
-
-    // Initialize recipient list manager
-    const recipientListManager = new RecipientListManager(process.env.TOKEN_ENCRYPTION_KEY || 'default-key');
-
     // --- Webhooks ---
 
     router.get('/sessions/:sessionId/webhooks', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         try {
             const list = WebhookService.list(req.params.sessionId);
             res.json({ status: 'success', data: list });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.post('/sessions/:sessionId/inbox/:jid/resume', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const aiService = require('../services/ai');
+            aiService.resumeForConversation(req.params.sessionId, req.params.jid);
+            aiService.resetOwnerActivity(req.params.sessionId, req.params.jid);
+
+            res.json({ status: 'success', message: 'IA réactivée pour cette conversation' });
         } catch (error) {
             res.status(500).json({ status: 'error', message: error.message });
         }
@@ -1099,222 +1105,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    // Recipient List Management Endpoints (Session-based auth, not token-based)
-
-    // Get all recipient lists
-    router.get('/recipient-lists', checkSessionOrTokenAuth, (req, res) => {
-        const lists = recipientListManager.getAllLists(
-            req.currentUser.email,
-            req.currentUser.role === 'admin'
-        );
-        res.json(lists);
-    });
-
-    // Get specific recipient list
-    router.get('/recipient-lists/:id', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid list ID format' });
-        }
-        const list = recipientListManager.loadList(req.params.id);
-        if (!list) {
-            return res.status(404).json({ status: 'error', message: 'Recipient list not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && list.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        res.json(list);
-    });
-
-    // Create new recipient list
-    router.post('/recipient-lists', checkSessionOrTokenAuth, (req, res) => {
-        try {
-            const listData = {
-                ...req.body,
-                createdBy: req.currentUser.email
-            };
-
-            const list = recipientListManager.createList(listData);
-            res.status(201).json(list);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    // Update recipient list
-    router.put('/recipient-lists/:id', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid list ID format' });
-        }
-        try {
-            const list = recipientListManager.loadList(req.params.id);
-            if (!list) {
-                return res.status(404).json({ status: 'error', message: 'Recipient list not found' });
-            }
-
-            // Check access
-            if (req.currentUser.role !== 'admin' && list.createdBy !== req.currentUser.email) {
-                return res.status(403).json({ status: 'error', message: 'Access denied' });
-            }
-
-            const updated = recipientListManager.updateList(req.params.id, req.body);
-            res.json(updated);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    // Delete recipient list
-    router.delete('/recipient-lists/:id', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid list ID format' });
-        }
-        const list = recipientListManager.loadList(req.params.id);
-        if (!list) {
-            return res.status(404).json({ status: 'error', message: 'Recipient list not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && list.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        const success = recipientListManager.deleteList(req.params.id);
-        if (success) {
-            res.json({ status: 'success', message: 'Recipient list deleted' });
-        } else {
-            res.status(500).json({ status: 'error', message: 'Failed to delete recipient list' });
-        }
-    });
-
-    // Clone recipient list
-    router.post('/recipient-lists/:id/clone', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid list ID format' });
-        }
-        try {
-            const cloned = recipientListManager.cloneList(req.params.id, req.currentUser.email, req.body.name);
-            res.status(201).json(cloned);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    // Add recipient to list
-    router.post('/recipient-lists/:id/recipients', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid list ID format' });
-        }
-        try {
-            const list = recipientListManager.loadList(req.params.id);
-            if (!list) {
-                return res.status(404).json({ status: 'error', message: 'Recipient list not found' });
-            }
-
-            // Check access
-            if (req.currentUser.role !== 'admin' && list.createdBy !== req.currentUser.email) {
-                return res.status(403).json({ status: 'error', message: 'Access denied' });
-            }
-
-            const updated = recipientListManager.addRecipient(req.params.id, req.body);
-            res.status(201).json(updated);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    // Update recipient in list
-    router.put('/recipient-lists/:id/recipients/:number', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid list ID format' });
-        }
-        // Basic number format check (allow +, digits, and reasonable length)
-        if (!/^\+?\d{5,15}$/.test(req.params.number)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid recipient number format' });
-        }
-        try {
-            const list = recipientListManager.loadList(req.params.id);
-            if (!list) {
-                return res.status(404).json({ status: 'error', message: 'Recipient list not found' });
-            }
-
-            // Check access
-            if (req.currentUser.role !== 'admin' && list.createdBy !== req.currentUser.email) {
-                return res.status(403).json({ status: 'error', message: 'Access denied' });
-            }
-
-            const updated = recipientListManager.updateRecipient(req.params.id, req.params.number, req.body);
-            res.json(updated);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    // Remove recipient from list
-    router.delete('/recipient-lists/:id/recipients/:number', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid list ID format' });
-        }
-        if (!/^\+?\d{5,15}$/.test(req.params.number)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid recipient number format' });
-        }
-        try {
-            const list = recipientListManager.loadList(req.params.id);
-            if (!list) {
-                return res.status(404).json({ status: 'error', message: 'Recipient list not found' });
-            }
-
-            // Check access
-            if (req.currentUser.role !== 'admin' && list.createdBy !== req.currentUser.email) {
-                return res.status(403).json({ status: 'error', message: 'Access denied' });
-            }
-
-            const updated = recipientListManager.removeRecipient(req.params.id, req.params.number);
-            res.json(updated);
-        } catch (error) {
-            res.status(400).json({ status: 'error', message: error.message });
-        }
-    });
-
-    // Search recipients across all lists
-    router.get('/recipient-lists/search/:query', checkSessionOrTokenAuth, (req, res) => {
-        const results = recipientListManager.searchRecipients(
-            req.params.query,
-            req.currentUser.email,
-            req.currentUser.role === 'admin'
-        );
-        res.json(results);
-    });
-
-    // Get recipient lists statistics
-    router.get('/recipient-lists-stats', checkSessionOrTokenAuth, (req, res) => {
-        const stats = recipientListManager.getStatistics(
-            req.currentUser.email,
-            req.currentUser.role === 'admin'
-        );
-        res.json(stats);
-    });
-
-    // Mark recipient list as used
-    router.post('/recipient-lists/:id/mark-used', checkSessionOrTokenAuth, (req, res) => {
-        if (!isValidId(req.params.id)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid list ID format' });
-        }
-        const list = recipientListManager.loadList(req.params.id);
-        if (!list) {
-            return res.status(404).json({ status: 'error', message: 'Recipient list not found' });
-        }
-
-        // Check access
-        if (req.currentUser.role !== 'admin' && list.createdBy !== req.currentUser.email) {
-            return res.status(403).json({ status: 'error', message: 'Access denied' });
-        }
-
-        recipientListManager.markAsUsed(req.params.id);
-        res.json({ status: 'success', message: 'List marked as used' });
-    });
 
     // Debug endpoint to check session status
     router.get('/debug/sessions', checkSessionOrTokenAuth, requireAdmin, (req, res) => {

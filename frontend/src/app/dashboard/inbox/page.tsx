@@ -54,6 +54,7 @@ export default function InboxPage() {
   const [replyText, setReplyText] = React.useState("")
   const [searchQuery, setSearchQuery] = React.useState("")
   const [isSending, setIsSending] = React.useState(false)
+  const [isResuming, setIsResuming] = React.useState(false)
 
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
@@ -160,6 +161,20 @@ export default function InboxPage() {
       toast.error("Échec de l'envoi : " + e.message)
     } finally {
       setIsSending(false)
+    }
+  }
+
+  const handleResumeAI = async () => {
+    if (!selectedChat || !selectedSession || isResuming) return
+    setIsResuming(true)
+    try {
+      const token = await getToken()
+      await api.sessions.resumeAI(selectedSession, selectedChat, token || undefined)
+      toast.success("IA réactivée pour ce contact")
+    } catch (e: any) {
+      toast.error("Échec de la réactivation")
+    } finally {
+      setIsResuming(false)
     }
   }
 
@@ -393,7 +408,18 @@ export default function InboxPage() {
                   </Button>
                 </form>
                 <div className="flex items-center justify-between mt-2 px-1">
-                   <p className="text-[9px] text-muted-foreground">{t("inbox.ai_pause_notice")}</p>
+                   <div className="flex items-center gap-3">
+                      <p className="text-[9px] text-muted-foreground">{t("inbox.ai_pause_notice")}</p>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-[9px] font-bold text-primary hover:text-primary/80"
+                        onClick={handleResumeAI}
+                        disabled={isResuming}
+                      >
+                        {isResuming ? "..." : "RÉACTIVER MAINTENANT"}
+                      </Button>
+                   </div>
                    <div className="flex items-center gap-1">
                       <div className="h-1 w-1 rounded-full bg-green-500 animate-pulse" />
                       <span className="text-[9px] font-bold text-green-600 uppercase tracking-widest">{t("inbox.live")}</span>
