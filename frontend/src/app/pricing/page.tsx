@@ -49,12 +49,12 @@ const plans = [
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto text-center">
-        <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
           Choisissez votre plan
         </h2>
-        <p className="mt-4 text-xl text-gray-600">
+        <p className="mt-4 text-lg text-muted-foreground">
           Des tarifs simples et transparents pour tous vos besoins WhatsApp.
         </p>
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md inline-block">
@@ -68,25 +68,25 @@ export default function PricingPage() {
         {plans.map((plan) => (
           <div 
             key={plan.name}
-            className={`relative p-8 bg-white border rounded-2xl shadow-sm flex flex-col ${
+            className={`relative p-8 bg-card border rounded-2xl shadow-sm flex flex-col ${
               plan.highlight 
-                ? 'border-indigo-600 ring-2 ring-indigo-600 transform scale-105 z-10' 
-                : 'border-gray-200'
+                ? 'border-primary ring-2 ring-primary transform scale-105 z-10'
+                : 'border-border'
             }`}
           >
             {plan.highlight && (
-              <div className="absolute top-0 right-0 -mt-4 mr-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+              <div className="absolute top-0 right-0 -mt-4 mr-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
                 Populaire
               </div>
             )}
             
             <div className="flex-1">
-              <h3 className="text-xl font-semibold text-gray-900">{plan.name}</h3>
-              <p className="mt-4 flex items-baseline text-gray-900">
+              <h3 className="text-xl font-semibold text-foreground">{plan.name}</h3>
+              <p className="mt-4 flex items-baseline text-foreground">
                 <span className="text-4xl font-extrabold tracking-tight">{plan.price}</span>
-                <span className="ml-1 text-xl font-semibold text-gray-500">/mois</span>
+                <span className="ml-1 text-xl font-semibold text-muted-foreground">/mois</span>
               </p>
-              <p className="mt-6 text-gray-500">{plan.description}</p>
+              <p className="mt-6 text-muted-foreground">{plan.description}</p>
 
               <ul className="mt-6 space-y-4">
                 {plan.features.map((feature) => (
@@ -102,8 +102,8 @@ export default function PricingPage() {
               href={`/register?plan=${plan.name.toLowerCase()}`}
               className={`mt-8 block w-full py-3 px-6 border border-transparent rounded-md text-center font-medium ${
                 plan.highlight
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  : 'bg-primary/10 text-primary hover:bg-primary/20'
               }`}
             >
               Commencer avec {plan.name}
@@ -113,14 +113,14 @@ export default function PricingPage() {
       </div>
       
       <div className="mt-12 text-center space-y-4">
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Déjà un compte ?{' '}
-          <Link href="/dashboard/billing" className="text-indigo-600 hover:text-indigo-500 font-medium">
+          <Link href="/dashboard/billing" className="text-primary hover:underline font-medium">
             Gérer mon abonnement
           </Link>
         </p>
         <div>
-            <Link href="/dashboard" className="text-gray-500 hover:text-gray-900 font-medium">
+            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground font-medium">
             Retour au tableau de bord
             </Link>
         </div>

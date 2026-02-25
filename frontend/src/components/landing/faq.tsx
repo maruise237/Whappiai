@@ -52,7 +52,7 @@ export function FAQ() {
   const [activeItem, setActiveItem] = useState<string | null>(null)
 
   return (
-    <section ref={ref} className="py-24 relative overflow-hidden bg-gradient-to-b from-background to-secondary/20">
+    <section ref={ref} className="py-12 lg:py-24 relative overflow-hidden bg-gradient-to-b from-background to-secondary/20">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-0 w-72 h-72 bg-primary/5 rounded-full blur-[100px]" />
@@ -60,7 +60,7 @@ export function FAQ() {
       </div>
 
       <div className="container px-4 mx-auto relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+        <div className="text-center max-w-3xl mx-auto mb-8 lg:mb-16 space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -75,7 +75,7 @@ export function FAQ() {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground"
+            className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-foreground"
           >
             Questions Fréquentes
           </motion.h2>

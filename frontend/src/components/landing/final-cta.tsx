@@ -11,7 +11,7 @@ export function FinalCTA() {
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
   return (
-    <section className="py-24 px-4">
+    <section className="py-12 lg:py-24 px-4">
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: 40 }}
@@ -20,7 +20,7 @@ export function FinalCTA() {
         className="max-w-4xl mx-auto text-center"
       >
         <h2
-          className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight"
+          className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6 tracking-tight"
           style={{ fontFamily: "var(--font-cal-sans)" }}
         >
           Prêt à transformer votre Support?
