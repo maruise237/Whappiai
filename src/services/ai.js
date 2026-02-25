@@ -36,7 +36,7 @@ class AIService {
      * @param {number} windowMinutes 
      * @returns {boolean}
      */
-    static isOwnerActive(sessionId, remoteJid, windowMinutes = 5) {
+    static isOwnerActive(sessionId, remoteJid, windowMinutes = 2) {
         const key = `${sessionId}:${remoteJid}`;
         const lastActivity = lastOwnerActivity.get(key);
         if (!lastActivity) return false;
@@ -273,7 +273,7 @@ class AIService {
 
             // Check Human Priority (Session Window)
             // If the owner sent a message within the window, skip AI
-            const windowMinutes = session.ai_session_window ?? 5;
+            const windowMinutes = session.ai_session_window ?? 2;
             if (this.isOwnerActive(sessionId, remoteJid, windowMinutes)) {
                 log(`Message de ${remoteJid} ignoré : Fenêtre de session active (${windowMinutes} min)`, sessionId, { event: 'ai-skip', reason: 'human-priority' }, 'INFO');
                 return;

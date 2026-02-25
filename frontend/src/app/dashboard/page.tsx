@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Zap, Activity, MessageCircle } from "lucide-react"
+import { Plus, Zap, Activity, MessageCircle, Smartphone, Brain, Sparkles, Loader2, ArrowRight } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts"
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { useUser, useAuth } from "@clerk/nextjs"
@@ -49,12 +50,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true)
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
-  const [recentActivities, setRecentActivities] = React.useState<any[]>([])
-  const [activitiesLoading, setActivitiesLoading] = React.useState(true)
   const [summary, setSummary] = React.useState({ totalActivities: 0, successRate: 0, activeSessions: 0, messagesSent: 0 })
   const [credits, setCredits] = React.useState<any>(null)
-  const [dbUser, setDbUser] = React.useState<any>(null)
   const [userRole, setUserRole] = React.useState<string | null>(null)
+  const [selectedSessionAI, setSelectedSessionAI] = React.useState<any>(null)
+  const [isAiLoading, setIsAiLoading] = React.useState(false)
 
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
@@ -84,22 +84,17 @@ export default function DashboardPage() {
     } catch (e) {} finally { setLoading(false) }
   }, [getToken, selectedSessionId])
 
-  const fetchRecentActivities = React.useCallback(async () => {
-    setActivitiesLoading(true)
+  const fetchSummary = React.useCallback(async () => {
     try {
       const token = await getToken()
-      const [list, summ] = await Promise.all([
-        api.activities.list(token || undefined),
-        api.activities.summary(7, token || undefined)
-      ])
-      setRecentActivities(Array.isArray(list) ? list.slice(0, 5) : [])
+      const summ = await api.activities.summary(7, token || undefined)
       setSummary(prev => ({
         ...prev,
         totalActivities: summ?.totalActivities || 0,
         successRate: summ?.successRate || 0,
         messagesSent: summ?.byAction?.send_message || 0
       }))
-    } catch (e) {} finally { setActivitiesLoading(false) }
+    } catch (e) {}
   }, [getToken])
 
   const fetchCredits = React.useCallback(async () => {
@@ -107,220 +102,189 @@ export default function DashboardPage() {
       const token = await getToken()
       const response = await api.credits.get(token || undefined)
       setCredits(response?.data || response)
-    } catch (e) {
-      console.error("Fetch credits error:", e)
-    }
-  }, [getToken])
-
-  const fetchDbUser = React.useCallback(async () => {
-    try {
-      const token = await getToken()
-      const data = await api.users.getProfile(token || undefined)
-      setDbUser(data)
     } catch (e) {}
   }, [getToken])
 
-  // Update activeSessions whenever sessions changes
-  React.useEffect(() => {
-    setSummary(prev => ({
-      ...prev,
-      activeSessions: Array.isArray(sessions) ? sessions.filter(s => s?.isConnected).length : 0
-    }))
-  }, [sessions])
+  const fetchAI = React.useCallback(async () => {
+     if (!selectedSessionId) return
+     setIsAiLoading(true)
+     try {
+       const token = await getToken()
+       const ai = await api.sessions.getAI(selectedSessionId, token || undefined)
+       setSelectedSessionAI(ai)
+     } catch (e) {} finally { setIsAiLoading(false) }
+  }, [getToken, selectedSessionId])
 
   React.useEffect(() => {
     fetchSessions()
-    fetchRecentActivities()
+    fetchSummary()
     fetchCredits()
-    fetchDbUser()
+  }, [fetchSessions, fetchSummary, fetchCredits])
 
-    const interval = setInterval(() => {
-      fetchSessions()
-      fetchRecentActivities()
-      fetchCredits()
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [fetchSessions, fetchRecentActivities, fetchCredits, fetchDbUser])
+  React.useEffect(() => {
+    if (selectedSessionId) fetchAI()
+  }, [selectedSessionId, fetchAI])
 
   // Handle real-time updates
   React.useEffect(() => {
     if (!lastMessage) return
-
     if (lastMessage.type === 'session-update') {
-      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : (lastMessage.data ? [lastMessage.data] : [])
-      setSessions(prev => {
-        const currentSessions = Array.isArray(prev) ? prev : []
-        const sessionsMap = new Map(currentSessions.map(s => [s.sessionId, s]));
-        let changed = false;
-
-        updates.forEach((update: any) => {
-          if (!update || !update.sessionId) return;
-          const existing = sessionsMap.get(update.sessionId);
-          if (existing) {
-            const oldStatus = existing.isConnected;
-            const newStatus = update.isConnected;
-
-            if (!oldStatus && newStatus) {
-              toast.success(`Session ${update.sessionId} connectée avec succès !`);
-              confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#10b981', '#34d399', '#6ee7b7', '#ffffff']
-              });
-            }
-
-            sessionsMap.set(update.sessionId, { ...existing, ...update });
-            changed = true;
-          } else {
-            sessionsMap.set(update.sessionId, update);
-            changed = true;
-          }
-        });
-
-        return changed ? Array.from(sessionsMap.values()) : prev;
-      });
-    } else if (lastMessage.type === 'message_received') {
-      // Play sound for incoming message if enabled (default to true)
-      if (dbUser?.sound_notifications !== 0) {
-        playNotificationSound()
-      }
-    } else if (lastMessage.type === 'session-deleted') {
-      const { sessionId } = lastMessage.data
-      setSessions(prev => prev.filter(s => s.sessionId !== sessionId))
-      if (selectedSessionId === sessionId) {
-        setSelectedSessionId(null)
-      }
-    }
-  }, [lastMessage, selectedSessionId])
-
-  const onCreateSession = async (values: z.infer<typeof sessionSchema>) => {
-    const t = toast.loading("Création de la session...")
-    try {
-      const token = await getToken()
-      await api.sessions.create(values.sessionId, values.phoneNumber || undefined, token || undefined)
-      toast.success("Session créée !", { id: t })
-      setIsCreateOpen(false)
-      form.reset()
       fetchSessions()
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
-    } catch (e) { toast.error("Échec de la création", { id: t }) }
+    }
+  }, [lastMessage])
+
+  const toggleAI = async () => {
+     if (!selectedSessionId || !selectedSessionAI) return
+     try {
+        const token = await getToken()
+        const newVal = !selectedSessionAI.enabled
+        await api.sessions.updateAI(selectedSessionId, { ...selectedSessionAI, enabled: newVal }, token || undefined)
+        setSelectedSessionAI({ ...selectedSessionAI, enabled: newVal })
+        toast.success(`IA ${newVal ? 'activée' : 'désactivée'}`)
+     } catch (e) {
+        toast.error("Échec du basculement")
+     }
   }
 
   const selectedSession = Array.isArray(sessions) ? sessions.find(s => s && s.sessionId === selectedSessionId) : null
 
+  if (loading) return <div className="p-12 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></div>
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-6xl mx-auto pb-20">
+      {/* Welcome & Stats */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">{t("dashboard.overview_title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("dashboard.overview_desc")}</p>
+          <h1 className="text-2xl font-bold tracking-tight">Bonjour, {user?.firstName || 'utilisateur'}</h1>
+          <p className="text-sm text-muted-foreground">Voici l&apos;état de votre automatisation aujourd&apos;hui.</p>
+        </div>
+        <div className="flex items-center gap-3">
+           <div className="flex -space-x-2 mr-2">
+              <div className="h-8 w-8 rounded-full border-2 border-background bg-primary/10 flex items-center justify-center"><Smartphone className="h-4 w-4 text-primary" /></div>
+              <div className="h-8 w-8 rounded-full border-2 border-background bg-green-500/10 flex items-center justify-center"><Brain className="h-4 w-4 text-green-600" /></div>
+           </div>
+           <Button size="sm" id="new-session-btn" onClick={() => setIsCreateOpen(true)} className="rounded-full shadow-lg shadow-primary/20">
+              <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
+           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label={t("dashboard.stats.total_sessions")} value={sessions.length} />
-        <StatCard label={t("dashboard.stats.success_rate")} value={`${summary.successRate}%`} />
-        <StatCard label={t("dashboard.stats.messages_sent")} value={summary.messagesSent} />
-        <StatCard label={t("dashboard.stats.remaining_credits")} value={credits?.balance || 0} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Total Messages" value={summary.messagesSent} />
+        <StatCard label="Taux de Succès" value={`${summary.successRate}%`} />
+        <StatCard label="Crédits" value={credits?.balance || 0} />
+        <StatCard label="Sessions" value={sessions.length} />
       </div>
 
-      <AnalyticsCharts />
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-8">
+        {/* Main Status Area */}
+        <div className="space-y-8">
+           <Card className="border-none shadow-none bg-transparent">
+              <div className="flex items-center justify-between mb-4 px-2">
+                 <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Pilotage en direct</h2>
+                 <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
+                    <SelectTrigger className="w-[180px] h-8 text-[11px] bg-background">
+                       <SelectValue placeholder="Choisir une session" />
+                    </SelectTrigger>
+                    <SelectContent>
+                       {sessions.map(s => <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>)}
+                    </SelectContent>
+                 </Select>
+              </div>
+              <SessionCard session={selectedSession} onRefresh={fetchSessions} onCreate={() => setIsCreateOpen(true)} />
+           </Card>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
-            <SelectTrigger className="flex-1 sm:w-48 h-9 text-xs">
-              <SelectValue placeholder="Sélectionner une session" />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.isArray(sessions) && sessions.length > 0 ? (
-                sessions.map((s) => (
-                  <SelectItem key={s?.sessionId || Math.random()} value={s?.sessionId || "unknown"} className="text-xs">
-                    {s?.sessionId || "Inconnu"}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>Aucune session</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          {selectedSession && (
-            <Badge className={cn(
-              "text-[10px] px-2 h-6 font-medium whitespace-nowrap",
-              selectedSession.isConnected
-                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
-                : "bg-muted text-muted-foreground"
-            )}>
-              {selectedSession.isConnected ? "Connecté" : "Hors ligne"}
-            </Badge>
-          )}
+           <div className="space-y-4">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground px-2">Performance</h2>
+              <Card><CardContent className="p-6"><AnalyticsCharts /></CardContent></Card>
+           </div>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" size="sm" className="flex-1 sm:flex-none h-9" asChild>
-            <Link href="/dashboard/inbox"><MessageCircle className="h-4 w-4 mr-2" /> Inbox</Link>
-          </Button>
-          <Button id="new-session-btn" size="sm" className="flex-1 sm:flex-none h-9" onClick={() => setIsCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Nouvelle Session
-          </Button>
+
+        {/* Quick Controls Sidebar */}
+        <div className="space-y-8">
+           {/* IA Quick Toggle */}
+           <Card className={cn(
+              "border-2 transition-all",
+              selectedSessionAI?.enabled ? "border-primary/20 bg-primary/[0.02]" : "border-muted"
+           )}>
+              <CardHeader className="pb-3">
+                 <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                       <Brain className={cn("h-4 w-4", selectedSessionAI?.enabled ? "text-primary" : "text-muted-foreground")} />
+                       Assistant IA
+                    </CardTitle>
+                    <Switch checked={!!selectedSessionAI?.enabled} onCheckedChange={toggleAI} disabled={!selectedSessionId || isAiLoading} />
+                 </div>
+                 <CardDescription className="text-[11px]">
+                    {selectedSessionAI?.enabled ? "Le cerveau IA répond à vos messages." : "L'IA est actuellement en veille."}
+                 </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-4">
+                 <div className="rounded-lg bg-muted/50 p-3 mb-4">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Instruction Actuelle</p>
+                    <p className="text-[11px] line-clamp-2 italic text-muted-foreground">
+                       {selectedSessionAI?.prompt || "Aucune instruction configurée."}
+                    </p>
+                 </div>
+                 <Button variant="outline" size="sm" className="w-full h-8 text-[11px]" asChild>
+                    <Link href="/dashboard/ai">Gérer l&apos;Intelligence <ArrowRight className="ml-2 h-3 w-3" /></Link>
+                 </Button>
+              </CardContent>
+           </Card>
+
+           <CreditCardUI credits={credits} userRole={userRole} />
+
+           <Card className="bg-muted/30 border-none">
+              <CardHeader className="pb-2">
+                 <CardTitle className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="h-3 w-3 text-amber-500" /> Astuce MicroSaaS
+                 </CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Utilisez les **Réponses par Mots-clés** dans l&apos;onglet Intelligence pour répondre aux questions simples et économiser vos crédits IA.
+                 </p>
+              </CardContent>
+           </Card>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 space-y-6">
-          <SessionCard session={selectedSession} onRefresh={fetchSessions} onCreate={() => setIsCreateOpen(true)} />
-        </div>
-        <div className="lg:col-span-4 space-y-6">
-          <CreditCardUI credits={credits} userRole={userRole} />
-        </div>
-      </div>
-
+      {/* Sheet remains the same */}
       <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <SheetContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onCreateSession)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(val => {
+               const t = toast.loading("Création...");
+               api.sessions.create(val.sessionId, val.phoneNumber, getToken() as any).then(() => {
+                  toast.success("Session prête", { id: t });
+                  setIsCreateOpen(false);
+                  fetchSessions();
+                  confetti();
+               }).catch(() => toast.error("Erreur", { id: t }));
+            })} className="space-y-6">
               <SheetHeader>
-                <SheetTitle>Nouvelle Session WhatsApp</SheetTitle>
-                <SheetDescription>Créez une nouvelle instance pour commencer à envoyer des messages.</SheetDescription>
+                <SheetTitle>Nouvelle Session</SheetTitle>
+                <SheetDescription>Couplez un nouveau compte WhatsApp.</SheetDescription>
               </SheetHeader>
-
               <div className="space-y-4 py-4">
-                <FormField
-                  control={form.control}
-                  name="sessionId"
-                  render={({ field }) => (
+                <FormField control={form.control} name="sessionId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase">Identifiant de session</FormLabel>
-                      <FormControl><Input placeholder="ex: departement-marketing" {...field} className="h-9" /></FormControl>
+                      <FormLabel className="text-xs uppercase">Nom de session</FormLabel>
+                      <FormControl><Input placeholder="ex: support-client" {...field} className="h-9" /></FormControl>
                       <FormMessage className="text-[10px]" />
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {['marketing', 'support', 'alertes'].map(s => (
-                          <button key={s} type="button" onClick={() => field.onChange(`${s}-${Math.floor(Math.random()*900)+100}`)} className="text-[10px] px-2 py-1 rounded bg-muted hover:bg-primary/10 transition-colors">+ {s}</button>
-                        ))}
-                      </div>
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="phoneNumber"
-                  render={({ field }) => (
+                <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase">Numéro de téléphone (Optionnel)</FormLabel>
+                      <FormLabel className="text-xs uppercase">Téléphone (Optionnel)</FormLabel>
                       <FormControl><Input placeholder="237..." {...field} className="h-9" /></FormControl>
                       <FormMessage className="text-[10px]" />
                     </FormItem>
                   )}
                 />
               </div>
-
-              <SheetFooter>
-                <Button variant="ghost" type="button" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Création..." : "Créer la session"}
-                </Button>
-              </SheetFooter>
+              <SheetFooter><Button type="submit">Lancer la création</Button></SheetFooter>
             </form>
           </Form>
         </SheetContent>
@@ -331,12 +295,11 @@ export default function DashboardPage() {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <Card>
+    <Card className="border-none bg-muted/20 shadow-none">
       <CardContent className="p-4">
-        <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
+        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">{label}</p>
+        <p className="text-xl font-bold">{value}</p>
       </CardContent>
     </Card>
   )
 }
-

@@ -1,36 +1,39 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { 
-  Bot, 
-  Settings2, 
-  Activity,
+  Brain,
   MessageSquare,
-  Save,
-  MoreVertical,
   Zap,
-  User,
-  Clock,
-  Send,
-  Loader2,
-  BrainCircuit,
+  Settings2,
+  Plus,
   Trash2,
-  RefreshCcw,
+  Edit,
+  MoreVertical,
+  Loader2,
+  Upload,
+  FileText,
+  ImageIcon,
+  Mic,
+  Video,
+  Sparkles,
+  Bot
 } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -40,260 +43,364 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { useUser, useAuth } from "@clerk/nextjs"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table"
 import { api } from "@/lib/api"
+import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import confetti from "canvas-confetti"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
+import Link from "next/link"
 
-export default function AIPage() {
-  const { user, isLoaded } = useUser()
+export default function IntelligenceHub() {
   const { getToken } = useAuth()
-  const [items, setItems] = React.useState<any[]>([])
+  const { user } = useUser()
+
+  const [sessions, setSessions] = React.useState<any[]>([])
+  const [selectedSessionId, setSelectedSessionId] = React.useState<string>("")
   const [isLoading, setIsLoading] = React.useState(true)
-  const [isQuickEditOpen, setIsQuickEditOpen] = React.useState(false)
-  const [availableModels, setAvailableModels] = React.useState<any[]>([])
-  const [isAdmin, setIsAdmin] = React.useState(false)
   
-  const [formData, setFormData] = React.useState({
-    sessionId: "",
-    enabled: false,
-    mode: "bot",
-    model: "deepseek-chat",
-    endpoint: "",
-    key: "",
-    prompt: ""
+  // AI Config State
+  const [aiConfig, setAiConfig] = React.useState<any>(null)
+  const [isAiSaving, setIsAiSaving] = React.useState(false)
+
+  // Keywords State
+  const [keywords, setKeywords] = React.useState<any[]>([])
+  const [isKeywordDialogOpen, setIsKeywordDialogOpen] = React.useState(false)
+  const [isUploading, setIsUploading] = React.useState(false)
+  const [editingRule, setEditingRule] = React.useState<any>(null)
+  const [keywordForm, setKeywordForm] = React.useState({
+    keyword: "",
+    match_type: "contains",
+    response_type: "text",
+    response_content: "",
+    file_name: "",
+    is_active: 1
   })
 
   const fetchData = React.useCallback(async () => {
     setIsLoading(true)
     try {
       const token = await getToken()
-      const email = user?.primaryEmailAddress?.emailAddress
-      setIsAdmin(email?.toLowerCase() === 'maruise237@gmail.com' || (user?.publicMetadata?.role === 'admin'))
-
-      const models = await api.ai.listModels(token || undefined)
-      setAvailableModels(models || [])
-      const defaultModel = models?.find((m: any) => m.is_default) || models?.[0]
-
-      const sessionsData = await api.sessions.list(token || undefined)
-      const sessions = sessionsData || []
-      
-      const sessionsList = Array.isArray(sessions) ? sessions : []
-      const itemsWithConfig = await Promise.all(sessionsList.map(async (s: any) => {
-        try {
-          if (!s || !s.sessionId) return null
-          const config = await api.sessions.getAI(s.sessionId, token || undefined)
-          return {
-            sessionId: s.sessionId,
-            isConnected: s.isConnected,
-            aiConfig: {
-              ...config,
-              model: config.model || defaultModel?.id || "deepseek-chat",
-              endpoint: config.endpoint || defaultModel?.endpoint || ""
-            }
-          }
-        } catch (e) {
-          return {
-            sessionId: s.sessionId,
-            isConnected: s.isConnected,
-            aiConfig: { enabled: false, mode: 'bot', model: defaultModel?.id || 'deepseek-chat', prompt: '', endpoint: defaultModel?.endpoint || '', key: '' }
-          }
-        }
-      }))
-      setItems(itemsWithConfig.filter(i => i !== null))
-    } catch (error) {
-      toast.error("Échec du chargement des configurations IA")
+      const data = await api.sessions.list(token || undefined)
+      setSessions(data || [])
+      if (data && data.length > 0 && !selectedSessionId) {
+        setSelectedSessionId(data[0].sessionId)
+      }
+    } catch (e) {
+      toast.error("Erreur de chargement")
     } finally {
       setIsLoading(false)
     }
-  }, [getToken, user])
+  }, [getToken, selectedSessionId])
 
-  React.useEffect(() => {
-    if (isLoaded && user) fetchData()
-  }, [isLoaded, user, fetchData])
-
-
-  const handleOpenQuickEdit = (item: any) => {
-    if (!item) return
-    const config = item.aiConfig || {}
-    setFormData({
-      sessionId: item.sessionId || "",
-      enabled: !!config.enabled,
-      mode: config.mode || "bot",
-      model: config.model || "",
-      endpoint: config.endpoint || "",
-      key: config.key || "",
-      prompt: config.prompt || ""
-    })
-    setIsQuickEditOpen(true)
-  }
-
-  const handleSave = async () => {
+  const fetchSessionDetails = React.useCallback(async () => {
+    if (!selectedSessionId) return
     try {
       const token = await getToken()
-      await api.sessions.updateAI(formData.sessionId, formData, token || undefined)
-      toast.success("Configuration IA mise à jour")
-      setIsQuickEditOpen(false)
-      fetchData()
-      if (formData.enabled) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
-    } catch (error: any) {
-      toast.error("Échec de l'enregistrement")
+      const [ai, kw] = await Promise.all([
+        api.sessions.getAI(selectedSessionId, token || undefined),
+        api.sessions.getKeywords(selectedSessionId, token || undefined)
+      ])
+      setAiConfig(ai)
+      setKeywords(kw || [])
+    } catch (e) {
+      console.error("Fetch details error", e)
+    }
+  }, [getToken, selectedSessionId])
+
+  React.useEffect(() => { fetchData() }, [fetchData])
+  React.useEffect(() => { fetchSessionDetails() }, [fetchSessionDetails])
+
+  const handleSaveAI = async () => {
+    if (!selectedSessionId || !aiConfig) return
+    setIsAiSaving(true)
+    try {
+      const token = await getToken()
+      await api.sessions.updateAI(selectedSessionId, aiConfig, token || undefined)
+      toast.success("Intelligence mise à jour")
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } })
+    } catch (e) {
+      toast.error("Erreur d'enregistrement")
+    } finally {
+      setIsAiSaving(false)
     }
   }
 
-  const toggleAI = async (item: any) => {
-    if (!item || !item.sessionId) return
-    const config = item.aiConfig || {}
+  const handleCreateOrUpdateKeyword = async () => {
+    if (!keywordForm.keyword || !keywordForm.response_content) {
+      return toast.error("Le mot-clé et la réponse sont requis")
+    }
     try {
       const token = await getToken()
-      await api.sessions.updateAI(item.sessionId, { ...config, enabled: !config.enabled }, token || undefined)
-      toast.success(`Assistant IA ${!config.enabled ? 'activé' : 'désactivé'}`)
-      fetchData()
-    } catch (error) {
-      toast.error("Échec de la modification")
+      if (editingRule) {
+        await api.sessions.updateKeyword(selectedSessionId, editingRule.id, keywordForm, token || undefined)
+        toast.success("Règle mise à jour")
+      } else {
+        await api.sessions.addKeyword(selectedSessionId, keywordForm, token || undefined)
+        toast.success("Règle créée")
+      }
+      setIsKeywordDialogOpen(false)
+      setEditingRule(null)
+      setKeywordForm({ keyword: "", match_type: "contains", response_type: "text", response_content: "", file_name: "", is_active: 1 })
+      fetchSessionDetails()
+    } catch (e) {
+      toast.error("Erreur règle")
     }
   }
+
+  const handleDeleteKeyword = async (id: string) => {
+    try {
+      const token = await getToken()
+      await api.sessions.deleteKeyword(selectedSessionId, id, token || undefined)
+      toast.success("Règle supprimée")
+      fetchSessionDetails()
+    } catch (e) {
+      toast.error("Erreur suppression")
+    }
+  }
+
+  if (isLoading) return <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
+
+  const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Assistant IA</h1>
-          <p className="text-sm text-muted-foreground">Configurez l&apos;automatisation intelligente pour vos sessions.</p>
+          <h1 className="text-xl font-semibold flex items-center gap-2">
+            <Brain className="h-5 w-5 text-primary" /> Intelligence du Bot
+          </h1>
+          <p className="text-sm text-muted-foreground">Définissez comment Whappi doit réagir à vos messages.</p>
         </div>
-        {isAdmin && (
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/ai-models">Gérer les modèles</Link>
-          </Button>
-        )}
+
+        <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+          <SelectTrigger className="w-full sm:w-48 h-9 text-xs">
+            <SelectValue placeholder="Session" />
+          </SelectTrigger>
+          <SelectContent>
+            {sessions.map(s => (
+              <SelectItem key={s.sessionId} value={s.sessionId}>{s.sessionId}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-          [1, 2, 3].map(i => <Card key={i} className="h-48 animate-pulse bg-muted/20" />)
-        ) : items.length === 0 ? (
-          <Card className="col-span-full py-12 text-center border-dashed">
-            <Bot className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm font-medium">Aucune session trouvée</p>
-            <p className="text-xs text-muted-foreground">Connectez un compte WhatsApp pour activer l'IA.</p>
-          </Card>
-        ) : (
-          items.map(item => (
-            <Card key={item.sessionId} className="border-border bg-card overflow-hidden">
-              <CardHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
-                <div className="flex items-center gap-3">
-                  <div className={cn("h-8 w-8 rounded-full flex items-center justify-center", item.aiConfig.enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
-                    <Bot className="h-4 w-4" />
+      {!selectedSessionId ? (
+        <Card className="p-12 text-center border-dashed">
+          <Zap className="h-12 w-12 mx-auto text-muted-foreground/20 mb-4" />
+          <h3 className="text-lg font-medium">Aucune session active</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">Connectez une session WhatsApp pour commencer à configurer l&apos;intelligence.</p>
+          <Button asChild size="sm">
+            <Link href="/dashboard">Aller au Tableau de Bord</Link>
+          </Button>
+        </Card>
+      ) : (
+        <Tabs defaultValue="ia" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+            <TabsTrigger value="ia" className="gap-2"><Sparkles className="h-4 w-4" /> Assistant IA</TabsTrigger>
+            <TabsTrigger value="keywords" className="gap-2"><Zap className="h-4 w-4" /> Réponses Auto</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ia" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border-primary/10 shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-sm font-semibold">Cerveau Principal</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground">L&apos;IA utilise vos instructions pour répondre de manière fluide.</CardDescription>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{item.sessionId}</p>
-                    <Badge variant="outline" className="text-[10px] uppercase">{item.aiConfig.mode}</Badge>
-                  </div>
+                  <Switch
+                    checked={!!aiConfig?.enabled}
+                    onCheckedChange={v => setAiConfig({...aiConfig, enabled: v})}
+                  />
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleOpenQuickEdit(item)}>
-                      <Settings2 className="h-4 w-4 mr-2" /> Modification rapide
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/dashboard/inbox?session=${item.sessionId}`}>
-                        <MessageSquare className="h-4 w-4 mr-2" /> Voir la mémoire (Inbox)
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/dashboard/ai/config?session=${item.sessionId}`}>
-                        <Zap className="h-4 w-4 mr-2" /> Config avancée
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground line-clamp-2 border-l-2 border-primary/40 min-h-[48px]">
-                  {item.aiConfig.prompt || "Aucune instruction configurée"}
+              <CardContent className="space-y-6 pt-0">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Instructions (Prompt)</Label>
+                    <Badge variant="outline" className="text-[10px] font-mono border-primary/20 text-primary">Modèle : {aiConfig?.model || 'Par défaut'}</Badge>
+                  </div>
+                  <Textarea
+                    placeholder="Tu es un assistant commercial poli et efficace..."
+                    className="min-h-[200px] text-sm leading-relaxed resize-none focus-visible:ring-primary/20"
+                    value={aiConfig?.prompt || ""}
+                    onChange={e => setAiConfig({...aiConfig, prompt: e.target.value})}
+                  />
+                  <p className="text-[10px] text-muted-foreground italic">Conseil : Décrivez la personnalité, le ton et les limites de votre bot.</p>
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><MessageSquare className="h-3.5 w-3.5" /> Envoyés</span>
-                  <span className="font-semibold text-foreground">{item.aiConfig.stats?.sent || 0} messages</span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t">
+                  <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Mode de réponse</Label>
+                    <div className="grid grid-cols-1 gap-2">
+                       {[
+                         { id: 'bot', name: '100% Automatique', desc: 'L\'IA gère tout.' },
+                         { id: 'human', name: 'Suggestion', desc: 'L\'IA propose, vous validez.' }
+                       ].map(m => (
+                         <button
+                           key={m.id}
+                           onClick={() => setAiConfig({...aiConfig, mode: m.id})}
+                           className={cn(
+                             "flex flex-col gap-1 p-3 text-left border rounded-md transition-all",
+                             aiConfig?.mode === m.id ? "bg-primary/5 border-primary ring-1 ring-primary/20" : "hover:bg-muted"
+                           )}
+                         >
+                           <span className="text-xs font-bold">{m.name}</span>
+                           <span className="text-[10px] text-muted-foreground">{m.desc}</span>
+                         </button>
+                       ))}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">Réglages rapides</Label>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs">Répondre aux tags (@)</span>
+                        <Switch size="sm" checked={!!aiConfig?.respond_to_tags} onCheckedChange={v => setAiConfig({...aiConfig, respond_to_tags: v})} />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs">Rejet d&apos;appels auto</span>
+                        <Switch size="sm" checked={!!aiConfig?.reject_calls} onCheckedChange={v => setAiConfig({...aiConfig, reject_calls: v})} />
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full text-[10px] h-8" asChild>
+                         <Link href={`/dashboard/ai/config?session=${selectedSessionId}`}>Accéder aux réglages experts <Settings2 className="ml-2 h-3 w-3" /></Link>
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
-              <CardFooter className="p-4 bg-muted/20 border-t flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{item.aiConfig.enabled ? "IA Active" : "IA Inactive"}</span>
-                <Switch checked={item.aiConfig.enabled} onCheckedChange={() => toggleAI(item)} />
+              <CardFooter className="bg-muted/30 border-t p-4 flex justify-end">
+                <Button size="sm" onClick={handleSaveAI} disabled={isAiSaving}>
+                  {isAiSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                  Mettre à jour le Cerveau
+                </Button>
               </CardFooter>
             </Card>
-          ))
-        )}
-      </div>
+          </TabsContent>
 
-      <Dialog open={isQuickEditOpen} onOpenChange={setIsQuickEditOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Modification rapide de l&apos;IA</DialogTitle>
-            <DialogDescription>Ajustez les paramètres IA pour {formData.sessionId}.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="flex items-center justify-between py-3 border-b border-border">
-              <div>
-                <p className="text-sm font-medium">Activé</p>
-                <p className="text-xs text-muted-foreground">Réponses automatiques actives</p>
+          <TabsContent value="keywords" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center justify-between px-1">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-semibold">Réponses par Mots-clés</h3>
+                <p className="text-xs text-muted-foreground">Économisez des crédits en répondant aux questions fréquentes sans IA.</p>
               </div>
-              <Switch checked={formData.enabled} onCheckedChange={c => setFormData({...formData, enabled: c})} />
+              <Button size="sm" onClick={() => { setEditingRule(null); setIsKeywordDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" /> Nouvelle règle
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium uppercase">Mode de réponse</Label>
-              <Select value={formData.mode} onValueChange={v => setFormData({...formData, mode: v})}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bot">Bot (100% Auto)</SelectItem>
-                  <SelectItem value="hybrid">Hybride (Délai)</SelectItem>
-                  <SelectItem value="human">Humain (Suggestion)</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-[10px] uppercase font-bold">Déclencheur</TableHead>
+                    <TableHead className="text-[10px] uppercase font-bold">Réponse</TableHead>
+                    <TableHead className="text-[10px] uppercase font-bold">Statut</TableHead>
+                    <TableHead className="text-right"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {keywords.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-12 text-xs text-muted-foreground">
+                        Aucun mot-clé configuré.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    keywords.map(kw => (
+                      <TableRow key={kw.id} className="group">
+                        <TableCell className="font-medium text-xs">{kw.keyword}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]">
+                           {kw.response_type === 'text' ? kw.response_content : kw.file_name || 'Fichier média'}
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            size="sm"
+                            checked={kw.is_active === 1}
+                            onCheckedChange={async (v) => {
+                              const token = await getToken()
+                              await api.sessions.updateKeyword(selectedSessionId, kw.id, { is_active: v ? 1 : 0 }, token || undefined)
+                              fetchSessionDetails()
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => { setEditingRule(kw); setKeywordForm(kw); setIsKeywordDialogOpen(true); }}><Edit className="h-4 w-4 mr-2" /> Modifier</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteKeyword(kw.id)}><Trash2 className="h-4 w-4 mr-2" /> Supprimer</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {/* Dialog Mot-clé */}
+      <Dialog open={isKeywordDialogOpen} onOpenChange={setIsKeywordDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="text-base">{editingRule ? 'Modifier' : 'Ajouter'} une réponse auto</DialogTitle>
+            <DialogDescription className="text-xs">Répondez instantanément dès qu&apos;un mot précis est détecté.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Mot-clé</Label>
+                <Input placeholder="ex: Tarifs" value={keywordForm.keyword} onChange={e => setKeywordForm({...keywordForm, keyword: e.target.value})} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Correspondance</Label>
+                <Select value={keywordForm.match_type} onValueChange={v => setKeywordForm({...keywordForm, match_type: v})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="exact">Mot exact</SelectItem>
+                    <SelectItem value="contains">Contient le mot</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div className="space-y-2">
-              <Label className="text-xs font-medium uppercase">Modèle</Label>
-              <Select value={formData.model} onValueChange={v => {
-                const m = availableModels.find(mod => mod.id === v);
-                setFormData({...formData, model: v, endpoint: m?.endpoint || ""})
-              }}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableModels.map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+               <Label className="text-[10px] uppercase font-bold text-muted-foreground">Réponse</Label>
+               <Textarea
+                 placeholder="Tapez votre réponse ici..."
+                 className="min-h-[100px] text-sm"
+                 value={keywordForm.response_content}
+                 onChange={e => setKeywordForm({...keywordForm, response_content: e.target.value})}
+               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" asChild className="flex-1">
-              <Link href={`/dashboard/ai/config?session=${formData.sessionId}`}>Config avancée</Link>
-            </Button>
-            <Button onClick={handleSave} className="flex-1">Enregistrer</Button>
+
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setIsKeywordDialogOpen(false)}>Annuler</Button>
+            <Button size="sm" onClick={handleCreateOrUpdateKeyword}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   )
 }
