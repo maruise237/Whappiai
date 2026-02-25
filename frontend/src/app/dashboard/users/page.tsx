@@ -166,7 +166,7 @@ export default function UsersPage() {
               <TableHead className="text-xs font-medium text-muted-foreground">Utilisateur</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Rôle</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Statut</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Inscrit le</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground hidden md:table-cell">Inscrit le</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -194,7 +194,7 @@ export default function UsersPage() {
                       <span className="text-xs">{u.isActive ? "Actif" : "Inactif"}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground hidden md:table-cell">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>

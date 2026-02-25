@@ -248,7 +248,7 @@ export default function KeywordsPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="text-xs">Mot-clé</TableHead>
-              <TableHead className="text-xs">Type de match</TableHead>
+              <TableHead className="text-xs hidden md:table-cell">Type de match</TableHead>
               <TableHead className="text-xs">Réponse</TableHead>
               <TableHead className="text-xs">Statut</TableHead>
               <TableHead className="text-xs text-right">Actions</TableHead>
@@ -275,7 +275,7 @@ export default function KeywordsPage() {
               keywords.map(rule => (
                 <TableRow key={rule.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium text-sm">{rule.keyword}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge variant="secondary" className="text-[10px] uppercase">
                       {rule.match_type === 'exact' ? 'Exact' : rule.match_type === 'contains' ? 'Contient' : 'Regex'}
                     </Badge>

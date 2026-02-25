@@ -74,7 +74,7 @@ export function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false)
 
   return (
-    <section id="pricing" className="py-24 px-4 bg-background overflow-hidden relative">
+    <section id="pricing" className="py-12 lg:py-24 px-4 bg-background overflow-hidden relative">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full" />
@@ -87,9 +87,9 @@ export function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-8 lg:mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-6 tracking-tight">
             Tarification simple et transparente
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-10 text-lg">
