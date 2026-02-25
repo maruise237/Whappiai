@@ -34,7 +34,7 @@ export function Footer() {
 
   return (
     <footer ref={ref} className="border-t border-border bg-background">
-      <div className="max-w-6xl mx-auto px-4 py-10 lg:py-16">
+      <div className="max-w-6xl mx-auto px-4 py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}

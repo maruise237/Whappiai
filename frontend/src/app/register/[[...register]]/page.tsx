@@ -133,7 +133,7 @@ export default function RegisterPage() {
             </Button>
             <Button 
               type="submit" 
-              className="flex-[2] h-12 bg-primary text-primary-foreground font-bold text-[15px] rounded-xl shadow-[0_0_20px_hsl(var(--primary)/0.3)]"
+              className="flex-[2] h-12 bg-green-500 hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-400 text-white dark:text-black font-bold text-[15px] rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
               disabled={loading}
             >
               {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Vérifier"}
@@ -152,7 +152,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Button 
             type="submit" 
-            className="w-full h-12 bg-primary text-primary-foreground font-bold text-[15px] relative overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] rounded-xl shadow-[0_0_20px_hsl(var(--primary)/0.3)]"
+            className="w-full h-12 bg-green-500 hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-400 text-white dark:text-black font-bold text-[15px] relative overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
             disabled={loading}
           >
             <div className="absolute left-4">
@@ -169,7 +169,7 @@ export default function RegisterPage() {
                   value={firstName} 
                   onChange={(e) => setFirstName(e.target.value)} 
                   placeholder="Prénom"
-                  className="h-12 bg-background border-input focus:border-primary text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
+                  className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                   required
                 />
               </div>
@@ -179,7 +179,7 @@ export default function RegisterPage() {
                   value={lastName} 
                   onChange={(e) => setLastName(e.target.value)} 
                   placeholder="Nom"
-                  className="h-12 bg-background border-input focus:border-primary text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
+                  className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                   required
                 />
               </div>
@@ -192,7 +192,7 @@ export default function RegisterPage() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 placeholder="Entrez votre email"
-                className="h-12 bg-background border-input focus:border-primary text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
+                className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                 required
               />
             </div>
@@ -204,7 +204,7 @@ export default function RegisterPage() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="Créez un mot de passe" 
-                className="h-12 bg-background border-input focus:border-primary text-foreground pr-10 placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
+                className="h-12 bg-background border-input focus:border-green-500 text-foreground pr-10 placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                 required
               />
               <button
@@ -237,7 +237,7 @@ export default function RegisterPage() {
 
         <div className="mt-8 pt-6 border-t border-dashed border-border/60 text-center text-sm text-muted-foreground">
           Vous avez déjà un compte ?{" "}
-          <Link href="/login" className="text-primary font-semibold transition-colors hover:underline">
+          <Link href="/login" className="text-green-600 dark:text-green-500 hover:text-green-500 dark:hover:text-green-400 font-semibold transition-colors hover:underline">
             Se connecter
           </Link>
         </div>

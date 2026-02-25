@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Plus, Zap, Activity } from "lucide-react"
+import { Plus, Zap, Activity, MessageCircle } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { MessagingTabs } from "@/components/dashboard/messaging-tabs"
 import { LogViewer } from "@/components/dashboard/log-viewer"

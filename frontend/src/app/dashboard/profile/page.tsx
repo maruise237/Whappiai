@@ -147,10 +147,10 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-32">
+    <div className="max-w-4xl mx-auto space-y-12 pb-32 pt-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-lg sm:text-xl font-semibold">Paramètres</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Paramètres</h1>
           <p className="text-sm text-muted-foreground">Personnalisez votre expérience Whappi et gérez votre organisation.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -160,7 +160,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         <Card className="border-border bg-card shadow-sm overflow-hidden">
           <CardHeader className="pb-4 bg-muted/30 border-b">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">

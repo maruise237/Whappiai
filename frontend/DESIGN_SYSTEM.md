@@ -6,7 +6,7 @@ Une interface moderne, propre et responsive pour la gestion de l'API WhatsApp, c
 ## 🎨 Palette de Couleurs
 Le thème utilise une combinaison de **Green** (Primaire) et **Neutral** (Base).
 
-- **Primary (Green)**: `#25d366` (WhatsApp Green)
+- **Primary (Green)**: `#10b981` (emerald-500)
   - Utilisé pour les actions principales, les indicateurs de succès et les éléments actifs.
 - **Background**: `#ffffff` (Fond clair standard)
 - **Foreground**: `#0f172a` (Texte principal)

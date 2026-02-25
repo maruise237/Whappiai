@@ -33,10 +33,10 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             <Logo size={40} showText={true} textClassName="text-foreground tracking-wide" />
           </Link>
           
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-3 leading-tight">
-          Créez votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-600 dark:from-primary dark:to-emerald-500 relative inline-block">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-3 leading-tight">
+            Créez votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-400 dark:to-emerald-500 relative inline-block">
               Assistant IA
-            <svg className="absolute w-full h-2 -bottom-1 left-0 text-primary" viewBox="0 0 100 10" preserveAspectRatio="none">
+              <svg className="absolute w-full h-2 -bottom-1 left-0 text-green-500" viewBox="0 0 100 10" preserveAspectRatio="none">
                 <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
               </svg>
             </span>
@@ -58,12 +58,12 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         <div className="mt-8 text-center space-y-4">
           <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground uppercase tracking-widest">
             <span className="flex items-center gap-1.5">
-               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                Secured by Clerk
             </span>
           </div>
           <div className="text-xs text-muted-foreground/80 max-w-xs mx-auto leading-relaxed">
-             En vous inscrivant, vous acceptez nos <Link href="/terms" className="text-primary hover:underline">termes</Link> et <Link href="/privacy" className="text-primary hover:underline">politique de confidentialité</Link>.
+             En vous inscrivant, vous acceptez nos <Link href="/terms" className="text-green-600 dark:text-green-500 hover:underline">termes</Link> et <Link href="/privacy" className="text-green-600 dark:text-green-500 hover:underline">politique de confidentialité</Link>.
           </div>
         </div>
       </div>

@@ -59,12 +59,12 @@ export default function ChangelogPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <section className="pt-24 lg:pt-32 pb-12 lg:pb-20 px-4">
+      <section className="pt-32 pb-20 px-4">
         <div className="container mx-auto text-center max-w-4xl">
           <Badge variant="outline" className="mb-6 py-1 px-4 border-primary/20 bg-primary/5 text-primary">
             Mises à jour
           </Badge>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
             Journal des <span className="text-primary">modifications</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
