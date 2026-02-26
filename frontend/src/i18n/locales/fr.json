@@ -1,16 +1,16 @@
 {
   "nav": {
-    "overview": "Vue d'ensemble",
-    "inbox": "Inbox",
-    "activities": "Activités",
-    "ai_assistant": "Assistant IA",
-    "auto_responses": "Réponses Auto",
-    "group_management": "Engagement & Groupes",
-    "credits": "Crédits",
+    "overview": "Tableau de Bord",
+    "inbox": "Messagerie Directe",
+    "activities": "Journal Activités",
+    "ai_assistant": "Intelligence & IA",
+    "auto_responses": "Mots-clés Auto",
+    "group_management": "Gestion Groupes",
+    "credits": "Facturation",
     "users": "Utilisateurs",
-    "ai_models": "Modèles IA",
-    "billing": "Facturation",
-    "settings": "Paramètres",
+    "ai_models": "Moteurs IA",
+    "billing": "Abonnement",
+    "settings": "Réglages Profil",
     "logout": "Déconnexion"
   },
   "dashboard": {

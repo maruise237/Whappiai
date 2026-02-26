@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { useUser, useAuth } from "@clerk/nextjs"
@@ -224,14 +225,18 @@ export default function DashboardPage() {
       <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <SheetContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(val => {
+            <form onSubmit={form.handleSubmit(async (val) => {
                const t = toast.loading("Création...");
-               api.sessions.create(val.sessionId, val.phoneNumber, getToken() as any).then(() => {
-                  toast.success("Session prête", { id: t });
-                  setIsCreateOpen(false);
-                  fetchSessions();
-                  confetti();
-               }).catch(() => toast.error("Erreur", { id: t }));
+               try {
+                 const token = await getToken();
+                 await api.sessions.create(val.sessionId, val.phoneNumber, token || undefined);
+                 toast.success("Session prête", { id: t });
+                 setIsCreateOpen(false);
+                 fetchSessions();
+                 confetti();
+               } catch (e) {
+                 toast.error("Erreur de création", { id: t });
+               }
             })} className="space-y-6">
               <SheetHeader>
                 <SheetTitle>Nouvelle Session</SheetTitle>

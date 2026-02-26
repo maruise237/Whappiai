@@ -1,0 +1,221 @@
+"use client"
+
+import * as React from "react"
+import {
+  Bot,
+  Plus,
+  Settings2,
+  Globe,
+  Key,
+  CheckCircle2,
+  Trash2,
+  Edit,
+  MoreVertical,
+  Loader2,
+  Cpu,
+  Zap,
+  Star
+} from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { api } from "@/lib/api"
+import { useAuth, useUser } from "@clerk/nextjs"
+import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+
+export default function AiModelsPage() {
+  const { getToken } = useAuth()
+  const { user } = useUser()
+  const [models, setModels] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [isAddOpen, setIsAddOpen] = React.useState(false)
+
+  const fetchModels = React.useCallback(async () => {
+    setLoading(true)
+    try {
+      const token = await getToken()
+      const data = await api.aiModels.list(token || undefined)
+      setModels(data || [])
+    } catch (e) {
+      toast.error("Erreur de chargement des moteurs IA")
+    } finally {
+      setLoading(false)
+    }
+  }, [getToken])
+
+  React.useEffect(() => {
+    fetchModels()
+  }, [fetchModels])
+
+  const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' ||
+                  user?.publicMetadata?.role === 'admin'
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <Cpu className="h-12 w-12 text-muted-foreground/20 mb-4" />
+        <h2 className="text-lg font-bold">Zone Administrateur</h2>
+        <p className="text-sm text-muted-foreground max-w-xs mx-auto">La configuration des moteurs LLM est réservée à la maintenance.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 max-w-6xl mx-auto pb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold flex items-center gap-2">
+            <Cpu className="h-5 w-5 text-primary" /> Moteurs LLM (IA)
+          </h1>
+          <p className="text-sm text-muted-foreground">Configurez les APIs et endpoints pour l&apos;intelligence du bot.</p>
+        </div>
+
+        <Button size="sm" onClick={() => setIsAddOpen(true)} className="rounded-full h-8 px-4">
+          <Plus className="h-3 w-3 mr-2" /> Ajouter un Modèle
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="border-none shadow-none bg-primary/5">
+          <CardContent className="p-4 flex items-center gap-3">
+             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Zap className="h-4 w-4" /></div>
+             <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Moteur Actif</p>
+                <p className="text-sm font-bold">{models.find(m => m.is_default)?.name || "Non défini"}</p>
+             </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-none bg-muted/20">
+          <CardContent className="p-4 flex items-center gap-3">
+             <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"><Star className="h-4 w-4" /></div>
+             <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">Modèles Disponibles</p>
+                <p className="text-sm font-bold">{models.length}</p>
+             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-none shadow-none bg-muted/10">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent border-muted/30">
+              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Modèle</TableHead>
+              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Provider / API</TableHead>
+              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Code Technique</TableHead>
+              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground text-center">Par Défaut</TableHead>
+              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={i} className="animate-pulse">
+                  <TableCell colSpan={5} className="h-14 bg-muted/5"></TableCell>
+                </TableRow>
+              ))
+            ) : models.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground text-xs italic">
+                  Aucun moteur configuré.
+                </TableCell>
+              </TableRow>
+            ) : (
+              models.map((m) => (
+                <TableRow key={m.id} className="border-muted/20 group">
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold">{m.name}</span>
+                      <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[150px]">{m.api_endpoint}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-background border">
+                      {m.provider || 'OpenAI API'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">{m.model_code}</code>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {m.is_default ? (
+                      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-none text-[9px]">DÉFAUT</Badge>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground opacity-30">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                       <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100"><Edit className="h-3.5 w-3.5" /></Button>
+                       <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-base">Ajouter un Moteur LLM</DialogTitle>
+            <DialogDescription className="text-xs">Configurez une nouvelle API compatible OpenAI pour vos bots.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+             <div className="space-y-1.5 col-span-2">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nom d&apos;affichage</Label>
+                <Input placeholder="GPT-4o ou Claude-3" className="h-9" />
+             </div>
+             <div className="space-y-1.5 col-span-2">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Endpoint API (Base URL)</Label>
+                <Input placeholder="https://api.openai.com/v1" className="h-9 font-mono text-[11px]" />
+             </div>
+             <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Code du Modèle</Label>
+                <Input placeholder="gpt-4o" className="h-9 font-mono text-[11px]" />
+             </div>
+             <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Clé API (Secret)</Label>
+                <Input type="password" placeholder="sk-..." className="h-9 font-mono text-[11px]" />
+             </div>
+             <div className="flex items-center justify-between col-span-2 p-3 bg-muted/20 rounded-md mt-2">
+                <div className="space-y-0.5">
+                   <p className="text-xs font-bold">Modèle par défaut</p>
+                   <p className="text-[10px] text-muted-foreground">Utiliser ce moteur pour tous les nouveaux bots.</p>
+                </div>
+                <Switch />
+             </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setIsAddOpen(false)}>Annuler</Button>
+            <Button size="sm">Sauvegarder le Moteur</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

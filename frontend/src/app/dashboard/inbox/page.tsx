@@ -142,7 +142,6 @@ export default function InboxPage() {
     setIsSending(true)
     try {
       const token = await getToken()
-      const sessionData = sessions.find(s => s.sessionId === selectedSession)
 
       await api.messages.send(selectedSession, {
         to: selectedChat,
