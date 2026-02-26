@@ -48,35 +48,34 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 const getNavGroups = (t: any) => [
   {
-    title: "PILOTAGE HUB",
+    title: t("nav.hubs.pilotage") || "PILOTAGE HUB",
     items: [
-      { name: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Messagerie Live", href: "/dashboard/inbox", icon: MessageCircle },
+      { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
+      { name: t("nav.inbox"), href: "/dashboard/inbox", icon: MessageCircle },
     ]
   },
   {
-    title: "CONFIGURATION BOT",
+    title: t("nav.hubs.config") || "CONFIGURATION BOT",
     items: [
-      { name: "Intelligence IA", href: "/dashboard/ai", icon: Bot },
-      { name: "Gestion Groupes", href: "/dashboard/moderation", icon: Shield },
-      { name: "Listes de Diffusion", href: "/dashboard/recipient-lists", icon: Users },
+      { name: t("nav.ai_assistant"), href: "/dashboard/ai", icon: Bot },
+      { name: t("nav.group_management"), href: "/dashboard/moderation", icon: Shield },
     ]
   },
   {
-    title: "ESPACE CLIENT",
+    title: t("nav.hubs.client") || "ESPACE CLIENT",
     items: [
-      { name: "Consommation", href: "/dashboard/credits", icon: Zap },
-      { name: "Abonnement", href: "/dashboard/billing", icon: CreditCard },
-      { name: "Réglages Profil", href: "/dashboard/profile", icon: Settings },
+      { name: t("nav.credits"), href: "/dashboard/credits", icon: Zap },
+      { name: t("nav.billing"), href: "/dashboard/billing", icon: CreditCard },
+      { name: t("nav.settings"), href: "/dashboard/profile", icon: Settings },
     ]
   },
   {
-    title: "ADMINISTRATION",
+    title: t("nav.hubs.admin") || "ADMINISTRATION",
     adminOnly: true,
     items: [
-      { name: "Journal Activités", href: "/dashboard/activities", icon: History },
-      { name: "Utilisateurs", href: "/dashboard/users", icon: Users },
-      { name: "Moteurs IA", href: "/dashboard/ai-models", icon: Settings2 },
+      { name: t("nav.activities"), href: "/dashboard/activities", icon: History },
+      { name: t("nav.users"), href: "/dashboard/users", icon: Users },
+      { name: t("nav.ai_models"), href: "/dashboard/ai-models", icon: Settings2 },
     ]
   }
 ]

@@ -1,5 +1,11 @@
 {
   "nav": {
+    "hubs": {
+      "pilotage": "PILOTAGE HUB",
+      "config": "BOT CONFIGURATION",
+      "client": "CLIENT SPACE",
+      "admin": "ADMINISTRATION"
+    },
     "overview": "Overview",
     "inbox": "Inbox",
     "activities": "Activities",

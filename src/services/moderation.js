@@ -81,8 +81,12 @@ async function getAdminGroups(sock, sessionId) {
         // Use a timeout for group fetching to prevent hanging
         const groups = await Promise.race([
             sock.groupFetchAllParticipating(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout groupFetchAllParticipating')), 15000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Le délai de récupération des groupes WhatsApp a expiré (30s).')), 30000))
         ]);
+
+        if (!sock.user?.id) {
+            throw new Error('Identifiant WhatsApp introuvable sur la session active.');
+        }
 
         const myJid = jidNormalizedUser(sock.user.id);
         const myLid = sock.user.lid || sock.user.LID;

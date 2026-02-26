@@ -150,7 +150,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Grid 4 cols Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="analytics-overview" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Sessions" value={sessions.length} subtext={`${summary.activeSessions} actives`} />
         <StatCard label="Taux de Succès" value={`${summary.successRate}%`} subtext="Derniers 7 jours" />
         <StatCard label="Messages Envoyés" value={summary.messagesSent} subtext="Total cumulé" />
@@ -179,7 +179,7 @@ export default function DashboardPage() {
                </Badge>
             )}
          </div>
-         <Button size="sm" onClick={() => setIsCreateOpen(true)} className="rounded-full h-9">
+         <Button id="new-session-btn" size="sm" onClick={() => setIsCreateOpen(true)} className="rounded-full h-9">
             <Plus className="h-4 w-4 mr-2" /> New Session
          </Button>
       </div>
@@ -187,7 +187,7 @@ export default function DashboardPage() {
       {/* Grid 12 cols Content */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
          <div className="lg:col-span-8 space-y-8">
-            <Card className="border-none shadow-none bg-muted/10">
+            <Card id="active-session-card" className="border-none shadow-none bg-muted/10">
                <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-4">
                      <div className="flex items-center gap-3">

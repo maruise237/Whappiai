@@ -62,8 +62,8 @@ function GroupEngagementContent() {
       if (data && data.length > 0 && !selectedGroupId) {
         setSelectedGroupId(data[0].id)
       }
-    } catch (e) {
-      toast.error("Erreur de chargement des groupes")
+    } catch (e: any) {
+      toast.error(e.message || "Erreur de chargement des groupes")
     } finally {
       setLoading(false)
     }
