@@ -495,18 +495,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 onMessage(sessionId, msg);
             }
 
-            // --- GESTION DES MOTS-CLÉS (NON-IA) ---
-            try {
-                const keywordMatched = await KeywordService.processMessage(sock, sessionId, msg);
-                if (keywordMatched) {
-                    log(`Réponse par mot-clé envoyée, arrêt du traitement pour ce message.`, sessionId, { event: 'keyword-processed' }, 'DEBUG');
-                    return; // Arrêt du flux : pas de modération ni d'IA si un mot-clé a matché
-                }
-            } catch (err) {
-                log(`Erreur KeywordService: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
-            }
-
-            // Call Moderation Handler
+            // --- MODÉRATION ET SÉCURITÉ (PRIORITÉ MAXIMALE) ---
             let blocked = false;
             try {
                 blocked = await moderationService.handleIncomingMessage(sock, sessionId, msg);
@@ -520,6 +509,17 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                     remoteJid: msg.key.remoteJid
                 }, 'WARN');
                 return;
+            }
+
+            // --- GESTION DES MOTS-CLÉS (NON-IA) ---
+            try {
+                const keywordMatched = await KeywordService.processMessage(sock, sessionId, msg);
+                if (keywordMatched) {
+                    log(`Réponse par mot-clé envoyée, arrêt du traitement pour ce message.`, sessionId, { event: 'keyword-processed' }, 'DEBUG');
+                    return; // Arrêt du flux : pas d'IA si un mot-clé a matché
+                }
+            } catch (err) {
+                log(`Erreur KeywordService: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
             }
 
             // Call AI Handler if enabled (Personal Bot mode or Tagged in Group)
