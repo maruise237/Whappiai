@@ -411,7 +411,7 @@ const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
 
 const deleteSessionWrapper = async (sessionId) => {
     // 1. Force disconnect and stop reconnection loops
-    whatsappService.disconnect(sessionId);
+    await whatsappService.disconnect(sessionId);
 
     // 2. Clear tokens
     sessionTokens.delete(sessionId);
@@ -420,7 +420,7 @@ const deleteSessionWrapper = async (sessionId) => {
     Session.delete(sessionId);
 
     // 4. Delete physical files from disk (Important to prevent syncWithFilesystem from restoring it)
-    whatsappService.deleteSessionData(sessionId);
+    await whatsappService.deleteSessionData(sessionId);
 
     // 5. Broadcast deletion to all clients
     broadcastToClients({
@@ -450,7 +450,9 @@ const getSessionsDetailsWrapper = (email, isAdmin) => {
             ...s,
             status: currentStatus,
             sessionId: s.id,
-            isConnected: isConnected
+            isConnected: isConnected,
+            pairingCode: s.pairing_code,
+            qr: whatsappService.getLastQr(s.id)
         };
     });
 };
@@ -471,7 +473,7 @@ const triggerQRWrapper = async (sessionId) => {
         return true;
     }
 
-    whatsappService.connect(sessionId, broadcastSessionUpdate, null);
+    await whatsappService.connect(sessionId, broadcastSessionUpdate, null);
     return true;
 };
 

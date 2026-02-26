@@ -99,21 +99,12 @@ class Session {
      * @returns {object} Updated session
      */
     static updateStatus(sessionId, status, detail = null, pairingCode = null) {
-        if (pairingCode) {
-            const stmt = db.prepare(`
-                UPDATE whatsapp_sessions 
-                SET status = ?, detail = ?, pairing_code = ?, updated_at = datetime('now')
-                WHERE id = ?
-            `);
-            stmt.run(status, detail, pairingCode, sessionId);
-        } else {
-            const stmt = db.prepare(`
-                UPDATE whatsapp_sessions 
-                SET status = ?, detail = ?, updated_at = datetime('now')
-                WHERE id = ?
-            `);
-            stmt.run(status, detail, sessionId);
-        }
+        const stmt = db.prepare(`
+            UPDATE whatsapp_sessions
+            SET status = ?, detail = ?, pairing_code = ?, updated_at = datetime('now')
+            WHERE id = ?
+        `);
+        stmt.run(status, detail, pairingCode, sessionId);
         return this.findById(sessionId);
     }
 
