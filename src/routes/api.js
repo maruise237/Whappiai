@@ -162,13 +162,21 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
                 // Auto-create or update user from Clerk
                 // This ensures that anyone authenticated via Clerk has a local record
-                if (!user || user.role !== role) {
-                    log(`Syncing user ${finalEmail} from Clerk to local DB...`, 'AUTH');
+                // We sync on every request if needed, or at least ensure it exists
+                if (!user) {
+                    log(`Creating user ${finalEmail} from Clerk sync...`, 'AUTH');
                     user = await User.create({
                         id: req.auth.userId,
                         email: finalEmail,
-                        name: req.auth.sessionClaims?.name || finalEmail.split('@')[0],
+                        name: req.auth.sessionClaims?.name || req.auth.sessionClaims?.full_name || finalEmail.split('@')[0],
                         imageUrl: req.auth.sessionClaims?.image_url,
+                        role: role
+                    });
+                } else if (user.role !== role) {
+                    log(`Updating role for ${finalEmail}: ${user.role} -> ${role}`, 'AUTH');
+                    user = await User.create({
+                        id: req.auth.userId,
+                        email: finalEmail,
                         role: role
                     });
                 }

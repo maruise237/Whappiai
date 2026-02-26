@@ -410,19 +410,19 @@ const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
 };
 
 const deleteSessionWrapper = async (sessionId) => {
-    // 1. Force disconnect and stop reconnection loops
-    await whatsappService.disconnect(sessionId);
+    log(`Demande de suppression complète pour la session: ${sessionId}`, 'SYSTEM', { sessionId }, 'INFO');
 
-    // 2. Clear tokens
+    // 1. Clear tokens and prevent new connections
     sessionTokens.delete(sessionId);
 
-    // 3. Delete metadata from Database
+    // 2. Delete metadata from Database first to prevent UI from showing it
     Session.delete(sessionId);
 
-    // 4. Delete physical files from disk (Important to prevent syncWithFilesystem from restoring it)
+    // 3. Force disconnect and delete physical files from disk (Important to prevent syncWithFilesystem from restoring it)
+    // deleteSessionData now calls disconnect(sessionId, true) internally and uses deletingSessions lock
     await whatsappService.deleteSessionData(sessionId);
 
-    // 5. Broadcast deletion to all clients
+    // 4. Broadcast deletion to all clients
     broadcastToClients({
         type: 'session-deleted',
         data: { sessionId }
@@ -459,7 +459,10 @@ const getSessionsDetailsWrapper = (email, isAdmin) => {
 
 const triggerQRWrapper = async (sessionId) => {
     const session = Session.findById(sessionId);
-    if (!session) return false;
+    if (!session) {
+        log(`TriggerQR: Session ${sessionId} non trouvée dans la DB`, 'SYSTEM', { sessionId }, 'WARN');
+        return false;
+    }
 
     // Check if session is already connected
     const activeSockets = whatsappService.getActiveSessions();
@@ -473,7 +476,12 @@ const triggerQRWrapper = async (sessionId) => {
         return true;
     }
 
-    await whatsappService.connect(sessionId, broadcastSessionUpdate, null);
+    log(`Déclenchement manuel de la connexion pour le QR: ${sessionId}`, 'SYSTEM', { sessionId }, 'INFO');
+    // We don't await connect() here because it's a long process (QR generation)
+    // But we use a wrapper to handle errors
+    whatsappService.connect(sessionId, broadcastSessionUpdate, null)
+        .catch(err => log(`Erreur connect via triggerQR: ${err.message}`, 'SYSTEM', { sessionId, error: err.message }, 'ERROR'));
+
     return true;
 };
 
@@ -654,8 +662,8 @@ if (require.main === module) {
 }
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-    log('Arrêt en cours...', 'SYSTEM', null, 'INFO');
+const gracefulShutdown = async (signal) => {
+    log(`Signal ${signal} reçu. Arrêt en cours...`, 'SYSTEM', { signal }, 'INFO');
 
     try {
         // Disconnect all WhatsApp sessions cleanly
@@ -665,15 +673,18 @@ process.on('SIGINT', async () => {
     }
 
     server.close(() => {
-        log('Serveur arrêté', 'SYSTEM', null, 'INFO');
+        log('Serveur arrêté proprement', 'SYSTEM', null, 'INFO');
         process.exit(0);
     });
 
-    // Safety exit after 5s if server.close hangs
+    // Safety exit after 10s if server.close hangs
     setTimeout(() => {
-        log('Arrêt forcé (timeout)', 'SYSTEM', null, 'WARN');
+        log('Arrêt forcé après timeout', 'SYSTEM', null, 'WARN');
         process.exit(1);
-    }, 5000);
-});
+    }, 10000);
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 module.exports = { app, server, wss };
