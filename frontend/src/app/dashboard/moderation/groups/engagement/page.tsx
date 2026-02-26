@@ -54,6 +54,15 @@ function GroupEngagementContent() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [generationGoal, setGenerationGoal] = React.useState("")
 
+  const [profile, setProfile] = React.useState<any>({
+    mission: "",
+    objectives: "",
+    rules: "",
+    theme: ""
+  })
+  const [links, setLinks] = React.useState<any[]>([])
+  const [tasks, setTasks] = React.useState<any[]>([])
+
   const fetchGroups = React.useCallback(async () => {
     if (!sessionId) return
     setLoading(true)
@@ -77,6 +86,55 @@ function GroupEngagementContent() {
 
   const selectedGroup = groups.find(g => g.id === selectedGroupId)
 
+  const fetchGroupDetails = React.useCallback(async () => {
+    if (!sessionId || !selectedGroupId) return
+    try {
+      const token = await getToken()
+      const [profileData, linksData, tasksData] = await Promise.all([
+        api.sessions.getGroupProfile(sessionId, selectedGroupId, token || undefined),
+        api.sessions.getGroupLinks(sessionId, selectedGroupId, token || undefined),
+        api.sessions.getEngagementTasks(sessionId, selectedGroupId, token || undefined)
+      ])
+      setProfile(profileData || { mission: "", objectives: "", rules: "", theme: "" })
+      setLinks(Array.isArray(linksData) ? linksData : [])
+      setTasks(Array.isArray(tasksData) ? tasksData : [])
+    } catch (e) {}
+  }, [sessionId, selectedGroupId, getToken])
+
+  React.useEffect(() => {
+    if (selectedGroupId) {
+      fetchGroupDetails()
+    }
+  }, [selectedGroupId, fetchGroupDetails])
+
+  const handleSaveProfile = async () => {
+    if (!sessionId || !selectedGroupId) return
+    setIsSaving(true)
+    try {
+      const token = await getToken()
+      await api.sessions.updateGroupProfile(sessionId, selectedGroupId, profile, token || undefined)
+      toast.success("Profil du groupe mis à jour")
+    } catch (e) {
+      toast.error("Erreur lors de la sauvegarde du profil")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveLinks = async () => {
+    if (!sessionId || !selectedGroupId) return
+    setIsSaving(true)
+    try {
+      const token = await getToken()
+      await api.sessions.updateGroupLinks(sessionId, selectedGroupId, links, token || undefined)
+      toast.success("Liens mis à jour")
+    } catch (e) {
+      toast.error("Erreur lors de la sauvegarde des liens")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleGenerate = async () => {
     if (!sessionId || !selectedGroupId || !generationGoal.trim()) {
        return toast.error("Veuillez décrire un objectif de campagne")
@@ -87,16 +145,39 @@ function GroupEngagementContent() {
 
     try {
        const token = await getToken()
-       const response = await api.sessions.generateGroupMessage(sessionId, selectedGroupId, { goal: generationGoal }, token || undefined)
+       // FIX: Use 'objective' instead of 'goal' to match backend
+       const response = await api.sessions.generateGroupMessage(sessionId, selectedGroupId, { objective: generationGoal, includeLinks: true }, token || undefined)
 
-       toast.success("Campagne générée avec succès", { id: toastId })
-       // Typically we would update the queue or show the result
+       toast.success("Message généré avec succès", { id: toastId })
+
+       // Add the generated message to tasks (simulated, usually you'd review it)
+       // But for now let's just clear the input and show success
        setGenerationGoal("")
-       confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } })
+
+       // Reload tasks to show the new one if the backend auto-scheduled it
+       // Or the backend just returns the text and we should show it in a dialog
+       if (response && response.message) {
+          // Open a "Result" dialog or just copy to clipboard
+          navigator.clipboard.writeText(response.message)
+          toast.success("Message copié dans le presse-papier !")
+       }
+
+       fetchGroupDetails()
     } catch (e: any) {
        toast.error("Échec de la génération", { id: toastId, description: e.message })
     } finally {
        setIsGenerating(false)
+    }
+  }
+
+  const handleDeleteTask = async (taskId: number) => {
+    try {
+      const token = await getToken()
+      await api.sessions.deleteEngagementTask(taskId, token || undefined)
+      setTasks(prev => prev.filter(t => t.id !== taskId))
+      toast.success("Tâche supprimée")
+    } catch (e) {
+      toast.error("Erreur lors de la suppression")
     }
   }
 
@@ -187,22 +268,45 @@ function GroupEngagementContent() {
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Thématique</Label>
-                               <Input placeholder="ex: Business & Networking" className="h-9 bg-card" />
+                               <Input
+                                  placeholder="ex: Business & Networking"
+                                  className="h-9 bg-card"
+                                  value={profile.theme || ""}
+                                  onChange={e => setProfile({...profile, theme: e.target.value})}
+                               />
                             </div>
                             <div className="space-y-1.5">
                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Objectif principal</Label>
-                               <Input placeholder="ex: Générer des leads" className="h-9 bg-card" />
+                               <Input
+                                  placeholder="ex: Générer des leads"
+                                  className="h-9 bg-card"
+                                  value={profile.objectives || ""}
+                                  onChange={e => setProfile({...profile, objectives: e.target.value})}
+                               />
                             </div>
                          </div>
                          <div className="space-y-1.5">
                             <Label className="text-[10px] uppercase font-bold text-muted-foreground">Mission du groupe</Label>
-                            <Textarea placeholder="Décrivez la raison d'être du groupe..." className="min-h-[80px] text-xs bg-card" />
+                            <Textarea
+                               placeholder="Décrivez la raison d'être du groupe..."
+                               className="min-h-[80px] text-xs bg-card"
+                               value={profile.mission || ""}
+                               onChange={e => setProfile({...profile, mission: e.target.value})}
+                            />
                          </div>
                          <div className="space-y-1.5">
                             <Label className="text-[10px] uppercase font-bold text-muted-foreground">Règles internes</Label>
-                            <Textarea placeholder="Liste des comportements autorisés..." className="min-h-[100px] text-xs bg-card" />
+                            <Textarea
+                               placeholder="Liste des comportements autorisés..."
+                               className="min-h-[100px] text-xs bg-card"
+                               value={profile.rules || ""}
+                               onChange={e => setProfile({...profile, rules: e.target.value})}
+                            />
                          </div>
-                         <Button size="sm" className="w-full sm:w-auto mt-2">Mettre à jour le profil</Button>
+                         <Button size="sm" className="w-full sm:w-auto mt-2" onClick={handleSaveProfile} disabled={isSaving}>
+                            {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                            Mettre à jour le profil
+                         </Button>
                       </CardContent>
                    </Card>
                 </TabsContent>
@@ -218,27 +322,98 @@ function GroupEngagementContent() {
                       </Button>
                    </div>
 
-                   <Accordion type="single" collapsible className="w-full space-y-2">
-                      <AccordionItem value="item-1" className="border rounded-lg bg-card px-4">
-                         <AccordionTrigger className="text-sm hover:no-underline font-medium">Lien de parrainage Whappi</AccordionTrigger>
-                         <AccordionContent className="text-xs space-y-4 pb-4">
-                            <div className="grid grid-cols-1 gap-4">
-                               <div className="space-y-1">
-                                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">URL</Label>
-                                  <Input value="https://whappi.com/ref/..." className="h-8 font-mono" />
-                               </div>
-                               <div className="space-y-1">
-                                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Argumentaire</Label>
-                                  <Textarea value="Outil n°1 pour automatiser WhatsApp..." className="min-h-[60px] text-xs" />
-                               </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                               <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive"><Trash2 className="h-3 w-3 mr-2" /> Supprimer</Button>
-                               <Button size="sm" className="h-7 text-xs">Sauvegarder</Button>
-                            </div>
-                         </AccordionContent>
-                      </AccordionItem>
-                   </Accordion>
+                   <div className="space-y-4">
+                      {links.length === 0 ? (
+                        <div className="p-8 text-center border-2 border-dashed rounded-lg text-muted-foreground/40">
+                           Aucun lien configuré
+                        </div>
+                      ) : (
+                        <Accordion type="single" collapsible className="w-full space-y-2">
+                           {links.map((link, idx) => (
+                             <AccordionItem key={link.id || idx} value={`item-${idx}`} className="border rounded-lg bg-card px-4">
+                               <AccordionTrigger className="text-sm hover:no-underline font-medium">{link.title || "Lien sans titre"}</AccordionTrigger>
+                               <AccordionContent className="text-xs space-y-4 pb-4">
+                                 <div className="grid grid-cols-1 gap-4">
+                                   <div className="space-y-1">
+                                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Titre</Label>
+                                      <Input
+                                         value={link.title}
+                                         onChange={e => {
+                                            const newLinks = [...links];
+                                            newLinks[idx].title = e.target.value;
+                                            setLinks(newLinks);
+                                         }}
+                                         className="h-8"
+                                      />
+                                   </div>
+                                   <div className="space-y-1">
+                                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">URL</Label>
+                                      <Input
+                                         value={link.url}
+                                         onChange={e => {
+                                            const newLinks = [...links];
+                                            newLinks[idx].url = e.target.value;
+                                            setLinks(newLinks);
+                                         }}
+                                         className="h-8 font-mono"
+                                      />
+                                   </div>
+                                   <div className="space-y-1">
+                                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Description</Label>
+                                      <Textarea
+                                         value={link.description}
+                                         onChange={e => {
+                                            const newLinks = [...links];
+                                            newLinks[idx].description = e.target.value;
+                                            setLinks(newLinks);
+                                         }}
+                                         className="min-h-[60px] text-xs"
+                                      />
+                                   </div>
+                                   <div className="space-y-1">
+                                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">CTA (Appel à l&apos;action)</Label>
+                                      <Input
+                                         value={link.cta}
+                                         onChange={e => {
+                                            const newLinks = [...links];
+                                            newLinks[idx].cta = e.target.value;
+                                            setLinks(newLinks);
+                                         }}
+                                         className="h-8"
+                                      />
+                                   </div>
+                                 </div>
+                                 <div className="flex justify-end gap-2">
+                                   <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 text-xs text-destructive"
+                                      onClick={() => setLinks(prev => prev.filter((_, i) => i !== idx))}
+                                   >
+                                      <Trash2 className="h-3 w-3 mr-2" /> Retirer
+                                   </Button>
+                                 </div>
+                               </AccordionContent>
+                             </AccordionItem>
+                           ))}
+                        </Accordion>
+                      )}
+
+                      <div className="flex justify-between items-center mt-6">
+                        <Button
+                           size="sm"
+                           variant="outline"
+                           className="h-9"
+                           onClick={() => setLinks([...links, { title: "Nouveau lien", description: "", url: "", cta: "Commander" }])}
+                        >
+                           <Plus className="h-4 w-4 mr-2" /> Ajouter un lien
+                        </Button>
+                        <Button size="sm" className="h-9" onClick={handleSaveLinks} disabled={isSaving}>
+                           {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                           Enregistrer tous les liens
+                        </Button>
+                      </div>
+                   </div>
                 </TabsContent>
 
                 <TabsContent value="engagement" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -280,26 +455,43 @@ function GroupEngagementContent() {
                          <h3 className="text-sm font-bold flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-primary" /> File d&apos;attente
                          </h3>
-                         <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">3 messages planifiés</Badge>
+                         <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">{tasks.length} message(s) planifié(s)</Badge>
                       </div>
-                      <div className="border rounded-lg bg-card divide-y overflow-hidden shadow-sm">
-                         {[1, 2, 3].map(i => (
-                            <div key={i} className="p-4 flex items-center justify-between group hover:bg-muted/30 transition-colors">
-                               <div className="flex items-center gap-3 min-w-0">
-                                  <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
-                                     <MessageSquare className="h-4 w-4 text-muted-foreground/40" />
-                                  </div>
-                                  <div className="min-w-0">
-                                     <p className="text-xs font-medium truncate">Relance promotionnelle #0{i}</p>
-                                     <p className="text-[10px] text-muted-foreground">Demain à 10:30 • {i} crédit</p>
-                                  </div>
-                               </div>
-                               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Trash2 className="h-3.5 w-3.5" />
-                               </Button>
-                            </div>
-                         ))}
-                      </div>
+                      {tasks.length === 0 ? (
+                        <div className="p-12 text-center border-2 border-dashed rounded-lg text-muted-foreground/30 italic text-xs uppercase">
+                           Aucune tâche programmée
+                        </div>
+                      ) : (
+                        <div className="border rounded-lg bg-card divide-y overflow-hidden shadow-sm">
+                           {tasks.map(task => (
+                              <div key={task.id} className="p-4 flex items-center justify-between group hover:bg-muted/30 transition-colors">
+                                 <div className="flex items-center gap-3 min-w-0">
+                                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                                       <MessageSquare className="h-4 w-4 text-muted-foreground/40" />
+                                    </div>
+                                    <div className="min-w-0">
+                                       <p className="text-xs font-medium truncate">{task.message_content?.substring(0, 40) || "Message média"}</p>
+                                       <p className="text-[10px] text-muted-foreground">
+                                          {new Date(task.scheduled_at).toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} •
+                                          <span className={cn(
+                                             "ml-2 font-bold uppercase",
+                                             task.status === 'pending' ? "text-amber-500" : task.status === 'completed' ? "text-green-500" : "text-destructive"
+                                          )}> {task.status}</span>
+                                       </p>
+                                    </div>
+                                 </div>
+                                 <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => handleDeleteTask(task.id)}
+                                 >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                 </Button>
+                              </div>
+                           ))}
+                        </div>
+                      )}
                    </div>
                 </TabsContent>
              </Tabs>

@@ -258,7 +258,36 @@ class AIService {
 
             const remoteJid = msg.key.remoteJid;
             const isGroup = remoteJid.endsWith('@g.us');
-            const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(sock.user.id.split(':')[0] + '@s.whatsapp.net');
+            const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(sock.user.id.split(':')[0] + '@s.whatsapp.net') ||
+                             messageText.includes('@' + sock.user.id.split(':')[0]);
+
+            // --- RESTRICTION GROUPE (SÉCURITÉ FINANCIÈRE) ---
+            if (isGroup) {
+                // 1. On vérifie si on est admin du groupe
+                const moderationService = require('./moderation');
+                try {
+                    const groupMetadata = await moderationService.getGroupMetadata(sock, remoteJid);
+                    const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+                    const myLid = sock.user.lid || sock.user.LID;
+
+                    const botIsAdmin = moderationService.isGroupAdmin(groupMetadata, myJid, myLid, sessionId);
+
+                    if (!botIsAdmin) {
+                        log(`IA ignorée : Le bot n'est pas admin du groupe ${remoteJid}`, sessionId, { event: 'ai-skip-not-admin' }, 'DEBUG');
+                        return;
+                    }
+                } catch (e) {
+                    log(`IA ignorée : Impossible de vérifier le statut admin pour ${remoteJid}`, sessionId, { event: 'ai-skip-meta-error' }, 'WARN');
+                    return;
+                }
+
+                // 2. On ne répond QUE si on est tagué (ou si mode assistant forcé)
+                // Note: isGroupMode est vrai si on a déclenché l'assistant via ModerationService (questions)
+                if (!isTagged && !isGroupMode) {
+                    // log(`IA ignorée : Message de groupe sans tag pour ${remoteJid}`, sessionId, { event: 'ai-skip-no-tag' }, 'DEBUG');
+                    return;
+                }
+            }
 
             // 1. Check if AI should respond to tags in groups
             if (isGroup && isTagged && !isGroupMode) {
@@ -333,31 +362,38 @@ class AIService {
                 return;
             }
 
-            // Trigger Keywords Check (Bug Fix: Multiple Keywords support improved)
-            if (session.ai_trigger_keywords) {
+            // Trigger Keywords Check (Section 2.1 - Keyword Mode)
+            // If mode is 'keyword', we MUST match a keyword.
+            // If mode is 'bot', we match keywords ONLY IF trigger_keywords is not empty.
+            const isKeywordMode = session.ai_mode === 'keyword';
+
+            if (isKeywordMode || session.ai_trigger_keywords) {
                 // Support multiple separators: comma, semicolon, or pipe
-                const keywords = session.ai_trigger_keywords
+                const keywords = (session.ai_trigger_keywords || "")
                     .split(/[;|,]/)
                     .map(k => k.trim().toLowerCase())
                     .filter(k => k);
 
-                if (keywords.length > 0) {
-                    const textLower = messageText.toLowerCase();
-                    
-                    // Improved matching: check if any keyword is present as a word or substring
-                    // Using word boundaries \b for more precise matching if preferred, 
-                    // but following original "includes" logic with better multiple support.
-                    const hasKeyword = keywords.some(k => {
-                        // Escape special characters for regex
-                        const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        // Match as a whole word or at least present in text
-                        const regex = new RegExp(escapedK, 'i');
-                        return regex.test(textLower);
-                    });
-
-                    if (!hasKeyword) {
-                        log(`Message ignoré car ne contient aucun mot-clé déclencheur parmi: ${keywords.join(', ')}`, sessionId, { event: 'ai-skip', reason: 'no-keyword', text: messageText }, 'DEBUG');
+                if (keywords.length > 0 || isKeywordMode) {
+                    if (keywords.length === 0 && isKeywordMode) {
+                        log(`Mode mot-clé activé mais aucun mot-clé configuré pour ${sessionId}`, sessionId, { event: 'ai-skip', reason: 'empty-keywords' }, 'WARN');
                         return;
+                    }
+
+                    if (keywords.length > 0) {
+                        const textLower = messageText.toLowerCase();
+
+                        // Improved matching: check if any keyword is present as a word or substring
+                        const hasKeyword = keywords.some(k => {
+                            const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(escapedK, 'i');
+                            return regex.test(textLower);
+                        });
+
+                        if (!hasKeyword) {
+                            log(`Message ignoré car ne contient aucun mot-clé déclencheur parmi: ${keywords.join(', ')}`, sessionId, { event: 'ai-skip', reason: 'no-keyword', text: messageText }, 'DEBUG');
+                            return;
+                        }
                     }
                 }
             }
@@ -723,6 +759,7 @@ class AIService {
      * Sends the response with human-like simulation
      */
     static async sendAutoResponse(sock, jid, text, sessionId) {
+        if (!text) return;
         let userId = null;
         let creditDeducted = false;
 

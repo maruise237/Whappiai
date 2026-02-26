@@ -449,6 +449,21 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         if (remoteJid && remoteJid.endsWith('@newsletter')) {
             return; // On ignore totalement les messages provenant de chaînes
         }
+
+        // --- FILTRE GROUPE ADMIN (SÉCURITÉ STRICTE) ---
+        if (remoteJid && remoteJid.endsWith('@g.us')) {
+            try {
+                const groupMetadata = await moderationService.getGroupMetadata(sock, remoteJid);
+                const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+                const myLid = sock.user.lid || sock.user.LID;
+                if (!moderationService.isGroupAdmin(groupMetadata, myJid, myLid, sessionId)) {
+                    // Si on n'est pas admin, on ignore totalement le message pour économiser les ressources
+                    return;
+                }
+            } catch (e) {
+                return; // En cas d'erreur de métadonnées, on ignore par sécurité
+            }
+        }
         
         // If message is FROM ME, it means the owner is chatting.
         // We should pause the AI to let the owner take over.

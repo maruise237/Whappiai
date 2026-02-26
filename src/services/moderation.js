@@ -220,16 +220,25 @@ async function getAdminGroups(sock, sessionId) {
  * @param {object} settings 
  */
 function updateGroupSettings(sessionId, groupId, settings) {
-    const { is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template } = settings;
+    // Map frontend fields (warning_threshold, banned_words, welcome_message) to DB columns
+    const is_active = settings.is_active ? 1 : 0;
+    const anti_link = settings.anti_link ? 1 : 0;
+    const bad_words = settings.bad_words || settings.banned_words || "";
+    const warning_template = settings.warning_template || "Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.";
+    const max_warnings = settings.max_warnings || settings.warning_threshold || 5;
+    const warning_reset_days = settings.warning_reset_days || 0;
+    const welcome_enabled = settings.welcome_enabled ? 1 : 0;
+    const welcome_template = settings.welcome_template || settings.welcome_message || "";
+    const ai_assistant_enabled = settings.ai_assistant_enabled ? 1 : 0;
     
     log(`Mise à jour des paramètres de modération pour le groupe ${groupId}`, sessionId, { 
         event: 'moderation-config-update',
-        settings: { is_active, anti_link, bad_words, max_warnings, welcome_enabled, ai_assistant_enabled: settings.ai_assistant_enabled }
+        settings: { is_active, anti_link, bad_words, max_warnings, welcome_enabled, ai_assistant_enabled, warning_reset_days }
     }, 'INFO');
 
     const stmt = db.prepare(`
-        INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, ai_assistant_enabled, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, ai_assistant_enabled, warning_reset_days, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(group_id, session_id) DO UPDATE SET
         is_active = excluded.is_active,
         anti_link = excluded.anti_link,
@@ -239,10 +248,11 @@ function updateGroupSettings(sessionId, groupId, settings) {
         welcome_enabled = excluded.welcome_enabled,
         welcome_template = excluded.welcome_template,
         ai_assistant_enabled = excluded.ai_assistant_enabled,
+        warning_reset_days = excluded.warning_reset_days,
         updated_at = CURRENT_TIMESTAMP
     `);
     
-    stmt.run(groupId, sessionId, is_active ? 1 : 0, anti_link ? 1 : 0, bad_words, warning_template, max_warnings, welcome_enabled ? 1 : 0, welcome_template, settings.ai_assistant_enabled ? 1 : 0);
+    stmt.run(groupId, sessionId, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, ai_assistant_enabled, warning_reset_days);
 }
 
 /**
@@ -357,6 +367,9 @@ async function handleIncomingMessage(sock, sessionId, msg) {
     
     // 1. Get Settings
     const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+
+    const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+    const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(myJid);
     
     // 2. Check for AI Assistant (Section 2.6) - Can run even if moderation is inactive
     // We do this BEFORE moderation if it's a question, or AFTER if it's not a violation
@@ -367,8 +380,12 @@ async function handleIncomingMessage(sock, sessionId, msg) {
 
     const isQuestion = text.includes('?') || /comment|pourquoi|quand|quel|quelle|où|est-ce que|aide|info|besoin/i.test(text);
     
-    if (settings && settings.ai_assistant_enabled && isQuestion) {
-        log(`[Modération] Assistant IA activé pour le groupe ${groupId} (Question détectée)`, sessionId, { event: 'ai-assistant-trigger' }, 'DEBUG');
+    // Si on est tagué, AIService.js s'en occupera via whatsapp.js -> AIService.handleIncomingMessage
+    // On ne déclenche ici que si assistant_enabled ET question ET non-tagué (si on veut ce comportement)
+    // MAIS l'utilisateur dit "ne répond que s'il est tage", donc on devrait peut-être désactiver ce déclencheur automatique.
+
+    if (settings && settings.ai_assistant_enabled && isQuestion && isTagged) {
+        log(`[Modération] Assistant IA activé pour le groupe ${groupId} (Question + Tag)`, sessionId, { event: 'ai-assistant-trigger' }, 'DEBUG');
         const aiService = require('./ai');
         // We run this as a separate task to not block moderation if active
         // isGroupMode = true for handleIncomingMessage
@@ -425,10 +442,10 @@ async function handleIncomingMessage(sock, sessionId, msg) {
         }
         
         // 2. Bad Words Check
-        if (!violation && settings.bad_words) {
-            const badWords = settings.bad_words.split(',').map(w => w.trim().toLowerCase()).filter(w => w);
+    if (!violation && (settings.bad_words || settings.bad_words === "")) {
+        const badWords = (settings.bad_words || "").split(',').map(w => w.trim().toLowerCase()).filter(w => w);
             const lowerText = text.toLowerCase();
-            if (badWords.some(word => lowerText.includes(word))) {
+        if (badWords.length > 0 && badWords.some(word => lowerText.includes(word))) {
                 violation = 'Langage inapproprié';
             }
         }
@@ -464,9 +481,24 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                 // 1. Delete Message (High priority for moderation)
                 await QueueService.enqueue(sessionId, sock, groupId, { delete: msg.key }, { priority: 'high' });
                 
-                // 2. Increment Warnings
-                // Note: session_id est requis pour la PK et la contrainte
-                const warningInfo = db.prepare(`
+                // 2. Increment Warnings with automatic reset check
+                const resetDays = settings.warning_reset_days || 0;
+
+                let warningInfo;
+                if (resetDays > 0) {
+                    // Check if we should reset
+                    const lastWarn = db.prepare("SELECT last_warning_at, count FROM user_warnings WHERE group_id = ? AND session_id = ? AND user_id = ?").get(groupId, sessionId, senderJid);
+                    if (lastWarn) {
+                        const lastDate = new Date(lastWarn.last_warning_at);
+                        const diffDays = (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
+                        if (diffDays >= resetDays) {
+                            log(`Remise à 0 des avertissements pour ${senderJid} (${diffDays.toFixed(1)} jours écoulés)`, sessionId, { groupId });
+                            db.prepare("UPDATE user_warnings SET count = 0 WHERE group_id = ? AND session_id = ? AND user_id = ?").run(groupId, sessionId, senderJid);
+                        }
+                    }
+                }
+
+                warningInfo = db.prepare(`
                     INSERT INTO user_warnings (group_id, session_id, user_id, count, last_warning_at)
                     VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
                     ON CONFLICT(group_id, session_id, user_id) DO UPDATE SET
@@ -570,5 +602,7 @@ module.exports = {
     getAdminGroups,
     updateGroupSettings,
     handleIncomingMessage,
-    handleParticipantUpdate
+    handleParticipantUpdate,
+    isGroupAdmin,
+    getGroupMetadata
 };

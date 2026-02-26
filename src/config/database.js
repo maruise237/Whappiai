@@ -70,6 +70,28 @@ function initializeSchema() {
             token TEXT NOT NULL,
             status TEXT DEFAULT 'DISCONNECTED',
             detail TEXT,
+            pairing_code TEXT,
+            ai_enabled INTEGER DEFAULT 0,
+            ai_model TEXT,
+            ai_prompt TEXT,
+            ai_mode TEXT DEFAULT 'bot',
+            ai_endpoint TEXT,
+            ai_key TEXT,
+            ai_temperature REAL DEFAULT 0.7,
+            ai_max_tokens INTEGER DEFAULT 1000,
+            ai_trigger_keywords TEXT,
+            ai_constraints TEXT,
+            ai_messages_sent INTEGER DEFAULT 0,
+            ai_messages_received INTEGER DEFAULT 0,
+            ai_last_error TEXT,
+            ai_last_message_at DATETIME,
+            ai_delay_min INTEGER DEFAULT 1,
+            ai_delay_max INTEGER DEFAULT 5,
+            ai_reject_calls INTEGER DEFAULT 0,
+            ai_deactivate_on_typing INTEGER DEFAULT 0,
+            ai_deactivate_on_read INTEGER DEFAULT 0,
+            ai_session_window INTEGER DEFAULT 2,
+            ai_respond_to_tags INTEGER DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -127,6 +149,10 @@ function initializeSchema() {
             bad_words TEXT,
             warning_template TEXT DEFAULT 'ATTENTION @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
             max_warnings INTEGER DEFAULT 5,
+            warning_reset_days INTEGER DEFAULT 0,
+            welcome_enabled INTEGER DEFAULT 0,
+            welcome_template TEXT,
+            ai_assistant_enabled INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (group_id, session_id)
@@ -345,6 +371,10 @@ function initializeSchema() {
                         bad_words TEXT,
                         warning_template TEXT DEFAULT 'ATTENTION @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
                         max_warnings INTEGER DEFAULT 5,
+            warning_reset_days INTEGER DEFAULT 0,
+            welcome_enabled INTEGER DEFAULT 0,
+            welcome_template TEXT,
+            ai_assistant_enabled INTEGER DEFAULT 0,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                         PRIMARY KEY (group_id, session_id)
@@ -389,19 +419,30 @@ function initializeSchema() {
     });
 
     // WhatsApp Sessions AI and delays
-    runner.run('whatsapp-sessions-v2026-v2', (db) => {
+    runner.run('whatsapp-sessions-v2026-v4', (db) => {
         const columns = [
             { name: 'pairing_code', type: 'TEXT' },
             { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_model', type: 'TEXT' },
             { name: 'ai_prompt', type: 'TEXT' },
+            { name: 'ai_mode', type: "TEXT DEFAULT 'bot'" },
+            { name: 'ai_endpoint', type: 'TEXT' },
+            { name: 'ai_key', type: 'TEXT' },
+            { name: 'ai_temperature', type: 'REAL DEFAULT 0.7' },
+            { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' },
+            { name: 'ai_trigger_keywords', type: 'TEXT' },
+            { name: 'ai_constraints', type: 'TEXT' },
             { name: 'ai_messages_sent', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_messages_received', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_last_error', type: 'TEXT' },
+            { name: 'ai_last_message_at', type: 'DATETIME' },
             { name: 'ai_delay_min', type: 'INTEGER DEFAULT 1' },
             { name: 'ai_delay_max', type: 'INTEGER DEFAULT 5' },
             { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_deactivate_on_typing', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_deactivate_on_read', type: 'INTEGER DEFAULT 0' },
-            { name: 'ai_session_window', type: 'INTEGER DEFAULT 2' }
+            { name: 'ai_session_window', type: 'INTEGER DEFAULT 2' },
+            { name: 'ai_respond_to_tags', type: 'INTEGER DEFAULT 1' }
         ];
         columns.forEach(col => {
             try { db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
@@ -409,10 +450,11 @@ function initializeSchema() {
     });
 
     // Group Settings Welcome & Assistant
-    runner.run('group-settings-engagement-v2', (db) => {
+    runner.run('group-settings-engagement-v3', (db) => {
         try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_enabled INTEGER DEFAULT 0"); } catch (e) {}
         try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_template TEXT"); } catch (e) {}
         try { db.exec("ALTER TABLE group_settings ADD COLUMN ai_assistant_enabled INTEGER DEFAULT 0"); } catch (e) {}
+        try { db.exec("ALTER TABLE group_settings ADD COLUMN warning_reset_days INTEGER DEFAULT 0"); } catch (e) {}
     });
 
     // Migration: Encrypt existing AI keys

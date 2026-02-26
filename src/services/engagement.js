@@ -25,11 +25,15 @@ class EngagementService {
         
         log('Service Engagement de Groupe démarré', 'SYSTEM', null, 'INFO');
         
-        // Check for scheduled tasks every 30 seconds
-        this.checkInterval = setInterval(() => this.checkTasks(), 30000);
+        // Check for scheduled tasks every 60 seconds (optimized)
+        this.checkInterval = setInterval(() => {
+            this.checkTasks().catch(err => {
+                log(`Erreur boucle engagement: ${err.message}`, 'SYSTEM', null, 'ERROR');
+            });
+        }, 60000);
         
-        // Initial check
-        this.checkTasks();
+        // Initial check with small delay to ensure DB/WebSockets are ready
+        setTimeout(() => this.checkTasks(), 5000);
     }
 
     /**
@@ -47,6 +51,9 @@ class EngagementService {
      */
     async checkTasks() {
         try {
+            // Check if DB is available
+            if (!db) return;
+
             // Utilisation d'une transaction pour garantir l'atomicité de la sélection et du marquage
             const tasks = db.transaction(() => {
                 const now = new Date();
