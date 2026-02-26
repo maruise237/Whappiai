@@ -119,7 +119,7 @@ export default function UsersPage() {
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <Badge variant="outline" className="h-9 px-3 rounded-md text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-dashed">
+        <Badge variant="outline" className="h-9 px-3 rounded-md text-[10px] font-semibold tracking-wider text-muted-foreground border-dashed">
           {filtered.length} Utilisateurs au total
         </Badge>
       </div>
@@ -128,10 +128,10 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-muted/30">
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Utilisateur</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Rôle</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Statut</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Date d&apos;inscription</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Utilisateur</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Rôle</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Statut</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Date d&apos;inscription</TableHead>
               <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
@@ -164,7 +164,7 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={cn(
-                      "text-[9px] uppercase font-bold",
+                      "text-[9px] font-semibold",
                       u.role === 'admin' ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"
                     )}>
                       {u.role}
@@ -215,11 +215,11 @@ export default function UsersPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Email de l&apos;utilisateur</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">Email de l&apos;utilisateur</Label>
               <Input placeholder="user@example.com" className="h-9" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Rôle initial</Label>
+              <Label className="text-[10px] font-semibold text-muted-foreground">Rôle initial</Label>
               <Select defaultValue="user">
                 <SelectTrigger className="h-9">
                   <SelectValue />

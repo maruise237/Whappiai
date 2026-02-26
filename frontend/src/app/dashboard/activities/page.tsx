@@ -96,7 +96,7 @@ export default function ActivitiesPage() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Live Tracking</span>
+          <span className="text-[10px] font-semibold tracking-widest text-muted-foreground">Live Tracking</span>
         </div>
       </div>
 
@@ -104,11 +104,11 @@ export default function ActivitiesPage() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-muted/30">
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground w-[180px]">Date & Heure</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Action</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Ressource</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Détails</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground text-right">Statut</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground w-[180px]">Date & Heure</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Action</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Ressource</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Détails</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Statut</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -130,7 +130,7 @@ export default function ActivitiesPage() {
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3 w-3 opacity-40" />
-                      {new Date(activity.timestamp).toLocaleString('fr-FR', {
+                      {new Date(activity.created_at).toLocaleString('fr-FR', {
                         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
                       })}
                     </div>
@@ -153,12 +153,12 @@ export default function ActivitiesPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge className={cn(
-                      "text-[9px] uppercase font-bold border-none",
-                      activity.status === 'success'
+                      "text-[9px] font-semibold border-none",
+                      activity.success === 1 || activity.success === true
                         ? "bg-green-500/10 text-green-700 dark:text-green-400"
                         : "bg-red-500/10 text-red-700 dark:text-red-400"
                     )}>
-                      {activity.status}
+                      {activity.success === 1 || activity.success === true ? 'Success' : 'Error'}
                     </Badge>
                   </TableCell>
                 </TableRow>

@@ -51,19 +51,21 @@ const getNavGroups = (t: any) => [
     title: "PILOTAGE HUB",
     items: [
       { name: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Messagerie Directe", href: "/dashboard/inbox", icon: MessageCircle },
+      { name: "Messagerie Live", href: "/dashboard/inbox", icon: MessageCircle },
     ]
   },
   {
     title: "CONFIGURATION BOT",
     items: [
-      { name: "Intelligence & IA", href: "/dashboard/ai", icon: Bot },
-      { name: "Gestion Groupes", href: "/dashboard/ai?tab=groups", icon: Shield },
+      { name: "Intelligence IA", href: "/dashboard/ai", icon: Bot },
+      { name: "Gestion Groupes", href: "/dashboard/moderation", icon: Shield },
+      { name: "Listes de Diffusion", href: "/dashboard/recipient-lists", icon: Users },
     ]
   },
   {
-    title: "COMPTE & FACTURE",
+    title: "ESPACE CLIENT",
     items: [
+      { name: "Consommation", href: "/dashboard/credits", icon: Zap },
       { name: "Abonnement", href: "/dashboard/billing", icon: CreditCard },
       { name: "Réglages Profil", href: "/dashboard/profile", icon: Settings },
     ]
