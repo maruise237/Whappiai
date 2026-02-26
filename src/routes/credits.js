@@ -3,6 +3,32 @@ const router = express.Router();
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const CreditService = require('../services/CreditService');
 const { log } = require('../utils/logger');
+const User = require('../models/User');
+
+// GET /api/v1/credits
+router.get('/', ClerkExpressWithAuth(), async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+
+        const user = User.findById(userId);
+        if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+
+        const history = User.getCreditHistory(userId);
+        res.json({
+            status: 'success',
+            data: {
+                balance: user.message_limit,
+                used: user.message_used,
+                plan: user.plan_id,
+                history: history
+            }
+        });
+    } catch (error) {
+        log('Error fetching credits', 'CREDITS', { error: error.message }, 'ERROR');
+        res.status(500).json({ status: 'error', message: error.message });
+    }
+});
 
 // GET /api/v1/credits/balance
 router.get('/balance', ClerkExpressWithAuth(), async (req, res) => {

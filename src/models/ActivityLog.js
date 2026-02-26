@@ -76,6 +76,8 @@ class ActivityLog {
         const stmt = db.prepare(sql);
         return stmt.all(...params).map(row => ({
             ...row,
+            timestamp: row.created_at, // Frontend expects timestamp
+            status: row.success === 1 ? 'success' : 'failure', // Frontend expects status
             details: row.details ? JSON.parse(row.details) : null
         }));
     }
