@@ -160,27 +160,15 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
                 log(`Authenticated user: ${finalEmail} (role: ${role})`, 'AUTH', { email: finalEmail, role }, 'INFO');
 
-                // Ensure user exists locally
-                if (!user) {
-                    // Special case: Allow /users/sync to proceed even if user doesn't exist locally
-                    // This allows the frontend to call the sync endpoint to create the user
-                    if (req.path === '/users/sync' && req.method === 'POST') {
-                        return next();
-                    }
-
-                    log(`User ${finalEmail} not found in local DB (auto-create disabled)`, 'AUTH');
-                    return res.status(404).json({
-                        status: 'error',
-                        message: 'User not found in local database. Please complete registration.',
-                        code: 'USER_NOT_FOUND_LOCAL'
-                    });
-                } else if (user.role !== role) {
-                    // Update role if mismatch
-                    log(`Syncing local user role for ${finalEmail} to ${role}`, 'AUTH');
-                    User.create({
+                // Auto-create or update user from Clerk
+                // This ensures that anyone authenticated via Clerk has a local record
+                if (!user || user.role !== role) {
+                    log(`Syncing user ${finalEmail} from Clerk to local DB...`, 'AUTH');
+                    user = await User.create({
                         id: req.auth.userId,
                         email: finalEmail,
                         name: req.auth.sessionClaims?.name || finalEmail.split('@')[0],
+                        imageUrl: req.auth.sessionClaims?.image_url,
                         role: role
                     });
                 }
