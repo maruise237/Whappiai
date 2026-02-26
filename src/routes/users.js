@@ -141,8 +141,8 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     const { email, password, role } = req.body;
     const currentUser = getCurrentUser(req);
 
-    if (!email || !password) {
-        return response.validationError(res, ['Email and password are required']);
+    if (!email) {
+        return response.validationError(res, ['Email is required']);
     }
 
     // Role restriction: regular users can only create 'collaborateur'

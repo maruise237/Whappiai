@@ -9,8 +9,10 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { log } = require('../utils/logger');
+const { encrypt, decrypt } = require('../utils/crypto');
 
 const SESSION_DIR = path.join(process.cwd(), 'auth_info_baileys');
+const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY;
 
 class Session {
     /**
@@ -62,7 +64,17 @@ class Session {
      */
     static findById(sessionId) {
         const stmt = db.prepare('SELECT * FROM whatsapp_sessions WHERE id = ?');
-        return stmt.get(sessionId);
+        const session = stmt.get(sessionId);
+
+        if (session && session.ai_key && session.ai_key.includes(':')) {
+            try {
+                session.ai_key = decrypt(session.ai_key, ENCRYPTION_KEY);
+            } catch (e) {
+                log(`Failed to decrypt AI key for session ${sessionId}`, 'SECURITY', { error: e.message }, 'ERROR');
+            }
+        }
+
+        return session;
     }
 
     /**
@@ -123,8 +135,13 @@ class Session {
      * @returns {object} Updated session
      */
     static updateAIConfig(sessionId, aiConfig) {
+        // Map common aliases from frontend
+        const enabled = aiConfig.enabled !== undefined ? aiConfig.enabled : aiConfig.ai_enabled;
+        const endpoint = aiConfig.endpoint || aiConfig.api_endpoint || aiConfig.ai_endpoint;
+        const key = aiConfig.key || aiConfig.api_key || aiConfig.ai_key;
+
         const {
-            enabled, endpoint, key, model, prompt, mode, temperature, max_tokens,
+            model, prompt, mode, temperature, max_tokens,
             deactivate_on_typing, deactivate_on_read, trigger_keywords,
             reply_delay, read_on_reply, reject_calls,
             random_protection_enabled, random_protection_rate,
@@ -135,6 +152,12 @@ class Session {
         // Handle undefined values to prevent overwriting existing ones with null if not provided
         const existing = this.findById(sessionId);
         if (!existing) return null;
+
+        // Secure key storage: encrypt before saving
+        let encryptedKey = key;
+        if (key !== undefined && key && !key.includes(':')) {
+            encryptedKey = encrypt(key, ENCRYPTION_KEY);
+        }
 
         const stmt = db.prepare(`
             UPDATE whatsapp_sessions 
@@ -152,7 +175,7 @@ class Session {
         stmt.run(
             enabled !== undefined ? (enabled ? 1 : 0) : existing.ai_enabled,
             endpoint !== undefined ? endpoint : existing.ai_endpoint,
-            key !== undefined ? key : existing.ai_key,
+            encryptedKey !== undefined ? encryptedKey : existing.ai_key,
             model !== undefined ? model : existing.ai_model,
             prompt !== undefined ? prompt : existing.ai_prompt,
             mode !== undefined ? mode : (existing.ai_mode || 'bot'),

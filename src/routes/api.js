@@ -550,12 +550,15 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         if (!session) return res.status(404).json({ status: 'error', message: 'Session not found' });
 
         // Return only AI related fields
+        // Map ai_key to key and ai_endpoint to endpoint for frontend compatibility
         res.json({
             status: 'success',
             data: {
                 enabled: !!session.ai_enabled,
                 endpoint: session.ai_endpoint,
+                api_endpoint: session.ai_endpoint,
                 key: session.ai_key,
+                api_key: session.ai_key,
                 model: session.ai_model,
                 prompt: session.ai_prompt,
                 mode: session.ai_mode || 'bot',
@@ -1080,7 +1083,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     router.post('/admin/ai-models', checkSessionOrTokenAuth, requireAdmin, (req, res) => {
         try {
-            const validation = validateAIModel(req.body);
+            const validation = validateAIModel({ ...req.body, isNew: true });
             if (!validation.isValid) {
                 return res.status(422).json({
                     status: 'error',

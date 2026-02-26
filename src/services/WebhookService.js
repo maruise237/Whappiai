@@ -48,7 +48,12 @@ class WebhookService {
             ? crypto.createHmac('sha256', webhook.secret).update(JSON.stringify(payload)).digest('hex')
             : null;
 
-        const headers = { 'Content-Type': 'application/json' };
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Whappi-Event': event,
+            'X-Whappi-Timestamp': payload.timestamp
+        };
+
         if (signature) headers['X-Whappi-Signature'] = signature;
 
         try {
