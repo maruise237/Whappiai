@@ -50,7 +50,9 @@ function GroupEngagementContent() {
   const [selectedGroupId, setSelectedGroupId] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
+  const [isGenerating, setIsGenerating] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [generationGoal, setGenerationGoal] = React.useState("")
 
   const fetchGroups = React.useCallback(async () => {
     if (!sessionId) return
@@ -74,6 +76,30 @@ function GroupEngagementContent() {
   }, [fetchGroups])
 
   const selectedGroup = groups.find(g => g.id === selectedGroupId)
+
+  const handleGenerate = async () => {
+    if (!sessionId || !selectedGroupId || !generationGoal.trim()) {
+       return toast.error("Veuillez décrire un objectif de campagne")
+    }
+
+    setIsGenerating(true)
+    const toastId = toast.loading("L'IA génère votre campagne...")
+
+    try {
+       const token = await getToken()
+       const response = await api.sessions.generateGroupMessage(sessionId, selectedGroupId, { goal: generationGoal }, token || undefined)
+
+       toast.success("Campagne générée avec succès", { id: toastId })
+       // Typically we would update the queue or show the result
+       setGenerationGoal("")
+       confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } })
+    } catch (e: any) {
+       toast.error("Échec de la génération", { id: toastId, description: e.message })
+    } finally {
+       setIsGenerating(false)
+    }
+  }
+
   const filteredGroups = groups.filter(g =>
     (g.subject || g.name || "").toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -229,9 +255,20 @@ function GroupEngagementContent() {
                                      Décrivez votre objectif (ex: relancer les inactifs) et l&apos;IA générera un planning de messages pour la semaine.
                                   </p>
                                </div>
-                               <Textarea placeholder="Objectif de la campagne..." className="min-h-[80px] bg-background border-primary/20 text-xs" />
-                               <Button size="sm" className="w-full sm:w-auto shadow-md">
-                                  <Zap className="h-3.5 w-3.5 mr-2" /> Lancer la génération
+                               <Textarea
+                                 placeholder="Objectif de la campagne..."
+                                 className="min-h-[80px] bg-background border-primary/20 text-xs"
+                                 value={generationGoal}
+                                 onChange={(e) => setGenerationGoal(e.target.value)}
+                               />
+                               <Button
+                                 size="sm"
+                                 className="w-full sm:w-auto shadow-md"
+                                 onClick={handleGenerate}
+                                 disabled={isGenerating || !generationGoal.trim()}
+                               >
+                                  {isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Zap className="h-3.5 w-3.5 mr-2" />}
+                                  Lancer la génération
                                </Button>
                             </div>
                          </div>

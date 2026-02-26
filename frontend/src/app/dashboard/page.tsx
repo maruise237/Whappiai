@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
+import { MessagingTabs } from "@/components/dashboard/messaging-tabs"
 import { api } from "@/lib/api"
 import {
   Sheet,
@@ -106,7 +107,7 @@ export default function DashboardPage() {
     try {
       const token = await getToken()
       const summ = await api.activities.summary(7, token || undefined)
-      const logs = await api.activities.list(5, token || undefined)
+      const logs = await api.activities.list(5, 0, token || undefined)
       setSummary({
         totalActivities: summ?.totalActivities || 0,
         successRate: summ?.successRate || 0,
@@ -150,7 +151,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Grid 4 cols Stats */}
-      <div id="analytics-overview" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="performance-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Sessions" value={sessions.length} subtext={`${summary.activeSessions} actives`} />
         <StatCard label="Taux de Succès" value={`${summary.successRate}%`} subtext="Derniers 7 jours" />
         <StatCard label="Messages Envoyés" value={summary.messagesSent} subtext="Total cumulé" />
@@ -207,13 +208,18 @@ export default function DashboardPage() {
                </CardContent>
             </Card>
 
-            <Tabs defaultValue="messaging" className="space-y-4">
+            <Tabs defaultValue="direct" className="space-y-4">
                <TabsList className="bg-muted/50 p-1 rounded-lg h-9 gap-1 w-full sm:w-auto">
-                  <TabsTrigger value="messaging" className="text-[11px] font-semibold px-6">Messaging</TabsTrigger>
+                  <TabsTrigger value="direct" className="text-[11px] font-semibold px-6">Direct Message</TabsTrigger>
+                  <TabsTrigger value="history" className="text-[11px] font-semibold px-6">History</TabsTrigger>
                   {isAdmin && <TabsTrigger value="logs" className="text-[11px] font-semibold px-6">System Logs</TabsTrigger>}
                </TabsList>
 
-               <TabsContent value="messaging" className="space-y-4">
+               <TabsContent value="direct" className="animate-in fade-in duration-300">
+                  <MessagingTabs session={selectedSession} />
+               </TabsContent>
+
+               <TabsContent value="history" className="space-y-4">
                   <Card>
                      <Table>
                         <TableHeader>
@@ -224,16 +230,25 @@ export default function DashboardPage() {
                            </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {recentActivities.filter(a => a.action === 'send_message').map((msg, i) => (
+                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg, i) => (
                               <TableRow key={i} className="hover:bg-muted/50">
-                                 <TableCell className="text-sm">{msg.resource_id}</TableCell>
+                                 <TableCell className="text-sm truncate max-w-[150px]">{msg.resource_id}</TableCell>
                                  <TableCell>
-                                    <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-none text-[9px] font-semibold">Sent</Badge>
+                                    <Badge className={cn(
+                                       "border-none text-[9px] font-semibold",
+                                       (msg.success === 1 || msg.success === true)
+                                         ? "bg-green-500/10 text-green-700 dark:text-green-400"
+                                         : "bg-red-500/10 text-red-700 dark:text-red-400"
+                                    )}>
+                                       {(msg.success === 1 || msg.success === true) ? 'Sent' : 'Failed'}
+                                    </Badge>
                                  </TableCell>
-                                 <TableCell className="text-right text-[10px] text-muted-foreground">{new Date(msg.timestamp).toLocaleTimeString()}</TableCell>
+                                 <TableCell className="text-right text-[10px] text-muted-foreground">
+                                    {new Date(msg.created_at || msg.timestamp).toLocaleTimeString()}
+                                 </TableCell>
                               </TableRow>
                            ))}
-                           {recentActivities.filter(a => a.action === 'send_message').length === 0 && (
+                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').length === 0 && (
                               <TableRow><TableCell colSpan={3} className="text-center py-10 text-xs text-muted-foreground italic">Aucun message récent</TableCell></TableRow>
                            )}
                         </TableBody>

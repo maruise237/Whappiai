@@ -31,6 +31,7 @@ import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@clerk/nextjs"
 
 interface MessagingTabsProps {
   session: {
@@ -40,12 +41,11 @@ interface MessagingTabsProps {
     isConnected?: boolean;
     [key: string]: any;
   } | null;
-  sessions: any[];
-  onSessionChange: (sessionId: string) => void;
   onTabChange?: (tab: string) => void;
 }
 
 export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
+  const { getToken } = useAuth()
   const [activeTab, setActiveTab] = React.useState("text")
   const [to, setTo] = React.useState("")
   const [loading, setLoading] = React.useState(false)
@@ -70,7 +70,8 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
 
     setUploading(true)
     try {
-      const data = await api.messages.upload(file, session?.token)
+      const token = await getToken()
+      const data = await api.messages.upload(file, token || undefined)
       const url = data.url
       switch (type) {
         case 'image': setImageUrl(url); break;
@@ -107,7 +108,8 @@ export function MessagingTabs({ session, onTabChange }: MessagingTabsProps) {
         payload = { ...payload, type: "video", video: { link: videoUrl, caption: videoCaption } }
       }
 
-      await api.messages.send(session.sessionId, payload, session.token)
+      const token = await getToken()
+      await api.messages.send(session.sessionId, payload, token || undefined)
       toast.success("Message envoyé !", { id: toastId })
       confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } })
       if (activeTab === 'text') setMessage("")
