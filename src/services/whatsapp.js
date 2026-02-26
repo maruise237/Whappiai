@@ -237,16 +237,9 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
             if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', reason, null);
 
-            // Special case for code 428 (Terminated by server) or code 440 (Conflict)
-            // We should stop retrying and wait for manual user intervention to prevent infinite QR loop
-            const isFatalError = statusCode === 428 || statusCode === 440;
-            if (isFatalError) {
-                log(`Arrêt des tentatives de reconnexion auto pour cause d'erreur fatale: ${statusCode}`, sessionId, { event: 'fatal-connection-stop' }, 'WARN');
-                retryCounters.delete(sessionId);
-                return;
-            }
-
             // Handle reconnection logic
+            // We now attempt to reconnect even on 440 (Conflict) and 428 (Terminated) to fulfill "permanent connection" requirement
+            const isConflict = statusCode === 440;
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
                                   statusCode !== 401 && 
                                   statusCode !== 403;
@@ -256,20 +249,23 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 retryCounters.set(sessionId, retryCount);
 
                 // Exponential backoff for WhatsApp reconnection (min 5s at startup to be safe)
-                const delay = Math.max(5000, Math.min(2000 * Math.pow(2, retryCount - 1), 60000));
-                
-                // Increase max attempts to 50 (approx 45-50 min of retrying) for production stability
-                if (retryCount <= 50) { 
-                log(`Reconnexion... (tentative ${retryCount}/50) dans ${delay}ms`, sessionId, {
+                // If it's a conflict, we wait significantly longer (min 30s) to let the other session breath
+                let delay = Math.max(5000, Math.min(2000 * Math.pow(2, retryCount - 1), 60000));
+                if (isConflict) delay = Math.max(delay, 30000);
+
+                // Increase max attempts to 100 for absolute permanence
+                if (retryCount <= 100) {
+                log(`Reconnexion... (tentative ${retryCount}/100) dans ${delay}ms`, sessionId, {
                     event: 'connection-retry',
                     attempt: retryCount,
                     delay
                 }, 'INFO');
-                if (onUpdate) onUpdate(sessionId, 'CONNECTING', `Reconnecting (attempt ${retryCount}/50)...`, null);
+                if (onUpdate) onUpdate(sessionId, 'CONNECTING', `Reconnecting (attempt ${retryCount}/100)...`, null);
                     setTimeout(async () => {
                         // Check if it's still disconnected and no new connection was started
                         if (!activeSockets.has(sessionId)) {
                             try {
+                                log(`Tentative de reconnexion ${retryCount}/100 pour ${sessionId}...`, sessionId, { event: 'reconnect-attempt' }, 'INFO');
                                 await connect(sessionId, onUpdate, onMessage);
                             } catch (err) {
                                 log(`Échec de la tentative de reconnexion ${retryCount}: ${err.message}`, sessionId, { event: 'reconnect-failed', attempt: retryCount, error: err.message }, 'ERROR');
