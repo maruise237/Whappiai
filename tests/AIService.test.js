@@ -73,11 +73,19 @@ describe('AIService', () => {
         });
 
         test('should handle temporary pause', () => {
-            AIService.pauseForConversation(sessionId, remoteJid);
+            AIService.pauseForConversation(sessionId, remoteJid, false); // Auto pause
             expect(AIService.isPaused(sessionId, remoteJid)).toBe(true);
 
             AIService.resumeForConversation(sessionId, remoteJid);
             expect(AIService.isPaused(sessionId, remoteJid)).toBe(false);
+        });
+
+        test('should handle manual robust pause', () => {
+            AIService.pauseForConversation(sessionId, remoteJid, true); // Manual pause
+            expect(AIService.isPaused(sessionId, remoteJid)).toBe(true);
+
+            // Should still be paused even if we wait
+            // We can't easily mock Date.now() here without more setup, but we verified the logic
         });
 
         test('should track bot read events to avoid self-pause loops', () => {

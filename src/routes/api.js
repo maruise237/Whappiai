@@ -456,6 +456,17 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
+    router.post('/sessions/:sessionId/inbox/:jid/pause', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        try {
+            const aiService = require('../services/ai');
+            aiService.pauseForConversation(req.params.sessionId, req.params.jid, true); // true = manual pause
+
+            res.json({ status: 'success', message: 'IA mise en pause pour cette conversation' });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
     router.post('/sessions/:sessionId/inbox/:jid/resume', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         try {
             const aiService = require('../services/ai');
@@ -502,8 +513,16 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 GROUP BY remote_jid
                 ORDER BY last_message_at DESC
             `).all(req.params.sessionId);
-            log(`[API] Inbox récupérée: ${conversations.length} conversations`, 'SYSTEM');
-            res.json({ status: 'success', data: conversations });
+
+            // Add AI pause status
+            const aiService = require('../services/ai');
+            const enrichedConversations = conversations.map(c => ({
+                ...c,
+                is_ai_paused: aiService.isPaused(req.params.sessionId, c.remote_jid)
+            }));
+
+            log(`[API] Inbox récupérée: ${enrichedConversations.length} conversations`, 'SYSTEM');
+            res.json({ status: 'success', data: enrichedConversations });
         } catch (error) {
             log(`[API] Erreur récupération inbox: ${error.message}`, 'SYSTEM', null, 'ERROR');
             res.status(500).json({ status: 'error', message: error.message });

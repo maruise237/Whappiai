@@ -11,6 +11,32 @@ const QueueService = require('./QueueService');
  * Handles group moderation logic (Anti-spam, Anti-link, Bad words)
  */
 
+// Simple cache for group metadata to avoid over-fetching
+const groupMetadataCache = new Map();
+
+/**
+ * Get group metadata with caching
+ * @param {object} sock
+ * @param {string} groupId
+ * @returns {Promise<object>}
+ */
+async function getGroupMetadata(sock, groupId) {
+    const cacheKey = `${sock.user.id}:${groupId}`;
+    const cached = groupMetadataCache.get(cacheKey);
+
+    // Cache for 5 minutes
+    if (cached && (Date.now() - cached.timestamp < 300000)) {
+        return cached.data;
+    }
+
+    const metadata = await sock.groupMetadata(groupId);
+    groupMetadataCache.set(cacheKey, {
+        data: metadata,
+        timestamp: Date.now()
+    });
+    return metadata;
+}
+
 // Helper to check if a user is admin
 function isGroupAdmin(groupMetadata, myJid, myLid, sessionId) {
     if (!groupMetadata.participants) {
@@ -237,7 +263,7 @@ async function handleParticipantUpdate(sock, sessionId, update) {
             return;
         }
 
-        const groupMetadata = await sock.groupMetadata(groupId);
+        const groupMetadata = await getGroupMetadata(sock, groupId);
         const groupService = require('./groups');
         const profile = groupService.getProfile(sessionId, groupId);
         const links = groupService.getProductLinks(sessionId, groupId);
@@ -374,7 +400,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
         const myJid = jidNormalizedUser(sock.user.id);
         const myLid = sock.user.lid || sock.user.LID;
 
-        const groupMetadata = await sock.groupMetadata(groupId);
+        const groupMetadata = await getGroupMetadata(sock, groupId);
         if (isGroupAdmin(groupMetadata, senderJid, null, sessionId)) {
             log(`[Modération] ${senderJid} est admin, immunisé.`, sessionId, { event: 'moderation-skip-admin' }, 'DEBUG');
             return false; // Admins are immune

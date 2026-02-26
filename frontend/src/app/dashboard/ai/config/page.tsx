@@ -103,7 +103,6 @@ function AIConfigContent() {
 
   const modes = [
     { id: 'bot', name: 'Automatique', desc: 'IA gère tout', icon: Bot },
-    { id: 'human', name: 'Suggestion', desc: 'Proposition par IA', icon: User },
     { id: 'keyword', name: 'Mots-clés', desc: 'Zéro IA, uniquement mots-clés', icon: Terminal },
   ]
 

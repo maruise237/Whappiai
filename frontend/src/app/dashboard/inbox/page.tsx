@@ -55,6 +55,7 @@ export default function InboxPage() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [isSending, setIsSending] = React.useState(false)
   const [isResuming, setIsResuming] = React.useState(false)
+  const [isPausing, setIsPausing] = React.useState(false)
 
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
@@ -169,11 +170,31 @@ export default function InboxPage() {
     try {
       const token = await getToken()
       await api.sessions.resumeAI(selectedSession, selectedChat, token || undefined)
+      setConversations(prev => prev.map(c =>
+        c.remote_jid === selectedChat ? { ...c, is_ai_paused: false } : c
+      ))
       toast.success("IA réactivée pour ce contact")
     } catch (e: any) {
       toast.error("Échec de la réactivation")
     } finally {
       setIsResuming(false)
+    }
+  }
+
+  const handlePauseAI = async () => {
+    if (!selectedChat || !selectedSession || isPausing) return
+    setIsPausing(true)
+    try {
+      const token = await getToken()
+      await api.sessions.pauseAI(selectedSession, selectedChat, token || undefined)
+      setConversations(prev => prev.map(c =>
+        c.remote_jid === selectedChat ? { ...c, is_ai_paused: true } : c
+      ))
+      toast.success("IA mise en pause pour ce contact")
+    } catch (e: any) {
+      toast.error("Échec de la mise en pause")
+    } finally {
+      setIsPausing(false)
     }
   }
 
@@ -273,10 +294,15 @@ export default function InboxPage() {
                     )}
                   >
                     <div className="flex items-center justify-between gap-3 mb-1 min-w-0">
-                      <span className="text-[12px] font-bold truncate flex-1 min-w-0">
-                        {conv.remote_jid.includes('@g.us') ? "👥 " : ""}
-                        {conv.remote_jid.split('@')[0].substring(0, 15)}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span className="text-[12px] font-bold truncate">
+                          {conv.remote_jid.includes('@g.us') ? "👥 " : ""}
+                          {conv.remote_jid.split('@')[0].substring(0, 15)}
+                        </span>
+                        {conv.is_ai_paused && (
+                          <div className="h-1.5 w-1.5 rounded-full bg-orange-400 shrink-0" title="IA en pause" />
+                        )}
+                      </div>
                       <span className="text-[9px] text-muted-foreground/60 whitespace-nowrap">
                         {new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
@@ -327,6 +353,27 @@ export default function InboxPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {conversations.find(c => c.remote_jid === selectedChat)?.is_ai_paused ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-[9px] font-bold bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100"
+                      onClick={handleResumeAI}
+                      disabled={isResuming}
+                    >
+                      <Bot className="h-3 w-3 mr-1" /> RÉACTIVER IA
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-[9px] font-bold bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+                      onClick={handlePauseAI}
+                      disabled={isPausing}
+                    >
+                      <Bot className="h-3 w-3 mr-1" /> PAUSE IA
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" onClick={() => fetchHistory(selectedChat)} disabled={isChatLoading}>
                     <RefreshCcw className={cn("h-3.5 w-3.5", isChatLoading && "animate-spin")} />
                   </Button>
@@ -411,16 +458,22 @@ export default function InboxPage() {
                 </form>
                 <div className="flex items-center justify-between mt-2 px-1">
                    <div className="flex items-center gap-3">
-                      <p className="text-[9px] text-muted-foreground">{t("inbox.ai_pause_notice")}</p>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 text-[9px] font-bold text-primary hover:text-primary/80"
-                        onClick={handleResumeAI}
-                        disabled={isResuming}
-                      >
-                        {isResuming ? "..." : "RÉACTIVER MAINTENANT"}
-                      </Button>
+                      {conversations.find(c => c.remote_jid === selectedChat)?.is_ai_paused ? (
+                        <>
+                          <p className="text-[9px] text-orange-600 font-medium italic">L&apos;IA est en pause pour ce contact.</p>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 text-[9px] font-bold text-primary hover:text-primary/80"
+                            onClick={handleResumeAI}
+                            disabled={isResuming}
+                          >
+                            {isResuming ? "..." : "RÉACTIVER MAINTENANT"}
+                          </Button>
+                        </>
+                      ) : (
+                        <p className="text-[9px] text-muted-foreground">{t("inbox.ai_pause_notice")}</p>
+                      )}
                    </div>
                    <div className="flex items-center gap-1">
                       <div className="h-1 w-1 rounded-full bg-green-500 animate-pulse" />

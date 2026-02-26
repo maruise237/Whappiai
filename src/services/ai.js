@@ -55,11 +55,12 @@ class AIService {
      * Temporarily pause AI for a specific conversation
      * @param {string} sessionId 
      * @param {string} remoteJid 
+     * @param {boolean} manual - Whether it was a manual pause by the user
      */
-    static pauseForConversation(sessionId, remoteJid) {
+    static pauseForConversation(sessionId, remoteJid, manual = false) {
         const key = `${sessionId}:${remoteJid}`;
-        pausedConversations.set(key, true);
-        log(`IA mise en pause temporaire pour ${remoteJid}`, sessionId, { event: 'ai-pause' }, 'DEBUG');
+        pausedConversations.set(key, { timestamp: Date.now(), manual });
+        log(`IA mise en pause ${manual ? 'MANUELLE' : 'temporaire'} pour ${remoteJid}`, sessionId, { event: 'ai-pause', manual }, 'DEBUG');
     }
 
     /**
@@ -70,7 +71,19 @@ class AIService {
      */
     static isPaused(sessionId, remoteJid) {
         const key = `${sessionId}:${remoteJid}`;
-        return pausedConversations.has(key);
+        const pause = pausedConversations.get(key);
+        if (!pause) return false;
+
+        // Manual pause is robust: stays paused until manual resume
+        if (pause.manual) return true;
+
+        // Auto pause (from owner activity) expires after 2 minutes of inactivity
+        const diff = (Date.now() - pause.timestamp) / (1000 * 60);
+        if (diff > 2) {
+            pausedConversations.delete(key);
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -300,10 +313,9 @@ class AIService {
                 pendingRetries.delete(retryKey);
             }
 
-            // 2. Check if AI is temporarily paused for this conversation (Bug Fix: Permanent Deactivation)
+            // 2. Check if AI is temporarily paused for this conversation
             if (this.isPaused(sessionId, remoteJid)) {
-                log(`Message de ${remoteJid} ignoré car l'IA est en pause temporaire pour cette conversation`, sessionId, { event: 'ai-skip', reason: 'temporary-pause' }, 'INFO');
-                this.resumeForConversation(sessionId, remoteJid); // Resume for next message
+                log(`Message de ${remoteJid} ignoré car l'IA est en pause pour cette conversation`, sessionId, { event: 'ai-skip', reason: 'temporary-pause' }, 'INFO');
                 return;
             }
 
