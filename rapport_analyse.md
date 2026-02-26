@@ -41,16 +41,24 @@ Whappi est une plateforme SaaS de type "WhatsApp Business API Alternative" perme
 - **Sécurité** : Chiffrement des tokens, rate limiting, isolation des sessions utilisateur.
 - **Expérience Développeur** : Documentation claire (`AGENTS.md`), prêt pour le déploiement Docker/Dokploy.
 
-## 5. Recommandations et Axes d'Amélioration
+## 5. Améliorations Récentes (Directive Chef de Projet)
+
+### Unification Sémantique & Technique
+- **Harmonisation Totale** : La terminologie "Animation" a été intégralement remplacée par **"Engagement"** à travers toute la stack (Backend, Frontend, DB, API).
+- **Migration de Données** : Une migration automatique a été mise en place pour renommer la table `group_animator_tasks` en `group_engagement_tasks` sans perte de données.
+
+### Professionnalisation de l'Infrastructure
+- **MigrationRunner** : Introduction d'un système de migration professionnel gérant l'historique des changements de schéma dans une table `_migrations`.
+- **Tests Automatisés** : Couverture de `EngagementService` et `AIService` par des tests unitaires robustes, validant notamment la logique de cohabitation Humain-IA et la protection anti-boucle.
+
+## 6. Recommandations et Axes d'Amélioration
 
 ### Technique
-- **Migrations de Schéma** : Envisager un outil comme `Knex` ou `Prisma` pour gérer les évolutions de la base de données de manière plus formelle que les `ALTER TABLE` try/catch actuels.
-- **Scalabilité** : La dépendance au système de fichiers pour les sessions Baileys limite la scalabilité horizontale (nécessite des volumes partagés ou un passage vers un stockage S3/Redis pour les credentials).
-- **Refactorisation Nommage** : Harmoniser le nommage entre le code (qui utilise encore "animation") et l'UI (qui utilise "Engagement").
+- **Scalabilité** : La dépendance au système de fichiers pour les sessions Baileys limite la scalabilité horizontale (passage recommandé vers S3/Redis pour les credentials).
 
 ### Produit
 - **Monitoring** : Ajouter des métriques de performance sur les temps de réponse de l'IA.
 - **Webhooks** : Étendre les événements de webhooks pour permettre des intégrations tierces plus poussées (ex: Zapier/Make).
 
-## 6. Conclusion
+## 7. Conclusion
 Le projet Whappi est extrêmement mature techniquement pour un MVP/V1. L'architecture est solide et les fonctionnalités d'IA "human-like" lui donnent un avantage concurrentiel sérieux sur le marché des API WhatsApp.

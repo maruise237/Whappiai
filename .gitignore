@@ -91,7 +91,6 @@ test_whatsapp_api.py
 test-encryption.js
 requirements.txt
 whatsapp_campaign_plan.md
-tests/
 
 # OS Files
 .DS_Store

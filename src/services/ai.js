@@ -17,6 +17,7 @@ const pausedConversations = new Map();
 const botReadHistory = new Set(); // Track messages read by the bot itself
 const lastOwnerActivity = new Map(); // Track last activity from the owner per JID
 const pendingRetries = new Map(); // Track messages ignored by random protection for later retry
+const aiResponseHistory = new Map(); // Track AI response timestamps for loop protection
 
 class AIService {
     /**
@@ -165,6 +166,41 @@ class AIService {
     }
 
     /**
+     * Check if we are in an AI-to-AI loop
+     * @param {string} sessionId
+     * @param {string} remoteJid
+     * @returns {boolean}
+     */
+    static isLoopDetected(sessionId, remoteJid) {
+        const key = `${sessionId}:${remoteJid}`;
+        const now = Date.now();
+        const history = aiResponseHistory.get(key) || [];
+
+        // Keep only timestamps from the last 10 minutes
+        const recentResponses = history.filter(ts => (now - ts) < 10 * 60 * 1000);
+        aiResponseHistory.set(key, recentResponses);
+
+        // Threshold: More than 10 responses in 10 minutes is likely a loop
+        if (recentResponses.length >= 10) {
+            log(`Protection anti-boucle activée pour ${remoteJid} : ${recentResponses.length} réponses en 10 min.`, sessionId, { event: 'ai-loop-block', remoteJid, count: recentResponses.length }, 'WARN');
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Record an AI response for loop protection
+     * @param {string} sessionId
+     * @param {string} remoteJid
+     */
+    static recordAIResponse(sessionId, remoteJid) {
+        const key = `${sessionId}:${remoteJid}`;
+        const history = aiResponseHistory.get(key) || [];
+        history.push(Date.now());
+        aiResponseHistory.set(key, history);
+    }
+
+    /**
      * Handles an incoming message and generates an AI response if enabled
      * @param {object} sock - Baileys socket
      * @param {string} sessionId - Session ID (now userId)
@@ -268,6 +304,12 @@ class AIService {
             if (this.isPaused(sessionId, remoteJid)) {
                 log(`Message de ${remoteJid} ignoré car l'IA est en pause temporaire pour cette conversation`, sessionId, { event: 'ai-skip', reason: 'temporary-pause' }, 'INFO');
                 this.resumeForConversation(sessionId, remoteJid); // Resume for next message
+                return;
+            }
+
+            // 3. Loop Protection
+            if (this.isLoopDetected(sessionId, remoteJid)) {
+                log(`Message de ${remoteJid} ignoré : Boucle IA potentielle détectée`, sessionId, { event: 'ai-skip', reason: 'loop-protection' }, 'WARN');
                 return;
             }
 
@@ -636,18 +678,22 @@ class AIService {
         // 4. Bold: **text** or __text__ -> §B§text§B§
         formatted = formatted.replace(/(\*\*|__)(.*?)\1/g, '§B§$2§B§');
 
-        // 5. Italics: *text* or _text_ -> _text_
-        // Match single * or _ that are NOT part of our placeholders
-        formatted = formatted.replace(/(^|[^\*])\*([^\*§«»]+)\*([^\*]|$)/g, '$1_$2_$3');
-        formatted = formatted.replace(/(^|[^_])_([^_§«»]+)_([^_]|$)/g, '$1_$2_$3');
+        // 5. List markers: convert Markdown lists to WhatsApp bullet points
+        // Doing this before italics to avoid conflict with "*"
+        formatted = formatted.replace(/^[\s]*[\*\-][\s]+(.*)$/gm, '• $1');
 
-        // 6. Strikethrough: ~~text~~ -> ~text~
+        // 6. Italics: *text* or _text_ -> _text_
+        // Match single * or _ that are NOT part of our placeholders
+        formatted = formatted.replace(/(^|[^\*])\*([^\*\n§«»]+)\*([^\*]|$)/g, '$1_$2_$3');
+        formatted = formatted.replace(/(^|[^_])_([^_ \n§«»]+)_([^_]|$)/g, '$1_$2_$3');
+
+        // 7. Strikethrough: ~~text~~ -> ~text~
         formatted = formatted.replace(/~~(.*?)~~/g, '~$1~');
 
-        // 7. Convert bold placeholders to *
+        // 8. Convert bold placeholders to *
         formatted = formatted.replace(/§B§/g, '*');
 
-        // 8. Re-insert protected code at the very end
+        // 9. Re-insert protected code at the very end
         inlineCodes.forEach((code, i) => {
             formatted = formatted.replace(`«IC${i}»`, `\`\`\`${code}\`\`\``);
         });
@@ -655,12 +701,8 @@ class AIService {
             formatted = formatted.replace(`«CB${i}»`, `\`\`\`${code}\`\`\``);
         });
 
-        // 9. Clean up multiple empty lines (max 2)
+        // 10. Clean up multiple empty lines (max 2)
         formatted = formatted.replace(/\n{3,}/g, '\n\n');
-
-        // 10. List markers: convert Markdown lists to WhatsApp bullet points
-        // Convert "* item" or "- item" to "• item"
-        formatted = formatted.replace(/^[\s]*[\*\-][\s]+(.*)$/gm, '• $1');
 
         return formatted.trim();
     }
@@ -722,6 +764,7 @@ class AIService {
             if (result) {
                 log(`Message envoyé avec succès à ${jid}`, sessionId, { event: 'ai-sent', jid }, 'INFO');
                 Session.updateAIStats(sessionId, 'sent');
+                this.recordAIResponse(sessionId, jid);
 
                 // Log to activity log if available
                 const session = Session.findById(sessionId);
