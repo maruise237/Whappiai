@@ -239,7 +239,16 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         if (connection === 'open') {
             const name = sock.user?.name || 'Unknown';
             log(`WhatsApp connecté: ${name}`, sessionId, { event: 'connection-open', user: name }, 'INFO');
-            retryCounters.delete(sessionId);
+
+            // Wait for stability before resetting retry counter to break conflict loops (440)
+            setTimeout(() => {
+                const currentSock = activeSockets.get(sessionId);
+                if (currentSock === sock && currentSock?.user) {
+                    log(`Connexion stabilisée pour ${sessionId}, réinitialisation du compteur de tentatives`, sessionId, { event: 'connection-stabilized' }, 'DEBUG');
+                    retryCounters.delete(sessionId);
+                }
+            }, 120000); // 2 minutes of stable connection required to reset counter
+
             lastQrs.delete(sessionId);
 
             if (onUpdate) onUpdate(sessionId, 'CONNECTED', `Connected as ${name}`, null);
@@ -558,13 +567,16 @@ async function disconnect(sessionId, clearRetry = true) {
             sock.ev.removeAllListeners('creds.update');
             sock.ev.on('creds.update', () => {}); // Fallback empty handler
             sock.ev.removeAllListeners('messages.upsert');
-            sock.ev.removeAllListeners('connection.update');
+            sock.ev.removeAllListeners('presence.update');
+            sock.ev.removeAllListeners('messages.update');
+            sock.ev.removeAllListeners('group-participants.update');
+            sock.ev.removeAllListeners('call');
             
             // End the socket properly
             sock.end();
             
             // Wait a small delay to ensure OS resources are released
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (err) {
             log(`Erreur lors de la déconnexion de ${sessionId}: ${err.message}`, sessionId, { event: 'disconnect-error', error: err.message }, 'WARN');
         }
@@ -625,39 +637,53 @@ async function deleteSessionData(sessionId) {
     }
 
     deletingSessions.add(sessionId);
+    log(`Début de la suppression des données pour ${sessionId}`, sessionId, { event: 'delete-session-data-start' }, 'INFO');
 
     try {
+        // Attempt clean logout if connected
+        const sock = activeSockets.get(sessionId);
+        if (sock && sock.user) {
+            try {
+                log(`Tentative de déconnexion propre (logout) pour ${sessionId}`, sessionId, { event: 'logout-attempt' }, 'INFO');
+                // We wrap logout in a timeout because it can sometimes hang if connection is bad
+                await Promise.race([
+                    sock.logout(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Logout timeout')), 5000))
+                ]);
+                log(`Logout réussi pour ${sessionId}`, sessionId, { event: 'logout-success' }, 'INFO');
+            } catch (err) {
+                log(`Logout échoué ou ignoré pour ${sessionId}: ${err.message}`, sessionId, { event: 'logout-failed' }, 'WARN');
+            }
+        }
+
         await disconnect(sessionId, true);
 
         const sessionDir = path.join(AUTH_DIR, sessionId);
         if (fs.existsSync(sessionDir)) {
             // Robust deletion with retry for locked files
-            let retries = 5;
+            let retries = 10;
             while (retries > 0) {
                 try {
                     // Force recursive removal
-                    if (fs.rmSync) {
-                        fs.rmSync(sessionDir, { recursive: true, force: true });
-                    } else {
-                        // Older Node.js versions
-                        fs.rmdirSync(sessionDir, { recursive: true });
-                    }
-                    log(`Données de session supprimées: ${sessionId}`, sessionId, { event: 'auth-data-deleted' }, 'INFO');
+                    fs.rmSync(sessionDir, { recursive: true, force: true });
+                    log(`Données de session supprimées sur le disque: ${sessionId}`, sessionId, { event: 'auth-data-deleted' }, 'INFO');
                     break;
                 } catch (err) {
                     retries--;
                     if (err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'ENOTEMPTY') {
-                        log(`Fichiers verrouillés pour ${sessionId}, tentative ${5-retries}/5...`, sessionId, { event: 'auth-delete-retry', error: err.code }, 'WARN');
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        log(`Fichiers verrouillés pour ${sessionId}, tentative ${10-retries}/10...`, sessionId, { event: 'auth-delete-retry', error: err.code }, 'WARN');
+                        await new Promise(resolve => setTimeout(resolve, 2000));
                     } else if (err.code === 'ENOENT') {
                         break; // Already gone
                     } else {
-                        log(`Erreur lors de la suppression des données de ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+                        log(`Erreur critique lors de la suppression des données de ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
                         break;
                     }
                 }
             }
         }
+    } catch (err) {
+        log(`Erreur globale lors de la suppression de ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
     } finally {
         deletingSessions.delete(sessionId);
     }

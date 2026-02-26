@@ -22,7 +22,15 @@ class Session {
     static create(sessionId, ownerEmail = null) {
         const existingSession = this.findById(sessionId);
         if (existingSession) {
-            return existingSession; // Just return if already exists
+            // If the session exists but has no owner or is owned by admin@localhost,
+            // and we have a specific ownerEmail, let's "claim" it for the new user.
+            if (ownerEmail && (existingSession.owner_email === 'admin@localhost' || !existingSession.owner_email)) {
+                log(`Session orpheline ${sessionId} revendiquée par ${ownerEmail}`, 'SYSTEM', { sessionId, ownerEmail }, 'INFO');
+                const stmt = db.prepare('UPDATE whatsapp_sessions SET owner_email = ?, updated_at = datetime(\'now\') WHERE id = ?');
+                stmt.run(ownerEmail.toLowerCase().trim(), sessionId);
+                return this.findById(sessionId);
+            }
+            return existingSession; // Just return if already exists and owned
         }
 
         const token = crypto.randomUUID();
