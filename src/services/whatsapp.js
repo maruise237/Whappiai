@@ -30,8 +30,10 @@ const logger = pino({ level: process.env.LOG_LEVEL || defaultLogLevel });
 // Active socket connections (in-memory)
 const activeSockets = new Map();
 const retryCounters = new Map();
+const reconnectTimeouts = new Map();
 const lastQrs = new Map();
 const connectingSessions = new Set();
+const deletingSessions = new Set();
 
 // Auth directory
 const AUTH_DIR = path.join(__dirname, '../../auth_info_baileys');
@@ -56,6 +58,11 @@ function ensureAuthDir() {
 async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
     if (!require('../utils/validation').isValidId(sessionId)) {
         throw new Error('Invalid session ID');
+    }
+
+    if (deletingSessions.has(sessionId)) {
+        log(`Session ${sessionId} en cours de suppression, connexion annulée`, sessionId, { event: 'connect-aborted-deleting' }, 'WARN');
+        return null;
     }
 
     // Connection lock to prevent concurrent attempts for same ID
@@ -274,9 +281,10 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 let delay = Math.max(5000, Math.min(2000 * Math.pow(2, retryCount - 1), 120000));
 
                 if (isConflict) {
-                    // Start at 1 min for conflict, up to 10 mins
-                    delay = Math.max(delay, 60000 * Math.min(retryCount, 10));
-                    log(`Conflit de session détecté (440). Temporisation accrue: ${delay/1000}s`, sessionId, { event: 'connection-conflict', retryCount }, 'WARN');
+                    // Start at 1 min for conflict, up to 10 mins, + random jitter (0-30s) to break sync loops
+                    const jitter = Math.floor(Math.random() * 30000);
+                    delay = Math.max(delay, (60000 * Math.min(retryCount, 10)) + jitter);
+                    log(`Conflit de session détecté (440). Temporisation accrue: ${Math.round(delay/1000)}s (jitter: ${Math.round(jitter/1000)}s)`, sessionId, { event: 'connection-conflict', retryCount, delay }, 'WARN');
                 }
 
                 // Increase max attempts to 100 for absolute permanence
@@ -289,9 +297,10 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
                     if (onUpdate) onUpdate(sessionId, 'CONNECTING', `Reconnecting (attempt ${retryCount}/100)...`, null);
 
-                    setTimeout(async () => {
+                    const timeout = setTimeout(async () => {
+                        reconnectTimeouts.delete(sessionId);
                         // Check if it's still disconnected and no new connection was started
-                        if (!activeSockets.has(sessionId)) {
+                        if (!activeSockets.has(sessionId) && !deletingSessions.has(sessionId)) {
                             try {
                                 log(`Tentative de reconnexion ${retryCount}/100 pour ${sessionId}...`, sessionId, { event: 'reconnect-attempt' }, 'INFO');
                                 await connect(sessionId, onUpdate, onMessage);
@@ -300,6 +309,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                             }
                         }
                     }, delay);
+                    reconnectTimeouts.set(sessionId, timeout);
                 } else {
                     log(`Nombre maximum de tentatives de reconnexion atteint`, sessionId, { event: 'reconnect-max-reached' }, 'WARN');
                     retryCounters.delete(sessionId);
@@ -530,6 +540,15 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
  * @param {boolean} clearRetry - Whether to clear the retry counter (default: true)
  */
 async function disconnect(sessionId, clearRetry = true) {
+    // 1. Clear any pending reconnection timer
+    const timeout = reconnectTimeouts.get(sessionId);
+    if (timeout) {
+        clearTimeout(timeout);
+        reconnectTimeouts.delete(sessionId);
+        log(`Timer de reconnexion annulé pour ${sessionId}`, sessionId, { event: 'reconnect-cancelled' }, 'DEBUG');
+    }
+
+    // 2. Disconnect socket
     const sock = activeSockets.get(sessionId);
     if (sock) {
         log(`Déconnexion demandée pour la session ${sessionId}`, sessionId, { event: 'disconnect-request' }, 'DEBUG');
@@ -537,7 +556,9 @@ async function disconnect(sessionId, clearRetry = true) {
             // Unregister all events to prevent callbacks during shutdown
             sock.ev.removeAllListeners('connection.update');
             sock.ev.removeAllListeners('creds.update');
+            sock.ev.on('creds.update', () => {}); // Fallback empty handler
             sock.ev.removeAllListeners('messages.upsert');
+            sock.ev.removeAllListeners('connection.update');
             
             // End the socket properly
             sock.end();
@@ -549,6 +570,7 @@ async function disconnect(sessionId, clearRetry = true) {
         }
         activeSockets.delete(sessionId);
     }
+
     if (clearRetry) {
         retryCounters.delete(sessionId);
     }
@@ -602,28 +624,42 @@ async function deleteSessionData(sessionId) {
         return;
     }
 
-    await disconnect(sessionId);
+    deletingSessions.add(sessionId);
 
-    const sessionDir = path.join(AUTH_DIR, sessionId);
-    if (fs.existsSync(sessionDir)) {
-        // Robust deletion with retry for locked files
-        let retries = 5;
-        while (retries > 0) {
-            try {
-                fs.rmSync(sessionDir, { recursive: true, force: true });
-                log(`Données de session supprimées: ${sessionId}`, sessionId, { event: 'auth-data-deleted' }, 'INFO');
-                break;
-            } catch (err) {
-                retries--;
-                if (err.code === 'EPERM' || err.code === 'EBUSY') {
-                    log(`Fichiers verrouillés pour ${sessionId}, tentative ${5-retries}/5...`, sessionId, { event: 'auth-delete-retry' }, 'WARN');
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                } else {
-                    log(`Erreur lors de la suppression des données de ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+    try {
+        await disconnect(sessionId, true);
+
+        const sessionDir = path.join(AUTH_DIR, sessionId);
+        if (fs.existsSync(sessionDir)) {
+            // Robust deletion with retry for locked files
+            let retries = 5;
+            while (retries > 0) {
+                try {
+                    // Force recursive removal
+                    if (fs.rmSync) {
+                        fs.rmSync(sessionDir, { recursive: true, force: true });
+                    } else {
+                        // Older Node.js versions
+                        fs.rmdirSync(sessionDir, { recursive: true });
+                    }
+                    log(`Données de session supprimées: ${sessionId}`, sessionId, { event: 'auth-data-deleted' }, 'INFO');
                     break;
+                } catch (err) {
+                    retries--;
+                    if (err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'ENOTEMPTY') {
+                        log(`Fichiers verrouillés pour ${sessionId}, tentative ${5-retries}/5...`, sessionId, { event: 'auth-delete-retry', error: err.code }, 'WARN');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    } else if (err.code === 'ENOENT') {
+                        break; // Already gone
+                    } else {
+                        log(`Erreur lors de la suppression des données de ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+                        break;
+                    }
                 }
             }
         }
+    } finally {
+        deletingSessions.delete(sessionId);
     }
 }
 
