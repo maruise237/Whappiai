@@ -30,7 +30,23 @@ db.pragma('journal_mode = WAL');
  * Initialize database schema and run migrations
  */
 function initializeSchema() {
-    // 1. Core tables (Idempotent - CREATE TABLE IF NOT EXISTS)
+    // 1. Initial Migration Check (Before any CREATE TABLE)
+    // This ensures data continuity during the Animator -> Engagement rename
+    const runner = new MigrationRunner(db);
+    runner.init();
+
+    runner.run('rename-animator-to-engagement-fix-v3', (db) => {
+        const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='group_animator_tasks'").get();
+        if (tableCheck) {
+            const newTableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='group_engagement_tasks'").get();
+            if (!newTableCheck) {
+                log('Migration de données : Renommage de group_animator_tasks en group_engagement_tasks', 'SYSTEM');
+                db.exec("ALTER TABLE group_animator_tasks RENAME TO group_engagement_tasks");
+            }
+        }
+    });
+
+    // 2. Core tables (Idempotent - CREATE TABLE IF NOT EXISTS)
 
     // Users
     db.exec(`
@@ -87,6 +103,19 @@ function initializeSchema() {
     `);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_activity_user_date ON activity_logs(user_email, created_at)`);
 
+    // Conversation Memory
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS conversation_memory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
+            remote_jid TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+            content TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_memory_session_jid ON conversation_memory(session_id, remote_jid)`);
+
     // Group Moderation Settings
     db.exec(`
         CREATE TABLE IF NOT EXISTS group_settings (
@@ -103,7 +132,19 @@ function initializeSchema() {
         )
     `);
 
-    // Group Engagement Tasks (Renamed from Animator)
+    // User Warnings
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_warnings (
+            group_id TEXT NOT NULL,
+            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL,
+            count INTEGER DEFAULT 0,
+            last_warning_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (group_id, session_id, user_id)
+        )
+    `);
+
+    // Group Engagement Tasks
     db.exec(`
         CREATE TABLE IF NOT EXISTS group_engagement_tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,20 +163,70 @@ function initializeSchema() {
         )
     `);
 
-    // 2. Additional Tables (Modern Whappi)
-
-    // Conversation Memory
+    // Group Profiles
     db.exec(`
-        CREATE TABLE IF NOT EXISTS conversation_memory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS group_profiles (
+            group_id TEXT NOT NULL,
             session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
-            remote_jid TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
-            content TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            mission TEXT,
+            objectives TEXT,
+            rules TEXT,
+            theme TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (group_id, session_id)
         )
     `);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_memory_session_jid ON conversation_memory(session_id, remote_jid)`);
+
+    // Group Product Links
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS group_product_links (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            group_id TEXT NOT NULL,
+            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
+            title TEXT,
+            description TEXT,
+            url TEXT,
+            cta TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // AI Models
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS ai_models (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            endpoint TEXT NOT NULL,
+            api_key TEXT NOT NULL,
+            model_name TEXT NOT NULL,
+            description TEXT,
+            is_active INTEGER DEFAULT 1,
+            is_default INTEGER DEFAULT 0,
+            temperature REAL DEFAULT 0.7,
+            max_tokens INTEGER DEFAULT 2000,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Keyword Responders
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS keyword_responders (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
+            keyword TEXT NOT NULL,
+            match_type TEXT DEFAULT 'contains' CHECK(match_type IN ('exact', 'contains', 'regex')),
+            response_type TEXT DEFAULT 'text' CHECK(response_type IN ('text', 'image', 'document', 'audio', 'video')),
+            response_content TEXT NOT NULL,
+            file_name TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
 
     // Webhooks
     db.exec(`
@@ -186,25 +277,6 @@ function initializeSchema() {
         `);
     } catch (e) {}
 
-    // AI Models
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS ai_models (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            provider TEXT NOT NULL,
-            endpoint TEXT NOT NULL,
-            api_key TEXT NOT NULL,
-            model_name TEXT NOT NULL,
-            description TEXT,
-            is_active INTEGER DEFAULT 1,
-            is_default INTEGER DEFAULT 0,
-            temperature REAL DEFAULT 0.7,
-            max_tokens INTEGER DEFAULT 2000,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-
     // SaaS Components
     db.exec(`
         CREATE TABLE IF NOT EXISTS pricing_plans (
@@ -252,38 +324,44 @@ function initializeSchema() {
         )
     `);
 
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS keyword_responders (
-            id TEXT PRIMARY KEY,
-            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
-            keyword TEXT NOT NULL,
-            match_type TEXT DEFAULT 'contains' CHECK(match_type IN ('exact', 'contains', 'regex')),
-            response_type TEXT DEFAULT 'text' CHECK(response_type IN ('text', 'image', 'document', 'audio', 'video')),
-            response_content TEXT NOT NULL,
-            file_name TEXT,
-            is_active INTEGER DEFAULT 1,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
+    // 3. Schema Extensions (Migrations)
 
-    // 3. Run Migrations (Professionalized)
-    const runner = new MigrationRunner(db);
-    runner.init();
+    // Migration: Group Settings session_id for old schemas
+    runner.run('group-settings-add-session-id', (db) => {
+        const tableInfo = db.prepare("PRAGMA table_info(group_settings)").all();
+        const hasSessionId = tableInfo.some(col => col.name === 'session_id');
 
-    // Migration: Rename animator to engagement (Data continuity)
-    runner.run('rename-animator-to-engagement-v2', (db) => {
-        const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='group_animator_tasks'").get();
-        if (tableCheck) {
-            const newTableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='group_engagement_tasks'").get();
-            if (!newTableCheck) {
-                db.exec("ALTER TABLE group_animator_tasks RENAME TO group_engagement_tasks");
+        if (!hasSessionId) {
+            const countRow = db.prepare("SELECT count(*) as count FROM group_settings").get();
+            if (countRow && countRow.count > 0) {
+                db.exec("ALTER TABLE group_settings RENAME TO group_settings_old");
+                db.exec(`
+                    CREATE TABLE group_settings (
+                        group_id TEXT NOT NULL,
+                        session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
+                        is_active INTEGER DEFAULT 0,
+                        anti_link INTEGER DEFAULT 0,
+                        bad_words TEXT,
+                        warning_template TEXT DEFAULT 'ATTENTION @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
+                        max_warnings INTEGER DEFAULT 5,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (group_id, session_id)
+                    )
+                `);
+                const sessions = db.prepare("SELECT id FROM whatsapp_sessions").all();
+                if (sessions.length === 1) {
+                    const sid = sessions[0].id;
+                    db.exec(`INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at)
+                             SELECT group_id, '${sid}', is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at FROM group_settings_old`);
+                }
+                db.exec("DROP TABLE group_settings_old");
             }
         }
     });
 
-    // User table extensions
-    runner.run('users-v2026-fields', (db) => {
+    // User table extensions (2026 SaaS fields)
+    runner.run('users-saas-v2026-v2', (db) => {
         const columns = [
             { name: 'bio', type: 'TEXT' },
             { name: 'location', type: 'TEXT' },
@@ -294,6 +372,7 @@ function initializeSchema() {
             { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_prompt', type: 'TEXT' },
             { name: 'ai_model', type: "TEXT DEFAULT 'deepseek-chat'" },
+            { name: 'image_url', type: 'TEXT' },
             { name: 'plan_id', type: "TEXT DEFAULT 'free'" },
             { name: 'plan_status', type: "TEXT DEFAULT 'active'" },
             { name: 'message_limit', type: 'INTEGER DEFAULT 100' },
@@ -308,37 +387,36 @@ function initializeSchema() {
         });
     });
 
-    // WhatsApp Sessions pairing code
-    runner.run('whatsapp-sessions-pairing-code', (db) => {
-        try { db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN pairing_code TEXT`); } catch (e) {}
-    });
-
-    // WhatsApp Sessions AI fields
-    runner.run('whatsapp-sessions-ai-fields', (db) => {
+    // WhatsApp Sessions AI and delays
+    runner.run('whatsapp-sessions-v2026-v2', (db) => {
         const columns = [
+            { name: 'pairing_code', type: 'TEXT' },
             { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_model', type: 'TEXT' },
             { name: 'ai_prompt', type: 'TEXT' },
             { name: 'ai_messages_sent', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_delay_min', type: 'INTEGER DEFAULT 1' },
             { name: 'ai_delay_max', type: 'INTEGER DEFAULT 5' },
-            { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' }
+            { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_deactivate_on_typing', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_deactivate_on_read', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_session_window', type: 'INTEGER DEFAULT 2' }
         ];
         columns.forEach(col => {
             try { db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
         });
     });
 
-    // Group Settings extensions
-    runner.run('group-settings-v2', (db) => {
+    // Group Settings Welcome & Assistant
+    runner.run('group-settings-engagement-v2', (db) => {
         try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_enabled INTEGER DEFAULT 0"); } catch (e) {}
         try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_template TEXT"); } catch (e) {}
         try { db.exec("ALTER TABLE group_settings ADD COLUMN ai_assistant_enabled INTEGER DEFAULT 0"); } catch (e) {}
     });
 
     // Initialize default plans if empty
-    const count = db.prepare('SELECT count(*) as count FROM pricing_plans').get();
-    if (count.count === 0) {
+    const countRow = db.prepare('SELECT count(*) as count FROM pricing_plans').get();
+    if (countRow && countRow.count === 0) {
         const insertPlan = db.prepare(`
             INSERT INTO pricing_plans (id, code, name, price, message_limit, interval, version, chariow_product_id, payment_url, features)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
