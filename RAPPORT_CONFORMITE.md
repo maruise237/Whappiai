@@ -1,7 +1,7 @@
-# Rapport de Conformité : Système d'Animation et de Messagerie Programmée
+# Rapport de Conformité : Système d'Engagement et de Messagerie Programmée
 
 ## 1. Résumé des Interventions
-Suite aux dysfonctionnements signalés (liens non fonctionnels, messages manquants en file d'attente, absence de modification et d'historique), une refonte complète du service `animator.js` et de son interface a été réalisée.
+Suite aux dysfonctionnements signalés (liens non fonctionnels, messages manquants en file d'attente, absence de modification et d'historique), une refonte complète du service `engagement.js` (anciennement `animator.js`) et de son interface a été réalisée.
 
 ## 2. Corrections Techniques Appliquées
 
@@ -11,12 +11,12 @@ Suite aux dysfonctionnements signalés (liens non fonctionnels, messages manquan
 - **Polling Robuste** : Intervalle de vérification maintenu à 30 secondes avec exécution immédiate des tâches dont l'heure est échue (gestion des tâches "en retard").
 
 ### B. Modification des Messages (Verrouillage Pessimiste)
-- **Nouvel Endpoint REST** : `PUT /api/moderation/animator/:taskId`
+- **Nouvel Endpoint REST** : `PUT /api/moderation/engagement/:taskId`
 - **Sécurité** : Seules les tâches au statut `pending` peuvent être modifiées. Une tentative de modification d'une tâche déjà en cours (`processing`) ou terminée (`completed`) renvoie une erreur `409 Conflict`.
 - **Validation** : Validation stricte des contenus et des formats de date avant mise à jour.
 
 ### C. Historique et Traçabilité
-- **Nouvel Endpoint REST** : `GET /api/sessions/:sessionId/groups/:groupId/animator/history`
+- **Nouvel Endpoint REST** : `GET /api/sessions/:sessionId/groups/:groupId/engagement/history`
 - **Fonctionnalités** : Filtrage par date (startDate/endDate), statut (`pending`, `completed`, `failed`, `processing`), avec pagination (limit/offset).
 - **Logging** : Journalisation détaillée de chaque étape d'exécution dans la console et la base de données.
 

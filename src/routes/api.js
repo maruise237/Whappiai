@@ -828,23 +828,23 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    // Group Animator Endpoints
-    router.get('/sessions/:sessionId/moderation/groups/:groupId/animator', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+    // Group Engagement Endpoints
+    router.get('/sessions/:sessionId/moderation/groups/:groupId/engagement', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
-            const animatorService = require('../services/animator');
-            const tasks = animatorService.getTasks(sessionId, groupId);
+            const engagementService = require('../services/engagement');
+            const tasks = engagementService.getTasks(sessionId, groupId);
             res.json({ status: 'success', data: tasks });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
 
-    router.post('/sessions/:sessionId/moderation/groups/:groupId/animator', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+    router.post('/sessions/:sessionId/moderation/groups/:groupId/engagement', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
-            const animatorService = require('../services/animator');
-            const taskId = animatorService.addTask({
+            const engagementService = require('../services/engagement');
+            const taskId = engagementService.addTask({
                 ...req.body,
                 session_id: sessionId,
                 group_id: groupId
@@ -855,23 +855,23 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.delete('/moderation/animator/:taskId', checkSessionOrTokenAuth, async (req, res) => {
+    router.delete('/moderation/engagement/:taskId', checkSessionOrTokenAuth, async (req, res) => {
         const { taskId } = req.params;
         try {
-            const animatorService = require('../services/animator');
-            animatorService.deleteTask(taskId);
+            const engagementService = require('../services/engagement');
+            engagementService.deleteTask(taskId);
             res.json({ status: 'success', message: 'Tâche supprimée' });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
 
-    // REST API for updating pending animator tasks (Pessimistic locking via status check)
-    router.put('/moderation/animator/:taskId', checkSessionOrTokenAuth, async (req, res) => {
+    // REST API for updating pending engagement tasks (Pessimistic locking via status check)
+    router.put('/moderation/engagement/:taskId', checkSessionOrTokenAuth, async (req, res) => {
         const { taskId } = req.params;
         try {
-            const animatorService = require('../services/animator');
-            const updated = animatorService.updateTask(taskId, req.body);
+            const engagementService = require('../services/engagement');
+            const updated = engagementService.updateTask(taskId, req.body);
             res.json({ status: 'success', data: updated });
         } catch (err) {
             res.status(400).json({ status: 'error', message: err.message });
@@ -879,11 +879,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Filterable task history endpoint
-    router.get('/sessions/:sessionId/moderation/groups/:groupId/animator/history', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+    router.get('/sessions/:sessionId/moderation/groups/:groupId/engagement/history', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
-            const animatorService = require('../services/animator');
-            const history = animatorService.getHistory({
+            const engagementService = require('../services/engagement');
+            const history = engagementService.getHistory({
                 session_id: sessionId,
                 group_id: groupId,
                 ...req.query

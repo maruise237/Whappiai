@@ -52,7 +52,7 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
   - `whatsapp.js` - Baileys connection management, QR code generation, message handling
   - `ai.js` - AI auto-responder integration (configurable endpoint/model)
   - `moderation.js` - Group moderation (blacklists, welcome messages)
-  - `animator.js` - Scheduled group messaging tasks
+  - `engagement.js` - Scheduled group messaging and engagement tasks
   - `groups.js` - Group profile and product link management
 - **`src/utils/`**: Crypto, validation, phone number normalization, logging, response helpers
 - **`src/middleware/`**: Auth checks, error handling

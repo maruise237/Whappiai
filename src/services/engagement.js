@@ -8,24 +8,24 @@ const aiService = require('./ai');
 const QueueService = require('./QueueService');
 
 /**
- * Animator Service
+ * Engagement Service
  * Handles scheduled messages for groups
  */
 
-class AnimatorService {
+class EngagementService {
     constructor() {
         this.checkInterval = null;
     }
 
     /**
-     * Start the animator service loop
+     * Start the engagement service loop
      */
     start() {
         if (this.checkInterval) return;
         
-        log('Service Animateur de Groupe démarré', 'SYSTEM', null, 'INFO');
+        log('Service Engagement de Groupe démarré', 'SYSTEM', null, 'INFO');
         
-        // Check for scheduled tasks every 30 seconds (optimized from 60s)
+        // Check for scheduled tasks every 30 seconds
         this.checkInterval = setInterval(() => this.checkTasks(), 30000);
         
         // Initial check
@@ -33,7 +33,7 @@ class AnimatorService {
     }
 
     /**
-     * Stop the animator service
+     * Stop the engagement service
      */
     stop() {
         if (this.checkInterval) {
@@ -53,7 +53,7 @@ class AnimatorService {
                 
                 // Sélection de toutes les tâches en attente
                 const allPending = db.prepare(`
-                    SELECT * FROM group_animator_tasks 
+                    SELECT * FROM group_engagement_tasks
                     WHERE status = 'pending'
                 `).all();
 
@@ -66,25 +66,25 @@ class AnimatorService {
                 // Marquage immédiat en 'processing' pour éviter les doublons lors de la prochaine boucle
                 if (tasksToExecute.length > 0) {
                     const ids = tasksToExecute.map(t => t.id).join(',');
-                    db.prepare(`UPDATE group_animator_tasks SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id IN (${ids})`).run();
+                    db.prepare(`UPDATE group_engagement_tasks SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id IN (${ids})`).run();
                 }
 
                 return tasksToExecute;
             })();
 
             if (tasks.length > 0) {
-                log(`${tasks.length} tâches détectées pour exécution`, 'SYSTEM', { count: tasks.length }, 'DEBUG');
+                log(`${tasks.length} tâches d'engagement détectées pour exécution`, 'SYSTEM', { count: tasks.length }, 'DEBUG');
             }
 
             for (const task of tasks) {
                 // On exécute de manière asynchrone pour ne pas bloquer la boucle principale
                 // mais on gère les erreurs individuellement
                 this.executeTask(task).catch(err => {
-                    log(`Erreur fatale exécution tâche ${task.id}: ${err.message}`, task.session_id, { taskId: task.id }, 'ERROR');
+                    log(`Erreur fatale exécution tâche d'engagement ${task.id}: ${err.message}`, task.session_id, { taskId: task.id }, 'ERROR');
                 });
             }
         } catch (err) {
-            log(`Erreur lors de la vérification des tâches de l'animateur: ${err.message}`, 'SYSTEM', null, 'ERROR');
+            log(`Erreur lors de la vérification des tâches d'engagement: ${err.message}`, 'SYSTEM', null, 'ERROR');
         }
     }
 
@@ -99,12 +99,12 @@ class AnimatorService {
         let sessionOwnerId = null;
 
         try {
-            log(`Tentative d'envoi du message programmé ${id}`, session_id, { event: 'animator-exec-start', taskId: id, scheduled_at: task.scheduled_at }, 'INFO');
+            log(`Tentative d'envoi du message programmé ${id}`, session_id, { event: 'engagement-exec-start', taskId: id, scheduled_at: task.scheduled_at }, 'INFO');
             
             const sock = whatsappService.getSocket(session_id);
             if (!sock || !whatsappService.isConnected(session_id)) {
                 // Si la session n'est pas connectée, on repasse en 'pending' pour retenter plus tard
-                db.prepare("UPDATE group_animator_tasks SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+                db.prepare("UPDATE group_engagement_tasks SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
                 throw new Error('Session non active ou non connectée. Tâche remise en attente.');
             }
             
@@ -114,10 +114,9 @@ class AnimatorService {
                 const user = User.findByEmail(session.owner_email);
                 if (user) {
                     sessionOwnerId = user.id;
-                    // On ne déduit pas pour les admins (géré dans CreditService.deduct, mais on vérifie le retour)
                     const hasCredit = CreditService.deduct(user.id, 1, `Envoi message programmé vers ${group_id}`);
                     if (!hasCredit) {
-                        throw new Error('Crédits insuffisants pour envoyer le message programmé.');
+                        throw new Error('Crédits insuffisants pour envoyer le message d\'engagement programmé.');
                     }
                     creditDeducted = true;
                 }
@@ -126,7 +125,6 @@ class AnimatorService {
             // Envoi du message
             if (media_url && ['image', 'video', 'audio'].includes(media_type)) {
                 const messageOptions = {};
-                // Format content for WhatsApp if present
                 const formattedContent = aiService.formatForWhatsApp(message_content || '');
                 
                 if (media_type === 'image') {
@@ -146,12 +144,12 @@ class AnimatorService {
                 const session = Session.findById(session_id);
                 if (ActivityLog && session) {
                     await ActivityLog.logMessageSend(
-                        session.owner_email || 'animator-system',
+                        session.owner_email || 'engagement-system',
                         session_id,
                         group_id,
                         media_type,
                         '127.0.0.1',
-                        'Group Animator'
+                        'Group Engagement'
                     );
                 }
             } else {
@@ -164,32 +162,30 @@ class AnimatorService {
                     throw new Error('Message vide (pas de contenu ni de média valide)');
                 }
                 
-                // Format text for WhatsApp
                 const formattedText = aiService.formatForWhatsApp(text);
-                
                 await QueueService.enqueue(session_id, sock, group_id, { text: formattedText });
 
                 // Log activity
                 const session = Session.findById(session_id);
                 if (ActivityLog && session) {
                     await ActivityLog.logMessageSend(
-                        session.owner_email || 'animator-system',
+                        session.owner_email || 'engagement-system',
                         session_id,
                         group_id,
                         'text',
                         '127.0.0.1',
-                        'Group Animator'
+                        'Group Engagement'
                     );
                 }
             }
 
-            // Update session stats for sent messages (even if not AI)
+            // Update session stats
             Session.updateAIStats(session_id, 'sent');
 
-            // Mise à jour finale du statut et gestion de la récurrence dans une transaction
+            // Mise à jour finale du statut et gestion de la récurrence
             db.transaction(() => {
                 if (recurrence === 'none') {
-                    db.prepare("UPDATE group_animator_tasks SET status = 'completed', last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+                    db.prepare("UPDATE group_engagement_tasks SET status = 'completed', last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
                 } else {
                     let nextRun = new Date(task.scheduled_at);
                     if (recurrence === 'daily') {
@@ -198,25 +194,22 @@ class AnimatorService {
                         nextRun.setDate(nextRun.getDate() + 7);
                     }
                     
-                    db.prepare("UPDATE group_animator_tasks SET status = 'pending', scheduled_at = ?, last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(nextRun.toISOString(), id);
-                    log(`Tâche récurrente ${id} replanifiée pour ${nextRun.toISOString()}`, session_id, { taskId: id }, 'INFO');
+                    db.prepare("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = ?, last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(nextRun.toISOString(), id);
+                    log(`Tâche récurrente d'engagement ${id} replanifiée pour ${nextRun.toISOString()}`, session_id, { taskId: id }, 'INFO');
                 }
             })();
 
-            log(`Message programmé ${id} envoyé avec succès`, session_id, { event: 'animator-exec-success', taskId: id }, 'INFO');
+            log(`Message d'engagement programmé ${id} envoyé avec succès`, session_id, { event: 'engagement-exec-success', taskId: id }, 'INFO');
 
         } catch (err) {
-            // Remboursement automatique en cas d'échec
             if (creditDeducted && sessionOwnerId) {
-                CreditService.add(sessionOwnerId, 1, 'credit', `Remboursement: échec envoi programmé vers ${group_id}`);
-                log(`Remboursement effectué pour la tâche ${id} suite à une erreur`, session_id, { taskId: id }, 'INFO');
+                CreditService.add(sessionOwnerId, 1, 'credit', `Remboursement: échec envoi d'engagement programmé vers ${group_id}`);
             }
 
-            log(`Échec d'envoi pour la tâche ${id}: ${err.message}`, session_id, { event: 'animator-exec-error', taskId: id, error: err.message }, 'ERROR');
+            log(`Échec d'envoi pour la tâche d'engagement ${id}: ${err.message}`, session_id, { event: 'engagement-exec-error', taskId: id, error: err.message }, 'ERROR');
             
-            // Si c'est une erreur de session, on a déjà remis en pending. Sinon on marque en failed.
             if (!err.message.includes('Session non active')) {
-                db.prepare("UPDATE group_animator_tasks SET status = 'failed', error_message = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(err.message, id);
+                db.prepare("UPDATE group_engagement_tasks SET status = 'failed', error_message = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(err.message, id);
             }
         }
     }
@@ -225,7 +218,7 @@ class AnimatorService {
      * Get a single task by ID
      */
     getTaskById(id) {
-        return db.prepare("SELECT * FROM group_animator_tasks WHERE id = ?").get(id);
+        return db.prepare("SELECT * FROM group_engagement_tasks WHERE id = ?").get(id);
     }
 
     /**
@@ -235,14 +228,13 @@ class AnimatorService {
         const { message_content, media_url, media_type, scheduled_at, recurrence } = data;
         
         return db.transaction(() => {
-            // Verrouillage pessimiste : on vérifie si la tâche est toujours 'pending'
-            const task = db.prepare("SELECT status FROM group_animator_tasks WHERE id = ?").get(id);
+            const task = db.prepare("SELECT status FROM group_engagement_tasks WHERE id = ?").get(id);
             
-            if (!task) throw new Error('Tâche non trouvée');
+            if (!task) throw new Error('Tâche d\'engagement non trouvée');
             if (task.status !== 'pending') throw new Error(`Modification impossible : la tâche est déjà en statut ${task.status}`);
 
             const result = db.prepare(`
-                UPDATE group_animator_tasks 
+                UPDATE group_engagement_tasks
                 SET message_content = ?, 
                     media_url = ?, 
                     media_type = ?, 
@@ -253,7 +245,7 @@ class AnimatorService {
             `).run(message_content, media_url, media_type, scheduled_at, recurrence, id);
 
             if (result.changes === 0) {
-                throw new Error('Échec de la modification (la tâche a peut-être été traitée entre-temps)');
+                throw new Error('Échec de la modification');
             }
             
             return true;
@@ -264,7 +256,7 @@ class AnimatorService {
      * Get task history with filters
      */
     getHistory(filters = {}) {
-        let query = "SELECT * FROM group_animator_tasks WHERE 1=1";
+        let query = "SELECT * FROM group_engagement_tasks WHERE 1=1";
         const params = [];
 
         if (filters.session_id) {
@@ -299,7 +291,7 @@ class AnimatorService {
         const { group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence } = data;
         
         const result = db.prepare(`
-            INSERT INTO group_animator_tasks (group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence, status)
+            INSERT INTO group_engagement_tasks (group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
         `).run(group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence);
         
@@ -310,15 +302,15 @@ class AnimatorService {
      * Get tasks for a group
      */
     getTasks(session_id, group_id) {
-        return db.prepare("SELECT * FROM group_animator_tasks WHERE session_id = ? AND group_id = ? ORDER BY scheduled_at ASC").all(session_id, group_id);
+        return db.prepare("SELECT * FROM group_engagement_tasks WHERE session_id = ? AND group_id = ? ORDER BY scheduled_at ASC").all(session_id, group_id);
     }
 
     /**
      * Delete a task
      */
     deleteTask(id) {
-        return db.prepare("DELETE FROM group_animator_tasks WHERE id = ?").run(id);
+        return db.prepare("DELETE FROM group_engagement_tasks WHERE id = ?").run(id);
     }
 }
 
-module.exports = new AnimatorService();
+module.exports = new EngagementService();

@@ -37,7 +37,7 @@ const { User, Session, ActivityLog, AIModel } = require('./src/models');
 const { encrypt, decrypt, isValidKey } = require('./src/utils/crypto');
 const response = require('./src/utils/response');
 const whatsappService = require('./src/services/whatsapp');
-const animatorService = require('./src/services/animator');
+const engagementService = require('./src/services/engagement');
 const userRoutes = require('./src/routes/users');
 const webhookRoutes = require('./src/routes/webhooks');
 const paymentRoutes = require('./src/routes/payments');
@@ -642,8 +642,8 @@ if (require.main === module) {
             }
         }
 
-        // Start animator service
-        animatorService.start();
+        // Start engagement service
+        engagementService.start();
 
         // Start SaaS Scheduler
         const scheduler = require('./src/cron/scheduler');

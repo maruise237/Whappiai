@@ -173,26 +173,26 @@ export const api = {
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    getAnimatorTasks: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/animator`, {
+    getEngagementTasks: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/engagement`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    addAnimatorTask: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/animator`, {
+    addEngagementTask: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/engagement`, {
       method: "POST",
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    updateAnimatorTask: (taskId: number, data: any, token?: string) => fetchApi(`/api/v1/moderation/animator/${taskId}`, {
+    updateEngagementTask: (taskId: number, data: any, token?: string) => fetchApi(`/api/v1/moderation/engagement/${taskId}`, {
       method: "PUT",
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    deleteAnimatorTask: (taskId: number, token?: string) => fetchApi(`/api/v1/moderation/animator/${taskId}`, {
+    deleteEngagementTask: (taskId: number, token?: string) => fetchApi(`/api/v1/moderation/engagement/${taskId}`, {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    getAnimatorHistory: (sessionId: string, groupId: string, params: any = {}, token?: string) => {
+    getEngagementHistory: (sessionId: string, groupId: string, params: any = {}, token?: string) => {
       const query = new URLSearchParams(params).toString();
-      return fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/animator/history?${query}`, {
+      return fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/engagement/history?${query}`, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
       });
     },
