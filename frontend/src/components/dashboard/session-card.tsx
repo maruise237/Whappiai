@@ -12,8 +12,10 @@ import { showConfirm } from "@/lib/swal"
 import { cn, copyToClipboard as copyUtil } from "@/lib/utils"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
+import { useAuth } from "@clerk/nextjs"
 
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
+  const { getToken } = useAuth()
   const [loading, setLoading] = React.useState(false)
   const [showToken, setShowToken] = React.useState(false)
   const [phoneNumber, setPhoneNumber] = React.useState("")
@@ -37,14 +39,15 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     const toastId = toast.loading("Génération du code d'appairage...")
 
     try {
+      const token = await getToken()
       let response;
       if (!session) {
         const newSessionId = `session_${Math.random().toString(36).substring(2, 9)}`
-        response = await api.sessions.create(newSessionId, phoneNumber)
+        response = await api.sessions.create(newSessionId, phoneNumber, token || undefined)
         onRefresh()
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
       } else {
-        response = await api.sessions.create(session.sessionId, phoneNumber)
+        response = await api.sessions.create(session.sessionId, phoneNumber, token || undefined)
         onRefresh()
       }
 
@@ -81,7 +84,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     const toastId = toast.loading("Génération du QR Code...")
 
     try {
-      const response = await api.sessions.qr(session.sessionId)
+      const token = await getToken()
+      const response = await api.sessions.qr(session.sessionId, token || undefined)
       if (response && response.qr) {
         setLocalQrCode(response.qr)
         toast.success("QR Code généré", { id: toastId })
@@ -114,7 +118,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     setLoading(true)
     const toastId = toast.loading("Suppression...")
     try {
-      await api.sessions.delete(session.sessionId)
+      const token = await getToken()
+      await api.sessions.delete(session.sessionId, token || undefined)
       onRefresh()
       toast.success("Session supprimée", { id: toastId })
     } catch (error: any) {

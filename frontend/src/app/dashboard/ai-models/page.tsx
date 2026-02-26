@@ -54,7 +54,7 @@ export default function AiModelsPage() {
     setLoading(true)
     try {
       const token = await getToken()
-      const data = await api.aiModels.list(token || undefined)
+      const data = await api.ai.admin.list(token || undefined)
       setModels(data || [])
     } catch (e) {
       toast.error("Erreur de chargement des moteurs IA")

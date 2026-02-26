@@ -40,7 +40,7 @@ export default function ActivitiesPage() {
     setLoading(true)
     try {
       const token = await getToken()
-      const data = await api.activities.list(50, token || undefined)
+      const data = await api.activities.list(50, 0, token || undefined)
       setActivities(data || [])
     } catch (e) {
       toast.error("Erreur de chargement du journal")
