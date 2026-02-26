@@ -7,6 +7,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const { log } = require('../utils/logger');
+const MigrationRunner = require('./migrations');
 
 // Database file path
 const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '../../data/whatsapp.db');
@@ -26,10 +27,12 @@ const db = new Database(DB_PATH, {
 db.pragma('journal_mode = WAL');
 
 /**
- * Initialize database schema
+ * Initialize database schema and run migrations
  */
 function initializeSchema() {
-    // Users table
+    // 1. Core tables (Idempotent - CREATE TABLE IF NOT EXISTS)
+
+    // Users
     db.exec(`
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
@@ -37,65 +40,12 @@ function initializeSchema() {
             name TEXT,
             password TEXT NOT NULL,
             role TEXT DEFAULT 'user' CHECK(role IN ('admin', 'user')),
-            whatsapp_number TEXT,
-            whatsapp_status TEXT DEFAULT 'disconnected',
-            ai_enabled INTEGER DEFAULT 0,
-            ai_prompt TEXT,
-            ai_model TEXT DEFAULT 'deepseek-chat',
-            created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            last_login DATETIME,
-            is_active INTEGER DEFAULT 1,
-            bio TEXT,
-            location TEXT,
-            website TEXT,
-            phone TEXT
+            is_active INTEGER DEFAULT 1
         )
     `);
 
-    // Add missing columns to users table for migration
-    const userColumns = [
-        { name: 'name', type: 'TEXT' },
-        { name: 'bio', type: 'TEXT' },
-        { name: 'location', type: 'TEXT' },
-        { name: 'website', type: 'TEXT' },
-        { name: 'phone', type: 'TEXT' },
-        { name: 'whatsapp_number', type: 'TEXT' },
-        { name: 'whatsapp_status', type: "TEXT DEFAULT 'disconnected'" },
-        { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_prompt', type: 'TEXT' },
-        { name: 'ai_model', type: "TEXT DEFAULT 'deepseek-chat'" },
-        { name: 'is_verified', type: 'INTEGER DEFAULT 0' },
-        { name: 'verification_token', type: 'TEXT' },
-        { name: 'verification_token_expires', type: 'DATETIME' },
-        { name: 'reset_token', type: 'TEXT' },
-        { name: 'reset_token_expires', type: 'DATETIME' },
-        { name: 'image_url', type: 'TEXT' },
-        // Payment & Subscription fields
-        { name: 'plan_id', type: "TEXT DEFAULT 'free'" },
-        { name: 'plan_status', type: "TEXT DEFAULT 'active'" }, // active, trialing, expired, cancelled
-        { name: 'message_limit', type: 'INTEGER DEFAULT 100' }, // Free tier limit
-        { name: 'message_used', type: 'INTEGER DEFAULT 0' },
-        { name: 'subscription_expiry', type: 'DATETIME' },
-        { name: 'chariow_license_key', type: 'TEXT' },
-        { name: 'timezone', type: "TEXT DEFAULT 'UTC'" },
-        { name: 'address', type: 'TEXT' },
-        { name: 'organization_name', type: 'TEXT' },
-        { name: 'double_opt_in', type: 'INTEGER DEFAULT 0' },
-        { name: 'utm_tracking', type: 'INTEGER DEFAULT 0' },
-        { name: 'bot_detection', type: 'INTEGER DEFAULT 0' },
-        { name: 'sound_notifications', type: 'INTEGER DEFAULT 1' }
-    ];
-
-    userColumns.forEach(col => {
-        try {
-            db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
-        } catch (e) {
-            // Column might already exist
-        }
-    });
-
-    // WhatsApp sessions table (metadata only, auth stored in auth_info_baileys)
+    // WhatsApp sessions (metadata)
     db.exec(`
         CREATE TABLE IF NOT EXISTS whatsapp_sessions (
             id TEXT PRIMARY KEY,
@@ -103,13 +53,12 @@ function initializeSchema() {
             token TEXT NOT NULL,
             status TEXT DEFAULT 'DISCONNECTED',
             detail TEXT,
-            pairing_code TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
 
-    // Credit History table
+    // Credit History
     db.exec(`
         CREATE TABLE IF NOT EXISTS credit_history (
             id TEXT PRIMARY KEY,
@@ -121,94 +70,7 @@ function initializeSchema() {
         )
     `);
 
-    // Migration for pairing_code column
-    try {
-        db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN pairing_code TEXT`);
-    } catch (e) {
-        // Column might already exist
-    }
-
-    // Sessions table (new version)
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS sessions (
-            id TEXT PRIMARY KEY,
-            status TEXT DEFAULT 'disconnected',
-            whatsapp_number TEXT,
-            ai_enabled INTEGER DEFAULT 0,
-            ai_prompt TEXT,
-            ai_model TEXT DEFAULT 'deepseek-chat',
-            ai_endpoint TEXT,
-            ai_key TEXT,
-            ai_mode TEXT DEFAULT 'bot',
-            ai_temperature REAL DEFAULT 0.7,
-            ai_max_tokens INTEGER DEFAULT 1000,
-            ai_messages_received INTEGER DEFAULT 0,
-            ai_messages_sent INTEGER DEFAULT 0,
-            ai_last_error TEXT,
-            ai_last_message_at DATETIME,
-            created_by TEXT REFERENCES users(email),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-
-    // Migration for sessions table
-    const sessionColumns = [
-        { name: 'ai_endpoint', type: 'TEXT' },
-        { name: 'ai_key', type: 'TEXT' },
-        { name: 'ai_mode', type: "TEXT DEFAULT 'bot'" },
-        { name: 'ai_temperature', type: 'REAL DEFAULT 0.7' },
-        { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' },
-        { name: 'ai_messages_received', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_messages_sent', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_last_error', type: 'TEXT' },
-        { name: 'ai_last_message_at', type: 'DATETIME' }
-    ];
-
-    sessionColumns.forEach(col => {
-        try {
-            db.exec(`ALTER TABLE sessions ADD COLUMN ${col.name} ${col.type}`);
-        } catch (e) {}
-    });
-
-    // Migration for AI columns in whatsapp_sessions
-    const aiColumns = [
-        { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_endpoint', type: 'TEXT' },
-        { name: 'ai_key', type: 'TEXT' },
-        { name: 'ai_model', type: 'TEXT' },
-        { name: 'ai_prompt', type: 'TEXT' },
-        { name: 'ai_mode', type: "TEXT DEFAULT 'bot' CHECK(ai_mode IN ('bot', 'human', 'hybrid'))" },
-        { name: 'ai_messages_received', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_messages_sent', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_last_error', type: 'TEXT' },
-        { name: 'ai_last_message_at', type: 'DATETIME' },
-        { name: 'ai_temperature', type: 'REAL DEFAULT 0.7' },
-        { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' },
-        { name: 'ai_deactivate_on_typing', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_deactivate_on_read', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_trigger_keywords', type: 'TEXT' },
-        { name: 'ai_reply_delay', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_read_on_reply', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_random_protection_enabled', type: 'INTEGER DEFAULT 1' },
-        { name: 'ai_random_protection_rate', type: 'REAL DEFAULT 0.1' },
-        { name: 'ai_constraints', type: 'TEXT' },
-        { name: 'ai_session_window', type: 'INTEGER DEFAULT 5' },
-        { name: 'ai_respond_to_tags', type: 'INTEGER DEFAULT 0' },
-        { name: 'ai_delay_min', type: 'INTEGER DEFAULT 1' },
-        { name: 'ai_delay_max', type: 'INTEGER DEFAULT 5' }
-    ];
-
-    aiColumns.forEach(col => {
-        try {
-            db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN ${col.name} ${col.type}`);
-        } catch (e) {
-            // Column might already exist
-        }
-    });
-
-    // Activity logs table
+    // Activity logs
     db.exec(`
         CREATE TABLE IF NOT EXISTS activity_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -223,25 +85,7 @@ function initializeSchema() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
-
-    // Create index for activity log queries
-    db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_activity_user_date 
-        ON activity_logs(user_email, created_at)
-    `);
-
-    // Recipient lists table
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS recipient_lists (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            recipients TEXT NOT NULL,
-            created_by TEXT REFERENCES users(email) ON DELETE SET NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_activity_user_date ON activity_logs(user_email, created_at)`);
 
     // Group Moderation Settings
     db.exec(`
@@ -259,86 +103,9 @@ function initializeSchema() {
         )
     `);
 
-    // Migration for group_settings: Add session_id column if it doesn't exist (fix for older versions)
-    try {
-        const tableInfo = db.prepare("PRAGMA table_info(group_settings)").all();
-        const hasSessionId = tableInfo.some(col => col.name === 'session_id');
-        
-        if (!hasSessionId) {
-            log('Migration group_settings: ajout de la colonne session_id', 'SYSTEM');
-            
-            // Si la table existe sans session_id, on doit la recréer car elle fait partie de la PK
-            // Mais pour simplifier et ne pas perdre de données (si peu probable), 
-            // on tente un ALTER TABLE simple d'abord si c'est possible, 
-            // sinon on vide et recrée car session_id est requis pour la PK.
-            
-            db.transaction(() => {
-                // Sauvegarde des données existantes si possible
-                const count = db.prepare("SELECT count(*) as count FROM group_settings").get().count;
-                if (count > 0) {
-                    log(`Migration group_settings: ${count} lignes existantes, recréation de la table...`, 'SYSTEM');
-                    db.exec("ALTER TABLE group_settings RENAME TO group_settings_old");
-                    db.exec(`
-                        CREATE TABLE group_settings (
-                            group_id TEXT NOT NULL,
-                            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
-                            is_active INTEGER DEFAULT 0,
-                            anti_link INTEGER DEFAULT 0,
-                            bad_words TEXT,
-                            warning_template TEXT DEFAULT 'ATTENTION @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
-                            max_warnings INTEGER DEFAULT 5,
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            PRIMARY KEY (group_id, session_id)
-                        )
-                    `);
-                    // On ne peut pas facilement mapper l'ancienne session_id car elle n'existait pas.
-                    // On laisse la table vide ou on essaie de deviner la session si une seule existe.
-                    const sessions = db.prepare("SELECT id FROM whatsapp_sessions").all();
-                    if (sessions.length === 1) {
-                        const sid = sessions[0].id;
-                        db.exec(`INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at)
-                                 SELECT group_id, '${sid}', is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at FROM group_settings_old`);
-                    }
-                    db.exec("DROP TABLE group_settings_old");
-                } else {
-                    db.exec("DROP TABLE group_settings");
-                    db.exec(`
-                        CREATE TABLE group_settings (
-                            group_id TEXT NOT NULL,
-                            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
-                            is_active INTEGER DEFAULT 0,
-                            anti_link INTEGER DEFAULT 0,
-                            bad_words TEXT,
-                            warning_template TEXT DEFAULT 'ATTENTION @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
-                            max_warnings INTEGER DEFAULT 5,
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            PRIMARY KEY (group_id, session_id)
-                        )
-                    `);
-                }
-            })();
-        }
-    } catch (e) {
-        log(`Erreur migration group_settings: ${e.message}`, 'SYSTEM', null, 'ERROR');
-    }
-
-    // User Warnings
+    // Group Engagement Tasks (Renamed from Animator)
     db.exec(`
-        CREATE TABLE IF NOT EXISTS user_warnings (
-            group_id TEXT NOT NULL,
-            session_id TEXT NOT NULL,
-            user_id TEXT NOT NULL,
-            count INTEGER DEFAULT 0,
-            last_warning_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (group_id, session_id, user_id)
-        )
-    `);
-
-    // Group Animator Tasks
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS group_animator_tasks (
+        CREATE TABLE IF NOT EXISTS group_engagement_tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             group_id TEXT NOT NULL,
             session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
@@ -355,127 +122,9 @@ function initializeSchema() {
         )
     `);
 
-    // Group Profiles
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS group_profiles (
-            group_id TEXT NOT NULL,
-            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
-            mission TEXT,
-            objectives TEXT,
-            rules TEXT,
-            theme TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (group_id, session_id)
-        )
-    `);
+    // 2. Additional Tables (Modern Whappi)
 
-    // Group Product Links
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS group_product_links (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id TEXT NOT NULL,
-            session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
-            title TEXT,
-            description TEXT,
-            url TEXT,
-            cta TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-
-    // Migration for group_settings: Add welcome columns
-    try {
-        db.exec("ALTER TABLE group_settings ADD COLUMN welcome_enabled INTEGER DEFAULT 0");
-    } catch (e) {}
-    try {
-        db.exec("ALTER TABLE group_settings ADD COLUMN welcome_template TEXT");
-    } catch (e) {}
-
-    try {
-        db.exec("ALTER TABLE group_settings ADD COLUMN ai_assistant_enabled INTEGER DEFAULT 0");
-    } catch (e) {}
-
-    // Migration for user_warnings: Add session_id column if it doesn't exist
-    try {
-        const tableInfo = db.prepare("PRAGMA table_info(user_warnings)").all();
-        const hasSessionId = tableInfo.some(col => col.name === 'session_id');
-        
-        if (!hasSessionId) {
-            log('Migration user_warnings: ajout de la colonne session_id', 'SYSTEM');
-            db.transaction(() => {
-                db.exec("ALTER TABLE user_warnings RENAME TO user_warnings_old");
-                db.exec(`
-                    CREATE TABLE user_warnings (
-                        group_id TEXT NOT NULL,
-                        session_id TEXT NOT NULL,
-                        user_id TEXT NOT NULL,
-                        count INTEGER DEFAULT 0,
-                        last_warning_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        PRIMARY KEY (group_id, session_id, user_id)
-                    )
-                `);
-                const sessions = db.prepare("SELECT id FROM whatsapp_sessions").all();
-                if (sessions.length === 1) {
-                    const sid = sessions[0].id;
-                    db.exec(`INSERT INTO user_warnings (group_id, session_id, user_id, count, last_warning_at)
-                             SELECT group_id, '${sid}', user_id, count, last_warning_at FROM user_warnings_old`);
-                }
-                db.exec("DROP TABLE user_warnings_old");
-            })();
-        }
-    } catch (e) {
-        log(`Erreur migration user_warnings: ${e.message}`, 'SYSTEM', null, 'ERROR');
-    }
-
-    // Migration for group_animator_tasks: Add media_type if missing and update status CHECK constraint
-    try {
-        db.exec("ALTER TABLE group_animator_tasks ADD COLUMN media_type TEXT DEFAULT 'text'");
-    } catch (e) {}
-
-    try {
-        db.exec("ALTER TABLE group_animator_tasks ADD COLUMN error_message TEXT");
-    } catch (e) {}
-
-    try {
-        // SQLite doesn't allow altering CHECK constraints easily. 
-        // We check if 'processing' is allowed by trying to insert/update a dummy task (rollback later) or checking table info.
-        // A better way is to check the table schema via sql.
-        const tableSchema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='group_animator_tasks'").get().sql;
-        if (!tableSchema.includes("'processing'")) {
-            log('Migration group_animator_tasks: mise à jour de la contrainte CHECK status', 'SYSTEM');
-            db.transaction(() => {
-                db.exec("ALTER TABLE group_animator_tasks RENAME TO group_animator_tasks_old");
-                db.exec(`
-                    CREATE TABLE group_animator_tasks (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        group_id TEXT NOT NULL,
-                        session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
-                        message_content TEXT,
-                        media_url TEXT,
-                        media_type TEXT DEFAULT 'text',
-                        scheduled_at DATETIME NOT NULL,
-                        recurrence TEXT DEFAULT 'none' CHECK(recurrence IN ('none', 'daily', 'weekly')),
-                        status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'completed', 'failed')),
-                        error_message TEXT,
-                        last_run_at DATETIME,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    )
-                `);
-                db.exec(`
-                    INSERT INTO group_animator_tasks (id, group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence, status, last_run_at, created_at, updated_at)
-                    SELECT id, group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence, status, last_run_at, created_at, updated_at FROM group_animator_tasks_old
-                `);
-                db.exec("DROP TABLE group_animator_tasks_old");
-            })();
-        }
-    } catch (e) {
-        log(`Erreur migration group_animator_tasks status: ${e.message}`, 'SYSTEM', null, 'ERROR');
-    }
-
-    // Conversation Memory table
+    // Conversation Memory
     db.exec(`
         CREATE TABLE IF NOT EXISTS conversation_memory (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -486,55 +135,46 @@ function initializeSchema() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_memory_session_jid ON conversation_memory(session_id, remote_jid)`);
 
-    // Create index for faster memory retrieval
-    db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_memory_session_jid 
-        ON conversation_memory(session_id, remote_jid)
-    `);
-
-    // --- Webhooks System ---
+    // Webhooks
     db.exec(`
         CREATE TABLE IF NOT EXISTS webhooks (
             id TEXT PRIMARY KEY,
             session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
             url TEXT NOT NULL,
-            events TEXT, -- JSON array of events (message_received, ai_response, human_takeover)
-            secret TEXT, -- For signing requests
+            events TEXT,
+            secret TEXT,
             is_active INTEGER DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
 
-    // --- Knowledge Base (RAG) ---
-
-    // Main Knowledge Base table
+    // Knowledge Base (RAG)
     db.exec(`
         CREATE TABLE IF NOT EXISTS knowledge_base (
             id TEXT PRIMARY KEY,
             session_id TEXT NOT NULL REFERENCES whatsapp_sessions(id) ON DELETE CASCADE,
             name TEXT NOT NULL,
             type TEXT CHECK(type IN ('file', 'url', 'text')),
-            source TEXT, -- URL or file name
+            source TEXT,
             is_active INTEGER DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
 
-    // Knowledge Chunks for FTS5 Search
     db.exec(`
         CREATE TABLE IF NOT EXISTS knowledge_chunks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             base_id TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
             session_id TEXT NOT NULL,
             content TEXT NOT NULL,
-            metadata TEXT -- JSON
+            metadata TEXT
         )
     `);
 
-    // Virtual table for Full Text Search (FTS5)
     try {
         db.exec(`
             CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_search USING fts5(
@@ -544,11 +184,9 @@ function initializeSchema() {
                 tokenize='unicode61 remove_diacritics 1'
             )
         `);
-    } catch (e) {
-        log(`Erreur création table FTS5: ${e.message}`, 'SYSTEM', null, 'ERROR');
-    }
+    } catch (e) {}
 
-    // AI Models table (Global configuration by admin)
+    // AI Models
     db.exec(`
         CREATE TABLE IF NOT EXISTS ai_models (
             id TEXT PRIMARY KEY,
@@ -567,56 +205,31 @@ function initializeSchema() {
         )
     `);
 
-    // Migration for ai_models: Add is_active and is_default if missing
-    try {
-        db.exec("ALTER TABLE ai_models ADD COLUMN is_active INTEGER DEFAULT 1");
-    } catch (e) {}
-    try {
-        db.exec("ALTER TABLE ai_models ADD COLUMN is_default INTEGER DEFAULT 0");
-    } catch (e) {}
-    try {
-        db.exec("ALTER TABLE ai_models ADD COLUMN temperature REAL DEFAULT 0.7");
-    } catch (e) {}
-    try {
-        db.exec("ALTER TABLE ai_models ADD COLUMN max_tokens INTEGER DEFAULT 2000");
-    } catch (e) {}
-
-    // --- SaaS Extensions (2026) ---
-
-    // Pricing Plans (Historical & Versioned)
+    // SaaS Components
     db.exec(`
         CREATE TABLE IF NOT EXISTS pricing_plans (
             id TEXT PRIMARY KEY,
-            code TEXT NOT NULL, -- starter, pro, business
+            code TEXT NOT NULL,
             name TEXT NOT NULL,
             price INTEGER NOT NULL,
             currency TEXT DEFAULT 'XAF',
             message_limit INTEGER,
-            interval TEXT DEFAULT 'month', -- month, year
+            interval TEXT DEFAULT 'month',
             is_active INTEGER DEFAULT 1,
             version INTEGER DEFAULT 1,
             chariow_product_id TEXT,
             payment_url TEXT,
-            features TEXT, -- JSON
+            features TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
 
-    // Migration for pricing_plans: Add chariow columns if missing
-    try {
-        db.exec("ALTER TABLE pricing_plans ADD COLUMN chariow_product_id TEXT");
-    } catch (e) {}
-    try {
-        db.exec("ALTER TABLE pricing_plans ADD COLUMN payment_url TEXT");
-    } catch (e) {}
-
-    // Subscriptions (Full Lifecycle)
     db.exec(`
         CREATE TABLE IF NOT EXISTS subscriptions (
             id TEXT PRIMARY KEY,
             user_id TEXT REFERENCES users(id),
             plan_id TEXT REFERENCES pricing_plans(id),
-            status TEXT, -- active, past_due, canceled, incomplete, trialing
+            status TEXT,
             current_period_start DATETIME,
             current_period_end DATETIME,
             cancel_at_period_end INTEGER DEFAULT 0,
@@ -626,21 +239,19 @@ function initializeSchema() {
         )
     `);
 
-    // Notifications (Alerts System)
     db.exec(`
         CREATE TABLE IF NOT EXISTS user_notifications (
             id TEXT PRIMARY KEY,
             user_id TEXT REFERENCES users(id),
-            type TEXT, -- credit_low, subscription_expiring, system_update, payment_failed
+            type TEXT,
             title TEXT,
             message TEXT,
             is_read INTEGER DEFAULT 0,
-            metadata TEXT, -- JSON
+            metadata TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
 
-    // Keyword Responders table
     db.exec(`
         CREATE TABLE IF NOT EXISTS keyword_responders (
             id TEXT PRIMARY KEY,
@@ -656,6 +267,75 @@ function initializeSchema() {
         )
     `);
 
+    // 3. Run Migrations (Professionalized)
+    const runner = new MigrationRunner(db);
+    runner.init();
+
+    // Migration: Rename animator to engagement (Data continuity)
+    runner.run('rename-animator-to-engagement-v2', (db) => {
+        const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='group_animator_tasks'").get();
+        if (tableCheck) {
+            const newTableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='group_engagement_tasks'").get();
+            if (!newTableCheck) {
+                db.exec("ALTER TABLE group_animator_tasks RENAME TO group_engagement_tasks");
+            }
+        }
+    });
+
+    // User table extensions
+    runner.run('users-v2026-fields', (db) => {
+        const columns = [
+            { name: 'bio', type: 'TEXT' },
+            { name: 'location', type: 'TEXT' },
+            { name: 'website', type: 'TEXT' },
+            { name: 'phone', type: 'TEXT' },
+            { name: 'whatsapp_number', type: 'TEXT' },
+            { name: 'whatsapp_status', type: "TEXT DEFAULT 'disconnected'" },
+            { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_prompt', type: 'TEXT' },
+            { name: 'ai_model', type: "TEXT DEFAULT 'deepseek-chat'" },
+            { name: 'plan_id', type: "TEXT DEFAULT 'free'" },
+            { name: 'plan_status', type: "TEXT DEFAULT 'active'" },
+            { name: 'message_limit', type: 'INTEGER DEFAULT 100' },
+            { name: 'message_used', type: 'INTEGER DEFAULT 0' },
+            { name: 'subscription_expiry', type: 'DATETIME' },
+            { name: 'timezone', type: "TEXT DEFAULT 'UTC'" },
+            { name: 'organization_name', type: 'TEXT' },
+            { name: 'sound_notifications', type: 'INTEGER DEFAULT 1' }
+        ];
+        columns.forEach(col => {
+            try { db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+        });
+    });
+
+    // WhatsApp Sessions pairing code
+    runner.run('whatsapp-sessions-pairing-code', (db) => {
+        try { db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN pairing_code TEXT`); } catch (e) {}
+    });
+
+    // WhatsApp Sessions AI fields
+    runner.run('whatsapp-sessions-ai-fields', (db) => {
+        const columns = [
+            { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_model', type: 'TEXT' },
+            { name: 'ai_prompt', type: 'TEXT' },
+            { name: 'ai_messages_sent', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_delay_min', type: 'INTEGER DEFAULT 1' },
+            { name: 'ai_delay_max', type: 'INTEGER DEFAULT 5' },
+            { name: 'ai_reject_calls', type: 'INTEGER DEFAULT 0' }
+        ];
+        columns.forEach(col => {
+            try { db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+        });
+    });
+
+    // Group Settings extensions
+    runner.run('group-settings-v2', (db) => {
+        try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_enabled INTEGER DEFAULT 0"); } catch (e) {}
+        try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_template TEXT"); } catch (e) {}
+        try { db.exec("ALTER TABLE group_settings ADD COLUMN ai_assistant_enabled INTEGER DEFAULT 0"); } catch (e) {}
+    });
+
     // Initialize default plans if empty
     const count = db.prepare('SELECT count(*) as count FROM pricing_plans').get();
     if (count.count === 0) {
@@ -663,12 +343,8 @@ function initializeSchema() {
             INSERT INTO pricing_plans (id, code, name, price, message_limit, interval, version, chariow_product_id, payment_url, features)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        
-        // Starter
         insertPlan.run('plan_starter_v1', 'starter', 'Starter', 2500, 2000, 'month', 1, 'prd_jx0jkk', 'https://esaystor.online/prd_jx0jkk', JSON.stringify({ support: 'email' }));
-        // Pro
         insertPlan.run('plan_pro_v1', 'pro', 'Pro', 5000, 10000, 'month', 1, 'prd_l2es24', 'https://esaystor.online/prd_l2es24', JSON.stringify({ support: 'priority' }));
-        // Business
         insertPlan.run('plan_business_v1', 'business', 'Business', 10000, 100000, 'month', 1, 'prd_twafj6', 'https://esaystor.online/prd_twafj6', JSON.stringify({ support: 'dedicated' }));
     }
 

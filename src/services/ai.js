@@ -573,7 +573,7 @@ class AIService {
             const profile = groupService.getProfile(userId, groupId);
             const links = includeLinks ? groupService.getProductLinks(userId, groupId) : [];
 
-            const systemPrompt = `Tu es un expert en animation de groupes WhatsApp. Ton but est de rédiger un message engageant, pertinent et percutant.
+            const systemPrompt = `Tu es un expert en engagement et animation de groupes WhatsApp. Ton but est de rédiger un message engageant, pertinent et percutant.
             
             Informations sur le groupe :
             - Mission : ${profile?.mission || 'Non spécifiée'}

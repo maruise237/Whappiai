@@ -116,7 +116,7 @@ function GroupEngagementContent() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-0.5">
-            <h1 className="text-xl font-semibold">Engagement & Animation</h1>
+            <h1 className="text-xl font-semibold">Engagement & Stratégie</h1>
             <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase font-bold tracking-widest px-2 h-5">
               {sessionId}
             </Badge>
@@ -174,7 +174,7 @@ function GroupEngagementContent() {
                 <TabsList className="bg-muted/50 p-1 rounded-lg h-10 w-full sm:w-fit gap-1">
                    <TabsTrigger value="profil" className="text-[11px] uppercase font-bold tracking-wider px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">Profil</TabsTrigger>
                    <TabsTrigger value="liens" className="text-[11px] uppercase font-bold tracking-wider px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">Liens</TabsTrigger>
-                   <TabsTrigger value="animation" className="text-[11px] uppercase font-bold tracking-wider px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">Animation</TabsTrigger>
+                   <TabsTrigger value="engagement" className="text-[11px] uppercase font-bold tracking-wider px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">Engagement</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="profil" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -241,7 +241,7 @@ function GroupEngagementContent() {
                    </Accordion>
                 </TabsContent>
 
-                <TabsContent value="animation" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <TabsContent value="engagement" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                    <Card className="border-primary/20 bg-primary/5 shadow-none overflow-hidden">
                       <CardContent className="p-6">
                          <div className="flex items-start gap-4">

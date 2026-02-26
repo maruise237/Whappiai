@@ -127,7 +127,7 @@ export default function ModerationPage() {
                   variant="secondary"
                   size="sm"
                   className="h-8 text-[10px] font-semibold tracking-wider"
-                  onClick={() => router.push(`/dashboard/moderation/groups/animation?sessionId=${session.sessionId}`)}
+                  onClick={() => router.push(`/dashboard/moderation/groups/engagement?sessionId=${session.sessionId}`)}
                 >
                   <Users className="h-3 w-3 mr-1.5" /> Engagement
                 </Button>

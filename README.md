@@ -8,7 +8,7 @@ Whappi est une solution complète, légère et puissante pour gérer l'automatis
 - **Dashboard Moderne** : Interface utilisateur intuitive avec mode sombre, statistiques en temps réel et gestion des sessions.
 - **API REST & Webhooks** : Intégrez facilement WhatsApp à vos applications existantes.
 - **IA Intégrée** : Support pour les réponses automatiques basées sur l'IA.
-- **Modération de Groupe** : Outils avancés pour la gestion et l'animation de groupes.
+- **Engagement & Modération** : Outils avancés pour l'engagement, l'animation et la gestion de groupes.
 - **Déploiement Facile** : Prêt pour Docker et optimisé pour Dokploy/Coolify.
 
 ## 🛠️ Stack Technique
