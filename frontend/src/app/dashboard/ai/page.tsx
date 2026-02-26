@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { 
   Brain,
   MessageSquare,
@@ -18,7 +18,9 @@ import {
   Mic,
   Video,
   Sparkles,
-  Bot
+  Bot,
+  Users,
+  Shield
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,6 +29,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Select,
@@ -67,8 +71,9 @@ import Link from "next/link"
 function IntelligenceHubContent() {
   const { getToken } = useAuth()
   const { user } = useUser()
+  const router = useRouter()
   const searchParams = useSearchParams()
-  const defaultTab = searchParams.get('tab') || 'ia'
+  const currentTab = searchParams.get('tab') || 'ia'
 
   const [sessions, setSessions] = React.useState<any[]>([])
   const [selectedSessionId, setSelectedSessionId] = React.useState<string>("")
@@ -231,7 +236,7 @@ function IntelligenceHubContent() {
           </Button>
         </Card>
       ) : (
-        <Tabs defaultValue={defaultTab} className="space-y-6">
+        <Tabs value={currentTab} onValueChange={(v) => router.push(`/dashboard/ai?tab=${v}`)} className="space-y-6">
           <TabsList className="flex bg-muted/30 p-1 rounded-lg h-auto gap-1">
             <TabsTrigger value="ia" className="flex-1 py-2 text-xs gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"><Sparkles className="h-3 w-3" /> IA & Prompt</TabsTrigger>
             <TabsTrigger value="keywords" className="flex-1 py-2 text-xs gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"><Zap className="h-3 w-3" /> Mots-clés</TabsTrigger>

@@ -1,379 +1,129 @@
 "use client"
 
 import * as React from "react"
-import { api } from "@/lib/api"
-import { useRouter } from "next/navigation"
+import {
+  User,
+  Mail,
+  Shield,
+  Key,
+  LogOut,
+  Smartphone,
+  CheckCircle2,
+  AlertCircle,
+  ExternalLink,
+  Settings
+} from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { useUser, useClerk } from "@clerk/nextjs"
+import { api } from "@/lib/api"
 import { toast } from "sonner"
-import {
-  Save,
-  LogOut,
-  Trash2,
-  Clock,
-  MapPin,
-  Mail,
-  Smartphone,
-  Volume2,
-  Building,
-  User,
-  HelpCircle
-} from "lucide-react"
-import { useUser, useAuth, useClerk } from "@clerk/nextjs"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
-  const router = useRouter()
+  const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
-  const [dbUser, setDbUser] = React.useState<any>(null)
-  const [loading, setLoading] = React.useState(true)
-  const { user: clerkUser, isLoaded: isClerkLoaded } = useUser()
-  const { getToken } = useAuth()
 
-  const [isSaving, setIsSaving] = React.useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
-  const [deleteConfirm, setDeleteConfirm] = React.useState("")
+  if (!isLoaded) return null
 
-  const [formData, setFormData] = React.useState({
-    name: "",
-    organization_name: "",
-    timezone: "UTC",
-    address: "",
-    sound_notifications: true,
-    bio: "",
-    phone: "",
-    location: ""
-  })
-
-  const fetchProfile = React.useCallback(async () => {
-    if (!isClerkLoaded) return
-    try {
-      const token = await getToken()
-      const data = await api.users.getProfile(token || undefined)
-      setDbUser(data)
-      setFormData({
-        name: data.name || "",
-        organization_name: data.organization_name || "",
-        timezone: data.timezone || "UTC",
-        address: data.address || "",
-        sound_notifications: data.sound_notifications !== 0,
-        bio: data.bio || "",
-        phone: data.phone || "",
-        location: data.location || ""
-      })
-    } catch (error) {
-      toast.error("Échec du chargement du profil")
-    } finally {
-      setLoading(false)
-    }
-  }, [getToken, isClerkLoaded])
-
-  React.useEffect(() => {
-    if (isClerkLoaded) {
-      fetchProfile()
-    }
-  }, [fetchProfile, isClerkLoaded])
-
-  const handleUpdate = async () => {
-    setIsSaving(true)
-    try {
-      const token = await getToken()
-      const payload = {
-        ...formData,
-        sound_notifications: formData.sound_notifications ? 1 : 0
-      }
-      await api.users.updateProfile(payload, token || undefined)
-      toast.success("Paramètres mis à jour")
-    } catch (error) {
-      toast.error("Échec de la mise à jour")
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleDelete = async () => {
-    if (deleteConfirm !== "SUPPRIMER") return
-    try {
-      const token = await getToken()
-      await api.users.delete(dbUser.email, token || undefined)
-      await signOut({ redirectUrl: "/login" })
-    } catch (error) {
-      toast.error("Échec de la suppression")
-    }
-  }
-
-  if (loading) return <div className="p-8 text-center text-sm text-muted-foreground">Chargement du profil...</div>
-
-  const userEmail = clerkUser?.primaryEmailAddress?.emailAddress || dbUser?.email
-  const userName = clerkUser?.firstName || formData.name || userEmail?.split('@')[0]
-  const userRole = String(clerkUser?.publicMetadata?.role || dbUser?.role || "user")
-
-  const timezones = [
-    "UTC",
-    "Africa/Douala",
-    "Africa/Lagos",
-    "Africa/Nairobi",
-    "Africa/Johannesburg",
-    "Europe/Paris",
-    "Europe/London",
-    "Europe/Berlin",
-    "America/New_York",
-    "America/Chicago",
-    "America/Los_Angeles",
-    "America/Sao_Paulo",
-    "Asia/Dubai",
-    "Asia/Singapore",
-    "Asia/Tokyo",
-    "Australia/Sydney"
-  ]
+  const userEmail = user?.primaryEmailAddress?.emailAddress
+  const userRole = (user?.publicMetadata?.role as string) || "Utilisateur"
 
   return (
-    <div className="max-w-4xl mx-auto space-y-12 pb-32 pt-4">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Paramètres</h1>
-          <p className="text-sm text-muted-foreground">Personnalisez votre expérience Whappi et gérez votre organisation.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="h-6 px-2 text-[10px] uppercase font-bold tracking-wider text-muted-foreground border-muted-foreground/20">
-            {userRole}
-          </Badge>
-        </div>
-      </div>
-
-      <div className="space-y-8">
-        <Card className="border-border bg-card shadow-sm overflow-hidden">
-          <CardHeader className="pb-4 bg-muted/30 border-b">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" /> Image de profil
-            </CardTitle>
-            <CardDescription className="text-xs">Identité visuelle de votre compte Whappi.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-6">
-              <Avatar className="h-20 w-20 border-4 border-background ring-1 ring-border shadow-md">
-                <AvatarImage src={clerkUser?.imageUrl} />
-                <AvatarFallback className="bg-primary/5 text-primary text-xl font-bold">{userName?.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">Cliquez ou glissez-déposez pour télécharger</p>
-                <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <Building className="h-3 w-3" /> Image d&apos;organisation recommandée
-                </p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">JPG, PNG ou GIF. 1MB max.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card shadow-sm overflow-hidden">
-          <CardHeader className="pb-4 bg-muted/30 border-b">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Building className="h-4 w-4 text-primary" /> Nom
-            </CardTitle>
-            <CardDescription className="text-xs">Le nom affiché pour votre organisation ou votre compte personnel.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <Input
-              value={formData.organization_name || formData.name}
-              onChange={e => setFormData({...formData, organization_name: e.target.value})}
-              placeholder="Ex: Ma Super Agence"
-              className="h-10 text-sm font-medium border-border/60 focus-visible:ring-primary/20"
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card shadow-sm overflow-hidden">
-          <CardHeader className="pb-4 bg-muted/30 border-b">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" /> Fuseau horaire
-            </CardTitle>
-            <CardDescription className="text-xs">Détermine l&apos;heure d&apos;envoi des messages programmés et des rapports.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            <Select
-              value={formData.timezone}
-              onValueChange={v => setFormData({...formData, timezone: v})}
-            >
-              <SelectTrigger className="h-10 text-sm font-medium border-border/60">
-                <SelectValue placeholder="Sélectionner un fuseau horaire" />
-              </SelectTrigger>
-              <SelectContent>
-                {timezones.map(tz => (
-                  <SelectItem key={tz} value={tz} className="text-sm">{tz}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-border/40 w-fit">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Actuellement : {formData.timezone}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card shadow-sm overflow-hidden">
-          <CardHeader className="pb-4 bg-muted/30 border-b">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" /> Adresse
-            </CardTitle>
-            <CardDescription className="text-xs">Adresse de facturation et coordonnées de l&apos;organisation.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <Input
-              value={formData.address}
-              onChange={e => setFormData({...formData, address: e.target.value})}
-              placeholder="123, rue de l'Innovation, Douala, Cameroun"
-              className="h-10 text-sm font-medium border-border/60"
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card shadow-sm overflow-hidden">
-          <CardContent className="p-0">
-            <div className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-5">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                    <Volume2 className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-1">
-                    <p className="text-base font-semibold">Notifications Sonores</p>
-                    <p className="text-xs text-muted-foreground">Ring audio lors de la réception d&apos;un nouveau message sur le dashboard.</p>
-                </div>
-              </div>
-              <Switch
-                checked={formData.sound_notifications}
-                onCheckedChange={v => setFormData({...formData, sound_notifications: v})}
-                className="data-[state=checked]:bg-primary"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-muted/20 shadow-sm border-dashed">
-            <CardHeader className="pb-4">
-                <CardTitle className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">Informations Compte</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">Email associé</Label>
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/60 text-sm font-medium">
-                            <Mail className="h-4 w-4 text-muted-foreground/60" />
-                            {userEmail}
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Numéro WhatsApp</Label>
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/60 text-sm font-medium">
-                            <Smartphone className="h-4 w-4 text-muted-foreground/60" />
-                            {dbUser?.whatsapp_number || "Non configuré"}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="pt-4 flex flex-wrap gap-4">
-                    <Button variant="outline" size="sm" onClick={() => signOut({ redirectUrl: "/login" })} className="h-9 px-4 border-border/60 bg-card hover:bg-muted">
-                      <LogOut className="h-4 w-4 mr-2 text-muted-foreground" /> Déconnexion
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            router.push('/dashboard');
-                            setTimeout(() => {
-                                if ((window as any).startWhappiTour) (window as any).startWhappiTour();
-                            }, 500);
-                        }}
-                        className="h-9 px-4 border-border/60 bg-card hover:bg-muted"
-                    >
-                      <HelpCircle className="h-4 w-4 mr-2 text-muted-foreground" /> Revoir le tour guidé
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-
-        <div className="pt-8 border-t border-destructive/10">
-            <Card className="border-destructive/20 bg-destructive/[0.02] shadow-sm overflow-hidden">
-                <CardHeader className="pb-4 bg-destructive/[0.04] border-b border-destructive/10">
-                    <CardTitle className="text-sm font-semibold text-destructive flex items-center gap-2">
-                        <Trash2 className="h-4 w-4" /> Zone de danger
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium">Supprimer le compte Whappi</p>
-                        <p className="text-xs text-muted-foreground max-w-md">Cette action supprimera définitivement toutes vos sessions, contacts, logs et configurations. Aucune récupération possible.</p>
-                    </div>
-                    <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)} className="h-9 px-6 bg-destructive hover:bg-destructive/90 transition-all font-semibold">
-                        Supprimer
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-      </div>
-
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
-        <div className="p-2 bg-background/60 backdrop-blur-xl border border-border/60 rounded-full shadow-2xl ring-1 ring-black/5">
-            <Button
-              size="lg"
-              className="bg-primary hover:bg-primary/90 text-white gap-3 px-10 h-12 rounded-full font-bold shadow-lg transition-all hover:scale-105 active:scale-95"
-              onClick={handleUpdate}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Mise à jour...
-                </>
+    <div className="max-w-4xl mx-auto space-y-8 pb-20">
+      <div className="flex items-center gap-6">
+        <div className="h-20 w-20 rounded-full border-2 border-primary/20 p-1 bg-background shadow-sm">
+           <div className="h-full w-full rounded-full bg-muted flex items-center justify-center overflow-hidden">
+              {user?.imageUrl ? (
+                <img src={user.imageUrl} alt="Profile" className="h-full w-full object-cover" />
               ) : (
-                <>
-                  <Save className="h-5 w-5" /> Sauvegarder les modifications
-                </>
+                <User className="h-8 w-8 text-muted-foreground/30" />
               )}
-            </Button>
+           </div>
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">{user?.fullName || userEmail?.split('@')[0]}</h1>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{userRole}</Badge>
+            <span className="text-xs text-muted-foreground truncate">{userEmail}</span>
+          </div>
         </div>
       </div>
 
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[425px] border-destructive/20">
-          <DialogHeader>
-            <DialogTitle className="text-destructive">Confirmation finale</DialogTitle>
-            <DialogDescription>
-              Êtes-vous certain ? Cette opération est irréversible. Tapez <span className="font-mono font-bold text-foreground bg-muted px-1 rounded select-none">SUPPRIMER</span> pour valider.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-6">
-            <Input
-                value={deleteConfirm}
-                onChange={e => setDeleteConfirm(e.target.value)}
-                placeholder="SUPPRIMER"
-                className="h-10 text-center font-bold border-destructive/30 focus-visible:ring-destructive/20 uppercase"
-            />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)} className="flex-1">Annuler</Button>
-            <Button variant="destructive" disabled={deleteConfirm !== "SUPPRIMER"} onClick={handleDelete} className="flex-1 font-bold">Confirmer la suppression</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
+         <nav className="flex flex-col gap-1 sticky top-24 h-fit">
+            <Button variant="ghost" className="justify-start text-xs font-bold uppercase tracking-wider h-10 bg-muted/50 border-r-2 border-primary rounded-none px-4">Mon Profil</Button>
+            <Button variant="ghost" className="justify-start text-xs font-bold uppercase tracking-wider h-10 text-muted-foreground hover:bg-muted/30 px-4">Sécurité</Button>
+            <Button variant="ghost" className="justify-start text-xs font-bold uppercase tracking-wider h-10 text-muted-foreground hover:bg-muted/30 px-4">Notifications</Button>
+            <Separator className="my-2" />
+            <Button variant="ghost" onClick={() => signOut()} className="justify-start text-xs font-bold uppercase tracking-wider h-10 text-destructive hover:bg-destructive/5 hover:text-destructive px-4">
+               <LogOut className="h-3.5 w-3.5 mr-2" /> Déconnexion
+            </Button>
+         </nav>
+
+         <div className="space-y-6">
+            <Card className="border-none shadow-none bg-muted/20">
+               <CardHeader className="pb-4">
+                  <CardTitle className="text-sm font-bold uppercase tracking-tight">Informations de Compte</CardTitle>
+                  <CardDescription className="text-xs">Vos données personnelles synchronisées via Clerk.</CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4 pt-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nom Prénom</Label>
+                        <Input value={user?.fullName || ""} readOnly className="h-9 bg-background/50 border-none text-xs" />
+                     </div>
+                     <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Email Principal</Label>
+                        <Input value={userEmail || ""} readOnly className="h-9 bg-background/50 border-none text-xs" />
+                     </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-start gap-3 mt-4">
+                     <AlertCircle className="h-4 w-4 text-primary mt-0.5" />
+                     <div className="space-y-1">
+                        <p className="text-[11px] font-bold text-primary">Gestion via Clerk</p>
+                        <p className="text-[10px] text-muted-foreground/80 leading-relaxed">
+                           Vos paramètres de sécurité, changement de mot de passe et authentification 2FA sont gérés de manière sécurisée par notre partenaire Clerk.
+                        </p>
+                        <Button variant="link" size="sm" className="h-auto p-0 text-[10px] font-bold" asChild>
+                           <a href="https://accounts.clerk.dev" target="_blank" rel="noreferrer" className="flex items-center gap-1">
+                              Accéder au centre de sécurité <ExternalLink className="h-3 w-3" />
+                           </a>
+                        </Button>
+                     </div>
+                  </div>
+               </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-none bg-muted/20">
+               <CardHeader className="pb-4">
+                  <CardTitle className="text-sm font-bold uppercase tracking-tight">Activité & Usage</CardTitle>
+               </CardHeader>
+               <CardContent className="space-y-4 pt-0">
+                  <div className="grid grid-cols-2 gap-3">
+                     <div className="p-4 rounded bg-background/50 border border-border/50">
+                        <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Dernière Connexion</p>
+                        <p className="text-xs font-semibold">{user?.lastSignInAt ? new Date(user.lastSignInAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Maintenant'}</p>
+                     </div>
+                     <div className="p-4 rounded bg-background/50 border border-border/50">
+                        <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Ancienneté</p>
+                        <p className="text-xs font-semibold">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</p>
+                     </div>
+                  </div>
+               </CardContent>
+            </Card>
+
+            <div className="pt-6 border-t border-dashed">
+               <h4 className="text-[10px] uppercase font-bold text-destructive tracking-[0.2em] mb-3">Zone de Danger</h4>
+               <p className="text-xs text-muted-foreground mb-4">La suppression de votre compte est irréversible et effacera toutes vos sessions WhatsApp ainsi que vos historiques IA.</p>
+               <Button variant="outline" className="text-xs text-destructive hover:bg-destructive hover:text-white transition-all rounded-full px-6">Supprimer mon compte définitvement</Button>
+            </div>
+         </div>
+      </div>
     </div>
   )
 }

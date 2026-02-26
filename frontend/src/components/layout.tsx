@@ -48,26 +48,35 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 const getNavGroups = (t: any) => [
   {
-    title: "Pilotage Hub",
+    title: "PILOTAGE HUB",
     items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Messagerie", href: "/dashboard/inbox", icon: MessageCircle },
+      { name: "Tableau de Bord", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Messagerie Directe", href: "/dashboard/inbox", icon: MessageCircle },
     ]
   },
   {
-    title: "Paramètres Bot",
+    title: "CONFIGURATION BOT",
     items: [
       { name: "Intelligence & IA", href: "/dashboard/ai", icon: Bot },
       { name: "Gestion Groupes", href: "/dashboard/ai?tab=groups", icon: Shield },
     ]
   },
   {
-    title: "Espace Client",
+    title: "COMPTE & FACTURE",
     items: [
       { name: "Abonnement", href: "/dashboard/billing", icon: CreditCard },
-      { name: "Profil", href: "/dashboard/profile", icon: Settings },
+      { name: "Réglages Profil", href: "/dashboard/profile", icon: Settings },
     ]
   },
+  {
+    title: "ADMINISTRATION",
+    adminOnly: true,
+    items: [
+      { name: "Journal Activités", href: "/dashboard/activities", icon: History },
+      { name: "Utilisateurs", href: "/dashboard/users", icon: Users },
+      { name: "Moteurs IA", href: "/dashboard/ai-models", icon: Settings2 },
+    ]
+  }
 ]
 
 function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
