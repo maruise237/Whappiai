@@ -34,19 +34,26 @@ const sanitizeId = (text) => {
  */
 const validateAIModel = (config) => {
     const errors = [];
-    if (!config.name || typeof config.name !== 'string' || config.name.trim().length < 3) {
+
+    // Support aliases for validation
+    const name = config.name;
+    const endpoint = config.endpoint || config.api_endpoint;
+    const api_key = config.api_key || config.key;
+    const model_name = config.model_name || config.model_code;
+
+    if (!name || typeof name !== 'string' || name.trim().length < 3) {
         errors.push('Model name must be at least 3 characters long');
     }
-    if (!config.endpoint || !validator.isURL(config.endpoint, { require_tld: false, require_protocol: true })) {
+    if (!endpoint || !validator.isURL(endpoint, { require_tld: false, require_protocol: true })) {
         errors.push('Invalid API endpoint URL (must include http:// or https://)');
     }
     // During update, api_key might be empty if we want to keep the existing one
     // But for a NEW model, it must be provided.
     // We check for length < 8 because "YOUR_API_KEY_HERE" or real keys are long.
-    if (config.isNew && (!config.api_key || typeof config.api_key !== 'string' || config.api_key.trim().length < 8)) {
+    if (config.isNew && (!api_key || typeof api_key !== 'string' || api_key.trim().length < 8)) {
         errors.push('API key is required and must be valid');
     }
-    if (!config.model_name || typeof config.model_name !== 'string' || config.model_name.trim().length < 2) {
+    if (!model_name || typeof model_name !== 'string' || model_name.trim().length < 2) {
         errors.push('Model name/ID (e.g., deepseek-chat) is required');
     }
     return {
