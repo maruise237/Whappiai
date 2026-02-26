@@ -260,7 +260,7 @@ export default function InboxPage() {
               ) : filteredConversations.length === 0 ? (
                 <div className="p-12 text-center text-muted-foreground opacity-30">
                   <MessageSquare className="h-10 w-10 mx-auto mb-3" />
-                  <p className="text-[10px] uppercase font-bold tracking-widest">Vide</p>
+                  <p className="text-[10px] font-semibold tracking-widest">Vide</p>
                 </div>
               ) : (
                 filteredConversations.map(conv => (

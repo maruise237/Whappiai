@@ -31,7 +31,7 @@ export default function BillingPage() {
           <p className="text-sm text-muted-foreground">Gérez vos limites et boostez votre automatisation.</p>
         </div>
 
-        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 px-4 py-1.5 h-auto text-[10px] font-bold uppercase tracking-widest rounded-full">
+        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 px-4 py-1.5 h-auto text-[10px] font-semibold tracking-widest rounded-full">
            Plan Actuel : ESSAI GRATUIT
         </Badge>
       </div>
@@ -45,7 +45,7 @@ export default function BillingPage() {
            <Card key={i} className="border-none bg-muted/20 shadow-none">
              <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-0.5">{stat.label}</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">{stat.label}</p>
                   <p className="text-lg font-bold">{stat.val}</p>
                 </div>
                 <stat.icon className="h-5 w-5 text-muted-foreground/30" />

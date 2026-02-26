@@ -100,7 +100,7 @@ export default function AiModelsPage() {
           <CardContent className="p-4 flex items-center gap-3">
              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Zap className="h-4 w-4" /></div>
              <div>
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Moteur Actif</p>
+                <p className="text-[10px] font-semibold text-muted-foreground">Moteur Actif</p>
                 <p className="text-sm font-bold">{models.find(m => m.is_default)?.name || "Non défini"}</p>
              </div>
           </CardContent>
@@ -109,7 +109,7 @@ export default function AiModelsPage() {
           <CardContent className="p-4 flex items-center gap-3">
              <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"><Star className="h-4 w-4" /></div>
              <div>
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Modèles Disponibles</p>
+                <p className="text-[10px] font-semibold text-muted-foreground">Modèles Disponibles</p>
                 <p className="text-sm font-bold">{models.length}</p>
              </div>
           </CardContent>
@@ -120,11 +120,11 @@ export default function AiModelsPage() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-muted/30">
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Modèle</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Provider / API</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground">Code Technique</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground text-center">Par Défaut</TableHead>
-              <TableHead className="text-[10px] uppercase font-bold text-muted-foreground text-right">Actions</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Modèle</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Provider / API</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Code Technique</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground text-center">Par Défaut</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -150,7 +150,7 @@ export default function AiModelsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="text-[9px] uppercase font-bold bg-background border">
+                    <Badge variant="secondary" className="text-[9px] font-semibold bg-background border">
                       {m.provider || 'OpenAI API'}
                     </Badge>
                   </TableCell>
@@ -186,19 +186,19 @@ export default function AiModelsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
              <div className="space-y-1.5 col-span-2">
-                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nom d&apos;affichage</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Nom d&apos;affichage</Label>
                 <Input placeholder="GPT-4o ou Claude-3" className="h-9" />
              </div>
              <div className="space-y-1.5 col-span-2">
-                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Endpoint API (Base URL)</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Endpoint API (Base URL)</Label>
                 <Input placeholder="https://api.openai.com/v1" className="h-9 font-mono text-[11px]" />
              </div>
              <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Code du Modèle</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Code du Modèle</Label>
                 <Input placeholder="gpt-4o" className="h-9 font-mono text-[11px]" />
              </div>
              <div className="space-y-1.5">
-                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Clé API (Secret)</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Clé API (Secret)</Label>
                 <Input type="password" placeholder="sk-..." className="h-9 font-mono text-[11px]" />
              </div>
              <div className="flex items-center justify-between col-span-2 p-3 bg-muted/20 rounded-md mt-2">

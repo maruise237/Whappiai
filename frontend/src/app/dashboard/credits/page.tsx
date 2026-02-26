@@ -69,7 +69,7 @@ export default function CreditsPage() {
           <p className="text-sm text-muted-foreground">Suivi de votre consommation d&apos;intelligence artificielle.</p>
         </div>
 
-        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-4 py-1.5 h-auto text-[10px] font-bold uppercase tracking-widest rounded-full">
+        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-4 py-1.5 h-auto text-[10px] font-semibold tracking-widest rounded-full">
            Plan : Free Trial
         </Badge>
       </div>
@@ -83,7 +83,7 @@ export default function CreditsPage() {
          ].map((stat, i) => (
            <Card key={i} className="border-none shadow-none bg-muted/20">
              <CardContent className="p-4">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-2">{stat.label}</p>
+                <p className="text-[10px] font-semibold text-muted-foreground tracking-widest mb-2">{stat.label}</p>
                 <p className="text-2xl font-bold">{stat.val}</p>
                 <p className="text-[10px] text-muted-foreground/60 mt-1">{stat.sub}</p>
              </CardContent>
@@ -95,7 +95,7 @@ export default function CreditsPage() {
          <div className="space-y-6">
             <Card className="border-none bg-muted/10 shadow-none">
                <CardHeader className="pb-0">
-                  <CardTitle className="text-sm font-bold uppercase tracking-tight">Historique de Consommation</CardTitle>
+                  <CardTitle className="text-sm font-semibold tracking-tight">Historique de Consommation</CardTitle>
                </CardHeader>
                <CardContent className="pt-6">
                   <div className="h-[300px] flex items-center justify-center border border-dashed rounded-lg bg-background/50 text-muted-foreground text-xs italic">
@@ -105,9 +105,9 @@ export default function CreditsPage() {
                   <Table className="mt-8">
                      <TableHeader>
                         <TableRow className="border-muted/30">
-                           <TableHead className="text-[10px] uppercase font-bold">Date</TableHead>
-                           <TableHead className="text-[10px] uppercase font-bold">Action</TableHead>
-                           <TableHead className="text-[10px] uppercase font-bold text-right">Crédits</TableHead>
+                           <TableHead className="text-[10px] font-semibold">Date</TableHead>
+                           <TableHead className="text-[10px] font-semibold">Action</TableHead>
+                           <TableHead className="text-[10px] font-semibold text-right">Crédits</TableHead>
                         </TableRow>
                      </TableHeader>
                      <TableBody>
