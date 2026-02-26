@@ -30,6 +30,7 @@ const logger = pino({ level: process.env.LOG_LEVEL || defaultLogLevel });
 // Active socket connections (in-memory)
 const activeSockets = new Map();
 const retryCounters = new Map();
+const lastQrs = new Map();
 const connectingSessions = new Set();
 
 // Auth directory
@@ -214,9 +215,11 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             log(`Nouveau code QR généré`, sessionId, { event: 'qr-generated' }, 'INFO');
             try {
                 const qrBase64 = await QRCode.toDataURL(qr);
+                lastQrs.set(sessionId, qrBase64);
                 if (onUpdate) onUpdate(sessionId, 'GENERATING_QR', 'Scan QR code', qrBase64);
             } catch (err) {
                 log(`Erreur lors de la génération du QR DataURL: ${err.message}`, sessionId, { event: 'qr-error', error: err.message }, 'ERROR');
+                lastQrs.set(sessionId, qr);
                 if (onUpdate) onUpdate(sessionId, 'GENERATING_QR', 'Scan QR code', qr);
             }
         }
@@ -230,6 +233,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             const name = sock.user?.name || 'Unknown';
             log(`WhatsApp connecté: ${name}`, sessionId, { event: 'connection-open', user: name }, 'INFO');
             retryCounters.delete(sessionId);
+            lastQrs.delete(sessionId);
 
             if (onUpdate) onUpdate(sessionId, 'CONNECTED', `Connected as ${name}`, null);
         }
@@ -246,6 +250,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             
             // Clean up socket reference immediately
             activeSockets.delete(sessionId);
+            lastQrs.delete(sessionId);
 
             if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', reason, null);
 
@@ -561,6 +566,15 @@ async function disconnectAll() {
 }
 
 /**
+ * Get last QR code for a session
+ * @param {string} sessionId - Session ID
+ * @returns {string|null} QR DataURL or null
+ */
+function getLastQr(sessionId) {
+    return lastQrs.get(sessionId) || null;
+}
+
+/**
  * Get socket for a session
  * @param {string} sessionId - Session ID
  * @returns {object|null} Socket or null
@@ -583,16 +597,33 @@ function isConnected(sessionId) {
  * Delete session data
  * @param {string} sessionId - Session ID
  */
-function deleteSessionData(sessionId) {
+async function deleteSessionData(sessionId) {
     if (!require('../utils/validation').isValidId(sessionId)) {
         return;
     }
 
-    disconnect(sessionId);
+    await disconnect(sessionId);
 
     const sessionDir = path.join(AUTH_DIR, sessionId);
     if (fs.existsSync(sessionDir)) {
-        fs.rmSync(sessionDir, { recursive: true, force: true });
+        // Robust deletion with retry for locked files
+        let retries = 5;
+        while (retries > 0) {
+            try {
+                fs.rmSync(sessionDir, { recursive: true, force: true });
+                log(`Données de session supprimées: ${sessionId}`, sessionId, { event: 'auth-data-deleted' }, 'INFO');
+                break;
+            } catch (err) {
+                retries--;
+                if (err.code === 'EPERM' || err.code === 'EBUSY') {
+                    log(`Fichiers verrouillés pour ${sessionId}, tentative ${5-retries}/5...`, sessionId, { event: 'auth-delete-retry' }, 'WARN');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } else {
+                    log(`Erreur lors de la suppression des données de ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -609,6 +640,7 @@ module.exports = {
     disconnect,
     disconnectAll,
     getSocket,
+    getLastQr,
     isConnected,
     deleteSessionData,
     getActiveSessions,
