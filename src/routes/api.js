@@ -665,8 +665,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId } = req.params;
         const sessionData = sessions.get(sessionId);
 
-        if (!sessionData || !sessionData.sock) {
-            return res.status(400).json({ status: 'error', message: 'Session not connected' });
+        if (!sessionData || !sessionData.sock || sessionData.status !== 'CONNECTED') {
+            return res.status(400).json({
+                status: 'error',
+                message: `La session "${sessionId}" n'est pas connectée. Veuillez coupler votre compte WhatsApp.`
+            });
         }
 
         try {

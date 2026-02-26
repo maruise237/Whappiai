@@ -1,5 +1,11 @@
 {
   "nav": {
+    "hubs": {
+      "pilotage": "PILOTAGE HUB",
+      "config": "CONFIGURATION BOT",
+      "client": "ESPACE CLIENT",
+      "admin": "ADMINISTRATION"
+    },
     "overview": "Tableau de Bord",
     "inbox": "Messagerie Directe",
     "activities": "Journal Activités",

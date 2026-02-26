@@ -377,7 +377,7 @@ export const api = {
     }),
   },
   activities: {
-    list: (token?: string) => fetchApi("/api/v1/activities", {
+    list: (limit = 50, offset = 0, token?: string) => fetchApi(`/api/v1/activities?limit=${limit}&offset=${offset}`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
     summary: (days = 7, token?: string) => fetchApi(`/api/v1/activities/summary?days=${days}`, {
