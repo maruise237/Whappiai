@@ -10,6 +10,13 @@ class PricingService {
     }
 
     /**
+     * Get all plans (including inactive/historical)
+     */
+    static getAllPlans() {
+        return db.prepare('SELECT * FROM pricing_plans ORDER BY price ASC, version DESC').all();
+    }
+
+    /**
      * Get plan by ID
      */
     static getPlan(id) {

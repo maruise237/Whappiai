@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
-const { createCheckoutSession } = require('../services/payment');
+const { createCheckoutSession, handleWebhook } = require('../services/payment');
 const PricingService = require('../services/PricingService');
 const { log } = require('../utils/logger');
 

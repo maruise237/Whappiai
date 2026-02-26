@@ -86,23 +86,25 @@ async function requireClerkAuth(req, res, next) {
     }
 
     // Sync with local SQLite user
-    let localUser = User.findByEmail(email);
+    let localUser = User.findById(clerkUser.id) || User.findByEmail(email);
     
-    // If user doesn't exist locally, DO NOT create automatically.
-    // Return 404 to trigger frontend redirection flow.
+    // Auto-create or update user from Clerk
+    // This ensures that anyone authenticated via Clerk has a local record
+    log(`Syncing user ${email} from Clerk...`, 'AUTH', { email, id: clerkUser.id }, 'DEBUG');
+
+    await User.create({
+        id: clerkUser.id,
+        email: email,
+        name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
+        imageUrl: clerkUser.imageUrl,
+        role: targetRole // Use targetRole which includes auto-promotion
+    });
+
+    localUser = User.findById(clerkUser.id);
+
     if (!localUser) {
-        log(`User ${email} not found in local DB (auto-create disabled)`, 'AUTH');
-        return response.error(res, 'User not found in database', 404);
-    } else {
-        // Update profile data even if user exists to keep sync
-        await User.create({
-            id: clerkUser.id,
-            email: email,
-            name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
-            imageUrl: clerkUser.imageUrl,
-            role: targetRole // Use targetRole which includes auto-promotion
-        });
-        localUser = User.findById(clerkUser.id);
+        log(`Failed to sync/create local user for ${email}`, 'AUTH', null, 'ERROR');
+        return response.error(res, 'Failed to initialize user session', 500);
     }
 
     // Attach user info to request
