@@ -25,23 +25,24 @@ const getApiBaseUrl = () => {
       return `${protocol}//${hostname}:3010`;
     }
 
-    // Handle Dokploy/Production domains (where port might be empty)
-    // If hostname is present but port is empty, we might be on a subdomain
-    if (!port && hostname) {
-      // If we are on app.domain.com, backend might be on api.domain.com
-      if (hostname.startsWith('app.')) {
-        return `${protocol}//${hostname.replace('app.', 'api.')}`;
+    // Handle Dokploy/Production domains
+    if (hostname) {
+      // If we are on port 3011 (SaaS Frontend), we likely need port 3010 (SaaS Backend)
+      if (port === '3011') return `${protocol}//${hostname}:3010`;
+
+      // Subdomain routing (app -> api)
+      if (hostname.startsWith('app.')) return `${protocol}//${hostname.replace('app.', 'api.')}`;
+      if (hostname.startsWith('dashboard.')) return `${protocol}//${hostname.replace('dashboard.', 'api.')}`;
+
+      // If there is NO port, we are on standard 80/443.
+      // In same-domain setup (backend serving frontend), we just use the current origin.
+      if (!port) return `${protocol}//${hostname}`;
+
+      // If we have a port but it's not a known frontend dev port,
+      // we assume the backend is on the same port (same-domain production).
+      if (port !== '3005' && port !== '3001' && port !== '3000') {
+          return `${protocol}//${hostname}:${port}`;
       }
-      // If we are on dashboard.domain.com, backend might be on api.domain.com
-      if (hostname.startsWith('dashboard.')) {
-        return `${protocol}//${hostname.replace('dashboard.', 'api.')}`;
-      }
-      // Fallback: try the same hostname on port 3010 if it's a raw IP
-      if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-        return `${protocol}//${hostname}:3010`;
-      }
-      // Default fallback to current origin (for same-domain setups)
-      return `${protocol}//${hostname}${protocol === 'https:' ? '' : ':3010'}`;
     }
 
     // If we are on port 3005 or 3001 (Next.js dev server), we need to point to the backend (3000)

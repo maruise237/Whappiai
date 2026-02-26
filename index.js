@@ -652,13 +652,26 @@ if (require.main === module) {
 }
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     log('Arrêt en cours...', 'SYSTEM', null, 'INFO');
+
+    try {
+        // Disconnect all WhatsApp sessions cleanly
+        await whatsappService.disconnectAll();
+    } catch (err) {
+        log(`Erreur lors de la déconnexion des sessions: ${err.message}`, 'SYSTEM', null, 'WARN');
+    }
 
     server.close(() => {
         log('Serveur arrêté', 'SYSTEM', null, 'INFO');
         process.exit(0);
     });
+
+    // Safety exit after 5s if server.close hangs
+    setTimeout(() => {
+        log('Arrêt forcé (timeout)', 'SYSTEM', null, 'WARN');
+        process.exit(1);
+    }, 5000);
 });
 
 module.exports = { app, server, wss };

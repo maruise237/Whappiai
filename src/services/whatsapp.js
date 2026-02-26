@@ -30,6 +30,7 @@ const logger = pino({ level: process.env.LOG_LEVEL || defaultLogLevel });
 // Active socket connections (in-memory)
 const activeSockets = new Map();
 const retryCounters = new Map();
+const connectingSessions = new Set();
 
 // Auth directory
 const AUTH_DIR = path.join(__dirname, '../../auth_info_baileys');
@@ -56,10 +57,18 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         throw new Error('Invalid session ID');
     }
 
-    // Disconnect existing socket if any
-    await disconnect(sessionId);
+    // Connection lock to prevent concurrent attempts for same ID
+    if (connectingSessions.has(sessionId)) {
+        log(`Connexion déjà en cours pour ${sessionId}, abandon de l'appel concurrent`, sessionId, { event: 'connect-locked' }, 'WARN');
+        return activeSockets.get(sessionId);
+    }
+    connectingSessions.add(sessionId);
 
-    ensureAuthDir();
+    try {
+        // Disconnect existing socket if any
+        await disconnect(sessionId, false); // false = don't clear retry counter
+
+        ensureAuthDir();
 
     const sessionDir = path.join(AUTH_DIR, sessionId);
     if (!fs.existsSync(sessionDir)) {
@@ -132,7 +141,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         },
         printQRInTerminal: false,
         logger,
-        browser: Browsers.ubuntu('Chrome'),
+        browser: Browsers.ubuntu(`Whappi-${sessionId}`),
         syncFullHistory: false,
         qrTimeout: 60000,
         connectTimeoutMs: 60000,
@@ -193,6 +202,9 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
     // Handle credentials update
     sock.ev.on('creds.update', saveCreds);
+
+    // Release connecting lock once socket is created and added to activeSockets
+    connectingSessions.delete(sessionId);
 
     // Handle connection updates
     sock.ev.on('connection.update', async (update) => {
@@ -502,13 +514,17 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
     });
 
     return sock;
+    } finally {
+        connectingSessions.delete(sessionId);
+    }
 }
 
 /**
  * Disconnect a session
  * @param {string} sessionId - Session ID
+ * @param {boolean} clearRetry - Whether to clear the retry counter (default: true)
  */
-async function disconnect(sessionId) {
+async function disconnect(sessionId, clearRetry = true) {
     const sock = activeSockets.get(sessionId);
     if (sock) {
         log(`Déconnexion demandée pour la session ${sessionId}`, sessionId, { event: 'disconnect-request' }, 'DEBUG');
@@ -528,7 +544,20 @@ async function disconnect(sessionId) {
         }
         activeSockets.delete(sessionId);
     }
-    retryCounters.delete(sessionId);
+    if (clearRetry) {
+        retryCounters.delete(sessionId);
+    }
+}
+
+/**
+ * Disconnect all active sessions
+ */
+async function disconnectAll() {
+    log('Déconnexion de toutes les sessions actives...', 'SYSTEM');
+    const sessions = Array.from(activeSockets.keys());
+    for (const sessionId of sessions) {
+        await disconnect(sessionId);
+    }
 }
 
 /**
@@ -578,6 +607,7 @@ function getActiveSessions() {
 module.exports = {
     connect,
     disconnect,
+    disconnectAll,
     getSocket,
     isConnected,
     deleteSessionData,
