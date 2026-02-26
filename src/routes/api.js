@@ -679,6 +679,30 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
+    router.get('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        const { sessionId, groupId } = req.params;
+        try {
+            const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+            res.json({
+                status: 'success',
+                data: settings || {
+                    group_id: groupId,
+                    session_id: sessionId,
+                    is_active: 0,
+                    anti_link: 0,
+                    bad_words: '',
+                    warning_template: 'Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
+                    max_warnings: 5,
+                    welcome_enabled: 0,
+                    ai_assistant_enabled: 0
+                }
+            });
+        } catch (err) {
+            log(`Erreur lors de la récupération des réglages pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
     router.post('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
@@ -687,6 +711,36 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             res.json({ status: 'success', message: 'Settings updated' });
         } catch (err) {
             log(`Échec de la mise à jour de la modération pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
+    router.get('/stats', checkSessionOrTokenAuth, async (req, res) => {
+        try {
+            const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
+            const summary = activityLogger.getSummary(userEmail, 7);
+            const user = User.findById(req.currentUser.id);
+
+            // Count user sessions
+            let sessionCount = 0;
+            if (req.currentUser.role === 'admin') {
+                sessionCount = Session.countActive();
+            } else {
+                sessionCount = Session.getSessionIdsByOwner(req.currentUser.email).length;
+            }
+
+            res.json({
+                status: 'success',
+                data: {
+                    totalActivities: summary.totalActivities,
+                    successRate: summary.successRate,
+                    credits: user?.message_limit || 0,
+                    activeSessions: sessionCount,
+                    messagesSent: summary.byAction?.send_message || 0
+                }
+            });
+        } catch (err) {
+            log(`[API] Erreur stats: ${err.message}`, 'SYSTEM', null, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });

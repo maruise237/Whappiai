@@ -21,7 +21,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     
     // Non-admins only see users they created
     if (currentUser.role !== 'admin') {
-        users = users.filter(u => u.createdBy === currentUser.email);
+        users = users.filter(u => u.created_by === currentUser.email);
     }
     
     return response.success(res, users);

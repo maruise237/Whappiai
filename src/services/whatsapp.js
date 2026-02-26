@@ -215,12 +215,12 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         }
 
         if (connection === 'open') {
-        const name = sock.user?.name || 'Unknown';
-        log(`WhatsApp connecté: ${name}`, sessionId, { event: 'connection-open', user: name }, 'INFO');
-        retryCounters.delete(sessionId);
+            const name = sock.user?.name || 'Unknown';
+            log(`WhatsApp connecté: ${name}`, sessionId, { event: 'connection-open', user: name }, 'INFO');
+            retryCounters.delete(sessionId);
 
-        if (onUpdate) onUpdate(sessionId, 'CONNECTED', `Connected as ${name}`, null);
-    }
+            if (onUpdate) onUpdate(sessionId, 'CONNECTED', `Connected as ${name}`, null);
+        }
 
         if (connection === 'close') {
             const statusCode = lastDisconnect?.error?.output?.statusCode;
@@ -240,6 +240,9 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             // Handle reconnection logic
             // We now attempt to reconnect even on 440 (Conflict) and 428 (Terminated) to fulfill "permanent connection" requirement
             const isConflict = statusCode === 440;
+
+            // Critical: If it's a conflict, we check if we've already tried too many times recently
+            // to avoid infinite fighting between two processes
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
                                   statusCode !== 401 && 
                                   statusCode !== 403;
@@ -249,18 +252,26 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 retryCounters.set(sessionId, retryCount);
 
                 // Exponential backoff for WhatsApp reconnection (min 5s at startup to be safe)
-                // If it's a conflict, we wait significantly longer (min 30s) to let the other session breath
-                let delay = Math.max(5000, Math.min(2000 * Math.pow(2, retryCount - 1), 60000));
-                if (isConflict) delay = Math.max(delay, 30000);
+                // If it's a conflict, we wait significantly longer (min 1 min) to let the other session breath
+                // and we increase the delay exponentially to avoid spamming the server
+                let delay = Math.max(5000, Math.min(2000 * Math.pow(2, retryCount - 1), 120000));
+
+                if (isConflict) {
+                    // Start at 1 min for conflict, up to 10 mins
+                    delay = Math.max(delay, 60000 * Math.min(retryCount, 10));
+                    log(`Conflit de session détecté (440). Temporisation accrue: ${delay/1000}s`, sessionId, { event: 'connection-conflict', retryCount }, 'WARN');
+                }
 
                 // Increase max attempts to 100 for absolute permanence
                 if (retryCount <= 100) {
-                log(`Reconnexion... (tentative ${retryCount}/100) dans ${delay}ms`, sessionId, {
-                    event: 'connection-retry',
-                    attempt: retryCount,
-                    delay
-                }, 'INFO');
-                if (onUpdate) onUpdate(sessionId, 'CONNECTING', `Reconnecting (attempt ${retryCount}/100)...`, null);
+                    log(`Reconnexion... (tentative ${retryCount}/100) dans ${delay}ms`, sessionId, {
+                        event: 'connection-retry',
+                        attempt: retryCount,
+                        delay
+                    }, 'INFO');
+
+                    if (onUpdate) onUpdate(sessionId, 'CONNECTING', `Reconnecting (attempt ${retryCount}/100)...`, null);
+
                     setTimeout(async () => {
                         // Check if it's still disconnected and no new connection was started
                         if (!activeSockets.has(sessionId)) {
