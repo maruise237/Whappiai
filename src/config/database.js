@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { log } = require('../utils/logger');
 const MigrationRunner = require('./migrations');
+const { encrypt } = require('../utils/crypto');
 
 // Database file path
 const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '../../data/whatsapp.db');
@@ -412,6 +413,42 @@ function initializeSchema() {
         try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_enabled INTEGER DEFAULT 0"); } catch (e) {}
         try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_template TEXT"); } catch (e) {}
         try { db.exec("ALTER TABLE group_settings ADD COLUMN ai_assistant_enabled INTEGER DEFAULT 0"); } catch (e) {}
+    });
+
+    // Migration: Encrypt existing AI keys
+    runner.run('encrypt-existing-ai-keys', (db) => {
+        const encryptionKey = process.env.TOKEN_ENCRYPTION_KEY;
+        if (!encryptionKey) return;
+
+        // 1. Encrypt session keys
+        const sessions = db.prepare("SELECT id, ai_key FROM whatsapp_sessions WHERE ai_key IS NOT NULL AND ai_key != ''").all();
+        const updateSession = db.prepare("UPDATE whatsapp_sessions SET ai_key = ? WHERE id = ?");
+
+        for (const session of sessions) {
+            if (session.ai_key && !session.ai_key.includes(':')) {
+                try {
+                    const encrypted = encrypt(session.ai_key, encryptionKey);
+                    updateSession.run(encrypted, session.id);
+                } catch (e) {
+                    log(`Migration : Échec chiffrement clé session ${session.id}`, 'SYSTEM', null, 'ERROR');
+                }
+            }
+        }
+
+        // 2. Encrypt global model keys
+        const models = db.prepare("SELECT id, api_key FROM ai_models WHERE api_key IS NOT NULL AND api_key != ''").all();
+        const updateModel = db.prepare("UPDATE ai_models SET api_key = ? WHERE id = ?");
+
+        for (const model of models) {
+            if (model.api_key && !model.api_key.includes(':')) {
+                try {
+                    const encrypted = encrypt(model.api_key, encryptionKey);
+                    updateModel.run(encrypted, model.id);
+                } catch (e) {
+                    log(`Migration : Échec chiffrement clé modèle ${model.id}`, 'SYSTEM', null, 'ERROR');
+                }
+            }
+        }
     });
 
     // Initialize default plans if empty

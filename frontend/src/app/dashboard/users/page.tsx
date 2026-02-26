@@ -58,6 +58,10 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [formData, setFormData] = React.useState({
+    email: '',
+    role: 'user'
+  })
 
   const fetchUsers = React.useCallback(async () => {
     setLoading(true)
@@ -78,11 +82,61 @@ export default function UsersPage() {
 
   const filtered = users.filter(u =>
     u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.clerk_id.toLowerCase().includes(searchQuery.toLowerCase())
+    (u.id && u.id.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   const isAdmin = currentUser?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' ||
                   currentUser?.publicMetadata?.role === 'admin'
+
+  const handleCreateUser = async () => {
+    if (!formData.email) return toast.error("Email requis")
+    setIsSubmitting(true)
+    try {
+      const token = await getToken()
+      await api.users.create(formData, token || undefined)
+      toast.success("Utilisateur invité/créé")
+      setIsAddDialogOpen(false)
+      fetchUsers()
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la création")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleUpdateRole = async (email: string, newRole: string) => {
+    try {
+      const token = await getToken()
+      await api.users.update(email, { role: newRole }, token || undefined)
+      toast.success("Rôle mis à jour")
+      fetchUsers()
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la mise à jour")
+    }
+  }
+
+  const handleToggleStatus = async (user: any) => {
+    try {
+      const token = await getToken()
+      await api.users.update(user.email, { is_active: !user.is_active }, token || undefined)
+      toast.success(user.is_active ? "Compte désactivé" : "Compte réactivé")
+      fetchUsers()
+    } catch (e: any) {
+      toast.error(e.message || "Erreur de statut")
+    }
+  }
+
+  const handleDeleteUser = async (id: string) => {
+    if (!confirm("Supprimer définitivement cet utilisateur ?")) return
+    try {
+      const token = await getToken()
+      await api.users.delete(id, token || undefined)
+      toast.success("Utilisateur supprimé")
+      fetchUsers()
+    } catch (e: any) {
+      toast.error(e.message || "Erreur de suppression")
+    }
+  }
 
   if (!isAdmin) {
     return (
@@ -158,7 +212,7 @@ export default function UsersPage() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold">{u.email}</span>
-                        <span className="text-[9px] font-mono text-muted-foreground opacity-60 uppercase">{u.clerk_id}</span>
+                        <span className="text-[9px] font-mono text-muted-foreground opacity-60 uppercase">{u.id}</span>
                       </div>
                     </div>
                   </TableCell>
@@ -191,10 +245,16 @@ export default function UsersPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="text-xs"><Edit className="h-3.5 w-3.5 mr-2" /> Modifier Rôle</DropdownMenuItem>
-                        <DropdownMenuItem className="text-xs"><Shield className="h-3.5 w-3.5 mr-2" /> {u.is_active ? 'Désactiver' : 'Réactiver'}</DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs" onClick={() => handleUpdateRole(u.email, u.role === 'admin' ? 'user' : 'admin')}>
+                          <Edit className="h-3.5 w-3.5 mr-2" /> Passer en {u.role === 'admin' ? 'Utilisateur' : 'Admin'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs" onClick={() => handleToggleStatus(u)}>
+                          <Shield className="h-3.5 w-3.5 mr-2" /> {u.is_active ? 'Désactiver' : 'Réactiver'}
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-xs text-destructive"><Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer</DropdownMenuItem>
+                        <DropdownMenuItem className="text-xs text-destructive" onClick={() => handleDeleteUser(u.id)}>
+                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -216,11 +276,19 @@ export default function UsersPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-1.5">
               <Label className="text-[10px] font-semibold text-muted-foreground">Email de l&apos;utilisateur</Label>
-              <Input placeholder="user@example.com" className="h-9" />
+              <Input
+                placeholder="user@example.com"
+                className="h-9"
+                value={formData.email}
+                onChange={e => setFormData({...formData, email: e.target.value})}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] font-semibold text-muted-foreground">Rôle initial</Label>
-              <Select defaultValue="user">
+              <Select
+                value={formData.role}
+                onValueChange={value => setFormData({...formData, role: value})}
+              >
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
@@ -233,7 +301,10 @@ export default function UsersPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" size="sm" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-            <Button size="sm">Lancer l&apos;invitation</Button>
+            <Button size="sm" onClick={handleCreateUser} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+              Lancer l&apos;invitation
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

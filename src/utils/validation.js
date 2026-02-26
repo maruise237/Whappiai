@@ -40,7 +40,10 @@ const validateAIModel = (config) => {
     if (!config.endpoint || !validator.isURL(config.endpoint, { require_tld: false, require_protocol: true })) {
         errors.push('Invalid API endpoint URL (must include http:// or https://)');
     }
-    if (!config.api_key || typeof config.api_key !== 'string' || config.api_key.trim().length < 8) {
+    // During update, api_key might be empty if we want to keep the existing one
+    // But for a NEW model, it must be provided.
+    // We check for length < 8 because "YOUR_API_KEY_HERE" or real keys are long.
+    if (config.isNew && (!config.api_key || typeof config.api_key !== 'string' || config.api_key.trim().length < 8)) {
         errors.push('API key is required and must be valid');
     }
     if (!config.model_name || typeof config.model_name !== 'string' || config.model_name.trim().length < 2) {

@@ -6,6 +6,9 @@
 const { db } = require('../config/database');
 const { randomUUID } = require('crypto');
 const { log } = require('../utils/logger');
+const { encrypt, decrypt } = require('../utils/crypto');
+
+const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY;
 
 class AIModel {
     /**
@@ -20,6 +23,11 @@ class AIModel {
             description = '', is_active = 1, is_default = 0,
             temperature = 0.7, max_tokens = 2000
         } = data;
+
+        // Secure key storage
+        if (api_key && !api_key.includes(':')) {
+            api_key = encrypt(api_key, ENCRYPTION_KEY);
+        }
 
         // Normalize booleans for SQLite
         is_active = is_active === true || is_active === 1 || is_active === '1' ? 1 : 0;
@@ -53,7 +61,17 @@ class AIModel {
      */
     static findById(id) {
         const stmt = db.prepare('SELECT * FROM ai_models WHERE id = ?');
-        return stmt.get(id);
+        const model = stmt.get(id);
+
+        if (model && model.api_key && model.api_key.includes(':')) {
+            try {
+                model.api_key = decrypt(model.api_key, ENCRYPTION_KEY);
+            } catch (e) {
+                log(`Failed to decrypt API key for model ${id}`, 'SECURITY', { error: e.message }, 'ERROR');
+            }
+        }
+
+        return model;
     }
 
     /**
@@ -108,6 +126,10 @@ class AIModel {
             // Normalize booleans for SQLite
             if (field === 'is_active' || field === 'is_default') {
                 return val === true || val === 1 || val === '1' ? 1 : 0;
+            }
+            // Secure key storage
+            if (field === 'api_key' && val && !val.includes(':')) {
+                return encrypt(val, ENCRYPTION_KEY);
             }
             return val;
         });

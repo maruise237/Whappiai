@@ -48,6 +48,7 @@ function AIConfigContent() {
   const sessionId = searchParams.get('sessionId')
 
   const [config, setConfig] = React.useState<any>(null)
+  const [models, setModels] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
   const [activeSection, setActiveSection] = React.useState('intelligence')
@@ -57,8 +58,12 @@ function AIConfigContent() {
     setLoading(true)
     try {
       const token = await getToken()
-      const data = await api.sessions.getAI(sessionId, token || undefined)
-      setConfig(data)
+      const [aiData, modelsData] = await Promise.all([
+        api.sessions.getAI(sessionId, token || undefined),
+        api.ai.listModels(token || undefined)
+      ])
+      setConfig(aiData)
+      setModels(modelsData || [])
     } catch (e) {
       toast.error("Échec du chargement de la configuration")
     } finally {
@@ -84,7 +89,7 @@ function AIConfigContent() {
     }
   }
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
+  const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
   if (!sessionId) return <div className="p-12 text-center text-muted-foreground">Session non trouvée</div>
@@ -318,13 +323,18 @@ function AIConfigContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div className="space-y-1.5">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground">Modèle LLM</Label>
-                  <Select value={config?.model || "gpt-4o"} onValueChange={(v) => setConfig({...config, model: v})}>
+                  <Select value={config?.model || "deepseek-chat"} onValueChange={(v) => setConfig({...config, model: v})}>
                      <SelectTrigger className="h-9">
-                        <SelectValue />
+                        <SelectValue placeholder="Sélectionnez un modèle" />
                      </SelectTrigger>
                      <SelectContent>
-                        <SelectItem value="gpt-4o">GPT-4o (Stable)</SelectItem>
-                        <SelectItem value="gpt-4o-mini">GPT-4o Mini (Rapide)</SelectItem>
+                        <SelectItem value="deepseek-chat">DeepSeek Chat (Défaut)</SelectItem>
+                        {models.map(m => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))}
+                        <Separator className="my-2" />
+                        <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                        <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
                         <SelectItem value="claude-3-5-sonnet">Claude 3.5 Sonnet</SelectItem>
                      </SelectContent>
                   </Select>
