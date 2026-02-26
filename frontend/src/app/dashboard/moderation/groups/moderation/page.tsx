@@ -71,11 +71,13 @@ function GroupModerationContent() {
   const [form, setForm] = React.useState<any>({
     is_active: false,
     anti_link: false,
-    warning_threshold: 3,
-    banned_words: "",
-    warning_template: "Attention @{{name}}, les insultes sont interdites.",
+    max_warnings: 5,
+    warning_reset_days: 0,
+    bad_words: "",
+    warning_template: "Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.",
     welcome_enabled: false,
-    welcome_message: "Bienvenue @{{name}} dans le groupe !"
+    welcome_template: "Bienvenue @{{name}} dans le groupe !",
+    ai_assistant_enabled: false
   })
 
   React.useEffect(() => {
@@ -83,11 +85,13 @@ function GroupModerationContent() {
       setForm({
         is_active: !!selectedGroup.settings.is_active,
         anti_link: !!selectedGroup.settings.anti_link,
-        warning_threshold: selectedGroup.settings.warning_threshold || 3,
-        banned_words: selectedGroup.settings.banned_words || "",
-        warning_template: selectedGroup.settings.warning_template || "Attention @{{name}}, les insultes sont interdites.",
+        max_warnings: selectedGroup.settings.max_warnings || 5,
+        warning_reset_days: selectedGroup.settings.warning_reset_days || 0,
+        bad_words: selectedGroup.settings.bad_words || "",
+        warning_template: selectedGroup.settings.warning_template || "Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.",
         welcome_enabled: !!selectedGroup.settings.welcome_enabled,
-        welcome_message: selectedGroup.settings.welcome_message || "Bienvenue @{{name}} dans le groupe !"
+        welcome_template: selectedGroup.settings.welcome_template || "",
+        ai_assistant_enabled: !!selectedGroup.settings.ai_assistant_enabled
       })
     }
   }, [selectedGroup])
@@ -222,15 +226,15 @@ function GroupModerationContent() {
                   <div className="space-y-6 p-4 rounded-lg bg-muted/30 border border-dashed border-muted">
                      <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                           <Label className="text-xs">Seuil d&apos;exclusion</Label>
+                           <Label className="text-xs">Seuil d&apos;exclusion (Nombre d&apos;avertissements)</Label>
                            <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-none text-[10px] font-bold">
-                              {form.warning_threshold} Warns = Ban
+                              {form.max_warnings} Warns = Ban
                            </Badge>
                         </div>
                         <Input
                            type="number"
-                           value={form.warning_threshold}
-                           onChange={e => setForm({...form, warning_threshold: parseInt(e.target.value)})}
+                           value={form.max_warnings}
+                           onChange={e => setForm({...form, max_warnings: parseInt(e.target.value)})}
                            className="h-9 w-24 text-sm"
                         />
                         <div className="space-y-1">
@@ -238,8 +242,30 @@ function GroupModerationContent() {
                               <span>Sévérité Faible</span>
                               <span>Critique</span>
                            </div>
-                           <Progress value={(form.warning_threshold / 10) * 100} className="h-1.5" />
+                           <Progress value={(form.max_warnings / 10) * 100} className="h-1.5" />
                         </div>
+                     </div>
+
+                     <div className="space-y-4 pt-4 border-t border-muted">
+                        <div className="flex items-center justify-between">
+                           <div>
+                              <Label className="text-xs font-medium">Remise à zéro automatique</Label>
+                              <p className="text-[10px] text-muted-foreground">Nombre de jours avant d&apos;effacer les avertissements d&apos;un membre.</p>
+                           </div>
+                           <div className="flex items-center gap-2">
+                              <Input
+                                 type="number"
+                                 value={form.warning_reset_days}
+                                 onChange={e => setForm({...form, warning_reset_days: parseInt(e.target.value)})}
+                                 className="h-8 w-16 text-xs text-center"
+                                 placeholder="0"
+                              />
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">Jours</span>
+                           </div>
+                        </div>
+                        <p className="text-[9px] italic text-muted-foreground bg-primary/5 p-2 rounded">
+                           💡 Réglez sur 0 pour désactiver la remise à zéro automatique.
+                        </p>
                      </div>
                   </div>
                </div>
@@ -257,8 +283,8 @@ function GroupModerationContent() {
                         <Textarea
                            placeholder="insulte1, insulte2, spam..."
                            className="min-h-[80px] text-sm bg-card border-border"
-                           value={form.banned_words}
-                           onChange={e => setForm({...form, banned_words: e.target.value})}
+                           value={form.bad_words}
+                           onChange={e => setForm({...form, bad_words: e.target.value})}
                         />
                      </div>
                      <div className="space-y-2">
@@ -302,8 +328,8 @@ function GroupModerationContent() {
                            <Textarea
                               placeholder="Bienvenue @{{name}} !"
                               className="min-h-[100px] text-sm bg-card border-border"
-                              value={form.welcome_message}
-                              onChange={e => setForm({...form, welcome_message: e.target.value})}
+                              value={form.welcome_template}
+                              onChange={e => setForm({...form, welcome_template: e.target.value})}
                            />
                            <div className="flex flex-wrap gap-1 mt-2">
                               {['@{{name}}', '{{subject}}', '{{time}}'].map(tag => (
@@ -311,7 +337,7 @@ function GroupModerationContent() {
                                     key={tag}
                                     variant="secondary"
                                     className="text-[10px] cursor-pointer font-mono hover:bg-primary/10 h-5"
-                                    onClick={() => setForm({...form, welcome_message: (form.welcome_message || "") + tag})}
+                                    onClick={() => setForm({...form, welcome_template: (form.welcome_template || "") + tag})}
                                  >
                                     {tag}
                                  </Badge>
@@ -319,6 +345,25 @@ function GroupModerationContent() {
                            </div>
                         </div>
                      )}
+                  </div>
+               </div>
+
+               <Separator />
+
+               {/* AI Assistant Group Toggle */}
+               <div className="space-y-4">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                     <BrainCircuit className="h-4 w-4 text-primary" /> Assistant IA du Groupe
+                  </h3>
+                  <div className="border rounded-lg bg-primary/5 p-4 flex items-center justify-between">
+                     <div>
+                        <p className="text-sm font-medium">Activer l&apos;Assistant IA</p>
+                        <p className="text-xs text-muted-foreground">Le bot répondra aux questions s&apos;il est tagué ou selon les réglages.</p>
+                     </div>
+                     <Switch
+                        checked={form.ai_assistant_enabled}
+                        onCheckedChange={(v) => setForm({...form, ai_assistant_enabled: v})}
+                     />
                   </div>
                </div>
              </>

@@ -161,7 +161,7 @@ function AIConfigContent() {
 
             <div className="space-y-4">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mode de fonctionnement</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {modes.map(m => (
                   <button
                     key={m.id}
@@ -180,6 +180,21 @@ function AIConfigContent() {
                 ))}
               </div>
             </div>
+
+            {config?.mode === 'keyword' && (
+              <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                <Label className="text-xs font-semibold">Mots-clés déclencheurs de l&apos;IA</Label>
+                <Input
+                  placeholder="tarif, prix, commander, aide..."
+                  value={config?.trigger_keywords || ""}
+                  onChange={e => setConfig({...config, trigger_keywords: e.target.value})}
+                  className="bg-card border-border"
+                />
+                <p className="text-[10px] text-muted-foreground italic">
+                  Séparez les mots par des virgules. L&apos;IA ne répondra que si l&apos;un de ces mots est présent.
+                </p>
+              </div>
+            )}
           </section>
 
           <Separator />
