@@ -18,8 +18,14 @@ class AIModel {
      */
     static create(data) {
         const id = randomUUID();
+
+        // Support field name aliases from frontend
+        const endpoint = data.endpoint || data.api_endpoint;
+        const model_name = data.model_name || data.model_code;
+        let api_key = data.api_key;
+
         let { 
-            name, provider, endpoint, api_key, model_name, 
+            name, provider,
             description = '', is_active = 1, is_default = 0,
             temperature = 0.7, max_tokens = 2000
         } = data;
@@ -114,15 +120,20 @@ class AIModel {
             db.prepare('UPDATE ai_models SET is_default = 0 WHERE id != ?').run(id);
         }
 
-        const fields = Object.keys(data).filter(key => 
-            ['name', 'provider', 'endpoint', 'api_key', 'model_name', 'description', 'is_active', 'is_default', 'temperature', 'max_tokens'].includes(key)
-        );
+        // Support field name aliases from frontend (endpoint -> api_endpoint etc if needed)
+        const mappedData = { ...data };
+        if (data.api_endpoint) mappedData.endpoint = data.api_endpoint;
+        if (data.api_key) mappedData.api_key = data.api_key;
+        if (data.model_code) mappedData.model_name = data.model_code;
+
+        const allowedFields = ['name', 'provider', 'endpoint', 'api_key', 'model_name', 'description', 'is_active', 'is_default', 'temperature', 'max_tokens'];
+        const fields = Object.keys(mappedData).filter(key => allowedFields.includes(key));
         
         if (fields.length === 0) return existing;
 
         const setClause = fields.map(field => `${field} = ?`).join(', ');
         const values = fields.map(field => {
-            let val = data[field];
+            let val = mappedData[field];
             // Normalize booleans for SQLite
             if (field === 'is_active' || field === 'is_default') {
                 return val === true || val === 1 || val === '1' ? 1 : 0;

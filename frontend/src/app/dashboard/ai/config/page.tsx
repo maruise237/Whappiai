@@ -330,7 +330,7 @@ function AIConfigContent() {
                      <SelectContent>
                         <SelectItem value="deepseek-chat">DeepSeek Chat (Défaut)</SelectItem>
                         {models.map(m => (
-                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                          <SelectItem key={m.id} value={m.model_name || m.id}>{m.name}</SelectItem>
                         ))}
                         <Separator className="my-2" />
                         <SelectItem value="gpt-4o">GPT-4o</SelectItem>

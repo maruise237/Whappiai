@@ -217,7 +217,7 @@ export default function AiModelsPage() {
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="text-xs font-bold">{m.name}</span>
-                      <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[150px]">{m.endpoint}</span>
+                      <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[150px]">{m.endpoint || m.api_endpoint}</span>
                     </div>
                   </TableCell>
                   <TableCell>

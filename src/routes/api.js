@@ -106,9 +106,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
 
         // User ownership check — normalize emails to prevent casing mismatches
-        const sessionOwner = userManager.getSessionOwner(sessionId);
-        if (!sessionOwner) {
-            return res.status(404).json({ status: 'error', message: 'Session not found' });
+        const sessionOwner = userManager ? userManager.getSessionOwner(sessionId) : { email: Session.findById(sessionId)?.owner_email };
+        if (!sessionOwner || !sessionOwner.email) {
+            return res.status(404).json({ status: 'error', message: 'Session not found or has no owner' });
         }
 
         const ownerEmail = (sessionOwner.email || '').toLowerCase().trim();
@@ -131,6 +131,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         // DEFINITIVE ADMIN EMAIL
         const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
 
+        // Helper to check if email is admin
+        const isAdminEmail = (email) => {
+            return email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+        };
+
         // 1. Try Clerk Auth (Next.js frontend)
         if (req.auth && req.auth.userId) {
             try {
@@ -148,7 +153,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
                 // DEFINITIVE ROLE PROMOTION: If email matches MASTER_ADMIN_EMAIL, they are ALWAYS admin
                 let role = user?.role || req.auth.sessionClaims?.publicMetadata?.role || 'user';
-                if (finalEmail === MASTER_ADMIN_EMAIL.toLowerCase()) {
+                if (isAdminEmail(finalEmail)) {
                     role = 'admin';
                 }
 
@@ -197,7 +202,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         // 2. Try session-based auth (legacy dashboard fallback)
         if (req.session && req.session.adminAuthed) {
             const sessionEmail = (req.session.userEmail || '').toLowerCase();
-            const sessionRole = sessionEmail === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin' : (req.session.userRole || 'user');
+            const sessionRole = isAdminEmail(sessionEmail) ? 'admin' : (req.session.userRole || 'user');
 
             // Try to resolve user ID from DB
             const user = User.findByEmail(sessionEmail);
@@ -373,8 +378,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             const token = sessionTokens.get(sanitizedSessionId);
 
             // Log activity
-            if (req.currentUser && activityLogger) {
-                await activityLogger.logSessionCreate(
+            if (req.currentUser && ActivityLog) {
+                await ActivityLog.logSessionCreate(
                     req.currentUser.email,
                     sanitizedSessionId,
                     req.ip,
@@ -732,7 +737,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/stats', checkSessionOrTokenAuth, async (req, res) => {
         try {
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
-            const summary = activityLogger.getSummary(userEmail, 7);
+            const summary = ActivityLog.getSummary(userEmail, 7);
             const user = User.findById(req.currentUser.id);
 
             // Count user sessions
@@ -1012,9 +1017,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Activity Log Endpoints
     router.get('/activities', checkSessionOrTokenAuth, async (req, res) => {
         try {
-            if (!activityLogger) {
-                log(`[API] Activity logger non initialisé`, 'SYSTEM', null, 'ERROR');
-                return res.status(501).json({ status: 'error', message: 'Activity logger not initialized' });
+            if (!ActivityLog) {
+                log(`[API] Activity log model non trouvé`, 'SYSTEM', null, 'ERROR');
+                return res.status(501).json({ status: 'error', message: 'Activity log system not available' });
             }
 
             const limit = parseInt(req.query.limit) || 100;
@@ -1024,9 +1029,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             let logs;
             if (req.currentUser.role === 'admin') {
-                logs = activityLogger.getLogs(limit, offset);
+                logs = ActivityLog.getLogs(limit, offset);
             } else {
-                logs = activityLogger.getUserLogs(req.currentUser.email, limit, offset);
+                logs = ActivityLog.getUserLogs(req.currentUser.email, limit, offset);
             }
 
             res.json({ status: 'success', data: logs });
@@ -1050,9 +1055,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     router.get('/activities/summary', checkSessionOrTokenAuth, async (req, res) => {
         try {
-            if (!activityLogger) {
-                log(`[API] Activity logger non initialisé (summary)`, 'SYSTEM', null, 'ERROR');
-                return res.status(501).json({ status: 'error', message: 'Activity logger not initialized' });
+            if (!ActivityLog) {
+                log(`[API] Activity log model non trouvé (summary)`, 'SYSTEM', null, 'ERROR');
+                return res.status(501).json({ status: 'error', message: 'Activity log system not available' });
             }
 
             const days = parseInt(req.query.days) || 7;
@@ -1060,7 +1065,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             // If admin, show global summary, else show user-specific summary
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
-            const summary = activityLogger.getSummary(userEmail, days);
+            const summary = ActivityLog.getSummary(userEmail, days);
 
             res.json({ status: 'success', data: summary });
         } catch (err) {
@@ -1107,9 +1112,14 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             // Validate update - combine existing with updates for validation
             const updatedData = { ...existing, ...req.body };
+            // Support aliases for validation
+            const apiKey = req.body.api_key || req.body.key;
+
             // If api_key is empty in the request, it means we want to keep the existing one
-            if (req.body.api_key === "" || req.body.api_key === undefined) {
+            if (apiKey === "" || apiKey === undefined) {
                 updatedData.api_key = existing.api_key;
+            } else {
+                updatedData.api_key = apiKey;
             }
 
             const validation = validateAIModel(updatedData);
@@ -1122,6 +1132,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             }
 
             const modelUpdate = { ...req.body };
+            // Ensure api_key is correctly set from alias if provided
+            if (req.body.api_key !== undefined) modelUpdate.api_key = req.body.api_key;
+            else if (req.body.key !== undefined) modelUpdate.api_key = req.body.key;
+
             if (modelUpdate.api_key === "" || modelUpdate.api_key === undefined) {
                 delete modelUpdate.api_key;
             }
@@ -1197,9 +1211,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                             message: 'Token does not match session'
                         });
                     }
-                } else if (userManager) {
-                    const sessionOwner = userManager.getSessionOwner(sessionId);
-                    if (sessionOwner && sessionOwner.email !== req.currentUser.email) {
+                } else {
+                    const sessionOwner = userManager ? userManager.getSessionOwner(sessionId) : { email: Session.findById(sessionId)?.owner_email };
+                    if (sessionOwner && sessionOwner.email && sessionOwner.email !== req.currentUser.email) {
                         log(`Denied delete session ${sessionId}: Owner is ${sessionOwner.email}, requester is ${req.currentUser.email}`, 'AUTH');
                         return res.status(403).json({
                             status: 'error',
@@ -1212,8 +1226,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             await deleteSession(sessionId);
 
             // Log activity
-            if (req.currentUser && activityLogger) {
-                await activityLogger.logSessionDelete(
+            if (req.currentUser && ActivityLog) {
+                await ActivityLog.logSessionDelete(
                     req.currentUser.email,
                     sessionId,
                     req.ip,
@@ -1252,10 +1266,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             }
 
             // Log to activity log
-            if (activityLogger) {
+            if (ActivityLog) {
                 const userEmail = req.currentUser ? req.currentUser.email : (req.session?.userEmail || 'api-key');
 
-                await activityLogger.logMessageSend(
+                await ActivityLog.logMessageSend(
                     userEmail,
                     sessionId,
                     jid,
