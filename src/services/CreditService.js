@@ -124,7 +124,7 @@ class CreditService {
         try {
             // Idempotency check: only give welcome credits if no prior 'welcome' entry exists
             const existing = db.prepare(
-                "SELECT id FROM credit_history WHERE user_id = ? AND description LIKE '%bienvenue%' OR description LIKE '%welcome%' LIMIT 1"
+                "SELECT id FROM credit_history WHERE user_id = ? AND (description LIKE '%bienvenue%' OR description LIKE '%welcome%') LIMIT 1"
             ).get(userId);
 
             if (existing) {
@@ -159,6 +159,43 @@ class CreditService {
         `).all(userId, `-${days} days`);
 
         return stats;
+    }
+
+    /**
+     * Reset user credits to a specific amount (e.g. on new subscription or monthly reset)
+     * @param {string} userId
+     * @param {number} amount
+     */
+    static resetMonthlyCredits(userId, amount) {
+        try {
+            const user = User.findById(userId);
+            if (!user) {
+                log(`Failed to reset credits: user ${userId} not found`, 'CREDITS', null, 'WARN');
+                return;
+            }
+
+            const resetTransaction = db.transaction(() => {
+                // Insert history
+                const stmt = db.prepare(`
+                    INSERT INTO credit_history (id, user_id, amount, type, description)
+                    VALUES (?, ?, ?, 'bonus', ?)
+                `);
+                stmt.run(crypto.randomUUID(), userId, amount, 'Réinitialisation mensuelle des crédits');
+
+                // Update user stats: set new limit, reset usage to 0
+                db.prepare(`
+                    UPDATE users
+                    SET message_limit = ?, message_used = 0
+                    WHERE id = ?
+                `).run(amount, userId);
+            });
+
+            resetTransaction();
+            log(`Reset credits for ${user.email} to ${amount}`, 'CREDITS');
+        } catch (error) {
+            log(`Transaction failed for credit reset: ${error.message}`, 'CREDITS', { userId, error: error.message }, 'ERROR');
+            throw error;
+        }
     }
 
     /**

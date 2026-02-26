@@ -24,6 +24,20 @@ class NotificationService {
     }
 
     /**
+     * Send a notification (wrapper for create with different argument format)
+     * Used by CreditService.js
+     */
+    static send(userId, type, { title, message, ...metadata }) {
+        return this.create({
+            userId,
+            type,
+            title,
+            message,
+            metadata
+        });
+    }
+
+    /**
      * Get unread notifications
      */
     static getUnread(userId) {
