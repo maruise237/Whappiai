@@ -418,8 +418,8 @@ function initializeSchema() {
         });
     });
 
-    // WhatsApp Sessions AI and delays
-    runner.run('whatsapp-sessions-v2026-v4', (db) => {
+    // WhatsApp Sessions AI and delays (Definitive Migration v6)
+    runner.run('whatsapp-sessions-v2026-v6-final', (db) => {
         const columns = [
             { name: 'pairing_code', type: 'TEXT' },
             { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
@@ -449,12 +449,46 @@ function initializeSchema() {
         });
     });
 
-    // Group Settings Welcome & Assistant
-    runner.run('group-settings-engagement-v3', (db) => {
-        try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_enabled INTEGER DEFAULT 0"); } catch (e) {}
-        try { db.exec("ALTER TABLE group_settings ADD COLUMN welcome_template TEXT"); } catch (e) {}
-        try { db.exec("ALTER TABLE group_settings ADD COLUMN ai_assistant_enabled INTEGER DEFAULT 0"); } catch (e) {}
-        try { db.exec("ALTER TABLE group_settings ADD COLUMN warning_reset_days INTEGER DEFAULT 0"); } catch (e) {}
+    // Group Settings Welcome & Assistant (Definitive Migration v6)
+    runner.run('group-settings-engagement-v6-final', (db) => {
+        const columns = [
+            { name: 'welcome_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'welcome_template', type: 'TEXT' },
+            { name: 'ai_assistant_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'warning_reset_days', type: 'INTEGER DEFAULT 0' }
+        ];
+        columns.forEach(col => {
+            try { db.exec(`ALTER TABLE group_settings ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+        });
+    });
+
+    // Forced Schema Sync for 2026 Compatibility (Deep Repair)
+    runner.run('forced-schema-repair-v2026-v7', (db) => {
+        // Repair whatsapp_sessions
+        const wsCols = [
+            { name: 'ai_mode', type: "TEXT DEFAULT 'bot'" },
+            { name: 'ai_endpoint', type: 'TEXT' },
+            { name: 'ai_key', type: 'TEXT' },
+            { name: 'ai_temperature', type: 'REAL DEFAULT 0.7' },
+            { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' },
+            { name: 'ai_trigger_keywords', type: 'TEXT' },
+            { name: 'ai_constraints', type: 'TEXT' },
+            { name: 'ai_messages_received', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_last_error', type: 'TEXT' },
+            { name: 'ai_last_message_at', type: 'DATETIME' },
+            { name: 'ai_respond_to_tags', type: 'INTEGER DEFAULT 1' }
+        ];
+        wsCols.forEach(col => {
+            try { db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+        });
+
+        // Repair group_settings
+        const gsCols = [
+            { name: 'warning_reset_days', type: 'INTEGER DEFAULT 0' }
+        ];
+        gsCols.forEach(col => {
+            try { db.exec(`ALTER TABLE group_settings ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+        });
     });
 
     // Migration: Encrypt existing AI keys

@@ -22,7 +22,6 @@ class QueueService {
     static enqueue(sessionId, sock, to, content, options = {}) {
         if (!activeQueues.has(sessionId)) {
             activeQueues.set(sessionId, []);
-            this.processQueue(sessionId, sock);
         }
 
         const queue = activeQueues.get(sessionId);
@@ -48,6 +47,9 @@ class QueueService {
             }
 
             log(`Message enfilé pour ${to} (Session: ${sessionId}, File: ${queue.length})`, sessionId, { event: 'queue-enqueue', to }, 'DEBUG');
+
+            // Toujours tenter de lancer le processeur (il s'arrêtera s'il tourne déjà)
+            this.processQueue(sessionId, sock);
         });
     }
 
@@ -75,8 +77,8 @@ class QueueService {
 
                 try {
                     // 1. Human-like delay BEFORE sending
-                    // Base delay 1-3 seconds + bonus for long queues
-                    const baseDelay = 1000 + Math.random() * 2000;
+                    // Base delay 1-5 seconds (anti-ban) + bonus for long queues
+                    const baseDelay = 1000 + Math.random() * 4000;
                     const queueCongestionBonus = Math.min(queue.length * 500, 5000);
                     const totalDelay = baseDelay + queueCongestionBonus;
 
@@ -95,10 +97,13 @@ class QueueService {
                         } catch (e) {}
                     }
 
-                    // 3. ACTUAL SEND
-                    const result = await sock.sendMessage(task.to, task.content);
+                    // 3. ACTUAL SEND (with timeout protection)
+                    const result = await Promise.race([
+                        sock.sendMessage(task.to, task.content),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp send timeout (30s)')), 30000))
+                    ]);
 
-                    log(`Message envoyé via file d'attente à ${task.to}`, sessionId, { event: 'queue-sent', to: task.to }, 'INFO');
+                    log(`Message envoyé via file d'attente à ${task.to}`, sessionId, { event: 'queue-sent', to: task.to, messageId: result?.key?.id }, 'INFO');
 
                     if (task.resolve) task.resolve(result);
                 } catch (err) {

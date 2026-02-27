@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export async function copyToClipboard(text: string) {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || !text) return false;
 
-  // Try the modern Clipboard API first
+  // Modern API
   if (navigator.clipboard && window.isSecureContext) {
     try {
       await navigator.clipboard.writeText(text);
@@ -18,18 +18,19 @@ export async function copyToClipboard(text: string) {
     }
   }
 
-  // Fallback to execCommand('copy') for non-secure contexts or if Clipboard API fails
+  // Fallback to execCommand('copy')
   try {
     const textArea = document.createElement("textarea");
     textArea.value = text;
 
-    // Ensure the textarea is not visible but part of the DOM
+    // Ensure it's not visible and doesn't scroll the page
     textArea.style.position = "fixed";
     textArea.style.left = "-9999px";
     textArea.style.top = "0";
     textArea.style.opacity = "0";
-    document.body.appendChild(textArea);
+    textArea.style.pointerEvents = "none";
 
+    document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
 

@@ -2,7 +2,6 @@ const { db } = require('../config/database');
 const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const { Session, ActivityLog, User } = require('../models');
 const { log } = require('../utils/logger');
-const aiService = require('./ai');
 const CreditService = require('./CreditService');
 const QueueService = require('./QueueService');
 
@@ -15,26 +14,40 @@ const QueueService = require('./QueueService');
 const groupMetadataCache = new Map();
 
 /**
- * Get group metadata with caching
+ * Get group metadata with caching and retry logic
  * @param {object} sock
  * @param {string} groupId
  * @returns {Promise<object>}
  */
 async function getGroupMetadata(sock, groupId) {
+    if (!sock?.user?.id) throw new Error('Socket not ready');
+
     const cacheKey = `${sock.user.id}:${groupId}`;
     const cached = groupMetadataCache.get(cacheKey);
 
-    // Cache for 5 minutes
-    if (cached && (Date.now() - cached.timestamp < 300000)) {
+    // Cache for 10 minutes for stability
+    if (cached && (Date.now() - cached.timestamp < 600000)) {
         return cached.data;
     }
 
-    const metadata = await sock.groupMetadata(groupId);
-    groupMetadataCache.set(cacheKey, {
-        data: metadata,
-        timestamp: Date.now()
-    });
-    return metadata;
+    try {
+        const metadata = await Promise.race([
+            sock.groupMetadata(groupId),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Metadata timeout')), 10000))
+        ]);
+
+        groupMetadataCache.set(cacheKey, {
+            data: metadata,
+            timestamp: Date.now()
+        });
+        return metadata;
+    } catch (err) {
+        if (cached) {
+            log(`Échec groupMetadata pour ${groupId}, utilisation du cache expiré par sécurité`, 'SYSTEM', { error: err.message }, 'DEBUG');
+            return cached.data;
+        }
+        throw err;
+    }
 }
 
 // Helper to check if a user is admin
@@ -317,8 +330,9 @@ async function handleParticipantUpdate(sock, sessionId, update) {
             }
 
             try {
+                // Formatting is now handled in QueueService or before enqueue
                 await QueueService.enqueue(sessionId, sock, groupId, {
-                    text: aiService.formatForWhatsApp(message),
+                    text: message,
                     mentions: [jid]
                 });
                 
@@ -383,20 +397,6 @@ async function handleIncomingMessage(sock, sessionId, msg) {
     // Si on est tagué, AIService.js s'en occupera via whatsapp.js -> AIService.handleIncomingMessage
     // On ne déclenche ici que si assistant_enabled ET question ET non-tagué (si on veut ce comportement)
     // MAIS l'utilisateur dit "ne répond que s'il est tage", donc on devrait peut-être désactiver ce déclencheur automatique.
-
-    if (settings && settings.ai_assistant_enabled && isQuestion && isTagged) {
-        log(`[Modération] Assistant IA activé pour le groupe ${groupId} (Question + Tag)`, sessionId, { event: 'ai-assistant-trigger' }, 'DEBUG');
-        const aiService = require('./ai');
-        // We run this as a separate task to not block moderation if active
-        // isGroupMode = true for handleIncomingMessage
-        aiService.handleIncomingMessage(sock, sessionId, msg, true).catch(err => {
-            log(`Erreur Assistant IA Groupe: ${err.message}`, sessionId, { groupId }, 'ERROR');
-        });
-        
-        // Return true to indicate we've "handled" it if we want to stop here, 
-        // but usually we still want to run moderation (anti-link etc)
-        // so we don't return true yet.
-    }
 
     // 3. Moderation Logic
     if (!settings || !settings.is_active) {
@@ -550,7 +550,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         .replace(/{{reason}}/g, violation);
 
                     await QueueService.enqueue(sessionId, sock, groupId, {
-                        text: aiService.formatForWhatsApp(warningMsg),
+                        text: warningMsg,
                         mentions: [senderJid]
                     }, { priority: 'high' });
                     

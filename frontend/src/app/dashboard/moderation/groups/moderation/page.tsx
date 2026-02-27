@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   MessageSquare,
   Sparkles,
-  Info
+  Info,
+  BrainCircuit
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -81,17 +82,18 @@ function GroupModerationContent() {
   })
 
   React.useEffect(() => {
-    if (selectedGroup && selectedGroup.settings) {
+    if (selectedGroup) {
+      const s = selectedGroup.settings || {}
       setForm({
-        is_active: !!selectedGroup.settings.is_active,
-        anti_link: !!selectedGroup.settings.anti_link,
-        max_warnings: selectedGroup.settings.max_warnings || 5,
-        warning_reset_days: selectedGroup.settings.warning_reset_days || 0,
-        bad_words: selectedGroup.settings.bad_words || "",
-        warning_template: selectedGroup.settings.warning_template || "Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.",
-        welcome_enabled: !!selectedGroup.settings.welcome_enabled,
-        welcome_template: selectedGroup.settings.welcome_template || "",
-        ai_assistant_enabled: !!selectedGroup.settings.ai_assistant_enabled
+        is_active: !!s.is_active,
+        anti_link: !!s.anti_link,
+        max_warnings: s.max_warnings ?? 5,
+        warning_reset_days: s.warning_reset_days ?? 0,
+        bad_words: s.bad_words || "",
+        warning_template: s.warning_template || "Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.",
+        welcome_enabled: !!s.welcome_enabled,
+        welcome_template: s.welcome_template || "",
+        ai_assistant_enabled: !!s.ai_assistant_enabled
       })
     }
   }, [selectedGroup])
@@ -242,7 +244,7 @@ function GroupModerationContent() {
                               <span>Sévérité Faible</span>
                               <span>Critique</span>
                            </div>
-                           <Progress value={(form.max_warnings / 10) * 100} className="h-1.5" />
+                           <Progress value={(Math.min(10, Math.max(0, form.max_warnings)) / 10) * 100} className="h-1.5" />
                         </div>
                      </div>
 

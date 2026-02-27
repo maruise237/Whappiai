@@ -38,7 +38,8 @@ import {
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, copyToClipboard } from "@/lib/utils"
+import confetti from "canvas-confetti"
 
 function GroupEngagementContent() {
   const router = useRouter()
@@ -158,8 +159,10 @@ function GroupEngagementContent() {
        // Or the backend just returns the text and we should show it in a dialog
        if (response && response.message) {
           // Open a "Result" dialog or just copy to clipboard
-          navigator.clipboard.writeText(response.message)
-          toast.success("Message copié dans le presse-papier !")
+          const success = await copyToClipboard(response.message);
+          if (success) {
+            toast.success("Message copié dans le presse-papier !");
+          }
        }
 
        fetchGroupDetails()
