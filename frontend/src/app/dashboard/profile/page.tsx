@@ -111,7 +111,19 @@ export default function ProfilePage() {
                         <p className="text-xs font-semibold">Notifications Sonores</p>
                         <p className="text-[10px] text-muted-foreground">Jouer un son lors d&apos;un nouvel événement.</p>
                      </div>
-                     <Switch checked={!!dbUser?.sound_notifications} disabled />
+                     <Switch
+                        checked={!!dbUser?.sound_notifications}
+                        onCheckedChange={async (val) => {
+                           try {
+                              const token = await getToken();
+                              await api.users.updateProfile({ sound_notifications: val ? 1 : 0 }, token || undefined);
+                              setDbUser({ ...dbUser, sound_notifications: val ? 1 : 0 });
+                              toast.success("Réglage mis à jour");
+                           } catch (e) {
+                              toast.error("Erreur de mise à jour");
+                           }
+                        }}
+                     />
                   </div>
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-start gap-3 mt-4">
                      <AlertCircle className="h-4 w-4 text-primary mt-0.5" />
