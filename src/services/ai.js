@@ -894,12 +894,6 @@ class AIService {
             
             if (result) {
                 log(`Message envoyé avec succès à ${jid}`, sessionId, { event: 'ai-sent', jid }, 'INFO');
-
-                // Track this sent message ID to avoid auto-pausing the AI
-                if (result.key?.id) {
-                    this.trackBotSent(sessionId, result.key.id);
-                }
-
                 Session.updateAIStats(sessionId, 'sent');
                 this.recordAIResponse(sessionId, jid);
 
