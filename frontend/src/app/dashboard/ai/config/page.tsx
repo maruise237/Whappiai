@@ -16,6 +16,7 @@ import {
   Terminal,
   MessageSquare,
   ShieldAlert,
+  Calendar,
   Sliders,
   Database
 } from "lucide-react"
