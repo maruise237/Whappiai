@@ -94,7 +94,7 @@ function AIConfigContent() {
     }
   }
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
   if (!sessionId) return <div className="p-12 text-center text-muted-foreground">Session non trouvée</div>
