@@ -25,8 +25,9 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
@@ -38,7 +39,7 @@ export default function ActivitiesPage() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [userFilter, setUserFilter] = React.useState("all")
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const fetchActivities = React.useCallback(async () => {
     setLoading(true)

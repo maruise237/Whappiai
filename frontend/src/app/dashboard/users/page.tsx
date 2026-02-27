@@ -130,8 +130,7 @@ export default function UsersPage() {
     (u.id && u.id.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
-  const isAdmin = currentUser?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' ||
-                  currentUser?.publicMetadata?.role === 'admin'
+  const isAdmin = currentUser?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || currentUser?.publicMetadata?.role === "admin"
 
   const handleCreateUser = async () => {
     if (!formData.email) return toast.error("Email requis")
