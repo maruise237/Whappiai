@@ -56,6 +56,7 @@ function AssistantIAPageContent() {
   const { user } = useUser()
   const [sessions, setSessions] = React.useState<any[]>([])
   const [aiConfigs, setAiConfigs] = React.useState<Record<string, any>>({})
+  const [models, setModels] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [editingSessionId, setEditingSessionId] = React.useState<string | null>(null)
@@ -65,12 +66,17 @@ function AssistantIAPageContent() {
     setLoading(true)
     try {
       const token = await getToken()
-      const data = await api.sessions.list(token || undefined)
-      setSessions(data || [])
+      const [sessionsData, modelsData] = await Promise.all([
+        api.sessions.list(token || undefined),
+        api.ai.listModels(token || undefined)
+      ])
+
+      setSessions(sessionsData || [])
+      setModels(modelsData || [])
 
       // Fetch AI configs for each session
       const configs: Record<string, any> = {}
-      for (const s of (data || [])) {
+      for (const s of (sessionsData || [])) {
         try {
           const ai = await api.sessions.getAI(s.sessionId, token || undefined)
           configs[s.sessionId] = ai
@@ -183,7 +189,7 @@ function AssistantIAPageContent() {
                    <div className="grid grid-cols-2 gap-2">
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
                          <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Modèle</p>
-                         <p className="text-[10px] font-semibold truncate">{config?.model || 'gpt-4o'}</p>
+                         <p className="text-[10px] font-semibold truncate">{config?.model || 'Whappi AI'}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
                          <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Retard</p>
@@ -240,16 +246,20 @@ function AssistantIAPageContent() {
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-semibold text-muted-foreground">Modèle LLM</Label>
                 <Select
-                  value={aiConfigs[editingSessionId].model || "gpt-4o"}
+                  value={aiConfigs[editingSessionId].model || (models.length > 0 ? models[0].model_name : "deepseek-chat")}
                   onValueChange={(v) => {
                     setAiConfigs(prev => ({ ...prev, [editingSessionId]: { ...prev[editingSessionId], model: v } }))
                   }}
                 >
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gpt-4o">GPT-4o (Stable)</SelectItem>
-                    <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                    <SelectItem value="claude-3-5-sonnet">Claude 3.5 Sonnet</SelectItem>
+                    {models.length === 0 ? (
+                      <SelectItem value="deepseek-chat">Whappi AI (Défaut)</SelectItem>
+                    ) : (
+                      models.map(m => (
+                        <SelectItem key={m.id} value={m.model_name || m.id}>{m.name}</SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
