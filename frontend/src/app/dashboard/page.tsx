@@ -183,20 +183,60 @@ export default function DashboardPage() {
       </div>
 
       {/* Grid 4 cols Stats */}
-      <div id="performance-charts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="performance-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {isAdmin ? (
             <>
-                <StatCard label="Utilisateurs" value={adminStats?.users?.total || 0} subtext={`${adminStats?.users?.active || 0} actifs`} />
-                <StatCard label="Sessions Globales" value={adminStats?.sessions?.total || 0} subtext={`${adminStats?.sessions?.connected || 0} connectées`} />
-                <StatCard label="Messages Plateforme" value={adminStats?.overview?.messagesSent || 0} subtext="Total envoyé" />
-                <StatCard label="Consommation Crédits" value={adminStats?.credits?.deducted || 0} subtext="Volume global" />
+                <StatCard
+                  label="Utilisateurs"
+                  value={adminStats?.users?.total || 0}
+                  subtext={`${adminStats?.users?.active || 0} actifs`}
+                  icon={<User className="h-4 w-4 text-blue-500" />}
+                />
+                <StatCard
+                  label="Sessions Globales"
+                  value={adminStats?.sessions?.total || 0}
+                  subtext={`${adminStats?.sessions?.connected || 0} connectées`}
+                  icon={<Smartphone className="h-4 w-4 text-green-500" />}
+                />
+                <StatCard
+                  label="Messages Plateforme"
+                  value={adminStats?.overview?.messagesSent || 0}
+                  subtext="Total envoyé"
+                  icon={<MessageCircle className="h-4 w-4 text-purple-500" />}
+                />
+                <StatCard
+                  label="Consommation Crédits"
+                  value={adminStats?.credits?.deducted || 0}
+                  subtext="Volume global"
+                  icon={<CreditCard className="h-4 w-4 text-orange-500" />}
+                />
             </>
         ) : (
             <>
-                <StatCard label="Sessions" value={sessions.length} subtext={`${summary.activeSessions} actives`} />
-                <StatCard label="Taux de Succès" value={`${summary.successRate}%`} subtext="Derniers 7 jours" />
-                <StatCard label="Messages Envoyés" value={summary.messagesSent} subtext="Total cumulé" />
-                <StatCard label="Activités" value={summary.totalActivities} subtext="Dernières 24h" />
+                <StatCard
+                  label="Sessions"
+                  value={sessions.length}
+                  subtext={`${summary.activeSessions} actives`}
+                  icon={<Smartphone className="h-4 w-4 text-blue-500" />}
+                />
+                <StatCard
+                  label="Taux de Succès"
+                  value={`${summary.successRate}%`}
+                  subtext="Derniers 7 jours"
+                  icon={<TrendingUp className="h-4 w-4 text-green-500" />}
+                />
+                <StatCard
+                  label="Messages Envoyés"
+                  value={summary.messagesSent}
+                  subtext="Total cumulé"
+                  icon={<MessageCircle className="h-4 w-4 text-purple-500" />}
+                />
+                <StatCard
+                  label="Activités"
+                  value={summary.totalActivities}
+                  subtext="Dernières 24h"
+                  icon={<Activity className="h-4 w-4 text-orange-500" />}
+                />
             </>
         )}
       </div>
@@ -469,13 +509,23 @@ export default function DashboardPage() {
   )
 }
 
-function StatCard({ label, value, subtext }: { label: string; value: string | number; subtext: string }) {
+function StatCard({ label, value, subtext, icon }: { label: string; value: string | number; subtext: string; icon: React.ReactNode }) {
   return (
-    <Card className="border border-border bg-card rounded-lg shadow-sm">
-      <CardContent className="p-4">
-        <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
+    <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] sm:text-xs text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
+          <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+            {icon}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <p className="text-xl sm:text-2xl font-bold tracking-tight">{value}</p>
+          <p className="text-[9px] sm:text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <span className="inline-block w-1 h-1 rounded-full bg-primary/40" />
+            {subtext}
+          </p>
+        </div>
       </CardContent>
     </Card>
   )
