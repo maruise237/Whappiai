@@ -59,7 +59,8 @@ export default function ActivitiesPage() {
   }, [fetchActivities])
 
   const filtered = activities.filter(a => {
-    const matchesSearch = a.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const action = a.action || "";
+    const matchesSearch = action.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (a.details || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (a.resource_id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (a.user_email || "").toLowerCase().includes(searchQuery.toLowerCase());
@@ -72,9 +73,10 @@ export default function ActivitiesPage() {
   const uniqueUsers = Array.from(new Set(activities.map(a => a.user_email))).filter(Boolean)
 
   const getActionIcon = (action: string) => {
-    if (action.includes('send')) return <MessageSquare className="h-3 w-3" />
-    if (action.includes('moderation') || action.includes('block')) return <ShieldCheck className="h-3 w-3" />
-    if (action.includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
+    const act = action || "";
+    if (act.includes('send')) return <MessageSquare className="h-3 w-3" />
+    if (act.includes('moderation') || act.includes('block')) return <ShieldCheck className="h-3 w-3" />
+    if (act.includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
     return <Activity className="h-3 w-3" />
   }
 
@@ -171,9 +173,9 @@ export default function ActivitiesPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
-                        {getActionIcon(activity.action)}
+                        {getActionIcon(activity.action || "")}
                       </div>
-                      <span className="text-xs font-semibold capitalize">{activity.action.replace(/_/g, ' ')}</span>
+                      <span className="text-xs font-semibold capitalize">{(activity.action || "action").replace(/_/g, ' ')}</span>
                     </div>
                   </TableCell>
                   <TableCell>
