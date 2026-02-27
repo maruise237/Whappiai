@@ -88,10 +88,13 @@ export function MagicOnboardingWizard({
   const connectCal = async () => {
     try {
       const token = await getToken()
-      const { authUrl } = await api.cal.getAuthUrl(token || undefined)
-      window.location.href = authUrl
-    } catch (e) {
-      toast.error("Erreur lors de la connexion à Cal.com")
+      const result = await api.cal.getAuthUrl(token || undefined)
+      // result is actually data.authUrl because of fetchApi mapping
+      if (result && result.authUrl) {
+        window.location.href = result.authUrl
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la connexion à Cal.com")
     }
   }
 
