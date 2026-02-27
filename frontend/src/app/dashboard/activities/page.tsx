@@ -60,8 +60,9 @@ export default function ActivitiesPage() {
 
   const filtered = activities.filter(a => {
     const action = a.action || "";
+    const details = typeof a.details === 'string' ? a.details : (a.details ? JSON.stringify(a.details) : "");
     const matchesSearch = action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.details || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        details.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (a.resource_id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (a.user_email || "").toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -160,9 +161,12 @@ export default function ActivitiesPage() {
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3 w-3 opacity-40" />
-                      {new Date(activity.created_at).toLocaleString('fr-FR', {
-                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-                      })}
+                      {(() => {
+                        const date = new Date(activity.created_at || activity.timestamp);
+                        return isNaN(date.getTime()) ? 'Date invalide' : date.toLocaleString('fr-FR', {
+                          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                        });
+                      })()}
                     </div>
                   </TableCell>
                   {isAdmin && (
@@ -184,7 +188,9 @@ export default function ActivitiesPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-[300px]">
-                    <p className="text-[11px] text-muted-foreground truncate">{activity.details || '-'}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                        {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
+                    </p>
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge className={cn(

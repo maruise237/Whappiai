@@ -263,6 +263,7 @@ export default function DashboardPage() {
                                         dy={10}
                                         tickFormatter={(str) => {
                                             const date = new Date(str);
+                                    if (isNaN(date.getTime())) return '-';
                                             return date.toLocaleDateString('fr-FR', { weekday: 'short' });
                                         }}
                                     />
@@ -330,7 +331,10 @@ export default function DashboardPage() {
                                     </Badge>
                                  </TableCell>
                                  <TableCell className="text-right text-[10px] text-muted-foreground">
-                                    {new Date(msg.created_at || msg.timestamp).toLocaleTimeString()}
+                                    {(() => {
+                                       const d = new Date(msg.created_at || msg.timestamp);
+                                       return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString();
+                                    })()}
                                  </TableCell>
                               </TableRow>
                            ))}
@@ -348,9 +352,16 @@ export default function DashboardPage() {
                         <div className="space-y-1">
                            {recentActivities.map((log, i) => (
                               <div key={i} className="flex gap-4">
-                                 <span className="text-zinc-600">[{new Date(log.timestamp || log.created_at).toLocaleTimeString()}]</span>
+                                 <span className="text-zinc-600">
+                                    [{(() => {
+                                       const d = new Date(log.timestamp || log.created_at);
+                                       return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString();
+                                    })()}]
+                                 </span>
                                  <span className={cn(log.status === 'success' ? "text-green-500" : "text-red-500")}>{(log.action || "ACTION").toUpperCase()}</span>
-                                 <span>{log.details}</span>
+                                 <span className="truncate max-w-[400px]">
+                                    {typeof log.details === 'string' ? log.details : (log.details ? JSON.stringify(log.details) : '-')}
+                                 </span>
                               </div>
                            ))}
                         </div>
@@ -376,7 +387,9 @@ export default function DashboardPage() {
                            </div>
                            <div className="min-w-0">
                               <p className="text-xs font-semibold truncate">{activity.action || "Action"}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{activity.details || "-"}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                 {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
+                              </p>
                            </div>
                         </div>
                      ))}
