@@ -82,8 +82,7 @@ export default function AiModelsPage() {
     fetchModels()
   }, [fetchModels])
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' ||
-                  user?.publicMetadata?.role === 'admin'
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.endpoint || !formData.model_name) {

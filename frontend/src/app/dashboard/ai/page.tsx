@@ -108,7 +108,7 @@ function AssistantIAPageContent() {
   }
 
   const filtered = sessions.filter(s => s.sessionId.toLowerCase().includes(searchQuery.toLowerCase()))
-  const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const [adminStats, setAdminStats] = React.useState<any>(null)
 

@@ -65,6 +65,7 @@ import {
   AreaChart,
   Area
 } from 'recharts'
+import { useRouter } from "next/navigation"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { useUser, useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
@@ -84,6 +85,7 @@ const sessionSchema = z.object({
 })
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
@@ -98,6 +100,7 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = React.useState<any[]>([])
   const [analyticsData, setAnalyticsData] = React.useState<any[]>([])
 
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
