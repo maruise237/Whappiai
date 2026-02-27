@@ -28,6 +28,9 @@ class CalService {
      * @param {string} userId
      */
     async exchangeCode(code, userId) {
+        if (!this.clientSecret) {
+            throw new Error('Configuration Cal.com incomplète : CAL_CLIENT_SECRET est manquant dans le .env');
+        }
         try {
             const response = await axios.post('https://api.cal.com/v2/oauth/token', {
                 client_id: this.clientId,
@@ -112,7 +115,7 @@ class CalService {
             const response = await axios.get(`${this.apiUrl}/event-types`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            return response.data.data;
+            return response.data?.data || response.data || [];
         } catch (error) {
             log(`CalService getEventTypes error: ${error.message}`, 'SYSTEM', { error: error.response?.data || error.message }, 'ERROR');
             return [];

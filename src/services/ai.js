@@ -476,13 +476,13 @@ class AIService {
                 if (checkMatch) {
                     const date = checkMatch[1];
                     const eventTypes = await CalService.getEventTypes(user.id);
-                    if (eventTypes.length > 0) {
+                    if (Array.isArray(eventTypes) && eventTypes.length > 0) {
                         const eventTypeId = eventTypes[0].id; // Use first event type as default
                         const startTime = `${date}T00:00:00Z`;
                         const endTime = `${date}T23:59:59Z`;
                         const slots = await CalService.getAvailability(user.id, eventTypeId, startTime, endTime);
 
-                        let slotsText = slots.length > 0
+                        let slotsText = (slots && slots.length > 0)
                             ? `Voici les disponibilités pour le ${date} :\n` + slots.slice(0, 5).map(s => `- ${new Date(s.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`).join('\n')
                             : `Désolé, aucune disponibilité pour le ${date}.`;
 
@@ -495,7 +495,7 @@ class AIService {
                 if (bookMatch) {
                     const [_, dateTime, name, email, notes] = bookMatch;
                     const eventTypes = await CalService.getEventTypes(user.id);
-                    if (eventTypes.length > 0) {
+                    if (Array.isArray(eventTypes) && eventTypes.length > 0) {
                         try {
                             const startTime = new Date(dateTime).toISOString();
                             const booking = await CalService.createBooking(user.id, {
@@ -503,11 +503,11 @@ class AIService {
                                 start: startTime,
                                 name: name.trim(),
                                 email: email.trim(),
-                                notes: notes.trim()
+                                notes: (notes || "").trim()
                             });
 
                             let confirmationText = `✅ Rendez-vous confirmé pour le ${new Date(startTime).toLocaleString()} !`;
-                            if (booking.videoCallUrl) {
+                            if (booking && booking.videoCallUrl) {
                                 confirmationText += `\nLien vidéo : ${booking.videoCallUrl}`;
                             }
 
@@ -581,7 +581,7 @@ class AIService {
                 ai_max_tokens = ai_max_tokens ?? defaultModel.max_tokens;
             }
         }
-        // If ai_model looks like a model ID (UUID), use the global model configuration
+        // If ai_model && ai_model looks like a model ID (UUID), use the global model configuration
         else if (ai_model && ai_model.length > 30) {
             const globalModel = AIModel.findById(ai_model);
             if (globalModel && globalModel.is_active) {
