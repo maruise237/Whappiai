@@ -110,6 +110,16 @@ class QueueService {
 
                     log(`Message envoyé via file d'attente à ${task.to}`, sessionId, { event: 'queue-sent', to: task.to, messageId: result?.key?.id }, 'INFO');
 
+                    // CRITICAL: Track bot-sent messages to avoid auto-pausing the AI (Human Priority logic)
+                    try {
+                        const aiService = require('./ai');
+                        if (result?.key?.id) {
+                            aiService.trackBotSent(sessionId, result.key.id);
+                        }
+                    } catch (e) {
+                        // Ignore circular dependency or other tracking issues
+                    }
+
                     if (task.resolve) task.resolve(result);
                 } catch (err) {
                     log(`Échec envoi via file d'attente pour ${task.to}: ${err.message}`, sessionId, { event: 'queue-error', error: err.message }, 'ERROR');

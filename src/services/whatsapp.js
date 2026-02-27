@@ -468,7 +468,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         
         // If message is FROM ME, it means the owner or the bot is chatting.
         if (msg.key.fromMe) {
-            // CRITICAL BUG FIX: Ignore messages sent by the bot itself
+            // CRITICAL BUG FIX: Ignore messages sent by the bot itself (already tracked in QueueService)
             if (aiService.isSentByBot(sessionId, msg.key.id)) {
                 // log(`Auto-pause ignoré car le message vient du bot lui-même`, sessionId, { event: 'ai-ignore-self-sent' }, 'DEBUG');
                 return;
