@@ -15,6 +15,7 @@ const { db } = require('../config/database');
 // Memory-only flags to temporarily pause AI for specific conversations
 const pausedConversations = new Map();
 const botReadHistory = new Set(); // Track messages read by the bot itself
+const botSentHistory = new Set(); // Track messages sent by the bot itself
 const lastOwnerActivity = new Map(); // Track last activity from the owner per JID
 const pendingRetries = new Map(); // Track messages ignored by random protection for later retry
 const aiResponseHistory = new Map(); // Track AI response timestamps for loop protection
@@ -127,6 +128,30 @@ class AIService {
     static isReadByBot(sessionId, messageId) {
         const key = `${sessionId}:${messageId}`;
         return botReadHistory.has(key);
+    }
+
+    /**
+     * Track that the bot is sending a specific message to avoid self-pausing
+     * @param {string} sessionId
+     * @param {string} messageId
+     */
+    static trackBotSent(sessionId, messageId) {
+        if (!messageId) return;
+        const key = `${sessionId}:${messageId}`;
+        botSentHistory.add(key);
+        // Clear after 30 seconds
+        setTimeout(() => botSentHistory.delete(key), 30000);
+    }
+
+    /**
+     * Check if a message was sent by the bot itself
+     * @param {string} sessionId
+     * @param {string} messageId
+     * @returns {boolean}
+     */
+    static isSentByBot(sessionId, messageId) {
+        const key = `${sessionId}:${messageId}`;
+        return botSentHistory.has(key);
     }
     /**
      * Store message in conversational memory
@@ -869,6 +894,12 @@ class AIService {
             
             if (result) {
                 log(`Message envoyé avec succès à ${jid}`, sessionId, { event: 'ai-sent', jid }, 'INFO');
+
+                // Track this sent message ID to avoid auto-pausing the AI
+                if (result.key?.id) {
+                    this.trackBotSent(sessionId, result.key.id);
+                }
+
                 Session.updateAIStats(sessionId, 'sent');
                 this.recordAIResponse(sessionId, jid);
 
