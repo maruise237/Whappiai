@@ -507,6 +507,9 @@ class AIService {
     static async callAI(user, userMessage, systemPrompt = null, history = []) {
         let { id: sessionId, ai_endpoint, ai_key, ai_model, ai_prompt, ai_temperature, ai_max_tokens, ai_constraints } = user;
 
+        // Identify valid session key (not placeholder)
+        const hasValidSessionKey = ai_key && ai_key !== 'YOUR_API_KEY_HERE' && ai_key.trim() !== '';
+
         // RAG: Search knowledge base
         const knowledge = KnowledgeService.search(sessionId, userMessage);
         let ragContext = "";
@@ -515,40 +518,56 @@ class AIService {
             log(`RAG: ${knowledge.length} extraits trouvés pour la réponse.`, sessionId, { query: userMessage }, 'DEBUG');
         }
         
-        // If no model is set, try to get the global default model
-        if (!ai_model) {
-            const defaultModel = AIModel.getDefault();
-            if (defaultModel) {
-                ai_endpoint = defaultModel.endpoint;
-                ai_key = defaultModel.api_key;
-                ai_model = defaultModel.model_name;
-                ai_temperature = ai_temperature ?? defaultModel.temperature;
-                ai_max_tokens = ai_max_tokens ?? defaultModel.max_tokens;
+        let resolvedEndpoint = ai_endpoint;
+        let resolvedKey = ai_key;
+        let resolvedModelName = ai_model;
+        let resolvedTemp = ai_temperature;
+        let resolvedMaxTokens = ai_max_tokens;
+
+        let globalModel = null;
+        // If ai_model looks like a model ID (UUID), use the global model configuration
+        if (ai_model && ai_model.length > 30) {
+            globalModel = AIModel.findById(ai_model);
+        }
+        // If it's a model name, try to find it in active global models
+        else if (ai_model) {
+            globalModel = db.prepare('SELECT * FROM ai_models WHERE (model_name = ? OR name = ?) AND is_active = 1 LIMIT 1').get(ai_model, ai_model);
+
+            // Handle key decryption if found via raw query
+            if (globalModel && globalModel.api_key && globalModel.api_key.includes(':')) {
+                const { decrypt } = require('../utils/crypto');
+                try {
+                    globalModel.api_key = decrypt(globalModel.api_key, process.env.TOKEN_ENCRYPTION_KEY);
+                } catch (e) {
+                    log(`Failed to decrypt API key for model ${globalModel.id}`, 'SECURITY', { error: e.message }, 'ERROR');
+                }
             }
         }
-        // If ai_model looks like a model ID (UUID), use the global model configuration
-        else if (ai_model && ai_model.length > 30) {
-            const globalModel = AIModel.findById(ai_model);
-            if (globalModel && globalModel.is_active) {
-                log(`Utilisation du modèle global: ${globalModel.name}`, user.id, { modelId: ai_model }, 'DEBUG');
-                ai_endpoint = globalModel.endpoint;
-                ai_key = globalModel.api_key;
-                ai_model = globalModel.model_name;
-                ai_temperature = ai_temperature ?? globalModel.temperature;
-                ai_max_tokens = ai_max_tokens ?? globalModel.max_tokens;
-            }
+        // If no model is set, try to get the global default model
+        else {
+            globalModel = AIModel.getDefault();
+        }
+
+        if (globalModel && globalModel.is_active) {
+            log(`Utilisation du modèle global: ${globalModel.name}`, user.id, { modelId: globalModel.id }, 'DEBUG');
+            resolvedEndpoint = ai_endpoint || globalModel.endpoint;
+            // Priority: Session key (if valid) > Global model key
+            resolvedKey = hasValidSessionKey ? ai_key : globalModel.api_key;
+            resolvedModelName = globalModel.model_name;
+            resolvedTemp = ai_temperature ?? globalModel.temperature;
+            resolvedMaxTokens = ai_max_tokens ?? globalModel.max_tokens;
         }
 
         // Default to DeepSeek if not configured, as per specs "DeepSeek (Gratuit)"
-        let finalEndpoint = ai_endpoint || 'https://api.deepseek.com/v1/chat/completions';
-        let finalKey = ai_key || process.env.DEEPSEEK_API_KEY;
-        let finalModel = ai_model || 'deepseek-chat';
-        let finalTemperature = ai_temperature ?? 0.7;
-        let finalMaxTokens = ai_max_tokens ?? 1000;
+        let finalEndpoint = resolvedEndpoint || 'https://api.deepseek.com/v1/chat/completions';
+        let finalKey = (resolvedKey && resolvedKey !== 'YOUR_API_KEY_HERE') ? resolvedKey : process.env.DEEPSEEK_API_KEY;
+        let finalModel = resolvedModelName || 'deepseek-chat';
+        let finalTemperature = resolvedTemp ?? 0.7;
+        let finalMaxTokens = resolvedMaxTokens ?? 1000;
 
-        if (!finalKey) {
-            log('ATTENTION: Clé API IA manquante', user.id, { event: 'ai-config-missing-key' }, 'WARN');
-            return "Désolé, mon service d'IA n'est pas encore configuré correctement.";
+        if (!finalKey || finalKey === 'YOUR_API_KEY_HERE') {
+            log('ATTENTION: Clé API IA manquante ou non configurée', user.id, { event: 'ai-config-missing-key' }, 'WARN');
+            return "Désolé, mon service d'IA n'est pas encore configuré par l'administrateur.";
         }
 
         // Auto-fix common endpoint issues (e.g. missing /v1/chat/completions)

@@ -1,39 +1,41 @@
-# Rapport d'Analyse et de Professionnalisation - Whappi v2026
+# Rapport d'Analyse du Projet Whappi
 
-## 1. Introduction
-Ce rapport détaille les interventions effectuées pour transformer le projet Whappi d'un prototype fonctionnel en une solution SaaS robuste, sécurisée et stable.
+Ce rapport présente une analyse complète de l'état actuel du projet Whappi, des améliorations apportées et des recommandations pour la suite.
 
-## 2. Refonte Terminologique et UX
-- **Unification "Engagement"** : Le terme "Animation" a été remplacé par "Engagement" à travers toute la stack (Backend, Frontend, Base de données). Cela aligne le produit sur les standards marketing professionnels.
-- **Resilience de l'Interface** :
-    - Correction des crashs sur la page **Profil** (import `Switch` manquant).
-    - Correction des erreurs de persistence dans les réglages de **Modération**.
-    - Nettoyage du tableau de bord IA : Suppression des modèles fictifs (GPT-4o, Claude) pour n'afficher que les modèles réellement configurés en base de données par l'administrateur.
-    - Intégration du nom "Whappi AI" comme référence par défaut.
+## 1. Architecture Globale
+Le projet suit une architecture modulaire et moderne :
+- **Backend :** Node.js avec Express, utilisant SQLite pour la persistance des données et Baileys pour l'intégration WhatsApp.
+- **Frontend :** Dashboard Next.js 15 avec TypeScript, stylisé avec Tailwind CSS et les composants Shadcn/UI.
+- **Authentification :** Gestion complète via Clerk, intégrée tant au niveau du frontend que du middleware backend.
+- **Services IA :** Système agnostique compatible avec les APIs type OpenAI (DeepSeek par défaut).
 
-## 3. Sécurité et Gouvernance des Groupes
-- **Accès Administrateur Strict** : Le bot ignore désormais totalement les messages dans les groupes où il n'est pas lui-même administrateur. Cela évite les comportements imprévus et les violations des règles WhatsApp.
-- **Déclenchement par Tag uniquement** : Dans les groupes, l'IA ne répond que si elle est explicitement mentionnée (@bot), sauf si le mode "Assistant de Groupe" est forcé. Cela garantit une maîtrise totale des coûts (crédits).
-- **Priorité à la Sécurité** : Les filtres de modération (Anti-liens, Mots proscrits) sont désormais exécutés *avant* l'appel à l'IA, garantissant qu'aucun contenu interdit ne soit traité par le LLM.
+## 2. État Technique & Améliorations Récentes
 
-## 4. Architecture de Données et Fiabilité
-- **Système de Migration Professionnel** : Implémentation d'un `MigrationRunner` pour gérer les évolutions du schéma SQLite sans perte de données.
-- **Réparation Profonde (v7)** : Une migration d'auto-guérison a été exécutée pour synchroniser toutes les colonnes manquantes (`warning_reset_days`, `ai_key`, etc.).
-- **Chiffrement des Clés** : Les clés API sensibles sont désormais chiffrées en base de données (AES-256-CBC).
+### 🛡️ Sécurité et Gouvernance
+- **Accès Administrateur :** Les réglages des groupes et les modèles IA globaux sont désormais strictement réservés aux administrateurs.
+- **Validation IA :** Correction du système de résolution des identifiants. Le bot utilise désormais les clés globales configurées par l'admin si l'utilisateur n'en possède pas de propre, évitant les erreurs "IA non configurée".
+- **Protection Anti-Ban :** Implémentation du `QueueService` avec des délais aléatoires (1-5s) et une simulation de frappe pour imiter un comportement humain.
 
-## 5. Optimisation de la Livraison (WhatsApp)
-- **QueueService Avancé** :
-    - Délais aléatoires de 1 à 5 secondes (Anti-ban).
-    - Protection par Timeout de 30 secondes sur chaque envoi.
-    - Simulation réaliste de l'écriture ("Typing...").
-- **Cohabitation Humain-IA** : Introduction d'un toggle manuel "Pause/Reprise IA" dans l'Inbox pour permettre au propriétaire de reprendre la main instantanément sur une conversation.
+### 🤖 Intelligence Artificielle (Engagement)
+- **Nettoyage des Modèles :** Suppression des modèles fictifs (GPT-4o, Claude) qui n'étaient pas configurés. Seuls les modèles réels présents en base de données sont affichés.
+- **Mode Groupe Strict :** Le bot ne répond désormais dans les groupes que s'il est explicitement tagué ou si le mode assistant est activé par un admin.
+- **RAG (Knowledge Base) :** Système fonctionnel permettant d'injecter des connaissances spécifiques dans les réponses du bot.
 
-## 6. Conclusion et Prochaines Étapes
-Le projet est désormais stable, sécurisé et prêt pour une utilisation commerciale.
-**Recommandations :**
-1. Configurer une clé `TOKEN_ENCRYPTION_KEY` de 64 caractères hexadécimaux en production.
-2. Déployer les derniers changements sur GitHub.
-3. Lancer une campagne de test de charge sur le système de file d'attente.
+### 🛠️ Stabilité et Corrections de Bugs
+- **Page Profil :** Correction du crash au chargement (import `Switch` manquant) et activation du toggle de notifications sonores.
+- **Base de Données :** Réparation en profondeur du schéma SQLite (v7) pour supporter les nouvelles fonctionnalités (reset d'avertissements, clés chiffrées).
+- **Gestion des Erreurs :** Résolution de l'erreur "db is not defined" qui bloquait le traitement des messages dans certains services.
+
+## 3. Analyse du Flux de Travail
+1. **Connexion :** L'utilisateur connecte son WhatsApp via QR Code ou Pairing Code.
+2. **Configuration :** L'utilisateur définit le prompt de son IA et choisit un modèle parmi ceux validés par l'administrateur.
+3. **Engagement :** Le bot traite les messages entrants, vérifie les mots-clés, applique la modération (si admin du groupe) et répond via l'IA si nécessaire.
+4. **Monitoring :** Les statistiques et logs d'activité permettent de suivre l'usage des crédits et les performances en temps réel.
+
+## 4. Recommandations
+- **Monitoring :** Surveiller les erreurs 440 (Conflict) lors des redémarrages serveur. Le système de retry exponentiel actuel devrait limiter l'impact.
+- **Crédits :** S'assurer que les plans SaaS sont correctement synchronisés avec Stripe pour la production.
+- **IA :** Encourager l'utilisation de modèles locaux (Ollama) pour les utilisateurs avancés afin de réduire les coûts d'API.
 
 ---
-*Rapport généré par Jules, Senior Software Engineer.*
+*Rapport généré par Jules, Senior Full-Stack Engineer.*
