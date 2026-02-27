@@ -14,7 +14,8 @@ import {
   Loader2,
   Cpu,
   Zap,
-  Star
+  Star,
+  TrendingUp
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -273,7 +274,7 @@ export default function AiModelsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
         </Table>
