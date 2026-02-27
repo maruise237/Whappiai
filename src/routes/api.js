@@ -643,6 +643,62 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
+    router.post('/ai/generate-onboarding', checkSessionOrTokenAuth, async (req, res) => {
+        try {
+            const OnboardingService = require('../services/OnboardingService');
+            const config = await OnboardingService.generateConfiguration(req.body);
+            res.json({ status: 'success', data: config });
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
+    // --- Cal.com Integration ---
+    router.get('/cal/status', checkSessionOrTokenAuth, async (req, res) => {
+        try {
+            const CalService = require('../services/CalService');
+            const user = await User.findById(req.currentUser.id);
+            const isConnected = !!(user && user.cal_access_token);
+
+            let eventTypes = [];
+            if (isConnected) {
+                eventTypes = await CalService.getEventTypes(user.id);
+            }
+
+            res.json({
+                status: 'success',
+                data: {
+                    isConnected,
+                    ai_cal_enabled: !!user.ai_cal_enabled,
+                    ai_cal_video_allowed: !!user.ai_cal_video_allowed,
+                    eventTypes
+                }
+            });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
+    router.get('/cal/auth', checkSessionOrTokenAuth, (req, res) => {
+        const CalService = require('../services/CalService');
+        const authUrl = CalService.getAuthUrl(req.currentUser.id);
+        res.json({ status: 'success', data: { authUrl } });
+    });
+
+    router.post('/cal/settings', checkSessionOrTokenAuth, async (req, res) => {
+        const { ai_cal_enabled, ai_cal_video_allowed } = req.body;
+        try {
+            const updates = {};
+            if (ai_cal_enabled !== undefined) updates.ai_cal_enabled = ai_cal_enabled ? 1 : 0;
+            if (ai_cal_video_allowed !== undefined) updates.ai_cal_video_allowed = ai_cal_video_allowed ? 1 : 0;
+
+            await User.update(req.currentUser.id, updates);
+            res.json({ status: 'success', message: 'Paramètres mis à jour' });
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    });
+
     router.post('/sessions/:sessionId/ai/test', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
         const aiService = require('../services/ai');

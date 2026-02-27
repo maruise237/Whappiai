@@ -464,20 +464,75 @@ class AIService {
                 return;
             }
 
+            // Intercept Cal.com commands
+            let finalResponse = response;
+            const user = session.owner_email ? User.findByEmail(session.owner_email) : null;
+
+            if (user && user.ai_cal_enabled && user.cal_access_token) {
+                const CalService = require('./CalService');
+
+                // 1. [CAL_CHECK:YYYY-MM-DD]
+                const checkMatch = finalResponse.match(/\[CAL_CHECK:([\d-]{10})\]/);
+                if (checkMatch) {
+                    const date = checkMatch[1];
+                    const eventTypes = await CalService.getEventTypes(user.id);
+                    if (eventTypes.length > 0) {
+                        const eventTypeId = eventTypes[0].id; // Use first event type as default
+                        const startTime = `${date}T00:00:00Z`;
+                        const endTime = `${date}T23:59:59Z`;
+                        const slots = await CalService.getAvailability(user.id, eventTypeId, startTime, endTime);
+
+                        let slotsText = slots.length > 0
+                            ? `Voici les disponibilités pour le ${date} :\n` + slots.slice(0, 5).map(s => `- ${new Date(s.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`).join('\n')
+                            : `Désolé, aucune disponibilité pour le ${date}.`;
+
+                        finalResponse = finalResponse.replace(/\[CAL_CHECK:[\d-]{10}\]/, slotsText);
+                    }
+                }
+
+                // 2. [CAL_BOOK:YYYY-MM-DD HH:mm,Nom,Email,Motif]
+                const bookMatch = finalResponse.match(/\[CAL_BOOK:([^,]+),([^,]+),([^,]+),?([^\]]*)\]/);
+                if (bookMatch) {
+                    const [_, dateTime, name, email, notes] = bookMatch;
+                    const eventTypes = await CalService.getEventTypes(user.id);
+                    if (eventTypes.length > 0) {
+                        try {
+                            const startTime = new Date(dateTime).toISOString();
+                            const booking = await CalService.createBooking(user.id, {
+                                eventTypeId: eventTypes[0].id,
+                                start: startTime,
+                                name: name.trim(),
+                                email: email.trim(),
+                                notes: notes.trim()
+                            });
+
+                            let confirmationText = `✅ Rendez-vous confirmé pour le ${new Date(startTime).toLocaleString()} !`;
+                            if (booking.videoCallUrl) {
+                                confirmationText += `\nLien vidéo : ${booking.videoCallUrl}`;
+                            }
+
+                            finalResponse = finalResponse.replace(/\[CAL_BOOK:[^\]]+\]/, confirmationText);
+                        } catch (err) {
+                            finalResponse = finalResponse.replace(/\[CAL_BOOK:[^\]]+\]/, "Désolé, une erreur est survenue lors de la réservation. Le créneau est peut-être déjà pris.");
+                        }
+                    }
+                }
+            }
+
             // Store assistant response in memory
-            await this.storeMemory(sessionId, remoteJid, 'assistant', response);
+            await this.storeMemory(sessionId, remoteJid, 'assistant', finalResponse);
 
             // Dispatch Webhook: ai_response
             WebhookService.dispatch(sessionId, 'ai_response', {
                 remoteJid,
-                response,
+                response: finalResponse,
                 originalMessage: messageText
             });
 
-            log(`AI Response for ${remoteJid}: "${response.substring(0, 50)}${response.length > 50 ? '...' : ''}"`, sessionId, {
+            log(`AI Response for ${remoteJid}: "${finalResponse.substring(0, 50)}${finalResponse.length > 50 ? '...' : ''}"`, sessionId, {
                 event: 'ai-response',
                 remoteJid,
-                response
+                response: finalResponse
             }, 'INFO');
 
             // Optional: Mark as read before responding
@@ -493,7 +548,7 @@ class AIService {
             }
 
             // Default to 'bot' mode as per specs
-            await this.sendAutoResponse(sock, remoteJid, response, sessionId);
+            await this.sendAutoResponse(sock, remoteJid, finalResponse, sessionId);
 
         } catch (error) {
             log(`Erreur AIService pour l'utilisateur ${sessionId}: ${error.message}`, sessionId, { event: 'ai-service-error', error: error.message }, 'ERROR');

@@ -46,6 +46,7 @@ import {
   SelectValue
 } from "@/components/ui/select"
 import { api } from "@/lib/api"
+import { MagicOnboardingWizard } from "@/components/dashboard/MagicOnboardingWizard"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -61,6 +62,7 @@ function AssistantIAPageContent() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [editingSessionId, setEditingSessionId] = React.useState<string | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
+  const [showWizard, setShowWizard] = React.useState(false)
 
   const fetchData = React.useCallback(async () => {
     setLoading(true)
@@ -92,6 +94,10 @@ function AssistantIAPageContent() {
 
   React.useEffect(() => {
     fetchData()
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('cal') === 'success') {
+      setShowWizard(true)
+    }
   }, [fetchData])
 
   const handleToggleAI = async (sessionId: string, enabled: boolean) => {
@@ -126,6 +132,13 @@ function AssistantIAPageContent() {
             <Button variant="outline" size="sm" className="h-8 rounded-full" onClick={() => router.push('/dashboard/ai-models')}>
                <Settings className="h-3 w-3 mr-2" /> Gérer les modèles
             </Button>
+          )}
+          {sessions.length > 0 && (
+            <MagicOnboardingWizard
+              sessionId={sessions[0].sessionId}
+              onComplete={fetchData}
+              defaultOpen={showWizard}
+            />
           )}
           <div className="relative w-full sm:w-48">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />

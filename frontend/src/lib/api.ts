@@ -124,6 +124,19 @@ export const api = {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
   },
+  cal: {
+    getStatus: (token?: string) => fetchApi("/api/v1/cal/status", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    getAuthUrl: (token?: string) => fetchApi("/api/v1/cal/auth", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    updateSettings: (data: any, token?: string) => fetchApi("/api/v1/cal/settings", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+  },
   credits: {
     get: (token?: string) => fetchApi("/api/v1/credits", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
@@ -377,6 +390,11 @@ export const api = {
       }),
     },
     getTemplates: (token?: string) => fetchApi("/api/v1/ai/templates", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    generateOnboarding: (data: any, token?: string) => fetchApi("/api/v1/ai/generate-onboarding", {
+      method: "POST",
+      body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
   },
