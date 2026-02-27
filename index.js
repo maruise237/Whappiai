@@ -45,6 +45,7 @@ const paymentRoutes = require('./src/routes/payments');
 const subscriptionRoutes = require('./src/routes/subscriptions');
 const creditRoutes = require('./src/routes/credits');
 const notificationRoutes = require('./src/routes/notifications');
+const calRoutes = require('./src/routes/cal');
 const { log, setBroadcastFn } = require('./src/utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middleware/errorHandler');
 
@@ -555,6 +556,7 @@ app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/subscriptions', subscriptionRoutes);
 app.use('/api/v1/credits', creditRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/cal', calRoutes);
 app.use('/api/v1', apiRouter);
 
 // Serve modern UI

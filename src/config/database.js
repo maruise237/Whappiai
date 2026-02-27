@@ -411,7 +411,12 @@ function initializeSchema() {
             { name: 'subscription_expiry', type: 'DATETIME' },
             { name: 'timezone', type: "TEXT DEFAULT 'UTC'" },
             { name: 'organization_name', type: 'TEXT' },
-            { name: 'sound_notifications', type: 'INTEGER DEFAULT 1' }
+            { name: 'sound_notifications', type: 'INTEGER DEFAULT 1' },
+            { name: 'cal_access_token', type: 'TEXT' },
+            { name: 'cal_refresh_token', type: 'TEXT' },
+            { name: 'cal_token_expiry', type: 'INTEGER' },
+            { name: 'ai_cal_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_cal_video_allowed', type: 'INTEGER DEFAULT 0' }
         ];
         columns.forEach(col => {
             try { db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}

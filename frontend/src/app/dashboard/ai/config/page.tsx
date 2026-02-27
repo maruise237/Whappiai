@@ -58,11 +58,16 @@ function AIConfigContent() {
     setLoading(true)
     try {
       const token = await getToken()
-      const [aiData, modelsData] = await Promise.all([
+      const [aiData, modelsData, calData] = await Promise.all([
         api.sessions.getAI(sessionId, token || undefined),
-        api.ai.listModels(token || undefined)
+        api.ai.listModels(token || undefined),
+        api.cal.getStatus(token || undefined).catch(() => ({}))
       ])
-      setConfig(aiData)
+      setConfig({
+        ...aiData,
+        ai_cal_enabled: !!calData?.ai_cal_enabled,
+        ai_cal_video_allowed: !!calData?.ai_cal_video_allowed
+      })
       setModels(modelsData || [])
     } catch (e) {
       toast.error("Échec du chargement de la configuration")
@@ -98,6 +103,7 @@ function AIConfigContent() {
     { id: 'intelligence', name: 'Intelligence', icon: Brain },
     { id: 'automation', name: 'Automation', icon: Zap },
     { id: 'personality', name: 'Personnalité', icon: User },
+    { id: 'scheduling', name: 'Rendez-vous', icon: Calendar },
     { id: 'engine', name: 'Moteur API', icon: Cpu },
   ]
 
@@ -323,6 +329,61 @@ function AIConfigContent() {
                   ))}
                </div>
             </div>
+          </section>
+
+          <Separator />
+
+          {/* Section Scheduling */}
+          <section id="scheduling" className="scroll-mt-24 space-y-6">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Rendez-vous Cal.com</h3>
+              <p className="text-xs text-muted-foreground">Gérez la prise de rendez-vous automatique par l&apos;IA.</p>
+            </div>
+
+            <div className="border rounded-lg divide-y bg-card">
+              <div className="flex items-center justify-between p-4">
+                <div>
+                  <p className="text-sm font-medium">Activer l&apos;assistant Cal.com</p>
+                  <p className="text-xs text-muted-foreground">Permet à l&apos;IA de consulter votre agenda et prendre des RDV.</p>
+                </div>
+                <Switch
+                  checked={!!config?.ai_cal_enabled}
+                  onCheckedChange={async (v) => {
+                    const token = await getToken()
+                    await api.cal.updateSettings({ ai_cal_enabled: v }, token || undefined)
+                    setConfig({...config, ai_cal_enabled: v})
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between p-4">
+                <div>
+                  <p className="text-sm font-medium">Autoriser la Vidéo</p>
+                  <p className="text-xs text-muted-foreground">Proposer des rendez-vous en visioconférence.</p>
+                </div>
+                <Switch
+                  checked={!!config?.ai_cal_video_allowed}
+                  onCheckedChange={async (v) => {
+                    const token = await getToken()
+                    await api.cal.updateSettings({ ai_cal_video_allowed: v }, token || undefined)
+                    setConfig({...config, ai_cal_video_allowed: v})
+                  }}
+                />
+              </div>
+            </div>
+
+            {config?.ai_cal_enabled && (
+              <Card className="border-border bg-primary/5 shadow-none">
+                <CardHeader className="p-4">
+                  <CardTitle className="text-xs font-bold uppercase flex items-center gap-2">
+                    <Sparkles className="h-3 w-3" /> Note sur le fonctionnement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 text-[11px] space-y-2 leading-relaxed">
+                  <p>L&apos;IA utilise des commandes spéciales pour interagir avec votre calendrier. Assurez-vous que votre prompt système contient les instructions nécessaires.</p>
+                  <p className="italic text-muted-foreground">Exemple: &quot;Vérifie les disponibilités avec [CAL_CHECK:YYYY-MM-DD] et réserve avec [CAL_BOOK:...]&quot;</p>
+                </CardContent>
+              </Card>
+            )}
           </section>
 
           <Separator />
