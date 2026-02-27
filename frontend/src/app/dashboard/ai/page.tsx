@@ -142,19 +142,21 @@ function AssistantIAPageContent() {
           <p className="text-sm text-muted-foreground">Pilotez l&apos;intelligence de vos sessions WhatsApp.</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Button variant="outline" size="sm" className="h-8 rounded-full" onClick={() => router.push('/dashboard/ai-models')}>
-               <Settings className="h-3 w-3 mr-2" /> Gérer les modèles
-            </Button>
-          )}
-          {sessions.length > 0 && (
-            <MagicOnboardingWizard
-              sessionId={sessions[0].sessionId}
-              onComplete={fetchData}
-              defaultOpen={showWizard}
-            />
-          )}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+            {isAdmin && (
+                <Button variant="outline" size="sm" className="h-8 rounded-full flex-1 sm:flex-none px-4" onClick={() => router.push('/dashboard/ai-models')}>
+                <Settings className="h-3 w-3 mr-2" /> Gérer les modèles
+                </Button>
+            )}
+            {sessions.length > 0 && (
+                <MagicOnboardingWizard
+                sessionId={sessions[0].sessionId}
+                onComplete={fetchData}
+                defaultOpen={showWizard}
+                />
+            )}
+          </div>
           <div className="relative w-full sm:w-48">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input

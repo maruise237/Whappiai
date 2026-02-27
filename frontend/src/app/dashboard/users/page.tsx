@@ -244,17 +244,18 @@ export default function UsersPage() {
         </Badge>
       </div>
 
-      <Card className="border-none shadow-none bg-muted/10">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-muted/30">
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Utilisateur</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Rôle</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Crédits</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Statut</TableHead>
-              <TableHead className="text-right"></TableHead>
-            </TableRow>
-          </TableHeader>
+      <Card className="border-none shadow-none bg-muted/10 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-muted/30">
+                <TableHead className="text-[10px] font-semibold text-muted-foreground">Utilisateur</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground hidden sm:table-cell">Rôle</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground">Crédits</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground hidden md:table-cell">Statut</TableHead>
+                <TableHead className="text-right"></TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
@@ -282,7 +283,7 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <Badge variant="secondary" className={cn(
                       "text-[9px] font-semibold",
                       u.role === 'admin' ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"
@@ -291,12 +292,20 @@ export default function UsersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                        <Zap className="h-3 w-3 text-amber-500" />
-                        <span className="text-xs font-bold">{u.message_limit}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                            <Zap className="h-3 w-3 text-amber-500" />
+                            <span className="text-xs font-bold">{u.message_limit}</span>
+                        </div>
+                        <Badge variant="secondary" className={cn(
+                            "sm:hidden text-[8px] h-3.5 w-fit px-1",
+                            u.role === 'admin' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                        )}>
+                            {u.role}
+                        </Badge>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="flex items-center gap-1.5">
                       {u.is_active ? (
                         <CheckCircle2 className="h-3 w-3 text-green-500" />
@@ -333,6 +342,7 @@ export default function UsersPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
 
       {/* User Deep-Dive Sheet */}
@@ -536,9 +546,9 @@ export default function UsersPage() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={handleCreateUser} disabled={isSubmitting}>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setIsAddDialogOpen(false)} className="w-full sm:w-auto">Annuler</Button>
+            <Button size="sm" onClick={handleCreateUser} disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
               Lancer l&apos;invitation
             </Button>
