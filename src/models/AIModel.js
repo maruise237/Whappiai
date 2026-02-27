@@ -102,7 +102,11 @@ class AIModel {
      */
     static getDefault() {
         const stmt = db.prepare('SELECT * FROM ai_models WHERE is_default = 1 AND is_active = 1 LIMIT 1');
-        return stmt.get();
+        const model = stmt.get();
+        if (model) {
+            return this.findById(model.id); // Ensure decryption
+        }
+        return null;
     }
 
     /**

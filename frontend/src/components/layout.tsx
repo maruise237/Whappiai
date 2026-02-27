@@ -51,7 +51,6 @@ const getNavGroups = (t: any) => [
     title: t("nav.hubs.pilotage") || "PILOTAGE HUB",
     items: [
       { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
-      { name: t("nav.inbox"), href: "/dashboard/inbox", icon: MessageCircle },
     ]
   },
   {

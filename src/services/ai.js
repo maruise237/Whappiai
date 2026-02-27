@@ -15,6 +15,7 @@ const { db } = require('../config/database');
 // Memory-only flags to temporarily pause AI for specific conversations
 const pausedConversations = new Map();
 const botReadHistory = new Set(); // Track messages read by the bot itself
+const botSentHistory = new Set(); // Track messages sent by the bot itself
 const lastOwnerActivity = new Map(); // Track last activity from the owner per JID
 const pendingRetries = new Map(); // Track messages ignored by random protection for later retry
 const aiResponseHistory = new Map(); // Track AI response timestamps for loop protection
@@ -127,6 +128,30 @@ class AIService {
     static isReadByBot(sessionId, messageId) {
         const key = `${sessionId}:${messageId}`;
         return botReadHistory.has(key);
+    }
+
+    /**
+     * Track that the bot is sending a specific message to avoid self-pausing
+     * @param {string} sessionId
+     * @param {string} messageId
+     */
+    static trackBotSent(sessionId, messageId) {
+        if (!messageId) return;
+        const key = `${sessionId}:${messageId}`;
+        botSentHistory.add(key);
+        // Clear after 30 seconds
+        setTimeout(() => botSentHistory.delete(key), 30000);
+    }
+
+    /**
+     * Check if a message was sent by the bot itself
+     * @param {string} sessionId
+     * @param {string} messageId
+     * @returns {boolean}
+     */
+    static isSentByBot(sessionId, messageId) {
+        const key = `${sessionId}:${messageId}`;
+        return botSentHistory.has(key);
     }
     /**
      * Store message in conversational memory
@@ -258,8 +283,18 @@ class AIService {
 
             const remoteJid = msg.key.remoteJid;
             const isGroup = remoteJid.endsWith('@g.us');
-            const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(sock.user.id.split(':')[0] + '@s.whatsapp.net') ||
-                             messageText.includes('@' + sock.user.id.split(':')[0]);
+
+            // Comprehensive Tag Detection (JID, LID, and Name)
+            const myJid = (sock.user.id || "").split(':')[0] + '@s.whatsapp.net';
+            const myLid = sock.user.lid || sock.user.LID;
+            const myName = sock.user.name || "Bot";
+
+            const mentionedJids = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+            const isTagged = mentionedJids.includes(myJid) ||
+                             (myLid && mentionedJids.includes(myLid)) ||
+                             messageText.includes('@' + sock.user.id.split(':')[0]) ||
+                             (myLid && messageText.includes('@' + myLid.split(':')[0])) ||
+                             messageText.toLowerCase().includes('@' + myName.toLowerCase());
 
             // --- RESTRICTION GROUPE (SÉCURITÉ FINANCIÈRE) ---
             if (isGroup) {
@@ -267,9 +302,6 @@ class AIService {
                 const modService = require('./moderation');
                 try {
                     const groupMetadata = await modService.getGroupMetadata(sock, remoteJid);
-                    const myJid = (sock.user.id || "").split(':')[0] + '@s.whatsapp.net';
-                    const myLid = sock.user.lid || sock.user.LID;
-
                     const botIsAdmin = modService.isGroupAdmin(groupMetadata, myJid, myLid, sessionId);
 
                     if (!botIsAdmin) {
@@ -573,15 +605,21 @@ class AIService {
             log(`RAG: ${knowledge.length} extraits trouvés pour la réponse.`, sessionId, { query: userMessage }, 'DEBUG');
         }
         
+        let resolvedEndpoint = ai_endpoint;
+        let resolvedKey = ai_key;
+        let resolvedModelName = ai_model;
+        let resolvedTemp = ai_temperature;
+        let resolvedMaxTokens = ai_max_tokens;
+
         // If no model is set, try to get the global default model
         if (!ai_model) {
             const defaultModel = AIModel.getDefault();
             if (defaultModel) {
-                ai_endpoint = defaultModel.endpoint;
-                ai_key = defaultModel.api_key;
-                ai_model = defaultModel.model_name;
-                ai_temperature = ai_temperature ?? defaultModel.temperature;
-                ai_max_tokens = ai_max_tokens ?? defaultModel.max_tokens;
+                resolvedEndpoint = defaultModel.endpoint;
+                resolvedKey = hasValidSessionKey ? ai_key : defaultModel.api_key;
+                resolvedModelName = defaultModel.model_name;
+                resolvedTemp = ai_temperature ?? defaultModel.temperature;
+                resolvedMaxTokens = ai_max_tokens ?? defaultModel.max_tokens;
             }
         }
         // If ai_model && ai_model looks like a model ID (UUID), use the global model configuration
@@ -589,38 +627,24 @@ class AIService {
             const globalModel = AIModel.findById(ai_model);
             if (globalModel && globalModel.is_active) {
                 log(`Utilisation du modèle global: ${globalModel.name}`, user.id, { modelId: ai_model }, 'DEBUG');
-                ai_endpoint = globalModel.endpoint;
-                ai_key = globalModel.api_key;
-                ai_model = globalModel.model_name;
-                ai_temperature = ai_temperature ?? globalModel.temperature;
-                ai_max_tokens = ai_max_tokens ?? globalModel.max_tokens;
+                resolvedEndpoint = globalModel.endpoint;
+                resolvedKey = hasValidSessionKey ? ai_key : globalModel.api_key;
+                resolvedModelName = globalModel.model_name;
+                resolvedTemp = ai_temperature ?? globalModel.temperature;
+                resolvedMaxTokens = ai_max_tokens ?? globalModel.max_tokens;
             }
-        }
-        // If no model is set, try to get the global default model
-        else {
-            globalModel = AIModel.getDefault();
-        }
-
-        if (globalModel && globalModel.is_active) {
-            log(`Utilisation du modèle global: ${globalModel.name}`, user.id, { modelId: globalModel.id }, 'DEBUG');
-            resolvedEndpoint = ai_endpoint || globalModel.endpoint;
-            // Priority: Session key (if valid) > Global model key
-            resolvedKey = hasValidSessionKey ? ai_key : globalModel.api_key;
-            resolvedModelName = globalModel.model_name;
-            resolvedTemp = ai_temperature ?? globalModel.temperature;
-            resolvedMaxTokens = ai_max_tokens ?? globalModel.max_tokens;
         }
 
         // Default to DeepSeek if not configured, as per specs "DeepSeek (Gratuit)"
         let finalEndpoint = resolvedEndpoint || 'https://api.deepseek.com/v1/chat/completions';
-        let finalKey = (resolvedKey && resolvedKey !== 'YOUR_API_KEY_HERE') ? resolvedKey : process.env.DEEPSEEK_API_KEY;
+        let finalKey = (resolvedKey && resolvedKey !== 'YOUR_API_KEY_HERE' && resolvedKey.trim() !== '') ? resolvedKey : process.env.DEEPSEEK_API_KEY;
         let finalModel = resolvedModelName || 'deepseek-chat';
         let finalTemperature = resolvedTemp ?? 0.7;
         let finalMaxTokens = resolvedMaxTokens ?? 1000;
 
-        if (!finalKey || finalKey === 'YOUR_API_KEY_HERE') {
+        if (!finalKey || finalKey === 'YOUR_API_KEY_HERE' || finalKey.trim() === '') {
             log('ATTENTION: Clé API IA manquante ou non configurée', user.id, { event: 'ai-config-missing-key' }, 'WARN');
-            return "Désolé, mon service d'IA n'est pas encore configuré par l'administrateur.";
+            return "Désolé, mon service d'IA n'est pas encore configuré correctement par l'administrateur. Veuillez vérifier la clé API du modèle par défaut.";
         }
 
         // Auto-fix common endpoint issues (e.g. missing /v1/chat/completions)

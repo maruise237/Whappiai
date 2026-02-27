@@ -25,28 +25,11 @@ services:
     networks:
       - dokploy-network
 
-  # Duplicate service to satisfy Dokploy naming expectations
+  # Dummy service to satisfy Dokploy service detection without causing conflicts
   waha:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: whappi-backend-alias
+    image: busybox
+    command: ["sh", "-c", "echo 'Whappi Alias Service Active' && tail -f /dev/null"]
     restart: always
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DATABASE_PATH=/app/data/whatsapp.db
-      - SESSION_SECRET=${SESSION_SECRET}
-      - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
-      - FRONTEND_URL=${FRONTEND_URL}
-      - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD}
-    volumes:
-      - whappi-data:/app/data
-      - whappi-sessions:/app/sessions
-      - whappi-auth:/app/auth_info_baileys
-      - whappi-media:/app/media
     networks:
       - dokploy-network
 

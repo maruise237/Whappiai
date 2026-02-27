@@ -155,14 +155,6 @@ export const api = {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    resumeAI: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}/resume`, {
-      method: "POST",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    pauseAI: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}/pause`, {
-      method: "POST",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
     qr: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/qr`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
@@ -247,20 +239,6 @@ export const api = {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    getInbox: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox`, {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    getChatHistory: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}`, {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    deleteChat: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}`, {
-      method: "DELETE",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    deleteMessage: (sessionId: string, jid: string, messageId: number, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}/${messageId}`, {
-      method: "DELETE",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
     getWebhooks: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/webhooks`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
@@ -290,39 +268,6 @@ export const api = {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-  },
-  messages: {
-    send: (sessionId: string, data: any, token?: string) => fetchApi(`/api/v1/messages?sessionId=${sessionId}`, {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    upload: async (file: File, token?: string) => {
-      NProgress.start();
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const headers: any = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        const res = await fetch(`${API_BASE_URL}/api/v1/media`, {
-          method: "POST",
-          body: formData,
-          headers: headers,
-          credentials: "include",
-          // Don't set Content-Type, let the browser do it with boundary
-        });
-        
-        if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.message || "Upload failed");
-        }
-        return await res.json();
-      } finally {
-        NProgress.done();
-      }
-    },
   },
   users: {
     list: (token?: string) => fetchApi("/admin/users", {

@@ -77,12 +77,17 @@ class QueueService {
 
                 try {
                     // 1. Human-like delay BEFORE sending
-                    // Base delay 1-5 seconds (anti-ban) + bonus for long queues
-                    const baseDelay = 1000 + Math.random() * 4000;
+                    // Fetch session config for customized anti-ban delays
+                    const session = db.prepare('SELECT ai_delay_min, ai_delay_max FROM whatsapp_sessions WHERE id = ?').get(sessionId);
+                    const min = (session?.ai_delay_min ?? 1) * 1000;
+                    const max = (session?.ai_delay_max ?? 5) * 1000;
+
+                    // Base delay from config (default 1-5s) + bonus for long queues
+                    const baseDelay = min + Math.random() * (max - min);
                     const queueCongestionBonus = Math.min(queue.length * 500, 5000);
                     const totalDelay = baseDelay + queueCongestionBonus;
 
-                    log(`Attente anti-ban : ${Math.round(totalDelay/100)/10}s pour ${task.to}`, sessionId, { event: 'queue-delay', delay: totalDelay }, 'DEBUG');
+                    log(`Attente anti-ban : ${Math.round(totalDelay/100)/10}s pour ${task.to}`, sessionId, { event: 'queue-delay', delay: totalDelay, range: `${min/1000}-${max/1000}s` }, 'DEBUG');
                     await new Promise(resolve => setTimeout(resolve, totalDelay));
 
                     // 2. Typing simulation (optional based on content)
@@ -104,6 +109,16 @@ class QueueService {
                     ]);
 
                     log(`Message envoyé via file d'attente à ${task.to}`, sessionId, { event: 'queue-sent', to: task.to, messageId: result?.key?.id }, 'INFO');
+
+                    // CRITICAL: Track bot-sent messages to avoid auto-pausing the AI (Human Priority logic)
+                    try {
+                        const aiService = require('./ai');
+                        if (result?.key?.id) {
+                            aiService.trackBotSent(sessionId, result.key.id);
+                        }
+                    } catch (e) {
+                        // Ignore circular dependency or other tracking issues
+                    }
 
                     if (task.resolve) task.resolve(result);
                 } catch (err) {

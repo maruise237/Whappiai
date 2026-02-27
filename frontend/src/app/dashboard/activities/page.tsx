@@ -177,6 +177,7 @@ export default function ActivitiesPage() {
                   )}
                   <TableCell>
                     <div className="flex items-center gap-2">
+
                       <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
                         {getActionIcon(activity.action || "")}
                       </div>
@@ -186,6 +187,7 @@ export default function ActivitiesPage() {
                            {activity.resource_id || 'sys'}
                         </Badge>
                       </div>
+
                     </div>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
@@ -193,7 +195,9 @@ export default function ActivitiesPage() {
                       {activity.resource_id || 'system'}
                     </Badge>
                   </TableCell>
+
                   <TableCell className="max-w-[300px] hidden md:table-cell">
+
                     <p className="text-[11px] text-muted-foreground truncate">
                         {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
                     </p>
