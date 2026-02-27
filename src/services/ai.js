@@ -573,15 +573,21 @@ class AIService {
             log(`RAG: ${knowledge.length} extraits trouvés pour la réponse.`, sessionId, { query: userMessage }, 'DEBUG');
         }
         
+        let resolvedEndpoint = ai_endpoint;
+        let resolvedKey = ai_key;
+        let resolvedModelName = ai_model;
+        let resolvedTemp = ai_temperature;
+        let resolvedMaxTokens = ai_max_tokens;
+
         // If no model is set, try to get the global default model
         if (!ai_model) {
             const defaultModel = AIModel.getDefault();
             if (defaultModel) {
-                ai_endpoint = defaultModel.endpoint;
-                ai_key = defaultModel.api_key;
-                ai_model = defaultModel.model_name;
-                ai_temperature = ai_temperature ?? defaultModel.temperature;
-                ai_max_tokens = ai_max_tokens ?? defaultModel.max_tokens;
+                resolvedEndpoint = defaultModel.endpoint;
+                resolvedKey = hasValidSessionKey ? ai_key : defaultModel.api_key;
+                resolvedModelName = defaultModel.model_name;
+                resolvedTemp = ai_temperature ?? defaultModel.temperature;
+                resolvedMaxTokens = ai_max_tokens ?? defaultModel.max_tokens;
             }
         }
         // If ai_model && ai_model looks like a model ID (UUID), use the global model configuration
@@ -589,26 +595,12 @@ class AIService {
             const globalModel = AIModel.findById(ai_model);
             if (globalModel && globalModel.is_active) {
                 log(`Utilisation du modèle global: ${globalModel.name}`, user.id, { modelId: ai_model }, 'DEBUG');
-                ai_endpoint = globalModel.endpoint;
-                ai_key = globalModel.api_key;
-                ai_model = globalModel.model_name;
-                ai_temperature = ai_temperature ?? globalModel.temperature;
-                ai_max_tokens = ai_max_tokens ?? globalModel.max_tokens;
+                resolvedEndpoint = globalModel.endpoint;
+                resolvedKey = hasValidSessionKey ? ai_key : globalModel.api_key;
+                resolvedModelName = globalModel.model_name;
+                resolvedTemp = ai_temperature ?? globalModel.temperature;
+                resolvedMaxTokens = ai_max_tokens ?? globalModel.max_tokens;
             }
-        }
-        // If no model is set, try to get the global default model
-        else {
-            globalModel = AIModel.getDefault();
-        }
-
-        if (globalModel && globalModel.is_active) {
-            log(`Utilisation du modèle global: ${globalModel.name}`, user.id, { modelId: globalModel.id }, 'DEBUG');
-            resolvedEndpoint = ai_endpoint || globalModel.endpoint;
-            // Priority: Session key (if valid) > Global model key
-            resolvedKey = hasValidSessionKey ? ai_key : globalModel.api_key;
-            resolvedModelName = globalModel.model_name;
-            resolvedTemp = ai_temperature ?? globalModel.temperature;
-            resolvedMaxTokens = ai_max_tokens ?? globalModel.max_tokens;
         }
 
         // Default to DeepSeek if not configured, as per specs "DeepSeek (Gratuit)"
