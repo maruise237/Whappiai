@@ -315,7 +315,7 @@ async function handleParticipantUpdate(sock, sessionId, update) {
             
             // Basic variables
             message = message
-                .replace(/{{name}}/g, `@${jid.split('@')[0]}`)
+                .replace(/{{name}}/g, `${jid.split('@')[0]}`)
                 .replace(/{{group_name}}/g, groupMetadata.subject)
                 .replace(/{{date}}/g, new Date().toLocaleDateString('fr-FR'))
                 .replace(/{{rules}}/g, profile?.rules || groupMetadata.desc || 'Pas de règles spécifiées.');
@@ -544,7 +544,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                     
                     // Replace variables
                     const warningMsg = template
-                        .replace(/{{name}}/g, `@${senderJid.split('@')[0]}`)
+                        .replace(/{{name}}/g, `${senderJid.split('@')[0]}`)
                         .replace(/{{count}}/g, currentCount)
                         .replace(/{{max}}/g, maxWarnings)
                         .replace(/{{reason}}/g, violation);

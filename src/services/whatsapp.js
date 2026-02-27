@@ -18,6 +18,7 @@ const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
 const { log } = require('../utils/logger');
+const { db } = require('../config/database');
 const WebhookService = require('./WebhookService');
 const KeywordService = require('./KeywordService');
 const aiService = require('./ai');
