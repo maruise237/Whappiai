@@ -23,7 +23,6 @@ import {
 } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
-import { MessagingTabs } from "@/components/dashboard/messaging-tabs"
 import { api } from "@/lib/api"
 import {
   Sheet,
@@ -300,16 +299,11 @@ export default function DashboardPage() {
                </CardContent>
             </Card>
 
-            <Tabs defaultValue="direct" className="space-y-4">
+            <Tabs defaultValue="history" className="space-y-4">
                <TabsList className="bg-muted/50 p-1 rounded-lg h-9 gap-1 w-full sm:w-auto">
-                  <TabsTrigger value="direct" className="text-[11px] font-semibold px-6">Direct Message</TabsTrigger>
                   <TabsTrigger value="history" className="text-[11px] font-semibold px-6">History</TabsTrigger>
                   {isAdmin && <TabsTrigger value="logs" className="text-[11px] font-semibold px-6">System Logs</TabsTrigger>}
                </TabsList>
-
-               <TabsContent value="direct" className="animate-in fade-in duration-300">
-                  <MessagingTabs session={selectedSession} />
-               </TabsContent>
 
                <TabsContent value="history" className="space-y-4">
                   <Card>
