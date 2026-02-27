@@ -406,5 +406,18 @@ export const api = {
       method: "PUT",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+  },
+  admin: {
+    getStats: (days = 7, token?: string) => fetchApi(`/api/v1/admin/stats?days=${days}`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    getUserDetails: (userId: string, token?: string) => fetchApi(`/api/v1/admin/users/${userId}/details`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    adjustCredits: (userId: string, amount: number, type: string, description: string, token?: string) => fetchApi(`/api/v1/admin/users/${userId}/credits`, {
+      method: "POST",
+      body: JSON.stringify({ amount, type, description }),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   }
 };
