@@ -14,7 +14,13 @@ import {
   Trash2,
   Edit,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Zap,
+  Smartphone,
+  History,
+  TrendingUp,
+  CreditCard,
+  Info
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -43,12 +49,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+  } from "@/components/ui/sheet"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function UsersPage() {
   const { getToken } = useAuth()
@@ -58,9 +72,19 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [selectedUserId, setSelectedUserId] = React.useState<string | null>(null)
+  const [userDetails, setUserDetails] = React.useState<any>(null)
+  const [isDetailsLoading, setIsDetailsLoading] = React.useState(false)
+
   const [formData, setFormData] = React.useState({
     email: '',
     role: 'user'
+  })
+
+  const [creditForm, setCreditForm] = React.useState({
+    amount: 100,
+    type: 'bonus',
+    description: 'Bonus exceptionnel admin'
   })
 
   const fetchUsers = React.useCallback(async () => {
@@ -76,17 +100,37 @@ export default function UsersPage() {
     }
   }, [getToken])
 
+  const fetchUserDetails = React.useCallback(async (userId: string) => {
+    setIsDetailsLoading(true)
+    try {
+      const token = await getToken()
+      const data = await api.admin.getUserDetails(userId, token || undefined)
+      setUserDetails(data)
+    } catch (e) {
+      toast.error("Erreur de chargement des détails")
+    } finally {
+      setIsDetailsLoading(false)
+    }
+  }, [getToken])
+
   React.useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
+
+  React.useEffect(() => {
+    if (selectedUserId) {
+        fetchUserDetails(selectedUserId)
+    } else {
+        setUserDetails(null)
+    }
+  }, [selectedUserId, fetchUserDetails])
 
   const filtered = users.filter(u =>
     u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.id && u.id.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
-  const isAdmin = currentUser?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' ||
-                  currentUser?.publicMetadata?.role === 'admin'
+  const isAdmin = currentUser?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || currentUser?.publicMetadata?.role === "admin"
 
   const handleCreateUser = async () => {
     if (!formData.email) return toast.error("Email requis")
@@ -138,6 +182,28 @@ export default function UsersPage() {
     }
   }
 
+  const handleAdjustCredits = async () => {
+    if (!selectedUserId) return
+    setIsSubmitting(true)
+    try {
+        const token = await getToken()
+        await api.admin.adjustCredits(
+            selectedUserId,
+            creditForm.amount,
+            creditForm.type,
+            creditForm.description,
+            token || undefined
+        )
+        toast.success("Portefeuille mis à jour")
+        fetchUserDetails(selectedUserId)
+        fetchUsers() // Update balance in list
+    } catch (e: any) {
+        toast.error(e.message || "Erreur lors de l'ajustement")
+    } finally {
+        setIsSubmitting(false)
+    }
+  }
+
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -149,13 +215,13 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-10">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" /> Gestion Utilisateurs
           </h1>
-          <p className="text-sm text-muted-foreground">Administrez les accès et rôles de la plateforme.</p>
+          <p className="text-sm text-muted-foreground">Administrez les accès et les portefeuilles crédits.</p>
         </div>
 
         <Button size="sm" onClick={() => setIsAddDialogOpen(true)} className="rounded-full h-8 px-4">
@@ -174,7 +240,7 @@ export default function UsersPage() {
           />
         </div>
         <Badge variant="outline" className="h-9 px-3 rounded-md text-[10px] font-semibold tracking-wider text-muted-foreground border-dashed">
-          {filtered.length} Utilisateurs au total
+          {filtered.length} Utilisateurs
         </Badge>
       </div>
 
@@ -184,8 +250,8 @@ export default function UsersPage() {
             <TableRow className="hover:bg-transparent border-muted/30">
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Utilisateur</TableHead>
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Rôle</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground">Crédits</TableHead>
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Statut</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Date d&apos;inscription</TableHead>
               <TableHead className="text-right"></TableHead>
             </TableRow>
           </TableHeader>
@@ -204,7 +270,7 @@ export default function UsersPage() {
               </TableRow>
             ) : (
               filtered.map((u) => (
-                <TableRow key={u.id} className="border-muted/20 hover:bg-muted/30 transition-colors group">
+                <TableRow key={u.id} className="border-muted/20 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setSelectedUserId(u.id)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
@@ -225,6 +291,12 @@ export default function UsersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
+                    <div className="flex items-center gap-1">
+                        <Zap className="h-3 w-3 text-amber-500" />
+                        <span className="text-xs font-bold">{u.message_limit}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-1.5">
                       {u.is_active ? (
                         <CheckCircle2 className="h-3 w-3 text-green-500" />
@@ -234,17 +306,15 @@ export default function UsersPage() {
                       <span className="text-[11px] font-medium">{u.is_active ? 'Actif' : 'Désactivé'}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground font-mono">
-                    {new Date(u.created_at).toLocaleDateString('fr-FR', {
-                      day: '2-digit', month: '2-digit', year: 'numeric'
-                    })}
-                  </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem className="text-xs" onClick={() => setSelectedUserId(u.id)}>
+                          <TrendingUp className="h-3.5 w-3.5 mr-2" /> Détails & Crédits
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-xs" onClick={() => handleUpdateRole(u.email, u.role === 'admin' ? 'user' : 'admin')}>
                           <Edit className="h-3.5 w-3.5 mr-2" /> Passer en {u.role === 'admin' ? 'Utilisateur' : 'Admin'}
                         </DropdownMenuItem>
@@ -264,6 +334,173 @@ export default function UsersPage() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* User Deep-Dive Sheet */}
+      <Sheet open={!!selectedUserId} onOpenChange={open => !open && setSelectedUserId(null)}>
+        <SheetContent className="sm:max-w-[600px] overflow-y-auto">
+          <SheetHeader className="pb-6">
+            <SheetTitle className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                    {userDetails?.user?.email?.charAt(0).toUpperCase()}
+                </div>
+                <div className="text-left">
+                    <p className="text-base font-bold">{userDetails?.user?.email}</p>
+                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest">{userDetails?.user?.role}</Badge>
+                </div>
+            </SheetTitle>
+            <SheetDescription className="text-xs">
+                Vision 360° de l&apos;utilisateur : sessions, finances et activités.
+            </SheetDescription>
+          </SheetHeader>
+
+          {isDetailsLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+                <p className="text-xs text-muted-foreground italic">Chargement du profil...</p>
+            </div>
+          ) : (
+            <Tabs defaultValue="overview" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3 h-9 bg-muted/50 p-1">
+                    <TabsTrigger value="overview" className="text-[10px] font-bold">Overview</TabsTrigger>
+                    <TabsTrigger value="credits" className="text-[10px] font-bold">Portefeuille</TabsTrigger>
+                    <TabsTrigger value="activity" className="text-[10px] font-bold">Logs</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="space-y-6">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Card className="bg-muted/10 border-none shadow-none">
+                            <CardContent className="p-3">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Crédits Dispo</p>
+                                <p className="text-lg font-bold flex items-center gap-1"><Zap className="h-4 w-4 text-amber-500" /> {userDetails?.user?.message_limit}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="bg-muted/10 border-none shadow-none">
+                            <CardContent className="p-3">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Messages Envoyés</p>
+                                <p className="text-lg font-bold flex items-center gap-1"><Smartphone className="h-4 w-4 text-primary" /> {userDetails?.user?.message_used}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="space-y-3">
+                        <h4 className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
+                            <Smartphone className="h-3 w-3" /> Sessions Connectées ({userDetails?.sessions?.length || 0})
+                        </h4>
+                        <div className="space-y-2">
+                            {userDetails?.sessions?.map((s: any) => (
+                                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold truncate">{s.id}</p>
+                                        <p className="text-[10px] text-muted-foreground">{s.status}</p>
+                                    </div>
+                                    <Badge className={cn("text-[9px]", s.status === 'CONNECTED' ? "bg-green-500/10 text-green-600 border-none" : "bg-muted text-muted-foreground border-none")}>
+                                        {s.status === 'CONNECTED' ? 'Live' : 'Off'}
+                                    </Badge>
+                                </div>
+                            ))}
+                            {(!userDetails?.sessions || userDetails.sessions.length === 0) && (
+                                <p className="text-xs text-muted-foreground italic text-center py-4 bg-muted/5 rounded-lg border-2 border-dashed">Aucune session active.</p>
+                            )}
+                        </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="credits" className="space-y-6">
+                    <Card className="border-primary/20 bg-primary/5">
+                        <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-xs font-bold">Ajustement Manuel</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0 space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px]">Montant</Label>
+                                    <Input
+                                        type="number"
+                                        className="h-8"
+                                        value={creditForm.amount}
+                                        onChange={e => setCreditForm({...creditForm, amount: parseInt(e.target.value)})}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px]">Type d&apos;opération</Label>
+                                    <Select
+                                        value={creditForm.type}
+                                        onValueChange={v => setCreditForm({...creditForm, type: v})}
+                                    >
+                                        <SelectTrigger className="h-8 text-[11px]"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="bonus">Bonus (Offert)</SelectItem>
+                                            <SelectItem value="purchase">Achat manuel</SelectItem>
+                                            <SelectItem value="credit">Remboursement</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px]">Description (visible par l&apos;utilisateur)</Label>
+                                <Input
+                                    className="h-8"
+                                    placeholder="Ex: Geste commercial..."
+                                    value={creditForm.description}
+                                    onChange={e => setCreditForm({...creditForm, description: e.target.value})}
+                                />
+                            </div>
+                            <Button size="sm" className="w-full h-8 text-[11px] font-bold" onClick={handleAdjustCredits} disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="h-3 w-3 animate-spin mr-2" />}
+                                Valider l&apos;ajustement
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <div className="space-y-3">
+                        <h4 className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
+                            <History className="h-3 w-3" /> Historique Financier
+                        </h4>
+                        <div className="border rounded-lg overflow-hidden">
+                            <Table>
+                                <TableBody>
+                                    {userDetails?.credits?.map((c: any) => (
+                                        <TableRow key={c.id} className="hover:bg-muted/30">
+                                            <TableCell className="p-3">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-bold">{c.description}</span>
+                                                    <span className="text-[9px] text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="p-3 text-right">
+                                                <span className={cn("text-xs font-bold", c.type === 'debit' ? "text-red-500" : "text-green-500")}>
+                                                    {c.type === 'debit' ? '-' : '+'}{c.amount}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="activity" className="space-y-4">
+                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
+                        <History className="h-3 w-3" /> Dernières Activités
+                    </h4>
+                    <div className="space-y-2">
+                        {userDetails?.logs?.map((l: any, i: number) => (
+                            <div key={i} className="p-3 rounded-lg border bg-muted/5 flex items-start gap-3">
+                                <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", l.status === 'success' ? "bg-green-500" : "bg-red-500")} />
+                                <div className="min-w-0">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider">{l.action}</p>
+                                    <p className="text-[10px] text-muted-foreground truncate">{JSON.stringify(l.details)}</p>
+                                    <p className="text-[9px] text-muted-foreground/60 mt-1">{new Date(l.timestamp).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </TabsContent>
+            </Tabs>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">

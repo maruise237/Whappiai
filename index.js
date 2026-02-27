@@ -39,6 +39,7 @@ const response = require('./src/utils/response');
 const whatsappService = require('./src/services/whatsapp');
 const engagementService = require('./src/services/engagement');
 const userRoutes = require('./src/routes/users');
+const adminRoutes = require('./src/routes/admin');
 const webhookRoutes = require('./src/routes/webhooks');
 const paymentRoutes = require('./src/routes/payments');
 const subscriptionRoutes = require('./src/routes/subscriptions');
@@ -550,6 +551,7 @@ const apiRouter = initializeApi(
 // Mount routes
 app.use('/webhooks', webhookRoutes);
 app.use('/admin/users', userRoutes);
+app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/subscriptions', subscriptionRoutes);
 app.use('/api/v1/credits', creditRoutes);

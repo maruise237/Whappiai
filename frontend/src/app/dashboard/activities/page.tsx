@@ -25,16 +25,21 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 export default function ActivitiesPage() {
   const { getToken } = useAuth()
+  const { user } = useUser()
   const [activities, setActivities] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [userFilter, setUserFilter] = React.useState("all")
+
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const fetchActivities = React.useCallback(async () => {
     setLoading(true)
@@ -53,11 +58,18 @@ export default function ActivitiesPage() {
     fetchActivities()
   }, [fetchActivities])
 
-  const filtered = activities.filter(a =>
-    a.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (a.details || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (a.resource_id || "").toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filtered = activities.filter(a => {
+    const matchesSearch = a.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (a.details || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (a.resource_id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (a.user_email || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesUser = userFilter === 'all' || a.user_email === userFilter;
+
+    return matchesSearch && matchesUser;
+  })
+
+  const uniqueUsers = Array.from(new Set(activities.map(a => a.user_email))).filter(Boolean)
 
   const getActionIcon = (action: string) => {
     if (action.includes('send')) return <MessageSquare className="h-3 w-3" />
@@ -81,17 +93,32 @@ export default function ActivitiesPage() {
         </Button>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="relative flex-1 w-full max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Rechercher une action ou une ressource..."
+            placeholder="Rechercher une action, ressource ou utilisateur..."
             className="pl-8 h-9 text-xs bg-muted/20 border-none"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
+
+        {isAdmin && (
+            <Select value={userFilter} onValueChange={setUserFilter}>
+                <SelectTrigger className="w-full sm:w-[200px] h-9 text-xs bg-muted/20 border-none">
+                    <SelectValue placeholder="Filtrer par utilisateur" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Tous les utilisateurs</SelectItem>
+                    {uniqueUsers.map(u => (
+                        <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        )}
+
+        <div className="flex items-center gap-2 shrink-0">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
@@ -104,7 +131,8 @@ export default function ActivitiesPage() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-muted/30">
-              <TableHead className="text-[10px] font-semibold text-muted-foreground w-[180px]">Date & Heure</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground w-[160px]">Date & Heure</TableHead>
+              {isAdmin && <TableHead className="text-[10px] font-semibold text-muted-foreground">Utilisateur</TableHead>}
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Action</TableHead>
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Ressource</TableHead>
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Détails</TableHead>
@@ -131,10 +159,15 @@ export default function ActivitiesPage() {
                     <div className="flex items-center gap-2">
                       <Clock className="h-3 w-3 opacity-40" />
                       {new Date(activity.created_at).toLocaleString('fr-FR', {
-                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
+                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
                       })}
                     </div>
                   </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                        <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[120px]">{activity.user_email || 'System'}</p>
+                    </TableCell>
+                  )}
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">

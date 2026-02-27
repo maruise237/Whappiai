@@ -562,6 +562,9 @@ class AIService {
     static async callAI(user, userMessage, systemPrompt = null, history = []) {
         let { id: sessionId, ai_endpoint, ai_key, ai_model, ai_prompt, ai_temperature, ai_max_tokens, ai_constraints } = user;
 
+        // Identify valid session key (not placeholder)
+        const hasValidSessionKey = ai_key && ai_key !== 'YOUR_API_KEY_HERE' && ai_key.trim() !== '';
+
         // RAG: Search knowledge base
         const knowledge = KnowledgeService.search(sessionId, userMessage);
         let ragContext = "";
@@ -593,17 +596,31 @@ class AIService {
                 ai_max_tokens = ai_max_tokens ?? globalModel.max_tokens;
             }
         }
+        // If no model is set, try to get the global default model
+        else {
+            globalModel = AIModel.getDefault();
+        }
+
+        if (globalModel && globalModel.is_active) {
+            log(`Utilisation du modèle global: ${globalModel.name}`, user.id, { modelId: globalModel.id }, 'DEBUG');
+            resolvedEndpoint = ai_endpoint || globalModel.endpoint;
+            // Priority: Session key (if valid) > Global model key
+            resolvedKey = hasValidSessionKey ? ai_key : globalModel.api_key;
+            resolvedModelName = globalModel.model_name;
+            resolvedTemp = ai_temperature ?? globalModel.temperature;
+            resolvedMaxTokens = ai_max_tokens ?? globalModel.max_tokens;
+        }
 
         // Default to DeepSeek if not configured, as per specs "DeepSeek (Gratuit)"
-        let finalEndpoint = ai_endpoint || 'https://api.deepseek.com/v1/chat/completions';
-        let finalKey = ai_key || process.env.DEEPSEEK_API_KEY;
-        let finalModel = ai_model || 'deepseek-chat';
-        let finalTemperature = ai_temperature ?? 0.7;
-        let finalMaxTokens = ai_max_tokens ?? 1000;
+        let finalEndpoint = resolvedEndpoint || 'https://api.deepseek.com/v1/chat/completions';
+        let finalKey = (resolvedKey && resolvedKey !== 'YOUR_API_KEY_HERE') ? resolvedKey : process.env.DEEPSEEK_API_KEY;
+        let finalModel = resolvedModelName || 'deepseek-chat';
+        let finalTemperature = resolvedTemp ?? 0.7;
+        let finalMaxTokens = resolvedMaxTokens ?? 1000;
 
-        if (!finalKey) {
-            log('ATTENTION: Clé API IA manquante', user.id, { event: 'ai-config-missing-key' }, 'WARN');
-            return "Désolé, mon service d'IA n'est pas encore configuré correctement.";
+        if (!finalKey || finalKey === 'YOUR_API_KEY_HERE') {
+            log('ATTENTION: Clé API IA manquante ou non configurée', user.id, { event: 'ai-config-missing-key' }, 'WARN');
+            return "Désolé, mon service d'IA n'est pas encore configuré par l'administrateur.";
         }
 
         // Auto-fix common endpoint issues (e.g. missing /v1/chat/completions)
