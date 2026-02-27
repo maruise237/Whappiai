@@ -222,7 +222,7 @@ export default function InboxPage() {
   if (!isLoaded) return null
 
   return (
-    <div className="h-[calc(100vh-7.5rem)] flex flex-col gap-4">
+    <div className="h-[calc(100vh-8.5rem)] sm:h-[calc(100vh-7.5rem)] flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-0.5">
           <h1 className="text-lg font-bold flex items-center gap-2">
@@ -235,9 +235,9 @@ export default function InboxPage() {
             <Bot className="h-3 w-3" /> {t("inbox.human_takeover")}
           </Badge>
 
-          <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-md border">
+          <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-md border w-full sm:w-auto justify-between sm:justify-start">
             <Select value={selectedSession} onValueChange={v => { setSelectedSession(v); setSelectedChat(null); setHistory([]); }}>
-               <SelectTrigger className="w-[120px] h-7 text-[10px] bg-transparent border-none shadow-none focus:ring-0">
+               <SelectTrigger className="w-full sm:w-[120px] h-7 text-[10px] bg-transparent border-none shadow-none focus:ring-0">
                   <SelectValue placeholder="Session" />
                </SelectTrigger>
                <SelectContent>

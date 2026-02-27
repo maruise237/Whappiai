@@ -130,18 +130,19 @@ export default function ActivitiesPage() {
         </div>
       </div>
 
-      <Card className="border-none shadow-none bg-muted/10">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-muted/30">
-              <TableHead className="text-[10px] font-semibold text-muted-foreground w-[160px]">Date & Heure</TableHead>
-              {isAdmin && <TableHead className="text-[10px] font-semibold text-muted-foreground">Utilisateur</TableHead>}
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Action</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Ressource</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Détails</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Statut</TableHead>
-            </TableRow>
-          </TableHeader>
+      <Card className="border-none shadow-none bg-muted/10 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-muted/30">
+                <TableHead className="text-[10px] font-semibold text-muted-foreground w-[160px]">Date & Heure</TableHead>
+                {isAdmin && <TableHead className="text-[10px] font-semibold text-muted-foreground hidden sm:table-cell">Utilisateur</TableHead>}
+                <TableHead className="text-[10px] font-semibold text-muted-foreground">Action</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground hidden lg:table-cell">Ressource</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground hidden md:table-cell">Détails</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Statut</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
@@ -170,24 +171,29 @@ export default function ActivitiesPage() {
                     </div>
                   </TableCell>
                   {isAdmin && (
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                         <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[120px]">{activity.user_email || 'System'}</p>
                     </TableCell>
                   )}
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
+                      <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
                         {getActionIcon(activity.action || "")}
                       </div>
-                      <span className="text-xs font-semibold capitalize">{(activity.action || "action").replace(/_/g, ' ')}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 min-w-0">
+                        <span className="text-xs font-semibold capitalize truncate">{(activity.action || "action").replace(/_/g, ' ')}</span>
+                        <Badge variant="outline" className="text-[8px] sm:hidden w-fit px-1 h-3.5 opacity-60">
+                           {activity.resource_id || 'sys'}
+                        </Badge>
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <Badge variant="outline" className="text-[10px] font-mono border-muted/50 text-muted-foreground group-hover:border-primary/30 group-hover:text-primary transition-colors">
                       {activity.resource_id || 'system'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-[300px]">
+                  <TableCell className="max-w-[300px] hidden md:table-cell">
                     <p className="text-[11px] text-muted-foreground truncate">
                         {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
                     </p>
@@ -207,6 +213,7 @@ export default function ActivitiesPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   )

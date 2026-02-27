@@ -133,7 +133,7 @@ function AIConfigContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">
         {/* Sidebar Nav */}
-        <nav className="space-y-1 sticky top-24">
+        <nav className="flex flex-row lg:flex-col gap-1 sticky top-14 lg:top-24 bg-background/95 backdrop-blur z-10 py-2 lg:py-0 overflow-x-auto no-scrollbar border-b lg:border-none">
           {sections.map(section => (
             <button
               key={section.id}
@@ -142,7 +142,7 @@ function AIConfigContent() {
                 document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
               }}
               data-active={activeSection === section.id}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:font-medium transition-colors"
+              className="flex-none lg:w-full flex items-center gap-2 px-3 py-2 text-xs lg:text-sm rounded-md hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:font-medium transition-colors whitespace-nowrap"
             >
               <section.icon className="h-4 w-4" />
               {section.name}

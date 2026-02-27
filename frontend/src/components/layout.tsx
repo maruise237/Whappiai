@@ -266,8 +266,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8 animate-in fade-in duration-500">
               <ErrorBoundary>
                 {children}
               </ErrorBoundary>

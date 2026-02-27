@@ -184,7 +184,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Grid 4 cols Stats */}
-      <div id="performance-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="performance-charts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {isAdmin ? (
             <>
                 <StatCard label="Utilisateurs" value={adminStats?.users?.total || 0} subtext={`${adminStats?.users?.active || 0} actifs`} />
@@ -204,9 +204,9 @@ export default function DashboardPage() {
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
-         <div className="flex items-center gap-4">
+         <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
             <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
-               <SelectTrigger className="w-[180px] h-9 text-xs bg-muted/50 border-none">
+               <SelectTrigger className="w-full sm:w-[180px] h-9 text-xs bg-muted/50 border-none">
                   <SelectValue placeholder="Choisir une session" />
                </SelectTrigger>
                <SelectContent>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                </Badge>
             )}
          </div>
-         <Button id="new-session-btn" size="sm" onClick={() => setIsCreateOpen(true)} className="rounded-full h-9">
+         <Button id="new-session-btn" size="sm" onClick={() => setIsCreateOpen(true)} className="rounded-full h-9 w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" /> New Session
          </Button>
       </div>
@@ -302,10 +302,10 @@ export default function DashboardPage() {
             </Card>
 
             <Tabs defaultValue="direct" className="space-y-4">
-               <TabsList className="bg-muted/50 p-1 rounded-lg h-9 gap-1 w-full sm:w-auto">
-                  <TabsTrigger value="direct" className="text-[11px] font-semibold px-6">Direct Message</TabsTrigger>
-                  <TabsTrigger value="history" className="text-[11px] font-semibold px-6">History</TabsTrigger>
-                  {isAdmin && <TabsTrigger value="logs" className="text-[11px] font-semibold px-6">System Logs</TabsTrigger>}
+               <TabsList className="bg-muted/50 p-1 rounded-lg h-auto sm:h-9 flex flex-wrap sm:flex-nowrap gap-1 w-full sm:w-auto">
+                  <TabsTrigger value="direct" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">Direct Message</TabsTrigger>
+                  <TabsTrigger value="history" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">History</TabsTrigger>
+                  {isAdmin && <TabsTrigger value="logs" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">System Logs</TabsTrigger>}
                </TabsList>
 
                <TabsContent value="direct" className="animate-in fade-in duration-300">
@@ -313,7 +313,8 @@ export default function DashboardPage() {
                </TabsContent>
 
                <TabsContent value="history" className="space-y-4">
-                  <Card>
+                  <Card className="overflow-hidden">
+                    <div className="overflow-x-auto">
                      <Table>
                         <TableHeader>
                            <TableRow className="hover:bg-transparent border-muted/30">
@@ -349,6 +350,7 @@ export default function DashboardPage() {
                            )}
                         </TableBody>
                      </Table>
+                    </div>
                   </Card>
                </TabsContent>
 

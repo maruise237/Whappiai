@@ -210,18 +210,19 @@ export default function AiModelsPage() {
         </Card>
       </div>
 
-      <Card className="border-none shadow-none bg-muted/10">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-muted/30">
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Modèle</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Provider / API</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground">Code Technique</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground text-center">Usage (Sent/Recv)</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground text-center">Par Défaut</TableHead>
-              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+      <Card className="border-none shadow-none bg-muted/10 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-muted/30">
+                <TableHead className="text-[10px] font-semibold text-muted-foreground">Modèle</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground hidden sm:table-cell">Provider / API</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground hidden lg:table-cell">Code Technique</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground text-center hidden md:table-cell">Usage (Sent/Recv)</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground text-center">Par Défaut</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => (
@@ -246,15 +247,15 @@ export default function AiModelsPage() {
                       <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[150px]">{m.endpoint || m.api_endpoint}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <Badge variant="secondary" className="text-[9px] font-semibold bg-background border">
                       {m.provider || 'OpenAI API'}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">{m.model_name}</code>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center hidden md:table-cell">
                     <div className="flex flex-col items-center">
                         <span className="text-[10px] font-bold">{usage?.sent || 0} / {usage?.received || 0}</span>
                         <span className="text-[8px] text-muted-foreground uppercase">Messages</span>
@@ -278,6 +279,7 @@ export default function AiModelsPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -287,7 +289,7 @@ export default function AiModelsPage() {
             <DialogDescription className="text-xs">Configurez une nouvelle API compatible OpenAI pour vos bots.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
              <div className="space-y-1.5 col-span-2">
                 <Label className="text-[10px] font-semibold text-muted-foreground">Nom d&apos;affichage</Label>
                 <Input
@@ -337,9 +339,9 @@ export default function AiModelsPage() {
              </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setIsAddOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={handleSubmit}>Sauvegarder le Moteur</Button>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setIsAddOpen(false)} className="w-full sm:w-auto">Annuler</Button>
+            <Button size="sm" onClick={handleSubmit} className="w-full sm:w-auto">Sauvegarder le Moteur</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
