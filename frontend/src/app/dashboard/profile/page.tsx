@@ -47,7 +47,8 @@ export default function ProfilePage() {
   if (!isLoaded) return null
 
   const userEmail = user?.primaryEmailAddress?.emailAddress
-  const userRole = (user?.publicMetadata?.role as string) || "Utilisateur"
+  const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
+  const userRole = isAdmin ? "Administrateur" : ((user?.publicMetadata?.role as string) || "Utilisateur")
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
