@@ -54,6 +54,17 @@ import {
   TableRow
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts'
 import { useWebSocket } from "@/providers/websocket-provider"
 import { useUser, useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
@@ -82,8 +93,12 @@ export default function DashboardPage() {
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
   const [summary, setSummary] = React.useState({ totalActivities: 0, successRate: 0, activeSessions: 0, messagesSent: 0 })
+  const [adminStats, setAdminStats] = React.useState<any>(null)
   const [credits, setCredits] = React.useState<any>(null)
   const [recentActivities, setRecentActivities] = React.useState<any[]>([])
+  const [analyticsData, setAnalyticsData] = React.useState<any[]>([])
+
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
@@ -106,17 +121,34 @@ export default function DashboardPage() {
   const fetchSummary = React.useCallback(async () => {
     try {
       const token = await getToken()
-      const summ = await api.activities.summary(7, token || undefined)
+
+      if (isAdmin) {
+        const [stats, analytics] = await Promise.all([
+            api.admin.getStats(7, token || undefined),
+            api.activities.analytics(7, token || undefined)
+        ])
+        setAdminStats(stats)
+        setAnalyticsData(analytics || [])
+        setSummary({
+            totalActivities: stats.overview.activities,
+            successRate: stats.overview.successRate,
+            messagesSent: stats.overview.messagesSent,
+            activeSessions: stats.sessions.connected
+        })
+      } else {
+        const summ = await api.activities.summary(7, token || undefined)
+        setSummary({
+          totalActivities: summ?.totalActivities || 0,
+          successRate: summ?.successRate || 0,
+          messagesSent: summ?.byAction?.send_message || 0,
+          activeSessions: sessions.filter(s => s.isConnected).length
+        })
+      }
+
       const logs = await api.activities.list(5, 0, token || undefined)
-      setSummary({
-        totalActivities: summ?.totalActivities || 0,
-        successRate: summ?.successRate || 0,
-        messagesSent: summ?.byAction?.send_message || 0,
-        activeSessions: sessions.filter(s => s.isConnected).length
-      })
       setRecentActivities(logs || [])
     } catch (e) {}
-  }, [getToken, sessions])
+  }, [getToken, sessions, isAdmin])
 
   const fetchCredits = React.useCallback(async () => {
     try {
@@ -152,10 +184,21 @@ export default function DashboardPage() {
 
       {/* Grid 4 cols Stats */}
       <div id="performance-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Sessions" value={sessions.length} subtext={`${summary.activeSessions} actives`} />
-        <StatCard label="Taux de Succès" value={`${summary.successRate}%`} subtext="Derniers 7 jours" />
-        <StatCard label="Messages Envoyés" value={summary.messagesSent} subtext="Total cumulé" />
-        <StatCard label="Activités" value={summary.totalActivities} subtext="Dernières 24h" />
+        {isAdmin ? (
+            <>
+                <StatCard label="Utilisateurs" value={adminStats?.users?.total || 0} subtext={`${adminStats?.users?.active || 0} actifs`} />
+                <StatCard label="Sessions Globales" value={adminStats?.sessions?.total || 0} subtext={`${adminStats?.sessions?.connected || 0} connectées`} />
+                <StatCard label="Messages Plateforme" value={adminStats?.overview?.messagesSent || 0} subtext="Total envoyé" />
+                <StatCard label="Consommation Crédits" value={adminStats?.credits?.deducted || 0} subtext="Volume global" />
+            </>
+        ) : (
+            <>
+                <StatCard label="Sessions" value={sessions.length} subtext={`${summary.activeSessions} actives`} />
+                <StatCard label="Taux de Succès" value={`${summary.successRate}%`} subtext="Derniers 7 jours" />
+                <StatCard label="Messages Envoyés" value={summary.messagesSent} subtext="Total cumulé" />
+                <StatCard label="Activités" value={summary.totalActivities} subtext="Dernières 24h" />
+            </>
+        )}
       </div>
 
       {/* Toolbar */}
@@ -188,6 +231,54 @@ export default function DashboardPage() {
       {/* Grid 12 cols Content */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
          <div className="lg:col-span-8 space-y-8">
+            {isAdmin && (
+                <Card className="border-none shadow-none bg-muted/10">
+                    <CardHeader className="p-4 pb-2">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                    <TrendingUp className="h-4 w-4 text-primary" /> Performance Plateforme
+                                </CardTitle>
+                                <CardDescription className="text-[10px]">Volume de messages et activité IA des 7 derniers jours.</CardDescription>
+                            </div>
+                            <Badge variant="secondary" className="text-[9px] font-bold bg-background">7 JOURS</Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                        <div className="h-[200px] w-full mt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={analyticsData}>
+                                    <defs>
+                                        <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#25D366" stopOpacity={0.1}/>
+                                            <stop offset="95%" stopColor="#25D366" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888888" strokeOpacity={0.1} />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{fontSize: 9, fill: '#888888'}}
+                                        dy={10}
+                                        tickFormatter={(str) => {
+                                            const date = new Date(str);
+                                            return date.toLocaleDateString('fr-FR', { weekday: 'short' });
+                                        }}
+                                    />
+                                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#888888'}} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }}
+                                    />
+                                    <Area type="monotone" dataKey="messages" name="Messages" stroke="#25D366" strokeWidth={2} fillOpacity={1} fill="url(#colorMessages)" />
+                                    <Area type="monotone" dataKey="credits" name="Crédits" stroke="#f59e0b" strokeWidth={2} fillOpacity={0} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             <Card id="active-session-card" className="border-none shadow-none bg-muted/10">
                <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-4">

@@ -60,12 +60,17 @@ export default function AiModelsPage() {
     is_default: false
   })
 
+  const [adminStats, setAdminStats] = React.useState<any>(null)
   const fetchModels = React.useCallback(async () => {
     setLoading(true)
     try {
       const token = await getToken()
-      const data = await api.ai.admin.list(token || undefined)
-      setModels(data || [])
+      const [modelsData, statsData] = await Promise.all([
+        api.ai.admin.list(token || undefined),
+        api.admin.getStats(7, token || undefined)
+      ])
+      setModels(modelsData || [])
+      setAdminStats(statsData)
     } catch (e) {
       toast.error("Erreur de chargement des moteurs IA")
     } finally {
@@ -166,7 +171,7 @@ export default function AiModelsPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-none shadow-none bg-primary/5">
           <CardContent className="p-4 flex items-center gap-3">
              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Zap className="h-4 w-4" /></div>
@@ -180,8 +185,26 @@ export default function AiModelsPage() {
           <CardContent className="p-4 flex items-center gap-3">
              <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"><Star className="h-4 w-4" /></div>
              <div>
-                <p className="text-[10px] font-semibold text-muted-foreground">Modèles Disponibles</p>
+                <p className="text-[10px] font-semibold text-muted-foreground">Modèles Configurés</p>
                 <p className="text-sm font-bold">{models.length}</p>
+             </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-none bg-green-500/5">
+          <CardContent className="p-4 flex items-center gap-3">
+             <div className="h-9 w-9 rounded-full bg-green-500/10 flex items-center justify-center text-green-600"><CheckCircle2 className="h-4 w-4" /></div>
+             <div>
+                <p className="text-[10px] font-semibold text-muted-foreground">Messages IA Envoyés</p>
+                <p className="text-sm font-bold">{adminStats?.overview?.messagesSent || 0}</p>
+             </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-none bg-amber-500/5">
+          <CardContent className="p-4 flex items-center gap-3">
+             <div className="h-9 w-9 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600"><TrendingUp className="h-4 w-4" /></div>
+             <div>
+                <p className="text-[10px] font-semibold text-muted-foreground">Taux de Succès Global</p>
+                <p className="text-sm font-bold">{adminStats?.overview?.successRate || 0}%</p>
              </div>
           </CardContent>
         </Card>
@@ -194,6 +217,7 @@ export default function AiModelsPage() {
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Modèle</TableHead>
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Provider / API</TableHead>
               <TableHead className="text-[10px] font-semibold text-muted-foreground">Code Technique</TableHead>
+              <TableHead className="text-[10px] font-semibold text-muted-foreground text-center">Usage (Sent/Recv)</TableHead>
               <TableHead className="text-[10px] font-semibold text-muted-foreground text-center">Par Défaut</TableHead>
               <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Actions</TableHead>
             </TableRow>
@@ -212,7 +236,9 @@ export default function AiModelsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              models.map((m) => (
+              models.map((m) => {
+                const usage = adminStats?.ai?.find((s: any) => s.model === m.id || s.model === m.model_name);
+                return (
                 <TableRow key={m.id} className="border-muted/20 group">
                   <TableCell>
                     <div className="flex flex-col">
@@ -229,6 +255,12 @@ export default function AiModelsPage() {
                     <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">{m.model_name}</code>
                   </TableCell>
                   <TableCell className="text-center">
+                    <div className="flex flex-col items-center">
+                        <span className="text-[10px] font-bold">{usage?.sent || 0} / {usage?.received || 0}</span>
+                        <span className="text-[8px] text-muted-foreground uppercase">Messages</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
                     {m.is_default ? (
                       <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-none text-[9px]">DÉFAUT</Badge>
                     ) : (
@@ -242,7 +274,8 @@ export default function AiModelsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+                </TableRow>
+              )})
             )}
           </TableBody>
         </Table>
