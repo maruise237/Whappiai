@@ -14,7 +14,7 @@ router.get('/callback', async (req, res) => {
     try {
         await CalService.exchangeCode(code, userId);
         // Redirect back to frontend
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3005';
+        const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3005';
         res.redirect(`${frontendUrl}/dashboard/ai?cal=success`);
     } catch (error) {
         log(`OAuth Callback error: ${error.message}`, 'SYSTEM', null, 'ERROR');

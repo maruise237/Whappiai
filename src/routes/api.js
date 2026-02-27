@@ -657,8 +657,12 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/cal/status', checkSessionOrTokenAuth, async (req, res) => {
         try {
             const CalService = require('../services/CalService');
-            const user = await User.findById(req.currentUser.id);
-            const isConnected = !!(user && user.cal_access_token);
+            const user = User.findById(req.currentUser.id);
+            if (!user) {
+                return res.json({ status: 'success', data: { isConnected: false, ai_cal_enabled: false, ai_cal_video_allowed: false, eventTypes: [] } });
+            }
+
+            const isConnected = !!(user.cal_access_token);
 
             let eventTypes = [];
             if (isConnected) {
@@ -669,20 +673,25 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 status: 'success',
                 data: {
                     isConnected,
-                    ai_cal_enabled: !!user.ai_cal_enabled,
-                    ai_cal_video_allowed: !!user.ai_cal_video_allowed,
-                    eventTypes
+                    ai_cal_enabled: !!(user.ai_cal_enabled),
+                    ai_cal_video_allowed: !!(user.ai_cal_video_allowed),
+                    eventTypes: Array.isArray(eventTypes) ? eventTypes : []
                 }
             });
         } catch (error) {
+            log(`Cal status error: ${error.message}`, 'SYSTEM', { stack: error.stack }, 'ERROR');
             res.status(500).json({ status: 'error', message: error.message });
         }
     });
 
     router.get('/cal/auth', checkSessionOrTokenAuth, (req, res) => {
-        const CalService = require('../services/CalService');
-        const authUrl = CalService.getAuthUrl(req.currentUser.id);
-        res.json({ status: 'success', data: { authUrl } });
+        try {
+            const CalService = require('../services/CalService');
+            const authUrl = CalService.getAuthUrl(req.currentUser.id);
+            res.json({ status: 'success', data: { authUrl } });
+        } catch (error) {
+            res.status(400).json({ status: 'error', message: error.message });
+        }
     });
 
     router.post('/cal/settings', checkSessionOrTokenAuth, async (req, res) => {

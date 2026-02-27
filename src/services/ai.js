@@ -476,13 +476,13 @@ class AIService {
                 if (checkMatch) {
                     const date = checkMatch[1];
                     const eventTypes = await CalService.getEventTypes(user.id);
-                    if (eventTypes.length > 0) {
+                    if (Array.isArray(eventTypes) && eventTypes.length > 0) {
                         const eventTypeId = eventTypes[0].id; // Use first event type as default
                         const startTime = `${date}T00:00:00Z`;
                         const endTime = `${date}T23:59:59Z`;
                         const slots = await CalService.getAvailability(user.id, eventTypeId, startTime, endTime);
 
-                        let slotsText = slots.length > 0
+                        let slotsText = (slots && slots.length > 0)
                             ? `Voici les disponibilités pour le ${date} :\n` + slots.slice(0, 5).map(s => `- ${new Date(s.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`).join('\n')
                             : `Désolé, aucune disponibilité pour le ${date}.`;
 
@@ -495,7 +495,7 @@ class AIService {
                 if (bookMatch) {
                     const [_, dateTime, name, email, notes] = bookMatch;
                     const eventTypes = await CalService.getEventTypes(user.id);
-                    if (eventTypes.length > 0) {
+                    if (Array.isArray(eventTypes) && eventTypes.length > 0) {
                         try {
                             const startTime = new Date(dateTime).toISOString();
                             const booking = await CalService.createBooking(user.id, {
@@ -503,11 +503,11 @@ class AIService {
                                 start: startTime,
                                 name: name.trim(),
                                 email: email.trim(),
-                                notes: notes.trim()
+                                notes: (notes || "").trim()
                             });
 
                             let confirmationText = `✅ Rendez-vous confirmé pour le ${new Date(startTime).toLocaleString()} !`;
-                            if (booking.videoCallUrl) {
+                            if (booking && booking.videoCallUrl) {
                                 confirmationText += `\nLien vidéo : ${booking.videoCallUrl}`;
                             }
 
@@ -573,29 +573,27 @@ class AIService {
             log(`RAG: ${knowledge.length} extraits trouvés pour la réponse.`, sessionId, { query: userMessage }, 'DEBUG');
         }
         
-        let resolvedEndpoint = ai_endpoint;
-        let resolvedKey = ai_key;
-        let resolvedModelName = ai_model;
-        let resolvedTemp = ai_temperature;
-        let resolvedMaxTokens = ai_max_tokens;
-
-        let globalModel = null;
-        // If ai_model looks like a model ID (UUID), use the global model configuration
-        if (ai_model && ai_model.length > 30) {
-            globalModel = AIModel.findById(ai_model);
+        // If no model is set, try to get the global default model
+        if (!ai_model) {
+            const defaultModel = AIModel.getDefault();
+            if (defaultModel) {
+                ai_endpoint = defaultModel.endpoint;
+                ai_key = defaultModel.api_key;
+                ai_model = defaultModel.model_name;
+                ai_temperature = ai_temperature ?? defaultModel.temperature;
+                ai_max_tokens = ai_max_tokens ?? defaultModel.max_tokens;
+            }
         }
-        // If it's a model name, try to find it in active global models
-        else if (ai_model) {
-            globalModel = db.prepare('SELECT * FROM ai_models WHERE (model_name = ? OR name = ?) AND is_active = 1 LIMIT 1').get(ai_model, ai_model);
-
-            // Handle key decryption if found via raw query
-            if (globalModel && globalModel.api_key && globalModel.api_key.includes(':')) {
-                const { decrypt } = require('../utils/crypto');
-                try {
-                    globalModel.api_key = decrypt(globalModel.api_key, process.env.TOKEN_ENCRYPTION_KEY);
-                } catch (e) {
-                    log(`Failed to decrypt API key for model ${globalModel.id}`, 'SECURITY', { error: e.message }, 'ERROR');
-                }
+        // If ai_model && ai_model looks like a model ID (UUID), use the global model configuration
+        else if (ai_model && ai_model.length > 30) {
+            const globalModel = AIModel.findById(ai_model);
+            if (globalModel && globalModel.is_active) {
+                log(`Utilisation du modèle global: ${globalModel.name}`, user.id, { modelId: ai_model }, 'DEBUG');
+                ai_endpoint = globalModel.endpoint;
+                ai_key = globalModel.api_key;
+                ai_model = globalModel.model_name;
+                ai_temperature = ai_temperature ?? globalModel.temperature;
+                ai_max_tokens = ai_max_tokens ?? globalModel.max_tokens;
             }
         }
         // If no model is set, try to get the global default model

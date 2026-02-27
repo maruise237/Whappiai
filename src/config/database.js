@@ -423,6 +423,20 @@ function initializeSchema() {
         });
     });
 
+    // Migration: Cal.com Integration columns (New migration to ensure they are added)
+    runner.run('users-cal-com-v1', (db) => {
+        const columns = [
+            { name: 'cal_access_token', type: 'TEXT' },
+            { name: 'cal_refresh_token', type: 'TEXT' },
+            { name: 'cal_token_expiry', type: 'INTEGER' },
+            { name: 'ai_cal_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_cal_video_allowed', type: 'INTEGER DEFAULT 0' }
+        ];
+        columns.forEach(col => {
+            try { db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+        });
+    });
+
     // WhatsApp Sessions AI and delays (Definitive Migration v6)
     runner.run('whatsapp-sessions-v2026-v6-final', (db) => {
         const columns = [
