@@ -258,8 +258,18 @@ class AIService {
 
             const remoteJid = msg.key.remoteJid;
             const isGroup = remoteJid.endsWith('@g.us');
-            const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(sock.user.id.split(':')[0] + '@s.whatsapp.net') ||
-                             messageText.includes('@' + sock.user.id.split(':')[0]);
+
+            // Comprehensive Tag Detection (JID, LID, and Name)
+            const myJid = (sock.user.id || "").split(':')[0] + '@s.whatsapp.net';
+            const myLid = sock.user.lid || sock.user.LID;
+            const myName = sock.user.name || "Bot";
+
+            const mentionedJids = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+            const isTagged = mentionedJids.includes(myJid) ||
+                             (myLid && mentionedJids.includes(myLid)) ||
+                             messageText.includes('@' + sock.user.id.split(':')[0]) ||
+                             (myLid && messageText.includes('@' + myLid.split(':')[0])) ||
+                             messageText.toLowerCase().includes('@' + myName.toLowerCase());
 
             // --- RESTRICTION GROUPE (SÉCURITÉ FINANCIÈRE) ---
             if (isGroup) {
@@ -267,9 +277,6 @@ class AIService {
                 const modService = require('./moderation');
                 try {
                     const groupMetadata = await modService.getGroupMetadata(sock, remoteJid);
-                    const myJid = (sock.user.id || "").split(':')[0] + '@s.whatsapp.net';
-                    const myLid = sock.user.lid || sock.user.LID;
-
                     const botIsAdmin = modService.isGroupAdmin(groupMetadata, myJid, myLid, sessionId);
 
                     if (!botIsAdmin) {
@@ -605,7 +612,7 @@ class AIService {
 
         // Default to DeepSeek if not configured, as per specs "DeepSeek (Gratuit)"
         let finalEndpoint = resolvedEndpoint || 'https://api.deepseek.com/v1/chat/completions';
-        let finalKey = (resolvedKey && resolvedKey !== 'YOUR_API_KEY_HERE') ? resolvedKey : process.env.DEEPSEEK_API_KEY;
+        let finalKey = (resolvedKey && resolvedKey !== 'YOUR_API_KEY_HERE' && resolvedKey.trim() !== '') ? resolvedKey : process.env.DEEPSEEK_API_KEY;
         let finalModel = resolvedModelName || 'deepseek-chat';
         let finalTemperature = resolvedTemp ?? 0.7;
         let finalMaxTokens = resolvedMaxTokens ?? 1000;
