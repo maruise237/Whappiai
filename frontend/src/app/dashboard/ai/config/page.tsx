@@ -181,7 +181,7 @@ function AIConfigContent() {
               </div>
             </div>
 
-            {config?.mode === 'keyword' && (
+            {(config?.mode === 'keyword' || config?.mode === 'bot') && (
               <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
                 <Label className="text-xs font-semibold">Mots-clés déclencheurs de l&apos;IA</Label>
                 <Input
@@ -191,7 +191,7 @@ function AIConfigContent() {
                   className="bg-card border-border"
                 />
                 <p className="text-[10px] text-muted-foreground italic">
-                  Séparez les mots par des virgules. L&apos;IA ne répondra que si l&apos;un de ces mots est présent.
+                  Séparez les mots par des virgules. Si rempli, l&apos;IA ne répondra que si l&apos;un de ces mots est présent.
                 </p>
               </div>
             )}

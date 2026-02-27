@@ -264,27 +264,25 @@ class AIService {
             // --- RESTRICTION GROUPE (SÉCURITÉ FINANCIÈRE) ---
             if (isGroup) {
                 // 1. On vérifie si on est admin du groupe
-                const moderationService = require('./moderation');
+                const modService = require('./moderation');
                 try {
-                    const groupMetadata = await moderationService.getGroupMetadata(sock, remoteJid);
-                    const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+                    const groupMetadata = await modService.getGroupMetadata(sock, remoteJid);
+                    const myJid = (sock.user.id || "").split(':')[0] + '@s.whatsapp.net';
                     const myLid = sock.user.lid || sock.user.LID;
 
-                    const botIsAdmin = moderationService.isGroupAdmin(groupMetadata, myJid, myLid, sessionId);
+                    const botIsAdmin = modService.isGroupAdmin(groupMetadata, myJid, myLid, sessionId);
 
                     if (!botIsAdmin) {
-                        log(`IA ignorée : Le bot n'est pas admin du groupe ${remoteJid}`, sessionId, { event: 'ai-skip-not-admin' }, 'DEBUG');
+                        // log(`IA ignorée : Le bot n'est pas admin du groupe ${remoteJid}`, sessionId, { event: 'ai-skip-not-admin' }, 'DEBUG');
                         return;
                     }
                 } catch (e) {
-                    log(`IA ignorée : Impossible de vérifier le statut admin pour ${remoteJid}`, sessionId, { event: 'ai-skip-meta-error' }, 'WARN');
+                    // log(`IA ignorée : Impossible de vérifier le statut admin pour ${remoteJid}`, sessionId, { event: 'ai-skip-meta-error' }, 'WARN');
                     return;
                 }
 
                 // 2. On ne répond QUE si on est tagué (ou si mode assistant forcé)
-                // Note: isGroupMode est vrai si on a déclenché l'assistant via ModerationService (questions)
                 if (!isTagged && !isGroupMode) {
-                    // log(`IA ignorée : Message de groupe sans tag pour ${remoteJid}`, sessionId, { event: 'ai-skip-no-tag' }, 'DEBUG');
                     return;
                 }
             }
@@ -385,9 +383,13 @@ class AIService {
 
                         // Improved matching: check if any keyword is present as a word or substring
                         const hasKeyword = keywords.some(k => {
-                            const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                            const regex = new RegExp(escapedK, 'i');
-                            return regex.test(textLower);
+                            try {
+                                const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                const regex = new RegExp(escapedK, 'i');
+                                return regex.test(textLower);
+                            } catch (e) {
+                                return textLower.includes(k);
+                            }
                         });
 
                         if (!hasKeyword) {
@@ -413,9 +415,10 @@ class AIService {
             }
 
             // Optional delay before processing (humanization)
+            // Note: QueueService also adds a 1-3s delay.
             if (session.ai_reply_delay && parseInt(session.ai_reply_delay) > 0) {
                 const delayMs = parseInt(session.ai_reply_delay) * 1000;
-                log(`Attente de ${session.ai_reply_delay}s avant de traiter le message (config reply_delay)`, sessionId, { event: 'ai-reply-delay', delay: delayMs }, 'INFO');
+                // log(`Attente de ${session.ai_reply_delay}s avant de traiter le message`, sessionId, { event: 'ai-reply-delay', delay: delayMs }, 'INFO');
                 await new Promise(resolve => setTimeout(resolve, delayMs));
             }
 
@@ -788,26 +791,9 @@ class AIService {
             
             log(`Envoi de la réponse automatique à ${jid} (Session: ${sessionId})`, sessionId, { event: 'ai-sending', jid }, 'INFO');
             
-            // Simulate "composing" (typing status)
-            try {
-                // Ensure we are subscribed to presence to send updates
-                await sock.presenceSubscribe(jid);
-                await sock.sendPresenceUpdate('composing', jid);
-                log(`Simulation d'écriture en cours pour ${jid} (${formattedText.length} caractères)`, sessionId, { event: 'ai-typing-start', length: formattedText.length }, 'DEBUG');
-            } catch (pError) {
-                log(`Échec de la mise à jour de présence pour ${jid}: ${pError.message}`, sessionId, { event: 'ai-presence-error', error: pError.message }, 'WARN');
-            }
-            
-            // Wait based on text length (simulating human typing speed: ~100ms per character)
-            // Min 1.5s, Max 15s to keep it realistic but not too slow for very long messages
-            const typingDelay = Math.min(Math.max(formattedText.length * 100, 1500), 15000);
-            
-            log(`Attente de simulation d'écriture : ${Math.round(typingDelay / 1000)}s pour ${formattedText.length} caractères`, sessionId, { event: 'ai-typing-delay', delayMs: typingDelay }, 'INFO');
-            
-            await new Promise(resolve => setTimeout(resolve, typingDelay));
-
+            // Note: We delegate typing simulation and human delays to QueueService to prevent blocking the worker
             const result = await QueueService.enqueue(sessionId, sock, jid, { text: formattedText }, {
-                skipTyping: false // QueueService handles typing simulation
+                skipTyping: false
             });
             
             if (result) {

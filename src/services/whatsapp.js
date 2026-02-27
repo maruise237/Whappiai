@@ -537,15 +537,18 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 log(`Erreur KeywordService: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
             }
 
-            // Call AI Handler if enabled (Personal Bot mode or Tagged in Group)
-            // Note: Group Assistant is also handled inside moderationService.handleIncomingMessage for questions
+            // Call AI Handler (Consolidated Trigger)
             try {
-                const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(sock.user.id.split(':')[0] + '@s.whatsapp.net');
-
-                if (!isGroup || isTagged) {
-                    log(`Déclenchement du gestionnaire d'IA pour la session ${sessionId}${isTagged ? ' (Tag détecté)' : ''}...`, sessionId, { event: 'ai-trigger', isTagged }, 'DEBUG');
-                    await aiService.handleIncomingMessage(sock, sessionId, msg);
+                // Determine if we should force group mode based on moderation settings
+                let forceGroupMode = false;
+                if (isGroup) {
+                    const settings = db.prepare('SELECT ai_assistant_enabled FROM group_settings WHERE group_id = ? AND session_id = ?').get(remoteJid, sessionId);
+                    if (settings?.ai_assistant_enabled) {
+                        forceGroupMode = true;
+                    }
                 }
+
+                await aiService.handleIncomingMessage(sock, sessionId, msg, forceGroupMode);
             } catch (err) {
                 log(`Erreur du gestionnaire d'IA pour la session ${sessionId}: ${err.message}`, sessionId, { event: 'ai-handler-error', error: err.message }, 'ERROR');
             }
