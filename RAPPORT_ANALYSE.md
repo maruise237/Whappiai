@@ -15,11 +15,18 @@ Le projet suit une architecture modulaire et moderne :
 - **Accès Administrateur :** Les réglages des groupes et les modèles IA globaux sont désormais strictement réservés aux administrateurs.
 - **Validation IA :** Correction du système de résolution des identifiants. Le bot utilise désormais les clés globales configurées par l'admin si l'utilisateur n'en possède pas de propre, évitant les erreurs "IA non configurée".
 - **Protection Anti-Ban :** Implémentation du `QueueService` avec des délais aléatoires (1-5s) et une simulation de frappe pour imiter un comportement humain.
+- **Chiffrement :** Les clés API sensibles sont désormais chiffrées en base de données (AES-256).
+
+### 💎 Administration SaaS 2026 (Nouveau)
+- **Dashboard Global :** Vue holistique de la plateforme avec graphiques de performance (Recharts), volume de messages et taux de succès IA global.
+- **Centre de Contrôle Utilisateurs :** Nouvelle interface de gestion permettant de voir toutes les sessions d'un utilisateur, son historique financier et ses logs sans changer de contexte.
+- **Gestion Manuelle des Crédits :** L'administrateur peut désormais ajuster les portefeuilles (bonus, achats manuels, remboursements) avec une traçabilité complète.
+- **Audit de Journalisation :** Filtrage avancé du journal d'activités par utilisateur pour une surveillance accrue.
 
 ### 🤖 Intelligence Artificielle (Engagement)
-- **Nettoyage des Modèles :** Suppression des modèles fictifs (GPT-4o, Claude) qui n'étaient pas configurés. Seuls les modèles réels présents en base de données sont affichés.
-- **Mode Groupe Strict :** Le bot ne répond désormais dans les groupes que s'il est explicitement tagué ou si le mode assistant est activé par un admin.
-- **RAG (Knowledge Base) :** Système fonctionnel permettant d'injecter des connaissances spécifiques dans les réponses du bot.
+- **Nettoyage des Modèles :** Suppression des modèles fictifs (GPT-4o, Claude). Seuls les modèles réels configurés en base sont affichés.
+- **Usage IA :** Intégration de compteurs d'usage (messages envoyés/reçus) par modèle pour le suivi des coûts.
+- **Mode Groupe Strict :** Le bot ne répond désormais en groupe que s'il est admin et tagué.
 
 ### 🛠️ Stabilité et Corrections de Bugs
 - **Page Profil :** Correction du crash au chargement (import `Switch` manquant) et activation du toggle de notifications sonores.

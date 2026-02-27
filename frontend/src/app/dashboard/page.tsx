@@ -98,7 +98,6 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = React.useState<any[]>([])
   const [analyticsData, setAnalyticsData] = React.useState<any[]>([])
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
@@ -168,7 +167,6 @@ export default function DashboardPage() {
   }, [fetchSummary])
 
   const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
 

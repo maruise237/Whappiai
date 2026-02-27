@@ -110,6 +110,21 @@ function AssistantIAPageContent() {
   const filtered = sessions.filter(s => s.sessionId.toLowerCase().includes(searchQuery.toLowerCase()))
   const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
 
+  const [adminStats, setAdminStats] = React.useState<any>(null)
+
+  const fetchAdminStats = React.useCallback(async () => {
+    if (!isAdmin) return
+    try {
+        const token = await getToken()
+        const stats = await api.admin.getStats(7, token || undefined)
+        setAdminStats(stats)
+    } catch (e) {}
+  }, [isAdmin, getToken])
+
+  React.useEffect(() => {
+    fetchAdminStats()
+  }, [fetchAdminStats])
+
   return (
     <div className="space-y-6 pb-20">
       {/* Page Header */}
@@ -193,8 +208,8 @@ function AssistantIAPageContent() {
                          <p className="text-[10px] font-semibold truncate">{modelName}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
-                         <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Retard</p>
-                         <p className="text-[10px] font-semibold">{config?.delay_min || 1}s - {config?.delay_max || 5}s</p>
+                         <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Usage IA</p>
+                         <p className="text-[10px] font-semibold">{(config?.stats?.sent || 0) + (config?.stats?.received || 0)} msg</p>
                       </div>
                    </div>
                 </CardContent>

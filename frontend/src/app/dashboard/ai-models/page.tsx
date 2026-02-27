@@ -274,7 +274,6 @@ export default function AiModelsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-                </TableRow>
               )})
             )}
           </TableBody>
