@@ -131,10 +131,10 @@ export default function DashboardPage() {
         setAdminStats(stats)
         setAnalyticsData(analytics || [])
         setSummary({
-            totalActivities: stats.overview.activities,
-            successRate: stats.overview.successRate,
-            messagesSent: stats.overview.messagesSent,
-            activeSessions: stats.sessions.connected
+            totalActivities: stats?.overview?.activities || 0,
+            successRate: stats?.overview?.successRate || 0,
+            messagesSent: stats?.overview?.messagesSent || 0,
+            activeSessions: stats?.sessions?.connected || 0
         })
       } else {
         const summ = await api.activities.summary(7, token || undefined)
@@ -348,8 +348,8 @@ export default function DashboardPage() {
                         <div className="space-y-1">
                            {recentActivities.map((log, i) => (
                               <div key={i} className="flex gap-4">
-                                 <span className="text-zinc-600">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
-                                 <span className={cn(log.status === 'success' ? "text-green-500" : "text-red-500")}>{log.action.toUpperCase()}</span>
+                                 <span className="text-zinc-600">[{new Date(log.timestamp || log.created_at).toLocaleTimeString()}]</span>
+                                 <span className={cn(log.status === 'success' ? "text-green-500" : "text-red-500")}>{(log.action || "ACTION").toUpperCase()}</span>
                                  <span>{log.details}</span>
                               </div>
                            ))}
@@ -375,8 +375,8 @@ export default function DashboardPage() {
                               <Zap className="h-3 w-3 text-muted-foreground" />
                            </div>
                            <div className="min-w-0">
-                              <p className="text-xs font-semibold truncate">{activity.action}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{activity.details}</p>
+                              <p className="text-xs font-semibold truncate">{activity.action || "Action"}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{activity.details || "-"}</p>
                            </div>
                         </div>
                      ))}
