@@ -642,9 +642,9 @@ class AIService {
         let finalTemperature = resolvedTemp ?? 0.7;
         let finalMaxTokens = resolvedMaxTokens ?? 1000;
 
-        if (!finalKey || finalKey === 'YOUR_API_KEY_HERE') {
+        if (!finalKey || finalKey === 'YOUR_API_KEY_HERE' || finalKey.trim() === '') {
             log('ATTENTION: Clé API IA manquante ou non configurée', user.id, { event: 'ai-config-missing-key' }, 'WARN');
-            return "Désolé, mon service d'IA n'est pas encore configuré par l'administrateur.";
+            return "Désolé, mon service d'IA n'est pas encore configuré correctement par l'administrateur. Veuillez vérifier la clé API du modèle par défaut.";
         }
 
         // Auto-fix common endpoint issues (e.g. missing /v1/chat/completions)
