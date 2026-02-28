@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState, useRef } from "react"
-import { ArrowLeft, Video, Phone, MoreVertical, Mic, Plus, Camera, Smile, Ban } from "lucide-react"
+import { ArrowLeft, Video, Phone, Mic, Plus, Camera, Smile, Ban } from "lucide-react"
 
 type Message = {
   id: string
@@ -64,7 +64,6 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
   const [messageIndex, setMessageIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Sync with external selection (e.g. user clicked a feature card)
   useEffect(() => {
     if (selectedIndex !== undefined && selectedIndex !== scenarioIndex) {
       setScenarioIndex(selectedIndex)
@@ -74,12 +73,10 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
     }
   }, [selectedIndex])
 
-  // Notify parent of scenario change
   useEffect(() => {
     onScenarioChange?.(scenarioIndex)
   }, [scenarioIndex, onScenarioChange])
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight
@@ -92,28 +89,25 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
     const processNextStep = () => {
       const currentScenario = SCENARIOS[scenarioIndex]
       
-      // If scenario finished
       if (messageIndex >= currentScenario.messages.length) {
         timeout = setTimeout(() => {
-          setMessages([]) // Clear chat
+          setMessages([])
           setMessageIndex(0)
-          setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length) // Next scenario loop
-        }, 3000) // Wait before clearing
+          setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length)
+        }, 3000)
         return
       }
 
       const nextMessage = currentScenario.messages[messageIndex]
 
-      // Handle message timing
       if (nextMessage.role === "assistant") {
         setIsTyping(true)
         timeout = setTimeout(() => {
           setIsTyping(false)
           setMessages((prev) => [...prev, { ...nextMessage, id: Math.random().toString() }])
           setMessageIndex((prev) => prev + 1)
-        }, 1500) // Typing delay
+        }, 1500)
       } else {
-        // User or System message appears faster
         timeout = setTimeout(() => {
           setMessages((prev) => [...prev, { ...nextMessage, id: Math.random().toString() }])
           setMessageIndex((prev) => prev + 1)
@@ -128,7 +122,6 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
 
   return (
     <div className="relative mx-auto w-full max-w-[320px] lg:max-w-[350px]">
-      {/* Phone Frame */}
       <div 
         className="relative border-gray-900 bg-gray-900 border-[10px] rounded-[3rem] h-[580px] shadow-2xl overflow-hidden ring-1 ring-white/10"
         style={{
@@ -137,20 +130,16 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
         }}
       >
         
-        {/* Side Buttons */}
         <div className="absolute top-24 -left-[14px] w-[4px] h-8 bg-gray-800 rounded-l-md"></div>
         <div className="absolute top-36 -left-[14px] w-[4px] h-14 bg-gray-800 rounded-l-md"></div>
         <div className="absolute top-36 -right-[14px] w-[4px] h-20 bg-gray-800 rounded-r-md"></div>
 
-        {/* Dynamic Island / Notch */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[100px] h-[28px] bg-black rounded-b-[1rem] z-30 flex justify-center items-center">
           <div className="w-12 h-3 bg-gray-900/50 rounded-full" />
         </div>
 
-        {/* Screen Content */}
         <div className="w-full h-full bg-[#0b141a] flex flex-col relative overflow-hidden rounded-[2.2rem]">
           
-          {/* WhatsApp Header */}
           <div className="bg-[#202c33] p-3 pt-10 flex items-center justify-between z-20 shadow-md">
             <div className="flex items-center gap-2">
               <ArrowLeft className="text-[#00a884] w-5 h-5 cursor-pointer" />
@@ -173,14 +162,12 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
             </div>
           </div>
 
-          {/* Chat Area */}
           <div className="flex-1 relative bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat bg-opacity-5">
             
             <div 
               ref={containerRef}
               className="h-full overflow-y-auto p-4 space-y-3 pb-24 scrollbar-hide"
             >
-              {/* Encryption Notice */}
               <div className="flex justify-center mb-6 mt-2">
                 <div className="bg-[#182229] px-3 py-1.5 rounded-lg shadow-sm max-w-[85%] text-center">
                   <p className="text-[#8696a0] text-[10px] leading-3 flex items-center justify-center gap-1">
@@ -230,7 +217,6 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
                           )}
                         </div>
                         
-                        {/* Triangle Tail */}
                         <div className={`absolute top-0 w-0 h-0 border-[6px] border-transparent ${
                           message.role === "user" 
                             ? "-right-[6px] border-t-[#005c4b] border-l-[#005c4b]" 
@@ -242,7 +228,6 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
                 ))}
               </AnimatePresence>
 
-              {/* Typing Indicator */}
               <AnimatePresence>
                 {isTyping && (
                   <motion.div
@@ -263,7 +248,6 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
             </div>
           </div>
 
-          {/* Input Area */}
           <div className="bg-[#202c33] p-2 flex items-center gap-2 z-20">
              <Plus className="text-[#8696a0] w-6 h-6" />
              <div className="flex-1 bg-[#2a3942] rounded-lg h-9 flex items-center px-3 justify-between">
@@ -278,7 +262,6 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
              </div>
           </div>
 
-          {/* Home Indicator */}
           <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-white/20 rounded-full z-30" />
         </div>
       </div>

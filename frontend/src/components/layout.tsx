@@ -1,23 +1,12 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useUser, UserButton, useClerk, useAuth } from "@clerk/nextjs"
 import { useTheme } from "next-themes"
 import {
-  LayoutDashboard,
-  MessageCircle,
-  History,
-  Bot,
-  Shield,
-  Zap,
-  Users,
-  Settings2,
   CreditCard,
-  Settings,
   Menu,
-  Bell,
   UserCircle,
   LogOut,
   ChevronDown,
@@ -27,7 +16,6 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -38,125 +26,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
-import { cn } from "@/lib/utils"
-import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
+import { WebSocketProvider } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
 import { OnboardingTour } from "@/components/dashboard/onboarding-tour"
 import { useI18n } from "@/i18n/i18n-provider"
-
-const getNavGroups = (t: any) => [
-  {
-    title: t("nav.hubs.pilotage") || "PILOTAGE HUB",
-    items: [
-      { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
-    ]
-  },
-  {
-    title: t("nav.hubs.config") || "CONFIGURATION BOT",
-    items: [
-      { name: t("nav.ai_assistant"), href: "/dashboard/ai", icon: Bot },
-      { name: t("nav.group_management"), href: "/dashboard/moderation", icon: Shield },
-    ]
-  },
-  {
-    title: t("nav.hubs.client") || "ESPACE CLIENT",
-    items: [
-      { name: t("nav.credits"), href: "/dashboard/credits", icon: Zap },
-      { name: t("nav.billing"), href: "/dashboard/billing", icon: CreditCard },
-      { name: t("nav.settings"), href: "/dashboard/profile", icon: Settings },
-    ]
-  },
-  {
-    title: t("nav.hubs.admin") || "ADMINISTRATION",
-    adminOnly: true,
-    items: [
-      { name: t("nav.activities"), href: "/dashboard/activities", icon: History },
-      { name: t("nav.users"), href: "/dashboard/users", icon: Users },
-      { name: t("nav.ai_models"), href: "/dashboard/ai-models", icon: Settings2 },
-    ]
-  }
-]
-
-function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
-  const Icon = item?.icon
-  if (!item || !Icon) return null
-
-  const id = item.href ? `nav-${item.href.replace(/\//g, '-')}` : undefined
-
-  return (
-    <Link
-      href={item.href || "#"}
-      id={id}
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-        isActive
-          ? "bg-muted text-foreground"
-          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-      )}
-    >
-      <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
-      {item.name}
-    </Link>
-  )
-}
-
-function LiveIndicator() {
-  const { isConnected } = useWebSocket()
-  if (!isConnected) return null
-  return (
-    <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-primary/5 border border-primary/10">
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-      </span>
-      <span className="text-[10px] font-medium text-primary uppercase tracking-wider">Live</span>
-    </div>
-  )
-}
-
-function SidebarContent({ isAdmin, pathname, onItemClick, t }: { isAdmin: boolean, pathname: string, onItemClick?: () => void, t: any }) {
-  const groups = getNavGroups(t)
-  const filteredGroups = groups.filter(group => !group.adminOnly || isAdmin)
-
-  return (
-    <div className="flex flex-col h-full bg-card">
-      <div className="p-6"><Logo orientation="horizontal" size={24} showText /></div>
-      <ScrollArea className="flex-1 px-3">
-        <div className="space-y-6 pb-6">
-          {filteredGroups.map((group, i) => (
-            <div key={i} className="space-y-2">
-              <h3 className="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                {group.title}
-              </h3>
-              <nav className="space-y-1">
-                {group.items.map((item) => (
-                  <NavItem
-                    key={item.href || Math.random()}
-                    item={item}
-                    isActive={pathname === item.href || pathname.startsWith(item.href + '/')}
-                    onClick={onItemClick}
-                  />
-                ))}
-              </nav>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-    </div>
-  )
-}
+import { SidebarContent, LiveIndicator, getNavGroups } from "@/components/dashboard/Sidebar"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { t, locale, setLocale } = useI18n()
+  const { t } = useI18n()
   const pathname = usePathname()
   const router = useRouter()
   const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
   const { getToken } = useAuth()
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
@@ -197,7 +82,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="p-4 border-t border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors text-left outline-none">
+                <button className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors
+                  text-left outline-none">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.imageUrl} />
                     <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
@@ -212,17 +98,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}><UserCircle className="h-4 w-4 mr-2" /> Profil</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}><CreditCard className="h-4 w-4 mr-2" /> Facturation</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
+                  <UserCircle className="h-4 w-4 mr-2" /> Profil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
+                  <CreditCard className="h-4 w-4 mr-2" /> Facturation
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive"><LogOut className="h-4 w-4 mr-2" /> {t("nav.logout")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive">
+                  <LogOut className="h-4 w-4 mr-2" /> {t("nav.logout")}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </aside>
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-20">
+          <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b border-border
+            bg-background/50 backdrop-blur-md sticky top-0 z-20">
             <div className="flex items-center gap-4">
               <div className="md:hidden">
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>

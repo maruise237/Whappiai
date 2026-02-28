@@ -36,14 +36,14 @@ export function LogViewer() {
   const { lastMessage } = useWebSocket()
 
   React.useEffect(() => {
-    if (lastMessage && lastMessage.type === 'log') {
+    if (lastMessage && lastMessage.type === "log") {
       setLogs(prev => [...prev, lastMessage].slice(-100))
     }
   }, [lastMessage])
 
   React.useEffect(() => {
     if (isAutoScroll && scrollRef.current) {
-      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      const scrollContainer = scrollRef.current.querySelector("[data-radix-scroll-area-viewport]")
       if (scrollContainer) {
         scrollContainer.scrollTop = scrollContainer.scrollHeight
       }
@@ -51,7 +51,7 @@ export function LogViewer() {
   }, [logs, isAutoScroll])
 
   const filteredLogs = logs.filter(log => {
-    const logMsg = typeof log.message === 'string' ? log.message : JSON.stringify(log.message)
+    const logMsg = typeof log.message === "string" ? log.message : JSON.stringify(log.message)
     const matchesSearch = logMsg.toLowerCase().includes(search.toLowerCase()) ||
       (log.sessionId && log.sessionId.toLowerCase().includes(search.toLowerCase()))
     const matchesLevel = levelFilter === "all" || log.level.toLowerCase() === levelFilter.toLowerCase()
@@ -60,9 +60,9 @@ export function LogViewer() {
 
   const formatMessage = (message: any, index: number) => {
     const isExpanded = expandedLogs[index]
-    const content = typeof message === 'object' ? JSON.stringify(message, null, 2) : String(message)
+    const content = typeof message === "object" ? JSON.stringify(message, null, 2) : String(message)
     const isLong = content.length > 200
-    const displayContent = isLong && !isExpanded ? content.substring(0, 200) + '...' : content
+    const displayContent = isLong && !isExpanded ? content.substring(0, 200) + "..." : content
 
     return (
       <div className="space-y-1">
@@ -86,10 +86,10 @@ export function LogViewer() {
 
   const logLevelColor = (level: string) => {
     switch (level?.toLowerCase()) {
-      case 'error': return 'text-destructive';
-      case 'warn': return 'text-amber-500';
-      case 'info': return 'text-blue-500';
-      default: return 'text-foreground/80';
+      case "error": return "text-destructive";
+      case "warn": return "text-amber-500";
+      case "info": return "text-blue-500";
+      default: return "text-foreground/80";
     }
   }
 
@@ -143,7 +143,7 @@ export function LogViewer() {
             ) : (
               filteredLogs.map((log, i) => (
                 <div key={i} className="flex gap-3 text-[11px] font-mono border-l border-border pl-3">
-                  <span className="text-muted-foreground/50 shrink-0 select-none w-8">{String(i + 1).padStart(3, '0')}</span>
+                  <span className="text-muted-foreground/50 shrink-0 select-none w-8">{String(i + 1).padStart(3, "0")}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-muted-foreground font-bold">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>

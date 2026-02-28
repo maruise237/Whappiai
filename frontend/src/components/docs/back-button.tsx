@@ -23,9 +23,9 @@ export function DocsBackButton() {
 
   return (
     <div className="fixed top-6 left-6 z-50 animate-in fade-in duration-300">
-      <Button 
-        variant="secondary" 
-        size="sm" 
+      <Button
+        variant="secondary"
+        size="sm"
         className="backdrop-blur-md bg-background/50 hover:bg-background/80 border border-border shadow-sm transition-all duration-200"
         asChild
       >

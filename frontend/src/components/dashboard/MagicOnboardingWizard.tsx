@@ -6,8 +6,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
-  Link as LinkIcon,
-  Video,
   Calendar,
   Loader2,
   PartyPopper,
@@ -30,7 +28,6 @@ import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
-import { cn } from "@/lib/utils"
 import confetti from "canvas-confetti"
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6
@@ -50,7 +47,6 @@ export function MagicOnboardingWizard({
   const [loading, setLoading] = React.useState(false)
   const [calStatus, setCalStatus] = React.useState<any>(null)
 
-  // Form State
   const [assistantName, setAssistantName] = React.useState("")
   const [role, setRole] = React.useState("")
   const [activities, setActivities] = React.useState("")
@@ -77,19 +73,22 @@ export function MagicOnboardingWizard({
   const handleNext = () => setStep((prev) => (prev + 1) as Step)
   const handleBack = () => setStep((prev) => (prev - 1) as Step)
 
-  const addLink = () => setLinks([...links, { title: "", url: "" }])
-  const removeLink = (index: number) => setLinks(links.filter((_, i) => i !== index))
-  const updateLink = (index: number, field: "title" | "url", value: string) => {
+  const handleAddLink = () => setLinks([...links, { title: "", url: "" }])
+  const handleRemoveLink = (index: number) => setLinks(links.filter((_, i) => i !== index))
+  const handleUpdateLink = (index: number, field: "title" | "url", value: string) => {
     const newLinks = [...links]
     newLinks[index][field] = value
     setLinks(newLinks)
+  }
+
+  const handleAssistantNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAssistantName(e.target.value)
   }
 
   const connectCal = async () => {
     try {
       const token = await getToken()
       const result = await api.cal.getAuthUrl(token || undefined)
-      // result is actually data.authUrl because of fetchApi mapping
       if (result && result.authUrl) {
         window.location.href = result.authUrl
       }
@@ -103,7 +102,6 @@ export function MagicOnboardingWizard({
     try {
       const token = await getToken()
 
-      // 1. Generate Config
       const config = await api.ai.generateOnboarding({
         assistantName,
         role,
@@ -113,7 +111,6 @@ export function MagicOnboardingWizard({
         videoEnabled
       }, token || undefined)
 
-      // 2. Update Session AI
       await api.sessions.updateAI(sessionId, {
         enabled: true,
         prompt: config.prompt,
@@ -122,7 +119,6 @@ export function MagicOnboardingWizard({
         mode: 'bot'
       }, token || undefined)
 
-      // 3. Update Cal Settings if changed
       if (calStatus?.isConnected) {
         await api.cal.updateSettings({
           ai_cal_enabled: calEnabled,
@@ -176,7 +172,7 @@ export function MagicOnboardingWizard({
                 <Input
                   placeholder="Ex: Sarah, Assistant Whappi..."
                   value={assistantName}
-                  onChange={e => setAssistantName(e.target.value)}
+                  onChange={handleAssistantNameChange}
                   className="h-12 text-lg"
                 />
               </div>
@@ -216,13 +212,13 @@ export function MagicOnboardingWizard({
                     <Input
                       placeholder="Titre (ex: Notre site)"
                       value={link.title}
-                      onChange={e => updateLink(index, "title", e.target.value)}
+                      onChange={e => handleUpdateLink(index, "title", e.target.value)}
                       className="h-8 text-xs"
                     />
                     <Input
                       placeholder="URL (https://...)"
                       value={link.url}
-                      onChange={e => updateLink(index, "url", e.target.value)}
+                      onChange={e => handleUpdateLink(index, "url", e.target.value)}
                       className="h-8 text-xs"
                     />
                   </div>
@@ -230,13 +226,13 @@ export function MagicOnboardingWizard({
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeLink(index)}
+                    onClick={() => handleRemoveLink(index)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" className="w-full border-dashed" onClick={addLink}>
+              <Button variant="outline" size="sm" className="w-full border-dashed" onClick={handleAddLink}>
                 <Plus className="h-3 w-3 mr-2" /> Ajouter un lien
               </Button>
             </div>
@@ -261,7 +257,7 @@ export function MagicOnboardingWizard({
 
               <div className="flex items-center justify-between p-4 bg-muted/20 rounded-xl border border-muted">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg"><Video className="h-5 w-5 text-primary" /></div>
+                  <div className="p-2 bg-primary/10 rounded-lg"><Calendar className="h-5 w-5 text-primary" /></div>
                   <div>
                     <p className="text-sm font-bold">Appels Vidéo</p>
                     <p className="text-[10px] text-muted-foreground">Accepter les réservations en vidéo</p>
