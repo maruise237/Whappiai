@@ -6,10 +6,7 @@ import {
   Plus,
   Search,
   MoreVertical,
-  UserPlus,
-  Mail,
   Shield,
-  Calendar,
   Loader2,
   Trash2,
   Edit,
@@ -19,8 +16,6 @@ import {
   Smartphone,
   History,
   TrendingUp,
-  CreditCard,
-  Info
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -196,12 +191,16 @@ export default function UsersPage() {
         )
         toast.success("Portefeuille mis à jour")
         fetchUserDetails(selectedUserId)
-        fetchUsers() // Update balance in list
+        fetchUsers()
     } catch (e: any) {
         toast.error(e.message || "Erreur lors de l'ajustement")
     } finally {
         setIsSubmitting(false)
     }
+  }
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
   }
 
   if (!isAdmin) {
@@ -236,7 +235,7 @@ export default function UsersPage() {
             placeholder="Rechercher par email ou ID..."
             className="pl-8 h-9 text-xs bg-muted/20 border-none"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
           />
         </div>
         <Badge variant="outline" className="h-9 px-3 rounded-md text-[10px] font-semibold tracking-wider text-muted-foreground border-dashed">
@@ -345,7 +344,6 @@ export default function UsersPage() {
         </div>
       </Card>
 
-      {/* User Deep-Dive Sheet */}
       <Sheet open={!!selectedUserId} onOpenChange={open => !open && setSelectedUserId(null)}>
         <SheetContent className="sm:max-w-[600px] overflow-y-auto">
           <SheetHeader className="pb-6">
@@ -381,13 +379,13 @@ export default function UsersPage() {
                         <Card className="bg-muted/10 border-none shadow-none">
                             <CardContent className="p-3">
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Crédits Dispo</p>
-                                <p className="text-lg font-bold flex items-center gap-1"><Zap className="h-4 w-4 text-amber-500" /> {userDetails?.user?.message_limit}</p>
+                                <div className="text-lg font-bold flex items-center gap-1"><Zap className="h-4 w-4 text-amber-500" /> {userDetails?.user?.message_limit}</div>
                             </CardContent>
                         </Card>
                         <Card className="bg-muted/10 border-none shadow-none">
                             <CardContent className="p-3">
                                 <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">Messages Envoyés</p>
-                                <p className="text-lg font-bold flex items-center gap-1"><Smartphone className="h-4 w-4 text-primary" /> {userDetails?.user?.message_used}</p>
+                                <div className="text-lg font-bold flex items-center gap-1"><Smartphone className="h-4 w-4 text-primary" /> {userDetails?.user?.message_used}</div>
                             </CardContent>
                         </Card>
                     </div>

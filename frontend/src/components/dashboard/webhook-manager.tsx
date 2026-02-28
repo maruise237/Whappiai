@@ -30,9 +30,9 @@ import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
 
 const AVAILABLE_EVENTS = [
-  { id: 'message_received', label: 'Message Reçu' },
-  { id: 'ai_response', label: 'Réponse IA' },
-  { id: 'human_takeover', label: 'Reprise Humaine' },
+  { id: "message_received", label: "Message Reçu" },
+  { id: "ai_response", label: "Réponse IA" },
+  { id: "human_takeover", label: "Reprise Humaine" },
 ]
 
 export function WebhookManager({ sessionId }: { sessionId: string }) {
@@ -44,7 +44,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
 
   const [formData, setFormData] = React.useState({
     url: "",
-    events: ['message_received', 'ai_response'],
+    events: ["message_received", "ai_response"],
     secret: ""
   })
 
@@ -71,10 +71,10 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
       await api.sessions.addWebhook(sessionId, formData, token || undefined)
       toast.success("Webhook ajouté")
       setIsAdding(false)
-      setFormData({ url: "", events: ['message_received', 'ai_response'], secret: "" })
+      setFormData({ url: "", events: ["message_received", "ai_response"], secret: "" })
       fetchWebhooks()
     } catch (error: any) {
-      toast.error("Erreur lors de l'ajout")
+      toast.error("Erreur lors de l"ajout")
     } finally {
       setIsSubmitting(false)
     }
@@ -122,14 +122,14 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
                     <CheckCircle2 className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate max-w-md">{wh?.url || 'URL manquante'}</p>
+                    <p className="text-sm font-medium truncate max-w-md">{wh?.url || "URL manquante"}</p>
                     <div className="flex gap-2 mt-1">
                       {(() => {
                         try {
-                          const events = typeof wh?.events === 'string' ? JSON.parse(wh.events || '[]') : (wh?.events || []);
+                          const events = typeof wh?.events === "string" ? JSON.parse(wh.events || "[]") : (wh?.events || []);
                           if (!Array.isArray(events)) return null;
                           return events.map((ev: string) => (
-                            <Badge key={ev} variant="secondary" className="text-[9px] uppercase">{String(ev).replace('_', ' ')}</Badge>
+                            <Badge key={ev} variant="secondary" className="text-[9px] uppercase">{String(ev).replace("_", " ")}</Badge>
                           ));
                         } catch (e) {
                           return <Badge variant="destructive" className="text-[9px]">ERR_PARSE</Badge>;
@@ -180,7 +180,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
 
             <div className="space-y-2">
               <Label className="text-xs uppercase">Secret Signature (Optionnel)</Label>
-              <Input placeholder="Clé pour vérifier l'authenticité" value={formData.secret} onChange={e => setFormData({...formData, secret: e.target.value})} className="h-9" />
+              <Input placeholder="Clé pour vérifier l"authenticité" value={formData.secret} onChange={e => setFormData({...formData, secret: e.target.value})} className="h-9" />
             </div>
           </div>
           <DialogFooter>
