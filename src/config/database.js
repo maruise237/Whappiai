@@ -57,6 +57,8 @@ function initializeSchema() {
             name TEXT,
             password TEXT NOT NULL,
             role TEXT DEFAULT 'user' CHECK(role IN ('admin', 'user')),
+            created_by TEXT,
+            is_verified INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             is_active INTEGER DEFAULT 1
         )
@@ -394,6 +396,8 @@ function initializeSchema() {
     // User table extensions (2026 SaaS fields)
     runner.run('users-saas-v2026-v2', (db) => {
         const columns = [
+            { name: 'created_by', type: 'TEXT' },
+            { name: 'is_verified', type: 'INTEGER DEFAULT 0' },
             { name: 'bio', type: 'TEXT' },
             { name: 'location', type: 'TEXT' },
             { name: 'website', type: 'TEXT' },
