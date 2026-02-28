@@ -1,7 +1,7 @@
 /**
  * AI Service
  * Handles interaction with agnostic AI APIs (OpenAI, Groq, Ollama, etc.)
- * Supports Bot, Human Suggestion, and Hybrid modes.
+ * Supports Bot and Keyword modes.
  */
 
 const { User, Session, ActivityLog, AIModel } = require('../models');

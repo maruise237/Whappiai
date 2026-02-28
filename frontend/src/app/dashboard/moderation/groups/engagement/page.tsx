@@ -1,40 +1,38 @@
 "use client"
 
 import * as React from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
-  ArrowLeft,
-  Save,
   Users,
-  Search,
-  ChevronRight,
-  Loader2,
-  Sparkles,
-  Link as LinkIcon,
-  Plus,
-  Trash2,
   MessageSquare,
   Calendar,
-  FileText,
+  Sparkles,
+  Zap,
+  Plus,
+  Trash2,
+  Loader2,
+  Save,
+  ArrowLeft,
+  Search,
+  ExternalLink,
   Target,
-  Shield,
-  Zap
+  Layout,
+  Clock,
+  History
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger
+  AccordionTrigger,
 } from "@/components/ui/accordion"
+import { Label } from "@/components/ui/label"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
@@ -54,6 +52,8 @@ function GroupEngagementContent() {
   const [isGenerating, setIsGenerating] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [generationGoal, setGenerationGoal] = React.useState("")
+  const [scheduledAt, setScheduledAt] = React.useState("")
+  const [directMessage, setDirectMessage] = React.useState("")
 
   const [profile, setProfile] = React.useState<any>({
     mission: "",
@@ -85,8 +85,6 @@ function GroupEngagementContent() {
     fetchGroups()
   }, [fetchGroups])
 
-  const selectedGroup = groups.find(g => g.id === selectedGroupId)
-
   const fetchGroupDetails = React.useCallback(async () => {
     if (!sessionId || !selectedGroupId) return
     try {
@@ -103,10 +101,8 @@ function GroupEngagementContent() {
   }, [sessionId, selectedGroupId, getToken])
 
   React.useEffect(() => {
-    if (selectedGroupId) {
-      fetchGroupDetails()
-    }
-  }, [selectedGroupId, fetchGroupDetails])
+    fetchGroupDetails()
+  }, [fetchGroupDetails])
 
   const handleSaveProfile = async () => {
     if (!sessionId || !selectedGroupId) return
@@ -115,8 +111,8 @@ function GroupEngagementContent() {
       const token = await getToken()
       await api.sessions.updateGroupProfile(sessionId, selectedGroupId, profile, token || undefined)
       toast.success("Profil du groupe mis à jour")
-    } catch (e) {
-      toast.error("Erreur lors de la sauvegarde du profil")
+    } catch (e: any) {
+      toast.error("Erreur de sauvegarde")
     } finally {
       setIsSaving(false)
     }
@@ -128,9 +124,34 @@ function GroupEngagementContent() {
     try {
       const token = await getToken()
       await api.sessions.updateGroupLinks(sessionId, selectedGroupId, links, token || undefined)
-      toast.success("Liens mis à jour")
-    } catch (e) {
-      toast.error("Erreur lors de la sauvegarde des liens")
+      toast.success("Liens enregistrés")
+    } catch (e: any) {
+      toast.error("Erreur de sauvegarde des liens")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleScheduleMessage = async () => {
+    if (!sessionId || !selectedGroupId || !directMessage.trim() || !scheduledAt) {
+      return toast.error("Veuillez remplir le message et la date")
+    }
+
+    setIsSaving(true)
+    try {
+      const token = await getToken()
+      await api.sessions.addEngagementTask(sessionId, selectedGroupId, {
+        message_content: directMessage,
+        scheduled_at: new Date(scheduledAt).toISOString(),
+        type: 'text'
+      }, token || undefined)
+
+      toast.success("Message programmé")
+      setDirectMessage("")
+      setScheduledAt("")
+      fetchGroupDetails()
+    } catch (e: any) {
+      toast.error("Erreur de programmation")
     } finally {
       setIsSaving(false)
     }
@@ -146,26 +167,18 @@ function GroupEngagementContent() {
 
     try {
        const token = await getToken()
-       // FIX: Use 'objective' instead of 'goal' to match backend
        const response = await api.sessions.generateGroupMessage(sessionId, selectedGroupId, { objective: generationGoal, includeLinks: true }, token || undefined)
 
        toast.success("Message généré avec succès", { id: toastId })
 
-       // Add the generated message to tasks (simulated, usually you'd review it)
-       // But for now let's just clear the input and show success
-       setGenerationGoal("")
-
-       // Reload tasks to show the new one if the backend auto-scheduled it
-       // Or the backend just returns the text and we should show it in a dialog
        if (response && response.message) {
-          // Open a "Result" dialog or just copy to clipboard
+          setDirectMessage(response.message)
           const success = await copyToClipboard(response.message);
           if (success) {
-            toast.success("Message copié dans le presse-papier !");
+            toast.success("Message copié ! Vous pouvez maintenant le programmer.");
           }
        }
-
-       fetchGroupDetails()
+       setGenerationGoal("")
     } catch (e: any) {
        toast.error("Échec de la génération", { id: toastId, description: e.message })
     } finally {
@@ -193,7 +206,6 @@ function GroupEngagementContent() {
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Page Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
@@ -206,14 +218,9 @@ function GroupEngagementContent() {
             </Badge>
           </div>
         </div>
-        <Button size="sm" onClick={() => toast.success("Enregistré")} disabled={isSaving}>
-          {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-          Enregistrer
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
-        {/* Sidebar: Group List */}
         <Card className="border-none shadow-none bg-muted/10 h-auto lg:h-[calc(100vh-12rem)] flex flex-col">
           <div className="p-4 border-b">
             <div className="relative">
@@ -244,7 +251,6 @@ function GroupEngagementContent() {
           </div>
         </Card>
 
-        {/* Main Content: Tabs */}
         <div className="space-y-6">
            {!selectedGroupId ? (
              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground/20">
@@ -298,163 +304,202 @@ function GroupEngagementContent() {
                          <div className="space-y-1.5">
                             <Label className="text-[10px] uppercase font-bold text-muted-foreground">Règles internes</Label>
                             <Textarea
-                               placeholder="Liste des comportements autorisés..."
-                               className="min-h-[100px] text-xs bg-card"
+                               placeholder="ex: Pas de spam, courtoisie obligatoire..."
+                               className="min-h-[80px] text-xs bg-card"
                                value={profile.rules || ""}
                                onChange={e => setProfile({...profile, rules: e.target.value})}
                             />
                          </div>
-                         <Button size="sm" className="w-full sm:w-auto mt-2" onClick={handleSaveProfile} disabled={isSaving}>
-                            {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                            Mettre à jour le profil
-                         </Button>
+                         <div className="flex justify-end pt-2">
+                           <Button size="sm" onClick={handleSaveProfile} disabled={isSaving}>
+                             {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                             Enregistrer le profil
+                           </Button>
+                         </div>
                       </CardContent>
                    </Card>
                 </TabsContent>
 
                 <TabsContent value="liens" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                   <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                         <h3 className="text-sm font-bold">Produits & Services</h3>
-                         <p className="text-xs text-muted-foreground">Liste des liens que l&apos;IA peut recommander.</p>
-                      </div>
-                      <Button size="sm" variant="outline" className="h-8 rounded-full">
-                         <Plus className="h-3 w-3 mr-2" /> Ajouter un lien
-                      </Button>
-                   </div>
-
                    <div className="space-y-4">
-                      {links.length === 0 ? (
-                        <div className="p-8 text-center border-2 border-dashed rounded-lg text-muted-foreground/40">
-                           Aucun lien configuré
-                        </div>
-                      ) : (
-                        <Accordion type="single" collapsible className="w-full space-y-2">
-                           {links.map((link, idx) => (
-                             <AccordionItem key={link.id || idx} value={`item-${idx}`} className="border rounded-lg bg-card px-4">
-                               <AccordionTrigger className="text-sm hover:no-underline font-medium">{link.title || "Lien sans titre"}</AccordionTrigger>
-                               <AccordionContent className="text-xs space-y-4 pb-4">
-                                 <div className="grid grid-cols-1 gap-4">
-                                   <div className="space-y-1">
-                                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Titre</Label>
-                                      <Input
-                                         value={link.title}
-                                         onChange={e => {
-                                            const newLinks = [...links];
-                                            newLinks[idx].title = e.target.value;
-                                            setLinks(newLinks);
-                                         }}
-                                         className="h-8"
-                                      />
-                                   </div>
-                                   <div className="space-y-1">
-                                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">URL</Label>
-                                      <Input
-                                         value={link.url}
-                                         onChange={e => {
-                                            const newLinks = [...links];
-                                            newLinks[idx].url = e.target.value;
-                                            setLinks(newLinks);
-                                         }}
-                                         className="h-8 font-mono"
-                                      />
-                                   </div>
-                                   <div className="space-y-1">
-                                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Description</Label>
-                                      <Textarea
-                                         value={link.description}
-                                         onChange={e => {
-                                            const newLinks = [...links];
-                                            newLinks[idx].description = e.target.value;
-                                            setLinks(newLinks);
-                                         }}
-                                         className="min-h-[60px] text-xs"
-                                      />
-                                   </div>
-                                   <div className="space-y-1">
-                                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">CTA (Appel à l&apos;action)</Label>
-                                      <Input
-                                         value={link.cta}
-                                         onChange={e => {
-                                            const newLinks = [...links];
-                                            newLinks[idx].cta = e.target.value;
-                                            setLinks(newLinks);
-                                         }}
-                                         className="h-8"
-                                      />
-                                   </div>
-                                 </div>
-                                 <div className="flex justify-end gap-2">
-                                   <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 text-xs text-destructive"
-                                      onClick={() => setLinks(prev => prev.filter((_, i) => i !== idx))}
-                                   >
-                                      <Trash2 className="h-3 w-3 mr-2" /> Retirer
-                                   </Button>
-                                 </div>
-                               </AccordionContent>
-                             </AccordionItem>
-                           ))}
-                        </Accordion>
-                      )}
+                      <div className="flex items-center justify-between">
+                         <div>
+                            <h3 className="text-sm font-bold">Catalogue de Liens</h3>
+                            <p className="text-xs text-muted-foreground">Liens que l&apos;IA peut suggérer dans ses messages.</p>
+                         </div>
+                      </div>
 
-                      <div className="flex justify-between items-center mt-6">
-                        <Button
-                           size="sm"
-                           variant="outline"
-                           className="h-9"
-                           onClick={() => setLinks([...links, { title: "Nouveau lien", description: "", url: "", cta: "Commander" }])}
-                        >
-                           <Plus className="h-4 w-4 mr-2" /> Ajouter un lien
-                        </Button>
-                        <Button size="sm" className="h-9" onClick={handleSaveLinks} disabled={isSaving}>
-                           {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                           Enregistrer tous les liens
-                        </Button>
+                      <div className="space-y-4">
+                         {links.length === 0 ? (
+                           <div className="p-8 text-center border-2 border-dashed rounded-lg text-muted-foreground/40 text-xs italic">
+                              Aucun lien configuré
+                           </div>
+                         ) : (
+                           <Accordion type="single" collapsible className="w-full space-y-2">
+                              {links.map((link, idx) => (
+                                <AccordionItem key={idx} value={`item-${idx}`} className="border rounded-lg bg-card px-4">
+                                  <AccordionTrigger className="text-sm hover:no-underline font-medium">{link.title || "Lien sans titre"}</AccordionTrigger>
+                                  <AccordionContent className="text-xs space-y-4 pb-4">
+                                    <div className="grid grid-cols-1 gap-4">
+                                      <div className="space-y-1">
+                                         <Label className="text-[10px] font-bold uppercase text-muted-foreground">Titre</Label>
+                                         <Input
+                                            value={link.title}
+                                            onChange={e => {
+                                               const newLinks = [...links];
+                                               newLinks[idx].title = e.target.value;
+                                               setLinks(newLinks);
+                                            }}
+                                            className="h-8"
+                                         />
+                                      </div>
+                                      <div className="space-y-1">
+                                         <Label className="text-[10px] font-bold uppercase text-muted-foreground">URL</Label>
+                                         <Input
+                                            value={link.url}
+                                            onChange={e => {
+                                               const newLinks = [...links];
+                                               newLinks[idx].url = e.target.value;
+                                               setLinks(newLinks);
+                                            }}
+                                            className="h-8 font-mono"
+                                         />
+                                      </div>
+                                      <div className="space-y-1">
+                                         <Label className="text-[10px] font-bold uppercase text-muted-foreground">Description</Label>
+                                         <Textarea
+                                            value={link.description}
+                                            onChange={e => {
+                                               const newLinks = [...links];
+                                               newLinks[idx].description = e.target.value;
+                                               setLinks(newLinks);
+                                            }}
+                                            className="min-h-[60px] text-xs"
+                                         />
+                                      </div>
+                                      <div className="space-y-1">
+                                         <Label className="text-[10px] font-bold uppercase text-muted-foreground">CTA</Label>
+                                         <Input
+                                            value={link.cta}
+                                            onChange={e => {
+                                               const newLinks = [...links];
+                                               newLinks[idx].cta = e.target.value;
+                                               setLinks(newLinks);
+                                            }}
+                                            className="h-8"
+                                         />
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-end gap-2">
+                                      <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         className="h-7 text-xs text-destructive"
+                                         onClick={() => setLinks(prev => prev.filter((_, i) => i !== idx))}
+                                      >
+                                         <Trash2 className="h-3 w-3 mr-2" /> Retirer
+                                      </Button>
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                           </Accordion>
+                         )}
+
+                         <div className="flex justify-between items-center mt-6">
+                           <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-9"
+                              onClick={() => setLinks([...links, { title: "Nouveau lien", description: "", url: "", cta: "Commander" }])}
+                           >
+                              <Plus className="h-4 w-4 mr-2" /> Ajouter un lien
+                           </Button>
+                           <Button size="sm" className="h-9" onClick={handleSaveLinks} disabled={isSaving}>
+                              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                              Enregistrer les liens
+                           </Button>
+                         </div>
                       </div>
                    </div>
                 </TabsContent>
 
                 <TabsContent value="engagement" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                   <Card className="border-primary/20 bg-primary/5 shadow-none overflow-hidden">
-                      <CardContent className="p-6">
-                         <div className="flex items-start gap-4">
-                            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                               <Sparkles className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="space-y-3 flex-1">
-                               <div className="space-y-1">
-                                  <h4 className="text-sm font-bold">Générateur de Campagne IA</h4>
-                                  <p className="text-xs text-muted-foreground leading-relaxed">
-                                     Décrivez votre objectif (ex: relancer les inactifs) et l&apos;IA générera un planning de messages pour la semaine.
-                                  </p>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card className="border-primary/20 bg-primary/5 shadow-none overflow-hidden h-fit">
+                         <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                               <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                  <Sparkles className="h-5 w-5 text-primary" />
                                </div>
-                               <Textarea
-                                 placeholder="Objectif de la campagne..."
-                                 className="min-h-[80px] bg-background border-primary/20 text-xs"
-                                 value={generationGoal}
-                                 onChange={(e) => setGenerationGoal(e.target.value)}
-                               />
-                               <Button
-                                 size="sm"
-                                 className="w-full sm:w-auto shadow-md"
-                                 onClick={handleGenerate}
-                                 disabled={isGenerating || !generationGoal.trim()}
-                               >
-                                  {isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Zap className="h-3.5 w-3.5 mr-2" />}
-                                  Lancer la génération
-                               </Button>
+                               <div className="space-y-3 flex-1">
+                                  <div className="space-y-1">
+                                     <h4 className="text-sm font-bold">Générateur de Campagne IA</h4>
+                                     <p className="text-xs text-muted-foreground leading-relaxed">
+                                        Décrivez votre objectif (ex: relancer les inactifs) pour que l&apos;IA génère un message.
+                                     </p>
+                                  </div>
+                                  <Textarea
+                                    placeholder="Objectif de la campagne..."
+                                    className="min-h-[80px] bg-background border-primary/20 text-xs"
+                                    value={generationGoal}
+                                    onChange={(e) => setGenerationGoal(e.target.value)}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="w-full shadow-md"
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating || !generationGoal.trim()}
+                                  >
+                                     {isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Zap className="h-3.5 w-3.5 mr-2" />}
+                                     Générer le message
+                                  </Button>
+                               </div>
                             </div>
-                         </div>
-                      </CardContent>
-                   </Card>
+                         </CardContent>
+                      </Card>
+
+                      <Card className="border-none shadow-none bg-muted/20 h-fit">
+                         <CardHeader className="p-6 pb-4">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                               <Clock className="h-4 w-4 text-primary" /> Programmer un Message
+                            </CardTitle>
+                         </CardHeader>
+                         <CardContent className="p-6 pt-0 space-y-4">
+                            <div className="space-y-1.5">
+                               <Label className="text-[10px] uppercase font-bold text-muted-foreground">Message</Label>
+                               <Textarea
+                                 placeholder="Écrivez ou générez un message..."
+                                 className="min-h-[120px] text-xs bg-card"
+                                 value={directMessage}
+                                 onChange={(e) => setDirectMessage(e.target.value)}
+                               />
+                            </div>
+                            <div className="space-y-1.5">
+                               <Label className="text-[10px] uppercase font-bold text-muted-foreground">Date & Heure d&apos;envoi</Label>
+                               <Input
+                                 type="datetime-local"
+                                 className="h-9 bg-card text-xs"
+                                 value={scheduledAt}
+                                 onChange={(e) => setScheduledAt(e.target.value)}
+                               />
+                            </div>
+                            <Button
+                              size="sm"
+                              className="w-full"
+                              onClick={handleScheduleMessage}
+                              disabled={isSaving || !directMessage.trim() || !scheduledAt}
+                            >
+                               <Calendar className="h-4 w-4 mr-2" /> Programmer l&apos;envoi
+                            </Button>
+                         </CardContent>
+                      </Card>
+                   </div>
 
                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
                          <h3 className="text-sm font-bold flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-primary" /> File d&apos;attente
+                            <History className="h-4 w-4 text-primary" /> File d&apos;attente
                          </h3>
                          <Badge variant="outline" className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">{tasks.length} message(s) planifié(s)</Badge>
                       </div>
@@ -471,7 +516,7 @@ function GroupEngagementContent() {
                                        <MessageSquare className="h-4 w-4 text-muted-foreground/40" />
                                     </div>
                                     <div className="min-w-0">
-                                       <p className="text-xs font-medium truncate">{task.message_content?.substring(0, 40) || "Message média"}</p>
+                                       <p className="text-xs font-medium truncate">{task.message_content?.substring(0, 60) || "Message média"}</p>
                                        <p className="text-[10px] text-muted-foreground">
                                           {new Date(task.scheduled_at).toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} •
                                           <span className={cn(
