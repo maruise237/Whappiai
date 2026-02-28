@@ -37,7 +37,7 @@ export default function ProfilePage() {
         const token = await getToken()
         const data = await api.auth.check(token || undefined)
         setDbUser(data?.user || data)
-     } catch (e) {} finally { setLoading(false) }
+     } catch (e) { console.error(e) } finally { setLoading(false) }
   }, [getToken])
 
   React.useEffect(() => {

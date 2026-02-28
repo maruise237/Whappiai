@@ -67,7 +67,7 @@ export function MagicOnboardingWizard({
         setCalEnabled(status.ai_cal_enabled)
         setVideoEnabled(status.ai_cal_video_allowed)
       }
-    } catch (e) {}
+    } catch (e) { console.error(e) }
   }
 
   React.useEffect(() => {

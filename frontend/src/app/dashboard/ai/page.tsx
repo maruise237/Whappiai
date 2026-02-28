@@ -76,14 +76,23 @@ function AssistantIAPageContent() {
       setSessions(sessionsData || [])
       setModels(modelsData || [])
 
-      // Fetch AI configs for each session
+      // Fetch AI configs for each session in parallel
       const configs: Record<string, any> = {}
-      for (const s of (sessionsData || [])) {
-        try {
-          const ai = await api.sessions.getAI(s.sessionId, token || undefined)
-          configs[s.sessionId] = ai
-        } catch (e) {}
-      }
+      const configResults = await Promise.all(
+        (sessionsData || []).map(async (s: any) => {
+          try {
+            const ai = await api.sessions.getAI(s.sessionId, token || undefined)
+            return { sessionId: s.sessionId, ai }
+          } catch (e) {
+            console.error(`Failed to fetch AI config for session ${s.sessionId}:`, e)
+            return { sessionId: s.sessionId, ai: null }
+          }
+        })
+      )
+
+      configResults.forEach(res => {
+        if (res.ai) configs[res.sessionId] = res.ai
+      })
       setAiConfigs(configs)
     } catch (e) {
       toast.error("Erreur de chargement")
@@ -124,7 +133,7 @@ function AssistantIAPageContent() {
         const token = await getToken()
         const stats = await api.admin.getStats(7, token || undefined)
         setAdminStats(stats)
-    } catch (e) {}
+    } catch (e) { console.error(e) }
   }, [isAdmin, getToken])
 
   React.useEffect(() => {

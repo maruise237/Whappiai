@@ -97,7 +97,7 @@ function GroupEngagementContent() {
       setProfile(profileData || { mission: "", objectives: "", rules: "", theme: "" })
       setLinks(Array.isArray(linksData) ? linksData : [])
       setTasks(Array.isArray(tasksData) ? tasksData : [])
-    } catch (e) {}
+    } catch (e) { console.error(e) }
   }, [sessionId, selectedGroupId, getToken])
 
   React.useEffect(() => {

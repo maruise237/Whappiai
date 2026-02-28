@@ -1,24 +1,11 @@
 "use client"
 
 import * as React from "react"
-import {
-  CreditCard,
-  Check,
-  Zap,
-  ShieldCheck,
-  ArrowRight,
-  Loader2,
-  Sparkles,
-  Info
-} from "lucide-react"
+import { CreditCard, Zap, ShieldCheck, Sparkles, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { BillingPlans } from "@/components/dashboard/billing-plans"
-import { useAuth } from "@clerk/nextjs"
-import { api } from "@/lib/api"
-import { toast } from "sonner"
-import { cn } from "@/lib/utils"
 
 export default function BillingPage() {
   return (

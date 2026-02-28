@@ -8,17 +8,10 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 
 // --- Data Generation ---
-const ROLES = ["Directeur Marketing", "Fondateur", "Service Client", "Développeur", "Community Manager", "Commercial", "Responsable Tech"]
-const COMPANIES = ["AfriTech Solutions", "Dakar Digital", "Abidjan Startups", "TechCamer", "Lagos Ventures", "Kinshasa Connect", "Bamako Innovations"]
-const NAMES = [
-  "Amara", "Kwame", "Chioma", "Tunde", "Zainab", "Idrissa", "Fatou", "Kofi", "Nia", "Malik", 
-  "Awa", "Bakary", "Jelani", "Zola", "Oumar", "Sekou", "Binta", "Moussa", "Aminata", "Cheikh", 
-  "Nneka", "Emeka", "Aisha", "Babacar", "Seda", "Kouamé", "Adama", "Saly", "Mamadou", "Fanta"
-]
-const LAST_NAMES = [
-  "Diop", "Kone", "Sow", "Diallo", "Traore", "Kamara", "Mensah", "Okafor", "Ndiaye", "Cisse",
-  "Fall", "Gueye", "Keita", "Sylla", "Ba", "Fofana", "Barry", "Toure", "Mbaye", "Sane"
-]
+
+
+
+
 
 const MARIUSE = {
   name: "Mariuse Kamta",

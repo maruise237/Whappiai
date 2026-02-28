@@ -78,6 +78,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
+const DEFAULT_STATS_DAYS = 7
+const RECENT_LOGS_COUNT = 5
+
 const sessionSchema = z.object({
   sessionId: z.string().min(3, "L'ID de session doit comporter au moins 3 caractères").regex(/^[a-z0-9-]+$/, "Seuls les minuscules, les chiffres et les traits d-union sont autorisés"),
   phoneNumber: z.string().optional(),
@@ -114,49 +117,60 @@ export default function DashboardPage() {
       if (data && data.length > 0 && !selectedSessionId) {
         setSelectedSessionId(data[0].sessionId)
       }
-    } catch (e) {} finally {
+    } catch (e) { console.error(e) } finally {
       setLoading(false)
     }
   }, [getToken, selectedSessionId])
 
+  const fetchAdminSummary = React.useCallback(async (token: string) => {
+    const [stats, analytics] = await Promise.all([
+      api.admin.getStats(DEFAULT_STATS_DAYS, token),
+      api.activities.analytics(DEFAULT_STATS_DAYS, token)
+    ])
+    setAdminStats(stats)
+    setAnalyticsData(analytics || [])
+    setSummary({
+      totalActivities: stats?.overview?.activities || 0,
+      successRate: stats?.overview?.successRate || 0,
+      messagesSent: stats?.overview?.messagesSent || 0,
+      activeSessions: stats?.sessions?.connected || 0
+    })
+  }, [])
+
+  const fetchUserSummary = React.useCallback(async (token: string) => {
+    const summ = await api.activities.summary(DEFAULT_STATS_DAYS, token)
+    setSummary({
+      totalActivities: summ?.totalActivities || 0,
+      successRate: summ?.successRate || 0,
+      messagesSent: summ?.byAction?.send_message || 0,
+      activeSessions: sessions.filter(s => s.isConnected).length
+    })
+  }, [sessions])
+
   const fetchSummary = React.useCallback(async () => {
     try {
       const token = await getToken()
+      if (!token) return
 
       if (isAdmin) {
-        const [stats, analytics] = await Promise.all([
-            api.admin.getStats(7, token || undefined),
-            api.activities.analytics(7, token || undefined)
-        ])
-        setAdminStats(stats)
-        setAnalyticsData(analytics || [])
-        setSummary({
-            totalActivities: stats?.overview?.activities || 0,
-            successRate: stats?.overview?.successRate || 0,
-            messagesSent: stats?.overview?.messagesSent || 0,
-            activeSessions: stats?.sessions?.connected || 0
-        })
+        await fetchAdminSummary(token)
       } else {
-        const summ = await api.activities.summary(7, token || undefined)
-        setSummary({
-          totalActivities: summ?.totalActivities || 0,
-          successRate: summ?.successRate || 0,
-          messagesSent: summ?.byAction?.send_message || 0,
-          activeSessions: sessions.filter(s => s.isConnected).length
-        })
+        await fetchUserSummary(token)
       }
 
-      const logs = await api.activities.list(5, 0, token || undefined)
+      const logs = await api.activities.list(RECENT_LOGS_COUNT, 0, token)
       setRecentActivities(logs || [])
-    } catch (e) {}
-  }, [getToken, sessions, isAdmin])
+    } catch (e) {
+      console.error("Error fetching summary:", e)
+    }
+  }, [getToken, isAdmin, fetchAdminSummary, fetchUserSummary])
 
   const fetchCredits = React.useCallback(async () => {
     try {
       const token = await getToken()
       const data = await api.credits.get(token || undefined)
       setCredits(data?.data || data)
-    } catch (e) {}
+    } catch (e) { console.error(e) }
   }, [getToken])
 
   React.useEffect(() => {
@@ -361,8 +375,8 @@ export default function DashboardPage() {
                            </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg, i) => (
-                              <TableRow key={i} className="hover:bg-muted/50">
+                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg) => (
+                              <TableRow key={msg.id || msg.timestamp} className="hover:bg-muted/50">
                                  <TableCell className="text-sm truncate max-w-[150px]">{msg.resource_id}</TableCell>
                                  <TableCell>
                                     <Badge className={cn(
@@ -395,8 +409,8 @@ export default function DashboardPage() {
                   <TabsContent value="logs" className="space-y-4">
                      <Card className="bg-zinc-950 text-zinc-400 font-mono text-[10px] p-4 overflow-x-auto min-h-[200px] border-none shadow-inner">
                         <div className="space-y-1">
-                           {recentActivities.map((log, i) => (
-                              <div key={i} className="flex gap-4">
+                           {recentActivities.map((log) => (
+                              <div key={log.id || log.timestamp} className="flex gap-4">
                                  <span className="text-zinc-600">
                                     [{(() => {
                                        const d = new Date(log.timestamp || log.created_at);

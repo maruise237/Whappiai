@@ -259,7 +259,7 @@ export default function UsersPage() {
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i} className="animate-pulse border-muted/20">
+                <TableRow key={c.id || i} className="animate-pulse border-muted/20">
                   <TableCell colSpan={5} className="h-14 bg-muted/5"></TableCell>
                 </TableRow>
               ))
@@ -271,7 +271,7 @@ export default function UsersPage() {
               </TableRow>
             ) : (
               filtered.map((u) => (
-                <TableRow key={u.id} className="border-muted/20 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setSelectedUserId(u.id)}>
+                <TableRow key={u.id || u.email} className="border-muted/20 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setSelectedUserId(u.id)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
@@ -495,8 +495,8 @@ export default function UsersPage() {
                         <History className="h-3 w-3" /> Dernières Activités
                     </h4>
                     <div className="space-y-2">
-                        {userDetails?.logs?.map((l: any, i: number) => (
-                            <div key={i} className="p-3 rounded-lg border bg-muted/5 flex items-start gap-3">
+                        {userDetails?.logs?.map((l: any) => (
+                            <div key={l.id || l.timestamp} className="p-3 rounded-lg border bg-muted/5 flex items-start gap-3">
                                 <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", l.status === 'success' ? "bg-green-500" : "bg-red-500")} />
                                 <div className="min-w-0">
                                     <p className="text-[11px] font-bold uppercase tracking-wider">{l.action}</p>

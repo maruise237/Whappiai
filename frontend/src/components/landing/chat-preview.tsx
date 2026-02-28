@@ -190,7 +190,7 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
               </div>
 
               <AnimatePresence initial={false} mode="popLayout">
-                {messages.map((message) => (
+                {messages.map((message, idx) => (
                   <motion.div
                     key={message.id}
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
