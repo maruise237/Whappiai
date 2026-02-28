@@ -23,6 +23,9 @@ const WebhookService = require('./WebhookService');
 const KeywordService = require('./KeywordService');
 const aiService = require('./ai');
 const moderationService = require('./moderation');
+const NotificationService = require('./NotificationService');
+const User = require('../models/User');
+const Session = require('../models/Session');
 
 // Active socket connections
 const activeSockets = new Map();
@@ -98,22 +101,48 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             // Set intermediate state without clearing existing code/qr
             if (onUpdate) onUpdate(sessionId, 'GENERATING_CODE', 'Demande en cours...', undefined);
 
-            setTimeout(async () => {
+            const requestPairing = async (retry = 0) => {
                 try {
                     const currentSock = activeSockets.get(sessionId);
-                    // Check if this socket is still the active one before requesting code
                     if (currentSock === sock && sock.ws && sock.ws.readyState === 1) {
                         const code = await sock.requestPairingCode(sanitizedPhoneNumber);
                         log(`Code d'appairage reçu: ${code}`, sessionId, { event: 'pairing-success' }, 'INFO');
+
+                        // Persist pairing code immediately in DB
+                        Session.updateStatus(sessionId, 'GENERATING_CODE', 'Code prêt', code);
                         if (onUpdate) onUpdate(sessionId, 'GENERATING_CODE', 'Code prêt', code);
+
+                        // Send notification
+                        const session = Session.findById(sessionId);
+                        if (session?.owner_email) {
+                            const user = User.findByEmail(session.owner_email);
+                            if (user) {
+                                NotificationService.send(user.id, 'session', {
+                                    title: "Code d'appairage prêt",
+                                    message: `Le code d'appairage pour ${sessionId} est : ${code}`,
+                                    sessionId: sessionId
+                                });
+                            }
+                        }
+                    } else if (retry < 5) {
+                        const delay = 3000 * (retry + 1);
+                        log(`Socket non prêt pour ${sessionId}, tentative ${retry + 1}/5 dans ${delay/1000}s...`, sessionId, { event: 'pairing-retry' }, 'DEBUG');
+                        setTimeout(() => requestPairing(retry + 1), delay);
                     } else {
-                        log(`Socket non prêt, abandon de la demande de code`, sessionId, { event: 'pairing-aborted' }, 'WARN');
+                        log(`Socket non prêt après 5 tentatives, abandon de la demande de code`, sessionId, { event: 'pairing-aborted' }, 'WARN');
+                        if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', 'Socket non prêt pour le code', null);
                     }
                 } catch (err) {
-                    log(`Erreur lors de la demande de code: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
-                    if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', `Échec code: ${err.message}`, null);
+                    log(`Erreur lors de la demande de code (tentative ${retry}): ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+                    if (retry < 3) {
+                        setTimeout(() => requestPairing(retry + 1), 5000);
+                    } else {
+                        if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', `Échec code: ${err.message}`, null);
+                    }
                 }
-            }, 6000); // Wait for handshake to complete
+            };
+
+            setTimeout(() => requestPairing(), 6000);
         }
 
         sock.ev.on('creds.update', saveCreds);
@@ -144,6 +173,19 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 retryCounters.delete(sessionId);
                 lastQrs.delete(sessionId);
                 if (onUpdate) onUpdate(sessionId, 'CONNECTED', `Connecté: ${sock.user?.name || 'Session'}`, null);
+
+                // Send connected notification
+                const session = Session.findById(sessionId);
+                if (session?.owner_email) {
+                    const user = User.findByEmail(session.owner_email);
+                    if (user) {
+                        NotificationService.send(user.id, 'session', {
+                            title: 'Session Connectée',
+                            message: `Votre session WhatsApp "${sessionId}" (${sock.user?.id.split(':')[0]}) est maintenant opérationnelle.`,
+                            sessionId: sessionId
+                        });
+                    }
+                }
             }
 
             if (connection === 'close') {
