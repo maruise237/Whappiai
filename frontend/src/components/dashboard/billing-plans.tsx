@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { fetchApi } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 
 const plans = [
@@ -88,16 +89,15 @@ export function BillingPlans() {
           "relative flex flex-col h-full border-border bg-card",
           plan.highlighted && "border-primary ring-1 ring-primary"
         )}>
-          {plan.highlighted && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-              Le plus populaire
+
+          <CardHeader className="p-6 pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold tracking-tight">{plan.name}</CardTitle>
+              {plan.highlighted && <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-bold uppercase">Recommandé</Badge>}
             </div>
-          )}
-          <CardHeader className="p-6 pb-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase">{plan.name}</CardTitle>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-3xl font-bold">{plan.price}</span>
-              <span className="text-xs text-muted-foreground">/mois</span>
+            <div className="mt-4 flex items-baseline gap-1">
+              <span className="text-4xl font-black tracking-tighter">{plan.price}</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">/ mois</span>
             </div>
           </CardHeader>
           <CardContent className="p-6 flex-1">

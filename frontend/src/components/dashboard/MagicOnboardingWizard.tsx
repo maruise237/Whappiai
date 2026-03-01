@@ -12,7 +12,7 @@ import {
   Loader2,
   PartyPopper,
   Plus,
-  Trash2
+  Trash2, Sparkles
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -232,7 +232,7 @@ export function MagicOnboardingWizard({
                     className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => removeLink(index)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2, Sparkles className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
@@ -302,7 +302,7 @@ export function MagicOnboardingWizard({
 
           {step === 6 && (
             <div className="space-y-6 text-center py-8 animate-in zoom-in-95 duration-500">
-               <div className="text-6xl mb-4">🎉</div>
+               <div className="text-6xl mb-4"><Sparkles className="h-12 w-12 text-primary mx-auto" /></div>
                <div className="space-y-2">
                  <h3 className="font-bold text-2xl text-primary">Félicitations !</h3>
                  <p className="text-sm font-medium">Vous venez de vous réduire <span className="text-primary font-bold text-lg">60 heures</span> de travail mensuel.</p>
