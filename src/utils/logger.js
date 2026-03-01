@@ -9,7 +9,8 @@ let broadcastFn = null;
  * Set the broadcast function for real-time logs
  * @param {function} fn - The broadcast function
  */
-function setBroadcastFn(fn) {
+function setBroadcastFn,
+    broadcast(fn) {
     broadcastFn = fn;
 }
 
@@ -72,7 +73,14 @@ function log(message, context = 'SYSTEM', details = null, level = null) {
     }
 }
 
+function broadcast(data) {
+    if (broadcastFn) {
+        broadcastFn(data);
+    }
+}
+
 module.exports = {
     log,
-    setBroadcastFn
+    setBroadcastFn,
+    broadcast
 };

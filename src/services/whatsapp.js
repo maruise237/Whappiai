@@ -46,8 +46,17 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
     if (deletingSessions.has(sessionId)) return null;
 
     if (connectingSessions.has(sessionId)) {
-        log(`Connexion en cours pour ${sessionId}`, sessionId, { event: 'connect-locked' }, 'DEBUG');
-        return activeSockets.get(sessionId);
+        const existingSock = activeSockets.get(sessionId);
+        if (existingSock && phoneNumber && !existingSock.registered) {
+            log(`Demande de code reçue alors que la session ${sessionId} est déjà en cours de connexion`, sessionId, { event: 'pairing-on-existing' }, 'INFO');
+            // Instead of returning, we could potentially force a disconnect and reconnect if we really need to change the phoneNumber
+            // but for now let's just log it. The problem is often that the first call didn't have a phoneNumber.
+            await disconnect(sessionId, false);
+            // After disconnect, we continue to create a new one with the phoneNumber
+        } else {
+            log(`Connexion déjà active pour ${sessionId}`, sessionId, { event: 'connect-locked' }, 'DEBUG');
+            return existingSock;
+        }
     }
     connectingSessions.add(sessionId);
 
@@ -96,7 +105,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         // Pairing Code Request
         if (phoneNumber && !state.creds.registered) {
             const sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
-            log(`Demande de code pour ${sanitizedPhoneNumber}`, sessionId, { event: 'pairing-request' }, 'INFO');
+            log(`Préparation de la demande de code pour ${sanitizedPhoneNumber} (Socket exists: ${!!sock})`, sessionId, { event: 'pairing-prep' }, 'INFO');
 
             // Set intermediate state without clearing existing code/qr
             if (onUpdate) onUpdate(sessionId, 'GENERATING_CODE', 'Demande en cours...', undefined);
@@ -104,7 +113,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             const requestPairing = async (retry = 0) => {
                 try {
                     const currentSock = activeSockets.get(sessionId);
-                    if (currentSock === sock && sock.ws && sock.ws.readyState === 1) {
+                    if (currentSock === sock && sock.ws && (sock.ws.readyState === 1 || sock.ws.readyState === 'OPEN')) {
                         const code = await sock.requestPairingCode(sanitizedPhoneNumber);
                         log(`Code d'appairage reçu: ${code}`, sessionId, { event: 'pairing-success' }, 'INFO');
 
@@ -124,13 +133,13 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                                 });
                             }
                         }
-                    } else if (retry < 5) {
-                        const delay = 3000 * (retry + 1);
-                        log(`Socket non prêt pour ${sessionId}, tentative ${retry + 1}/5 dans ${delay/1000}s...`, sessionId, { event: 'pairing-retry' }, 'DEBUG');
+                    } else if (retry < 15) {
+                        const delay = 5000;
+                        log(`Socket non prêt pour ${sessionId}, tentative ${retry + 1}/15 dans ${delay/1000}s... (WS state: ${sock.ws?.readyState})`, sessionId, { event: 'pairing-retry', wsState: sock.ws?.readyState }, 'DEBUG');
                         setTimeout(() => requestPairing(retry + 1), delay);
                     } else {
-                        log(`Socket non prêt après 5 tentatives, abandon de la demande de code`, sessionId, { event: 'pairing-aborted' }, 'WARN');
-                        if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', 'Socket non prêt pour le code', null);
+                        log(`Socket non prêt après 15 tentatives, abandon de la demande de code`, sessionId, { event: 'pairing-aborted' }, 'WARN');
+                        if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', 'Le serveur WhatsApp prend trop de temps à répondre (socket non prêt)', null);
                     }
                 } catch (err) {
                     log(`Erreur lors de la demande de code (tentative ${retry}): ${err.message}`, sessionId, { error: err.message }, 'ERROR');
@@ -142,7 +151,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 }
             };
 
-            setTimeout(() => requestPairing(), 6000);
+            setTimeout(() => requestPairing(), 10000);
         }
 
         sock.ev.on('creds.update', saveCreds);

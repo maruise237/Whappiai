@@ -1,4 +1,10 @@
-const { db } = require('../config/database');
+import os
+
+path = 'src/services/NotificationService.js'
+with open(path, 'r') as f:
+    content = f.read()
+
+new_content = """const { db } = require('../config/database');
 const crypto = require('crypto');
 const { log, broadcast } = require('../utils/logger');
 
@@ -11,13 +17,13 @@ class NotificationService {
             INSERT INTO user_notifications (id, user_id, type, title, message, metadata)
             VALUES (?, ?, ?, ?, ?, ?)
         `);
-        
+
         const id = crypto.randomUUID();
         const createdAt = new Date().toISOString();
         stmt.run(id, userId, type, title, message, JSON.stringify(metadata));
-        
+
         log(`Notification created for ${userId}: ${type}`, 'SYSTEM');
-        
+
         // Real-time push via WebSocket
         try {
             broadcast({
@@ -34,7 +40,7 @@ class NotificationService {
         } catch (e) {
             log(`Failed to broadcast notification: ${e.message}`, 'SYSTEM', null, 'WARN');
         }
-        
+
         return id;
     }
 
@@ -72,7 +78,7 @@ class NotificationService {
             query += ' AND is_read = 0';
         }
         query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-        
+
         const notifications = db.prepare(query).all(userId, limit, offset);
         return notifications.map(n => ({
             ...n,
@@ -111,4 +117,7 @@ class NotificationService {
     }
 }
 
-module.exports = NotificationService;
+module.exports = NotificationService;"""
+
+with open(path, 'w') as f:
+    f.write(new_content)

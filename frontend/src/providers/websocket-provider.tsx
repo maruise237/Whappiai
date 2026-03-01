@@ -39,6 +39,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           try {
             const url = new URL(API_BASE_URL)
             const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+            // For IP-based URLs, url.host includes the port
             wsUrl = `${protocol}//${url.host}?token=${token}`
           } catch (e) {
             console.error("Invalid API_BASE_URL for WebSocket:", API_BASE_URL)
