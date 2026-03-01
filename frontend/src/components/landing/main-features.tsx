@@ -164,7 +164,7 @@ export function MainFeatures() {
                         <div className="grid gap-3 py-4">
                            <h4 className="font-semibold text-foreground mb-2">Ce que vous pouvez faire :</h4>
                            {feature.details?.map((detail, i) => (
-                             <div key={feature.title} className="flex items-start gap-3">
+                             <div key={detail} className="flex items-start gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                                 <span className="text-muted-foreground">{detail}</span>
                              </div>
