@@ -23,7 +23,7 @@ import { Separator } from "@/components/ui/separator"
 import { useUser, useClerk, useAuth } from "@clerk/nextjs"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser()
@@ -63,7 +63,7 @@ export default function ProfilePage() {
            </div>
         </div>
         <div className="space-y-1 min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight truncate">{user?.fullName || userEmail?.split('@')[0]}</h1>
+          <h1 className="text-2xl font-bold tracking-tight truncate">{user?.fullName || ensureString(userEmail)?.split('@')[0]}</h1>
           <div className="flex flex-col sm:flex-row items-center gap-2">
             <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground tracking-widest">{userRole}</Badge>
             <span className="text-xs text-muted-foreground truncate w-full sm:w-auto">{userEmail}</span>

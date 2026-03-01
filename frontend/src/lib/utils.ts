@@ -67,3 +67,18 @@ export function getFriendlyErrorMessage(error: string | Error): string {
 
   return msg;
 }
+
+export function ensureString(val: any, fallback = ""): string {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === "string") return val;
+  try {
+    return JSON.stringify(val);
+  } catch (e) {
+    return String(val);
+  }
+}
+
+export function safeRender(val: any, fallback = "-"): string {
+  const str = ensureString(val, fallback);
+  return str === "" ? fallback : str;
+}

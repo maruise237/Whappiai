@@ -34,7 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
 
 export default function ActivitiesPage() {
   const { getToken } = useAuth()
@@ -64,12 +64,12 @@ export default function ActivitiesPage() {
   }, [fetchActivities])
 
   const filtered = activities.filter(a => {
-    const action = a.action || "";
-    const details = typeof a.details === 'string' ? a.details : (a.details ? JSON.stringify(a.details) : "");
-    const matchesSearch = action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.resource_id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.user_email || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const action = ensureString(a.action);
+    const details = ensureString(a.details);
+    const matchesSearch = ensureString(action).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ensureString(details).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (ensureString(a.resource_id).toLowerCase()).includes(searchQuery.toLowerCase()) ||
+        (ensureString(a.user_email).toLowerCase()).includes(searchQuery.toLowerCase());
 
     const matchesUser = userFilter === 'all' || a.user_email === userFilter;
 
@@ -80,9 +80,9 @@ export default function ActivitiesPage() {
 
   const getActionIcon = (action: string) => {
     const act = action || "";
-    if (act.includes('send')) return <MessageSquare className="h-3 w-3" />
-    if (act.includes('moderation') || act.includes('block')) return <ShieldCheck className="h-3 w-3" />
-    if (act.includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
+    if (ensureString(act).includes('send')) return <MessageSquare className="h-3 w-3" />
+    if (ensureString(act).includes('moderation') || ensureString(act).includes('block')) return <ShieldCheck className="h-3 w-3" />
+    if (ensureString(act).includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
     return <Activity className="h-3 w-3" />
   }
 
@@ -177,7 +177,7 @@ export default function ActivitiesPage() {
                   </TableCell>
                   {isAdmin && (
                     <TableCell className="hidden sm:table-cell">
-                        <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[120px]">{activity.user_email || 'System'}</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[120px]">{safeRender(activity.user_email, 'System')}</p>
                     </TableCell>
                   )}
                   <TableCell>
@@ -187,9 +187,9 @@ export default function ActivitiesPage() {
                         {getActionIcon(activity.action || "")}
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 min-w-0">
-                        <span className="text-xs font-semibold capitalize truncate">{(activity.action || "action").replace(/_/g, ' ')}</span>
+                        <span className="text-xs font-semibold capitalize truncate">{ensureString(activity.action, 'action').replace(/_/g, ' ')}</span>
                         <Badge variant="outline" className="text-[8px] sm:hidden w-fit px-1 h-3.5 opacity-60">
-                           {activity.resource_id || 'sys'}
+                           {safeRender(activity.resource_id, 'sys')}
                         </Badge>
                       </div>
 
@@ -197,14 +197,14 @@ export default function ActivitiesPage() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <Badge variant="outline" className="text-[10px] font-mono border-muted/50 text-muted-foreground group-hover:border-primary/30 group-hover:text-primary transition-colors">
-                      {activity.resource_id || 'system'}
+                      {safeRender(activity.resource_id, 'system')}
                     </Badge>
                   </TableCell>
 
                   <TableCell className="max-w-[300px] hidden md:table-cell">
 
                     <p className="text-[11px] text-muted-foreground truncate">
-                        {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
+                        {safeRender(activity.details)}
                     </p>
                   </TableCell>
                   <TableCell className="text-right">

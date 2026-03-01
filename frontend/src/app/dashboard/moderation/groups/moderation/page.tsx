@@ -33,7 +33,7 @@ import { Progress } from "@/components/ui/progress"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
 
 function GroupModerationContent() {
   const router = useRouter()
@@ -114,7 +114,7 @@ function GroupModerationContent() {
   }
 
   const filteredGroups = groups.filter(g =>
-    (g.subject || g.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    ensureString(g.subject || g.name).toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
@@ -131,7 +131,7 @@ function GroupModerationContent() {
           <div className="space-y-0.5">
             <h1 className="text-xl font-semibold">Sécurité & Modération</h1>
             <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase font-bold tracking-widest px-2 h-5">
-              {sessionId}
+              {safeRender(sessionId)}
             </Badge>
           </div>
         </div>
@@ -167,7 +167,7 @@ function GroupModerationContent() {
                       : "hover:bg-muted text-muted-foreground"
                   )}
                 >
-                  <span className="truncate flex-1 lg:pr-2">{group.subject || group.name || "Groupe sans nom"}</span>
+                  <span className="truncate flex-1 lg:pr-2">{safeRender(group.subject || group.name, 'Groupe sans nom')}</span>
                   <ChevronRight className={cn("h-3 w-3 hidden lg:block", selectedGroupId !== group.id && "opacity-0")} />
                 </button>
               ))}
@@ -187,9 +187,9 @@ function GroupModerationContent() {
            ) : (
              <>
                <div className="space-y-1">
-                  <h2 className="text-lg font-bold">{selectedGroup?.subject || selectedGroup?.name}</h2>
+                  <h2 className="text-lg font-bold">{safeRender(selectedGroup?.subject || selectedGroup?.name)}</h2>
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-mono">
-                     ID: {selectedGroupId}
+                     ID: {safeRender(selectedGroupId)}
                   </p>
                </div>
 

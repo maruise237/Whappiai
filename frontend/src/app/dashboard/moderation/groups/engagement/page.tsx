@@ -36,7 +36,7 @@ import { Label } from "@/components/ui/label"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn, copyToClipboard } from "@/lib/utils"
+import { cn, copyToClipboard } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
 import confetti from "canvas-confetti"
 
 function GroupEngagementContent() {
@@ -198,7 +198,7 @@ function GroupEngagementContent() {
   }
 
   const filteredGroups = groups.filter(g =>
-    (g.subject || g.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    ensureString(g.subject || g.name).toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
@@ -214,7 +214,7 @@ function GroupEngagementContent() {
           <div className="space-y-0.5">
             <h1 className="text-xl font-semibold">Engagement & Stratégie</h1>
             <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase font-bold tracking-widest px-2 h-5">
-              {sessionId}
+              {safeRender(sessionId)}
             </Badge>
           </div>
         </div>
@@ -245,7 +245,7 @@ function GroupEngagementContent() {
                       : "hover:bg-muted text-muted-foreground"
                   )}
                 >
-                  <span className="truncate flex-1 pr-2">{group.subject || group.name || "Groupe sans nom"}</span>
+                  <span className="truncate flex-1 pr-2">{safeRender(group.subject || group.name, 'Groupe sans nom')}</span>
                 </button>
               ))}
           </div>
@@ -338,7 +338,7 @@ function GroupEngagementContent() {
                            <Accordion type="single" collapsible className="w-full space-y-2">
                               {links.map((link, idx) => (
                                 <AccordionItem key={idx} value={`item-${idx}`} className="border rounded-lg bg-card px-4">
-                                  <AccordionTrigger className="text-sm hover:no-underline font-medium">{link.title || "Lien sans titre"}</AccordionTrigger>
+                                  <AccordionTrigger className="text-sm hover:no-underline font-medium">{safeRender(link.title, 'Lien sans titre')}</AccordionTrigger>
                                   <AccordionContent className="text-xs space-y-4 pb-4">
                                     <div className="grid grid-cols-1 gap-4">
                                       <div className="space-y-1">
@@ -516,7 +516,7 @@ function GroupEngagementContent() {
                                        <MessageSquare className="h-4 w-4 text-muted-foreground/40" />
                                     </div>
                                     <div className="min-w-0">
-                                       <p className="text-xs font-medium truncate">{task.message_content?.substring(0, 60) || "Message média"}</p>
+                                       <p className="text-xs font-medium truncate">{safeRender(task.message_content?.substring(0, 60), 'Message média')}</p>
                                        <p className="text-[10px] text-muted-foreground">
                                           {new Date(task.scheduled_at).toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} •
                                           <span className={cn(

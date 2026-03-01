@@ -42,7 +42,7 @@ import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
 
 export default function AiModelsPage() {
   const { getToken } = useAuth()
@@ -244,8 +244,8 @@ export default function AiModelsPage() {
                     <TableRow key={m.id} className="border-muted/20 group">
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold">{m.name}</span>
-                          <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[150px]">{m.endpoint || m.api_endpoint}</span>
+                          <span className="text-xs font-bold">{safeRender(m.name)}</span>
+                          <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[150px]">{safeRender(m.endpoint || m.api_endpoint)}</span>
                         </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
@@ -254,7 +254,7 @@ export default function AiModelsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">{m.model_name}</code>
+                        <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">{safeRender(m.model_name)}</code>
                       </TableCell>
                       <TableCell className="text-center hidden md:table-cell">
                         <div className="flex flex-col items-center">
