@@ -386,7 +386,10 @@ const sessionTokens = new Map();
 // Helper to broadcast session updates
 const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     const isPairingCode = status === 'GENERATING_CODE';
-    Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : null);
+    const isQR = status === 'GENERATING_QR';
+
+    // CRITICAL: We pass undefined instead of null to prevent clearing existing code/qr when status updates
+    Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : undefined);
 
     broadcastToClients({
         type: 'session-update',
@@ -394,7 +397,7 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
             sessionId: id,
             status,
             detail,
-            qr: status === 'GENERATING_QR' ? qrOrCode : null,
+            qr: isQR ? qrOrCode : null, // WebSocket broadcast can still send null for UI feedback if needed
             pairingCode: isPairingCode ? qrOrCode : null,
             token: Session.findById(id)?.token
         }]
@@ -627,7 +630,7 @@ if (require.main === module) {
             const credsFile = path.join(sessionDir, 'creds.json');
             
             if (fs.existsSync(credsFile)) {
-                log(`Session ${session.id} trouvée avec des identifiants valides. Réinitialisation automatique...`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
+                log(`Session ${session.id} trouvée with des identifiants valides. Réinitialisation automatique...`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
 
                 // Increase delay to 3s between session initializations to prevent Dokploy CPU spikes and mass disconnects during updates
                 await new Promise(resolve => setTimeout(resolve, 3000));
