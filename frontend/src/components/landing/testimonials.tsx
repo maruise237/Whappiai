@@ -7,7 +7,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 
-const DEFAULT_MARQUEE_DURATION = 40;
+// --- Data Generation ---
+
+
+
+
 
 const MARIUSE = {
   name: "Mariuse Kamta",

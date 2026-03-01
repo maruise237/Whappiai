@@ -26,16 +26,12 @@ export default function ProfilePage() {
   const [loading, setLoading] = React.useState(true);
 
   const fetchDbUser = React.useCallback(async () => {
-    try {
-      const token = await getToken();
-      const data = await api.auth.check(token || undefined);
-      setDbUser(data?.user || data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [getToken]);
+     try {
+        const token = await getToken()
+        const data = await api.auth.check(token || undefined)
+        setDbUser(data?.user || data)
+     } catch (e) { console.error(e) } finally { setLoading(false) }
+  }, [getToken])
 
   React.useEffect(() => {
     fetchDbUser();

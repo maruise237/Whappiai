@@ -1,5 +1,10 @@
 "use client"
 
+const ACTIVITIES_PAGE_SIZE = 50
+const SKELETON_ROWS = 5
+
+
+
 import * as React from "react"
 import {
   Activity,
@@ -45,7 +50,7 @@ export default function ActivitiesPage() {
     setLoading(true)
     try {
       const token = await getToken()
-      const data = await api.activities.list(50, 0, token || undefined)
+      const data = await api.activities.list(ACTIVITIES_PAGE_SIZE, 0, token || undefined)
       setActivities(data || [])
     } catch (e) {
       toast.error("Erreur de chargement du journal")
@@ -145,8 +150,8 @@ export default function ActivitiesPage() {
             </TableHeader>
           <TableBody>
             {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i} className="animate-pulse border-muted/20">
+              Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                <TableRow key={`skeleton-${i}`} className="animate-pulse border-muted/20">
                   <TableCell colSpan={5} className="h-12 bg-muted/5"></TableCell>
                 </TableRow>
               ))
