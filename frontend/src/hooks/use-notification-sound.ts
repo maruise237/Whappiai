@@ -4,7 +4,7 @@ import * as React from "react"
 
 export function useNotificationSound() {
   const play = React.useCallback(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === "undefined") return
 
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()

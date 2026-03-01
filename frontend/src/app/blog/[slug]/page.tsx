@@ -102,7 +102,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
               {post.title}
             </h1>
-            
+
             <div className="flex flex-wrap items-center gap-6 text-muted-foreground border-b pb-8">
               <div className="flex items-center gap-2">
                 <div className="bg-muted p-2 rounded-full">
@@ -115,7 +115,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4" />
-                {new Date(post.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {new Date(post.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="w-4 h-4" />
@@ -124,11 +124,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </div>
           </div>
 
-          <div 
+          <div
             className="blog-content space-y-6"
-            dangerouslySetInnerHTML={{ __html: post.content }} 
+            dangerouslySetInnerHTML={{ __html: post.content }}
           />
-          
+
           <div className="mt-12 pt-8 border-t flex justify-between items-center not-prose">
             <p className="font-semibold">Partager cet article</p>
             <div className="flex gap-2">

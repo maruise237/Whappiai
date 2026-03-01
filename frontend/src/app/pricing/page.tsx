@@ -8,7 +8,7 @@ const PLANS = [
     price: "2 500 FCFA",
     description: "Idéal pour démarrer",
     features: [
-      "Jusqu'à 2,000 messages/mois",
+      "Jusqu"à 2,000 messages/mois",
       "Support par email",
       "Accès API standard",
       "1 instance WhatsApp"
@@ -21,7 +21,7 @@ const PLANS = [
     price: "5 000 FCFA",
     description: "Pour les professionnels actifs",
     features: [
-      "Jusqu'à 10,000 messages/mois",
+      "Jusqu"à 10,000 messages/mois",
       "Support prioritaire",
       "Accès API complet",
       "3 instances WhatsApp",
@@ -35,7 +35,7 @@ const PLANS = [
     price: "10 000 FCFA",
     description: "Pour les grandes entreprises",
     features: [
-      "Jusqu'à 100,000 messages/mois",
+      "Jusqu"à 100,000 messages/mois",
       "Support dédié 24/7",
       "Accès API illimité",
       "Instances illimitées",
@@ -59,17 +59,17 @@ export default function PricingPage() {
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md inline-block">
           <p className="text-sm text-yellow-800">
             <strong>Important :</strong> Veuillez utiliser la même adresse email que votre compte Whappi
-            lors du paiement pour l'activation automatique.
+            lors du paiement pour l"activation automatique.
           </p>
         </div>
       </div>
 
       <div className="mt-16 grid gap-8 lg:grid-cols-3 lg:gap-x-8 max-w-7xl mx-auto">
         {PLANS.map((plan) => (
-          <div 
+          <div
             key={plan.name}
             className={`relative p-8 bg-white border rounded-2xl shadow-sm flex flex-col ${
-              plan.highlight 
+              plan.highlight
                 ? "border-indigo-600 ring-2 ring-indigo-600 transform scale-105 z-10"
                 : "border-gray-200"
             }`}
@@ -80,7 +80,7 @@ export default function PricingPage() {
                 Populaire
               </div>
             )}
-            
+
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-gray-900">{plan.name}</h3>
               <p className="mt-4 flex items-baseline text-gray-900">
@@ -112,7 +112,7 @@ export default function PricingPage() {
           </div>
         ))}
       </div>
-      
+
       <div className="mt-12 text-center space-y-4">
         <p className="text-gray-600">
           Déjà un compte ?{" "}

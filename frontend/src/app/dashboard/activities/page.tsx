@@ -1,22 +1,20 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   Activity,
   RefreshCcw,
   Search,
   History,
   Clock,
-  User,
-  Tag,
   MessageSquare,
   ShieldCheck,
   AlertCircle
-} from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -24,39 +22,47 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { api } from "@/lib/api"
-import { useAuth, useUser } from "@clerk/nextjs"
-import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/lib/api";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const ACTIVITIES_PAGE_SIZE = 50;
 
 export default function ActivitiesPage() {
-  const { getToken } = useAuth()
-  const { user } = useUser()
-  const [activities, setActivities] = React.useState<any[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [userFilter, setUserFilter] = React.useState("all")
+  const { getToken } = useAuth();
+  const { user } = useUser();
+  const [activities, setActivities] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [userFilter, setUserFilter] = React.useState("all");
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" ||
+                  user?.publicMetadata?.role === "admin";
 
   const fetchActivities = React.useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const token = await getToken()
-      const data = await api.activities.list(50, 0, token || undefined)
-      setActivities(data || [])
+      const token = await getToken();
+      const data = await api.activities.list(ACTIVITIES_PAGE_SIZE, 0, token || undefined);
+      setActivities(data || []);
     } catch (e) {
-      toast.error("Erreur de chargement du journal")
+      console.error(e);
+      toast.error("Erreur de chargement du journal");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [getToken])
+  }, [getToken]);
 
   React.useEffect(() => {
-    fetchActivities()
-  }, [fetchActivities])
+    fetchActivities();
+  }, [fetchActivities]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
 
   const filtered = activities.filter(a => {
     const action = a.action || "";
@@ -69,17 +75,17 @@ export default function ActivitiesPage() {
     const matchesUser = userFilter === "all" || a.user_email === userFilter;
 
     return matchesSearch && matchesUser;
-  })
+  });
 
-  const uniqueUsers = Array.from(new Set(activities.map(a => a.user_email))).filter(Boolean)
+  const uniqueUsers = Array.from(new Set(activities.map(a => a.user_email))).filter(Boolean);
 
   const getActionIcon = (action: string) => {
     const act = action || "";
-    if (act.includes("send")) return <MessageSquare className="h-3 w-3" />
-    if (act.includes("moderation") || act.includes("block")) return <ShieldCheck className="h-3 w-3" />
-    if (act.includes("error")) return <AlertCircle className="h-3 w-3 text-destructive" />
-    return <Activity className="h-3 w-3" />
-  }
+    if (act.includes("send")) return <MessageSquare className="h-3 w-3" />;
+    if (act.includes("moderation") || act.includes("block")) return <ShieldCheck className="h-3 w-3" />;
+    if (act.includes("error")) return <AlertCircle className="h-3 w-3 text-destructive" />;
+    return <Activity className="h-3 w-3" />;
+  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">
@@ -103,7 +109,7 @@ export default function ActivitiesPage() {
             placeholder="Rechercher une action, ressource ou utilisateur..."
             className="pl-8 h-9 text-xs bg-muted/20 border-none"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
           />
         </div>
 
@@ -220,5 +226,5 @@ export default function ActivitiesPage() {
         </div>
       </Card>
     </div>
-  )
+  );
 }

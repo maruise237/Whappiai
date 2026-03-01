@@ -1,83 +1,44 @@
-"use client"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
-import { Home, ArrowRight, MessageSquare, FileText, LayoutDashboard } from "lucide-react"
-import { useUser } from "@clerk/nextjs"
+import { Home, ArrowLeft } from "lucide-react"
+
+const ERROR_CODE_404 = "404";
 
 export default function NotFound() {
-  const { isSignedIn, isLoaded } = useUser()
-
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full text-center space-y-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="relative"
-        >
-          <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
-          <h1 className="relative text-9xl font-bold text-primary opacity-20">404</h1>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-4xl font-bold text-foreground">Oups !</span>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <div className="relative">
+        <h1 className="relative text-9xl font-bold text-primary opacity-20">{ERROR_CODE_404}</h1>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Page introuvable</h2>
+            <p className="text-muted-foreground max-w-xs mx-auto text-sm">
+              Oups ! La page que vous recherchez semble avoir disparu ou n&apos;a jamais existé.
+            </p>
           </div>
-        </motion.div>
+        </div>
+      </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="space-y-4"
-        >
-          <h2 className="text-2xl font-semibold text-foreground">
-            Cette page semble avoir disparu dans le cloud.
-          </h2>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            Ne vous inquiétez pas, même les meilleures IA perdent parfois le fil.
-            Profitez-en pour découvrir comment nous pouvons optimiser votre WhatsApp.
-          </p>
-        </motion.div>
+      <div className="flex flex-col sm:flex-row gap-4 mt-12">
+        <Button asChild variant="outline" className="rounded-full px-6">
+          <Link href="javascript:history.back()">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Link>
+        </Button>
+        <Button asChild className="rounded-full px-6 shadow-lg shadow-primary/20">
+          <Link href="/">
+            <Home className="mr-2 h-4 w-4" />
+            Accueil
+          </Link>
+        </Button>
+      </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="grid gap-4 sm:grid-cols-2 max-w-lg mx-auto"
-        >
-          <Button asChild size="lg" className="w-full gap-2" disabled={!isLoaded}>
-            <Link href={!isLoaded ? "#" : (isSignedIn ? "/dashboard" : "/")}>
-              {isSignedIn ? <LayoutDashboard size={18} /> : <Home size={18} />}
-              {isSignedIn ? "Tableau de bord" : "Retour à l'accueil"}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="w-full gap-2">
-            <Link href="/register">
-              <ArrowRight size={18} />
-              Essai Gratuit
-            </Link>
-          </Button>
-        </motion.div>
-
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className="pt-8 border-t border-border"
-        >
-            <p className="text-sm text-muted-foreground mb-4">Ou consultez nos ressources utiles :</p>
-            <div className="flex justify-center gap-6">
-                <Link href="/docs" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                    <FileText size={16} />
-                    Documentation
-                </Link>
-                <Link href="/#pricing" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                    <MessageSquare size={16} />
-                    Tarifs
-                </Link>
-            </div>
-        </motion.div>
+      <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 opacity-40 grayscale">
+        <div className="h-8 w-24 bg-muted rounded animate-pulse" />
+        <div className="h-8 w-24 bg-muted rounded animate-pulse delay-75" />
+        <div className="h-8 w-24 bg-muted rounded animate-pulse delay-150" />
+        <div className="h-8 w-24 bg-muted rounded animate-pulse delay-300" />
       </div>
     </div>
   )

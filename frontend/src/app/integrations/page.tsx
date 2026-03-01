@@ -12,7 +12,7 @@ const INTEGRATIONS_LIST = [
   { name: "Python", icon: Code, description: "Client API async pour Python 3.8+.", category: "Backend" },
   { name: "PHP / Laravel", icon: Code, description: "Package Composer pour Laravel 9/10.", category: "Backend" },
   { name: "Zapier", icon: Zap, description: "Connectez Whappi à 5000+ apps sans coder.", category: "No-Code" },
-  { name: "Make (Integromat)", icon: Zap, description: "Scénarios d'automatisation avancés.", category: "No-Code" },
+  { name: "Make (Integromat)", icon: Zap, description: "Scénarios d"automatisation avancés.", category: "No-Code" },
   { name: "n8n", icon: Zap, description: "Workflow automation open-source.", category: "No-Code" },
   { name: "Supabase", icon: Database, description: "Stockez vos messages directement en DB.", category: "Database" },
   { name: "Firebase", icon: Database, description: "Déclenchez des fonctions sur messages.", category: "Database" },

@@ -17,8 +17,8 @@ export default function EnterprisePage() {
             Whappi Enterprise
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            L'infrastructure WhatsApp <br />
-            <span className="text-primary">à l'échelle industrielle</span>
+            L"infrastructure WhatsApp <br />
+            <span className="text-primary">à l"échelle industrielle</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Pour les entreprises qui envoient plus de 100k messages par mois. SLA garanti, support dédié et déploiement sur mesure.
@@ -33,7 +33,7 @@ export default function EnterprisePage() {
           </div>
         </div>
       </section>
-      
+
       {/* Comparison Table */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto max-w-5xl">

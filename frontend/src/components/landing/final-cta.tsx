@@ -50,7 +50,7 @@ export function FinalCTA() {
           </Button>
         </div>
 
-        <p className="mt-8 text-sm text-muted-foreground">Commencez dès maintenant avec notre plan Starter à 2 500 FCFA/mois. 14 jours d'essai offerts.</p>
+        <p className="mt-8 text-sm text-muted-foreground">Commencez dès maintenant avec notre plan Starter à 2 500 FCFA/mois. 14 jours d"essai offerts.</p>
       </motion.div>
     </section>
   )

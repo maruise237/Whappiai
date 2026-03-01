@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils"
 const plans = [
   {
     name: "Starter",
-    description: "Licence Standard : L'essentiel pour démarrer. Idéale pour les freelances et les tests d'automatisation sur un numéro unique.",
-    price: { 
-      monthly: "2 500 FCFA", 
+    description: "Licence Standard : L"essentiel pour démarrer. Idéale pour les freelances et les tests d"automatisation sur un numéro unique.",
+    price: {
+      monthly: "2 500 FCFA",
       yearly: "25 000 FCFA",
       monthlyValue: 2500,
       yearlyValue: 25000
@@ -29,9 +29,9 @@ const plans = [
   },
   {
     name: "Pro",
-    description: "Licence Commerciale : La puissance de l'IA pour votre croissance. Gestion multi-groupes et analyses détaillées pour les PME.",
-    price: { 
-      monthly: "5 000 FCFA", 
+    description: "Licence Commerciale : La puissance de l"IA pour votre croissance. Gestion multi-groupes et analyses détaillées pour les PME.",
+    price: {
+      monthly: "5 000 FCFA",
       yearly: "50 000 FCFA",
       monthlyValue: 5000,
       yearlyValue: 50000
@@ -51,8 +51,8 @@ const plans = [
   {
     name: "Business",
     description: "Licence Entreprise : Performance maximale sans compromis. Infrastructure dédiée et accompagnement sur mesure pour les grands comptes.",
-    price: { 
-      monthly: "10 000 FCFA", 
+    price: {
+      monthly: "10 000 FCFA",
       yearly: "100 000 FCFA",
       monthlyValue: 10000,
       yearlyValue: 100000
@@ -134,8 +134,8 @@ export function Pricing() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className={cn(
                 "relative rounded-3xl p-8 transition-all duration-300",
-                plan.highlighted 
-                  ? "bg-card border-2 border-primary shadow-2xl scale-105 z-10" 
+                plan.highlighted
+                  ? "bg-card border-2 border-primary shadow-2xl scale-105 z-10"
                   : "bg-card/50 border border-border/50 hover:border-primary/50 hover:bg-card z-0 mt-4"
               )}
             >
@@ -171,7 +171,7 @@ export function Pricing() {
                 {plan.features.map((feature) => (
                   <div key={feature} className="flex items-start gap-3">
                     <div className={cn(
-                      "mt-1 p-0.5 rounded-full shrink-0", 
+                      "mt-1 p-0.5 rounded-full shrink-0",
                       plan.highlighted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                     )}>
                       <Check className="w-3 h-3" strokeWidth={3} />

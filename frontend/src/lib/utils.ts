@@ -18,12 +18,12 @@ export async function copyToClipboard(text: string) {
     }
   }
 
-  // Fallback to execCommand('copy')
+  // Fallback to execCommand("copy")
   try {
     const textArea = document.createElement("textarea");
     textArea.value = text;
 
-    // Ensure it's not visible and doesn't scroll the page
+    // Ensure it"s not visible and doesn"t scroll the page
     textArea.style.position = "fixed";
     textArea.style.left = "-9999px";
     textArea.style.top = "0";
@@ -53,7 +53,7 @@ export function getFriendlyErrorMessage(error: string | Error): string {
     return "Votre session a expiré. Veuillez vous reconnecter pour continuer.";
   }
   if (msg.includes("403") || msg.toLowerCase().includes("forbidden")) {
-    return "Vous n'avez pas l'autorisation d'effectuer cette action. Contactez votre administrateur si vous pensez qu'il s'agit d'une erreur.";
+    return "Vous n"avez pas l"autorisation d"effectuer cette action. Contactez votre administrateur si vous pensez qu"il s"agit d"une erreur.";
   }
   if (msg.includes("400") || msg.toLowerCase().includes("bad request")) {
     return "Les informations fournies sont invalides. Veuillez vérifier vos saisies et réessayer.";

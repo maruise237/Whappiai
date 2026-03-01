@@ -35,18 +35,18 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
         let wsUrl: string
 
-        if (API_BASE_URL && API_BASE_URL.includes('://')) {
+        if (API_BASE_URL && API_BASE_URL.includes("://")) {
           try {
             const url = new URL(API_BASE_URL)
-            const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+            const protocol = url.protocol === "https:" ? "wss:" : "ws:"
             wsUrl = `${protocol}//${url.host}?token=${token}`
           } catch (e) {
             console.error("Invalid API_BASE_URL for WebSocket:", API_BASE_URL)
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
             wsUrl = `${protocol}//${window.location.host}?token=${token}`
           }
         } else {
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+          const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
           wsUrl = `${protocol}//${window.location.host}?token=${token}`
         }
 
@@ -55,7 +55,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
         socket.onopen = () => {
           if (!isComponentMounted) return
-          console.log('WebSocket connected (Shared)')
+          console.log("WebSocket connected (Shared)")
           setIsConnected(true)
           reconnectCountRef.current = 0
         }
@@ -66,13 +66,13 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             const data = JSON.parse(event.data)
             setLastMessage(data)
           } catch (error) {
-            console.error('Failed to parse WebSocket message:', error)
+            console.error("Failed to parse WebSocket message:", error)
           }
         }
 
         socket.onclose = (event) => {
           if (!isComponentMounted) return
-          console.log('WebSocket disconnected, retrying...', event.reason)
+          console.log("WebSocket disconnected, retrying...", event.reason)
           setIsConnected(false)
 
           const delay = Math.min(
@@ -85,11 +85,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
 
         socket.onerror = (error) => {
-          console.error('WebSocket error:', error)
+          console.error("WebSocket error:", error)
         }
       } catch (err) {
         if (!isComponentMounted) return
-        console.error('Failed to get WS token:', err)
+        console.error("Failed to get WS token:", err)
         reconnectTimeout = setTimeout(connect, 5000)
       }
     }

@@ -13,9 +13,9 @@ import { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Whappi | Automatisation WhatsApp & Modération IA",
-  description: "Boostez l'engagement de votre communauté WhatsApp avec notre IA de support et nos outils de modération anti-spam. Essai gratuit.",
+  description: "Boostez l"engagement de votre communauté WhatsApp avec notre IA de support et nos outils de modération anti-spam. Essai gratuit.",
   openGraph: {
-    title: "Whappi - L'IA pour vos groupes WhatsApp",
+    title: "Whappi - L"IA pour vos groupes WhatsApp",
     description: "Automatisez votre support client et modérez vos communautés WhatsApp avec une IA intelligente.",
     type: "website",
     locale: "fr_FR",

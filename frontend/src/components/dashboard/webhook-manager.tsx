@@ -1,21 +1,19 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   Webhook,
   Plus,
   Trash2,
-  Shield,
-  Zap,
   Loader2,
   ExternalLink,
   CheckCircle2
-} from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -23,73 +21,74 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Checkbox } from "@/components/ui/checkbox"
-import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
-import { toast } from "sonner"
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { api } from "@/lib/api";
+import { useAuth } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 const AVAILABLE_EVENTS = [
   { id: "message_received", label: "Message Reçu" },
   { id: "ai_response", label: "Réponse IA" },
   { id: "human_takeover", label: "Reprise Humaine" },
-]
+];
 
 export function WebhookManager({ sessionId }: { sessionId: string }) {
-  const { getToken } = useAuth()
-  const [webhooks, setWebhooks] = React.useState<any[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isAdding, setIsAdding] = React.useState(false)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const { getToken } = useAuth();
+  const [webhooks, setWebhooks] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const [formData, setFormData] = React.useState({
     url: "",
     events: ["message_received", "ai_response"],
     secret: ""
-  })
+  });
 
   const fetchWebhooks = React.useCallback(async () => {
     try {
-      const token = await getToken()
-      const response = await api.sessions.getWebhooks(sessionId, token || undefined)
-      setWebhooks(Array.isArray(response) ? response : [])
+      const token = await getToken();
+      const response = await api.sessions.getWebhooks(sessionId, token || undefined);
+      setWebhooks(Array.isArray(response) ? response : []);
     } catch (error) {
-      console.error("Failed to fetch webhooks", error)
+      console.error(error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [sessionId, getToken])
+  }, [sessionId, getToken]);
 
-  React.useEffect(() => { fetchWebhooks() }, [fetchWebhooks])
+  React.useEffect(() => { fetchWebhooks(); }, [fetchWebhooks]);
 
   const handleAdd = async () => {
-    if (!formData.url) return toast.error("URL requise")
-
-    setIsSubmitting(true)
+    if (!formData.url) return toast.error("URL requise");
+    setIsSubmitting(true);
     try {
-      const token = await getToken()
-      await api.sessions.addWebhook(sessionId, formData, token || undefined)
-      toast.success("Webhook ajouté")
-      setIsAdding(false)
-      setFormData({ url: "", events: ["message_received", "ai_response"], secret: "" })
-      fetchWebhooks()
+      const token = await getToken();
+      await api.sessions.addWebhook(sessionId, formData, token || undefined);
+      toast.success("Webhook ajouté");
+      setIsAdding(false);
+      setFormData({ url: "", events: ["message_received", "ai_response"], secret: "" });
+      fetchWebhooks();
     } catch (error: any) {
-      toast.error("Erreur lors de l"ajout")
+      console.error(error);
+      toast.error("Erreur lors de l&apos;ajout");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
     try {
-      const token = await getToken()
-      await api.sessions.deleteWebhook(sessionId, id, token || undefined)
-      toast.success("Webhook supprimé")
-      fetchWebhooks()
+      const token = await getToken();
+      await api.sessions.deleteWebhook(sessionId, id, token || undefined);
+      toast.success("Webhook supprimé");
+      fetchWebhooks();
     } catch (error) {
-      toast.error("Erreur lors de la suppression")
+      console.error(error);
+      toast.error("Erreur lors de la suppression");
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -98,7 +97,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Webhook className="h-5 w-5 text-primary" /> Webhooks
           </h2>
-          <p className="text-sm text-muted-foreground">Connectez Whappi à vos outils (Zapier, Make, CRM) en temps réel.</p>
+          <p className="text-sm text-muted-foreground">Connectez Whappi à vos outils.</p>
         </div>
         <Button size="sm" onClick={() => setIsAdding(true)}>
           <Plus className="h-4 w-4 mr-2" /> Nouveau
@@ -129,16 +128,19 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
                           const events = typeof wh?.events === "string" ? JSON.parse(wh.events || "[]") : (wh?.events || []);
                           if (!Array.isArray(events)) return null;
                           return events.map((ev: string) => (
-                            <Badge key={ev} variant="secondary" className="text-[9px] uppercase">{String(ev).replace("_", " ")}</Badge>
+                            <Badge key={ev} variant="secondary" className="text-[9px] uppercase">
+                              {String(ev).replace("_", " ")}
+                            </Badge>
                           ));
                         } catch (e) {
-                          return <Badge variant="destructive" className="text-[9px]">ERR_PARSE</Badge>;
+                          return <Badge variant="destructive" className="text-[9px]">ERR</Badge>;
                         }
                       })()}
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="text-destructive group-hover:opacity-100 opacity-0 transition-opacity" onClick={() => handleDelete(wh.id)}>
+                <Button variant="ghost" size="icon" className="text-destructive opacity-0
+                  group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(wh.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -156,7 +158,8 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-xs uppercase">URL de destination</Label>
-              <Input placeholder="https://votre-api.com/webhook" value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})} className="h-9" />
+              <Input placeholder="https://votre-api.com/webhook" value={formData.url}
+                onChange={e => setFormData({...formData, url: e.target.value})} className="h-9" />
             </div>
 
             <div className="space-y-3">
@@ -180,7 +183,8 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
 
             <div className="space-y-2">
               <Label className="text-xs uppercase">Secret Signature (Optionnel)</Label>
-              <Input placeholder="Clé pour vérifier l"authenticité" value={formData.secret} onChange={e => setFormData({...formData, secret: e.target.value})} className="h-9" />
+              <Input placeholder="Clé pour vérifier l&apos;authenticité" value={formData.secret}
+                onChange={e => setFormData({...formData, secret: e.target.value})} className="h-9" />
             </div>
           </div>
           <DialogFooter>
@@ -193,5 +197,5 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

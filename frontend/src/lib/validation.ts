@@ -1,14 +1,14 @@
 /// <reference path="../types/pristinejs.d.ts" />
-import Pristine from 'pristinejs';
+import Pristine from "pristinejs";
 
 export const createPristine = (form: HTMLFormElement) => {
   return new Pristine(form, {
-    classTo: 'form-group',
-    errorClass: 'has-danger',
-    successClass: 'has-success',
-    errorTextParent: 'form-group',
-    errorTextTag: 'div',
-    errorTextClass: 'text-help'
+    classTo: "form-group",
+    errorClass: "has-danger",
+    successClass: "has-success",
+    errorTextParent: "form-group",
+    errorTextTag: "div",
+    errorTextClass: "text-help"
   });
 };
 

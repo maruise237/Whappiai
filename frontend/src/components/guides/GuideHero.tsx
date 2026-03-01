@@ -7,13 +7,13 @@ export function GuideHero() {
     <section className="pt-32 pb-20 px-4">
       <div className="container mx-auto text-center max-w-4xl">
         <Badge variant="outline" className="mb-6 py-1 px-4 border-primary/20 bg-primary/5 text-primary">
-          Centre d'apprentissage
+          Centre d"apprentissage
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
           Guides & <span className="text-primary">Tutoriels</span>
         </h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Maîtrisez l'API WhatsApp avec nos guides étape par étape, des bases aux intégrations avancées.
+          Maîtrisez l"API WhatsApp avec nos guides étape par étape, des bases aux intégrations avancées.
         </p>
 
         <div className="relative w-full max-w-lg mx-auto">

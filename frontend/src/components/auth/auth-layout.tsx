@@ -15,14 +15,14 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         {/* Green glow effects */}
         <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-green-500/10 blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-normal" />
         <div className="absolute bottom-[-20%] right-[20%] w-[500px] h-[500px] bg-green-500/5 blur-[100px] rounded-full mix-blend-multiply dark:mix-blend-normal" />
-        
+
         {/* Grid Pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.15] dark:opacity-[0.15] opacity-[0.05]" 
-          style={{ 
+        <div
+          className="absolute inset-0 opacity-[0.15] dark:opacity-[0.15] opacity-[0.05]"
+          style={{
             backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-            backgroundSize: '40px 40px' 
-          }} 
+            backgroundSize: "40px 40px"
+          }}
         />
       </div>
 
@@ -32,7 +32,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           <Link href="/" className="mb-8 hover:opacity-90 transition-opacity">
             <Logo size={40} showText={true} textClassName="text-foreground tracking-wide" />
           </Link>
-          
+
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-3 leading-tight">
             Créez votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-400 dark:to-emerald-500 relative inline-block">
               Assistant IA
@@ -50,7 +50,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             <h2 className="text-xl font-semibold text-foreground/90">{title}</h2>
             <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>
-          
+
           {children}
         </div>
 

@@ -6,7 +6,7 @@ import { useSignIn, useSignUp } from "@clerk/nextjs"
 export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" }) {
   const { signIn, isLoaded: isSignInLoaded } = useSignIn()
   const { signUp, isLoaded: isSignUpLoaded } = useSignUp()
-  
+
   const isLoaded = mode === "signin" ? isSignInLoaded : isSignUpLoaded
 
   if (!isLoaded) return null
@@ -45,8 +45,8 @@ export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" 
 
   return (
     <div className="flex flex-col gap-3 w-full">
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         onClick={handleGoogleClick}
         className="w-full h-12 bg-background hover:bg-accent text-foreground border-input font-semibold text-[15px] relative overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] rounded-xl shadow-sm"
       >
@@ -55,9 +55,9 @@ export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" 
         </div>
         Continuer avec Google
       </Button>
-      
-      <Button 
-        variant="outline" 
+
+      <Button
+        variant="outline"
         onClick={handleAppleClick}
         className="w-full h-12 bg-background hover:bg-accent text-foreground border-input font-semibold text-[15px] relative overflow-hidden transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] rounded-xl shadow-sm"
       >

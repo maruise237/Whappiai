@@ -13,10 +13,10 @@ export default function ChangelogPage() {
       title: "Gestion avancée des médias & Webhooks V2",
       type: "major",
       changes: [
-        "Support complet pour l'envoi de vidéos, audios et documents",
+        "Support complet pour l"envoi de vidéos, audios et documents",
         "Nouveau système de webhooks avec signature HMAC pour plus de sécurité",
-        "Amélioration des performances de l'API (temps de réponse réduit de 30%)",
-        "Correction d'un bug lors de la déconnexion simultanée de plusieurs sessions"
+        "Amélioration des performances de l"API (temps de réponse réduit de 30%)",
+        "Correction d"un bug lors de la déconnexion simultanée de plusieurs sessions"
       ]
     },
     {
@@ -27,7 +27,7 @@ export default function ChangelogPage() {
       changes: [
         "Optimisation de la consommation mémoire du serveur",
         "Mise à jour des dépendances de sécurité",
-        "Nouveau endpoint pour vérifier le statut d'un numéro"
+        "Nouveau endpoint pour vérifier le statut d"un numéro"
       ]
     },
     {
@@ -48,7 +48,7 @@ export default function ChangelogPage() {
       type: "major",
       changes: [
         "Lancement public de Whappi",
-        "API REST complète pour l'envoi de messages texte",
+        "API REST complète pour l"envoi de messages texte",
         "Authentification via Token Bearer",
         "Support Docker initial"
       ]
@@ -68,7 +68,7 @@ export default function ChangelogPage() {
             Journal des <span className="text-primary">modifications</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Suivez l'évolution de Whappi et découvrez les dernières fonctionnalités ajoutées.
+            Suivez l"évolution de Whappi et découvrez les dernières fonctionnalités ajoutées.
           </p>
         </div>
       </section>
@@ -83,10 +83,10 @@ export default function ChangelogPage() {
                     <div className="font-semibold text-primary">{release.version}</div>
                     <div className="text-sm text-muted-foreground">{release.date}</div>
                   </div>
-                  
+
                   <div className="relative border-l border-primary/20 pl-8 pb-12 last:pb-0">
                     <div className="absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-background" />
-                    
+
                     <div className="md:hidden mb-2">
                       <span className="font-semibold text-primary mr-2">{release.version}</span>
                       <span className="text-sm text-muted-foreground">{release.date}</span>
@@ -94,11 +94,11 @@ export default function ChangelogPage() {
 
                     <h3 className="text-xl font-bold mb-2">{release.title}</h3>
                     <div className="mb-4">
-                      {release.type === 'major' && <Badge>Majeur</Badge>}
-                      {release.type === 'minor' && <Badge variant="secondary">Mineur</Badge>}
-                      {release.type === 'patch' && <Badge variant="outline">Patch</Badge>}
+                      {release.type === "major" && <Badge>Majeur</Badge>}
+                      {release.type === "minor" && <Badge variant="secondary">Mineur</Badge>}
+                      {release.type === "patch" && <Badge variant="outline">Patch</Badge>}
                     </div>
-                    
+
                     <ul className="list-disc list-outside ml-4 space-y-2 text-muted-foreground">
                       {release.changes.map((change, j) => (
                         <li key={j}>{change}</li>

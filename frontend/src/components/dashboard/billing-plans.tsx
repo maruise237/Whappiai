@@ -48,8 +48,8 @@ const plans = [
       "Tout ce qui est dans Pro",
       "Gestionnaire de compte dédié",
       "Intégrations API personnalisées",
-      "Logs d'audit & Sécurité",
-      "Sessions de formation d'équipe"
+      "Logs d"audit & Sécurité",
+      "Sessions de formation d"équipe"
     ],
     cta: "Choisir Business",
     highlighted: false,
@@ -64,15 +64,15 @@ export function BillingPlans() {
     try {
       setLoading(planId)
       const token = await getToken()
-      const response = await fetchApi('/api/v1/payments/checkout', {
-        method: 'POST',
+      const response = await fetchApi("/api/v1/payments/checkout", {
+        method: "POST",
         body: JSON.stringify({ planId }),
         headers: { Authorization: `Bearer ${token}` }
       })
       if (response.url) {
         window.location.href = response.url
       } else {
-        toast.error("Impossible d'initialiser le paiement")
+        toast.error("Impossible d"initialiser le paiement")
       }
     } catch (error) {
       toast.error("Une erreur inattendue est survenue")

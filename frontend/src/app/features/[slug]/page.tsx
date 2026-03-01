@@ -13,11 +13,11 @@ const featuresData = {
     description: "Automatisez vos conversations WhatsApp pour ne jamais manquer un prospect.",
     details: [
       "Configurez des messages de bienvenue personnalisés.",
-      "Gérez les absences et les horaires d'ouverture.",
+      "Gérez les absences et les horaires d"ouverture.",
       "Utilisez des variables dynamiques (nom, date, etc.).",
       "Intégration facile avec vos outils CRM existants."
     ],
-    cta: "Essayer l'automatisation"
+    cta: "Essayer l"automatisation"
   },
   "moderation": {
     title: "Modération Intelligente",
@@ -27,7 +27,7 @@ const featuresData = {
       "Détection et suppression automatique des liens de spam.",
       "Filtrage des contenus inappropriés et haineux.",
       "Avertissements automatiques aux utilisateurs.",
-      "Rapports d'activité détaillés pour les administrateurs."
+      "Rapports d"activité détaillés pour les administrateurs."
     ],
     cta: "Activer la modération"
   },
@@ -78,11 +78,11 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
   return (
     <main className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      
+
       <section className="flex-1 pt-32 pb-20 px-4">
         <div className="container mx-auto max-w-4xl">
-          <Link 
-            href="/#features" 
+          <Link
+            href="/#features"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-8 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -97,7 +97,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
             <h1 className="text-3xl md:text-5xl font-bold mb-6 text-foreground">
               {feature.title}
             </h1>
-            
+
             <p className="text-xl text-muted-foreground mb-10 leading-relaxed max-w-2xl">
               {feature.description}
             </p>

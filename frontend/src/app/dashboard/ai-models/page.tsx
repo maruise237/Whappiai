@@ -46,11 +46,11 @@ export default function AiModelsPage() {
   const [isEditing, setIsEditing] = React.useState(false)
   const [selectedModel, setSelectedModel] = React.useState<any>(null)
   const [formData, setFormData] = React.useState({
-    name: '',
-    provider: 'openai',
-    endpoint: '',
-    model_name: '',
-    api_key: '',
+    name: "",
+    provider: "openai",
+    endpoint: "",
+    model_name: "",
+    api_key: "",
     is_default: false
   })
 
@@ -116,11 +116,11 @@ export default function AiModelsPage() {
     setIsEditing(false)
     setSelectedModel(null)
     setFormData({
-      name: '',
-      provider: 'openai',
-      endpoint: '',
-      model_name: '',
-      api_key: '',
+      name: "",
+      provider: "openai",
+      endpoint: "",
+      model_name: "",
+      api_key: "",
       is_default: false
     })
     setIsAddOpen(true)
@@ -131,10 +131,10 @@ export default function AiModelsPage() {
     setSelectedModel(model)
     setFormData({
       name: model.name,
-      provider: model.provider || 'openai',
+      provider: model.provider || "openai",
       endpoint: model.endpoint,
       model_name: model.model_name,
-      api_key: '',
+      api_key: "",
       is_default: model.is_default === 1 || model.is_default === true
     })
     setIsAddOpen(true)
@@ -243,7 +243,7 @@ export default function AiModelsPage() {
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         <Badge variant="secondary" className="text-[9px] font-semibold bg-background border">
-                          {m.provider || 'OpenAI API'}
+                          {m.provider || "OpenAI API"}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
@@ -280,7 +280,7 @@ export default function AiModelsPage() {
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="text-base">{isEditing ? 'Modifier le Moteur LLM' : 'Ajouter un Moteur LLM'}</DialogTitle>
+            <DialogTitle className="text-base">{isEditing ? "Modifier le Moteur LLM" : "Ajouter un Moteur LLM"}</DialogTitle>
             <DialogDescription className="text-xs">Configurez une nouvelle API compatible OpenAI pour vos bots.</DialogDescription>
           </DialogHeader>
 

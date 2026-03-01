@@ -1,4 +1,4 @@
-declare module 'pristinejs' {
+declare module "pristinejs" {
     export default class Pristine {
         constructor(form: HTMLElement, config?: any, live?: boolean);
         validate(input?: HTMLElement | NodeList | null, silent?: boolean): boolean;

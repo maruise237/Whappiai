@@ -38,7 +38,7 @@ export function GetStarted() {
               </div>
               <CardTitle>API Reference</CardTitle>
               <CardDescription>
-                Documentation complète de tous les endpoints, paramètres et réponses de l'API.
+                Documentation complète de tous les endpoints, paramètres et réponses de l"API.
               </CardDescription>
             </CardHeader>
           </Card>

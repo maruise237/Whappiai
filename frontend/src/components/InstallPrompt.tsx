@@ -14,7 +14,7 @@ interface InstallPromptProps {
 export function InstallPrompt({ className, variant = "floating" }: InstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [showFab, setShowFab] = useState(false); 
+  const [showFab, setShowFab] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -29,10 +29,10 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
     setIsMobile(mobile);
 
     // Register Service Worker
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => console.log('Service Worker registered', reg))
-        .catch((err) => console.log('Service Worker registration failed', err));
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then((reg) => console.log("Service Worker registered", reg))
+        .catch((err) => console.log("Service Worker registration failed", err));
     }
 
     // Check if already installed
@@ -60,7 +60,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
     // iOS Detection
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-    
+
     if (isIosDevice) {
       setIsIOS(true);
       // Ensure FAB is visible on iOS
@@ -129,7 +129,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
           className
         )}
       >
-        Installer l'app
+        Installer l"app
       </button>
     );
   }
@@ -141,7 +141,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
       <div className="bg-background border border-border shadow-xl rounded-xl p-5 flex flex-col gap-4 relative w-full max-w-sm animate-in slide-in-from-bottom-10 zoom-in-95 duration-300">
-        <button 
+        <button
           onClick={handleDismiss}
           className="absolute top-2 right-2 text-muted-foreground hover:text-foreground p-2 rounded-full hover:bg-muted/50 transition-colors"
         >
@@ -150,17 +150,17 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
 
         <div className="flex flex-col items-center text-center gap-3 pt-2">
             <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-md">
-                <Image 
-                src="/icon.png" 
-                alt="Whappi Icon" 
+                <Image
+                src="/icon.png"
+                alt="Whappi Icon"
                 fill
                 className="object-contain"
                 />
             </div>
             <div className="space-y-1">
-                <h3 className="font-semibold text-xl">Installer l'Application Whappi</h3>
+                <h3 className="font-semibold text-xl">Installer l"Application Whappi</h3>
                 <p className="text-sm text-muted-foreground">
-                Accédez à vos outils de modération plus rapidement avec l'application native.
+                Accédez à vos outils de modération plus rapidement avec l"application native.
                 </p>
             </div>
         </div>
@@ -173,7 +173,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
                 1. Appuyez sur Partager <Share size={16} />
                 </p>
                 <p className="flex items-center gap-2">
-                2. Choisissez "Sur l'écran d'accueil" <PlusSquare size={16} />
+                2. Choisissez "Sur l"écran d"accueil" <PlusSquare size={16} />
                 </p>
             </div>
           </div>
@@ -185,7 +185,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
                 1. Ouvrez le menu du navigateur (3 points)
                 </p>
                 <p className="flex items-center gap-2">
-                2. Sélectionnez "Installer l'application" ou "Ajouter à l'écran d'accueil"
+                2. Sélectionnez "Installer l"application" ou "Ajouter à l"écran d"accueil"
                 </p>
             </div>
           </div>

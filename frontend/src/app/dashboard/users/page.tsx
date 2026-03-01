@@ -72,14 +72,14 @@ export default function UsersPage() {
   const [isDetailsLoading, setIsDetailsLoading] = React.useState(false)
 
   const [formData, setFormData] = React.useState({
-    email: '',
-    role: 'user'
+    email: "",
+    role: "user"
   })
 
   const [creditForm, setCreditForm] = React.useState({
     amount: 100,
-    type: 'bonus',
-    description: 'Bonus exceptionnel admin'
+    type: "bonus",
+    description: "Bonus exceptionnel admin"
   })
 
   const fetchUsers = React.useCallback(async () => {
@@ -193,7 +193,7 @@ export default function UsersPage() {
         fetchUserDetails(selectedUserId)
         fetchUsers()
     } catch (e: any) {
-        toast.error(e.message || "Erreur lors de l'ajustement")
+        toast.error(e.message || "Erreur lors de l"ajustement")
     } finally {
         setIsSubmitting(false)
     }
@@ -285,7 +285,7 @@ export default function UsersPage() {
                   <TableCell className="hidden sm:table-cell">
                     <Badge variant="secondary" className={cn(
                       "text-[9px] font-semibold",
-                      u.role === 'admin' ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"
+                      u.role === "admin" ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"
                     )}>
                       {u.role}
                     </Badge>
@@ -298,7 +298,7 @@ export default function UsersPage() {
                         </div>
                         <Badge variant="secondary" className={cn(
                             "sm:hidden text-[8px] h-3.5 w-fit px-1",
-                            u.role === 'admin' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                            u.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                         )}>
                             {u.role}
                         </Badge>
@@ -311,7 +311,7 @@ export default function UsersPage() {
                       ) : (
                         <XCircle className="h-3 w-3 text-muted-foreground/30" />
                       )}
-                      <span className="text-[11px] font-medium">{u.is_active ? 'Actif' : 'Désactivé'}</span>
+                      <span className="text-[11px] font-medium">{u.is_active ? "Actif" : "Désactivé"}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right" onClick={e => e.stopPropagation()}>
@@ -323,11 +323,11 @@ export default function UsersPage() {
                         <DropdownMenuItem className="text-xs" onClick={() => setSelectedUserId(u.id)}>
                           <TrendingUp className="h-3.5 w-3.5 mr-2" /> Détails & Crédits
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-xs" onClick={() => handleUpdateRole(u.email, u.role === 'admin' ? 'user' : 'admin')}>
-                          <Edit className="h-3.5 w-3.5 mr-2" /> Passer en {u.role === 'admin' ? 'Utilisateur' : 'Admin'}
+                        <DropdownMenuItem className="text-xs" onClick={() => handleUpdateRole(u.email, u.role === "admin" ? "user" : "admin")}>
+                          <Edit className="h-3.5 w-3.5 mr-2" /> Passer en {u.role === "admin" ? "Utilisateur" : "Admin"}
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-xs" onClick={() => handleToggleStatus(u)}>
-                          <Shield className="h-3.5 w-3.5 mr-2" /> {u.is_active ? 'Désactiver' : 'Réactiver'}
+                          <Shield className="h-3.5 w-3.5 mr-2" /> {u.is_active ? "Désactiver" : "Réactiver"}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-xs text-destructive" onClick={() => handleDeleteUser(u.id)}>
@@ -401,8 +401,8 @@ export default function UsersPage() {
                                         <p className="text-xs font-bold truncate">{s.id}</p>
                                         <p className="text-[10px] text-muted-foreground">{s.status}</p>
                                     </div>
-                                    <Badge className={cn("text-[9px]", s.status === 'CONNECTED' ? "bg-green-500/10 text-green-600 border-none" : "bg-muted text-muted-foreground border-none")}>
-                                        {s.status === 'CONNECTED' ? 'Live' : 'Off'}
+                                    <Badge className={cn("text-[9px]", s.status === "CONNECTED" ? "bg-green-500/10 text-green-600 border-none" : "bg-muted text-muted-foreground border-none")}>
+                                        {s.status === "CONNECTED" ? "Live" : "Off"}
                                     </Badge>
                                 </div>
                             ))}
@@ -476,8 +476,8 @@ export default function UsersPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="p-3 text-right">
-                                                <span className={cn("text-xs font-bold", c.type === 'debit' ? "text-red-500" : "text-green-500")}>
-                                                    {c.type === 'debit' ? '-' : '+'}{c.amount}
+                                                <span className={cn("text-xs font-bold", c.type === "debit" ? "text-red-500" : "text-green-500")}>
+                                                    {c.type === "debit" ? "-" : "+"}{c.amount}
                                                 </span>
                                             </TableCell>
                                         </TableRow>
@@ -495,7 +495,7 @@ export default function UsersPage() {
                     <div className="space-y-2">
                         {userDetails?.logs?.map((l: any, i: number) => (
                             <div key={i} className="p-3 rounded-lg border bg-muted/5 flex items-start gap-3">
-                                <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", l.status === 'success' ? "bg-green-500" : "bg-red-500")} />
+                                <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", l.status === "success" ? "bg-green-500" : "bg-red-500")} />
                                 <div className="min-w-0">
                                     <p className="text-[11px] font-bold uppercase tracking-wider">{l.action}</p>
                                     <p className="text-[10px] text-muted-foreground truncate">{JSON.stringify(l.details)}</p>

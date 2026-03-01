@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   User,
   LogOut,
   AlertCircle,
   ExternalLink,
-} from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { useUser, useClerk, useAuth } from "@clerk/nextjs"
-import { api } from "@/lib/api"
-import { toast } from "sonner"
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { useUser, useClerk, useAuth } from "@clerk/nextjs";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser();
@@ -73,19 +73,33 @@ export default function ProfilePage() {
         <div className="space-y-1 min-w-0">
           <h1 className="text-2xl font-bold tracking-tight truncate">{user?.fullName || userEmail?.split("@")[0]}</h1>
           <div className="flex flex-col sm:flex-row items-center gap-2">
-            <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground tracking-widest">{userRole}</Badge>
+            <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground tracking-widest">
+              {userRole}
+            </Badge>
             <span className="text-xs text-muted-foreground truncate w-full sm:w-auto">{userEmail}</span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
-         <nav className="flex flex-row md:flex-col gap-1 sticky top-14 md:top-24 bg-background/95 backdrop-blur z-10 py-2 md:py-0 overflow-x-auto no-scrollbar border-b md:border-none h-fit">
-            <Button variant="ghost" className="flex-none justify-start text-xs font-semibold tracking-wider h-10 bg-muted/50 border-b-2 md:border-b-0 md:border-r-2 border-primary rounded-none px-4 whitespace-nowrap">Mon Profil</Button>
-            <Button variant="ghost" className="flex-none justify-start text-xs font-semibold tracking-wider h-10 text-muted-foreground hover:bg-muted/30 px-4 whitespace-nowrap">Sécurité</Button>
-            <Button variant="ghost" className="flex-none justify-start text-xs font-semibold tracking-wider h-10 text-muted-foreground hover:bg-muted/30 px-4 whitespace-nowrap">Notifications</Button>
+         <nav className="flex flex-row md:flex-col gap-1 sticky top-14 md:top-24 bg-background/95
+            backdrop-blur z-10 py-2 md:py-0 overflow-x-auto no-scrollbar border-b md:border-none h-fit">
+            <Button variant="ghost" className="flex-none justify-start text-xs font-semibold tracking-wider h-10
+              bg-muted/50 border-b-2 md:border-b-0 md:border-r-2 border-primary rounded-none px-4 whitespace-nowrap">
+              Mon Profil
+            </Button>
+            <Button variant="ghost" className="flex-none justify-start text-xs font-semibold tracking-wider h-10
+              text-muted-foreground hover:bg-muted/30 px-4 whitespace-nowrap">
+              Sécurité
+            </Button>
+            <Button variant="ghost" className="flex-none justify-start text-xs font-semibold tracking-wider h-10
+              text-muted-foreground hover:bg-muted/30 px-4 whitespace-nowrap">
+              Notifications
+            </Button>
             <Separator className="hidden md:block my-2" />
-            <Button variant="ghost" onClick={() => signOut()} className="flex-none justify-start text-xs font-semibold tracking-wider h-10 text-destructive hover:bg-destructive/5 hover:text-destructive px-4 whitespace-nowrap">
+            <Button variant="ghost" onClick={() => signOut()} className="flex-none justify-start text-xs
+              font-semibold tracking-wider h-10 text-destructive hover:bg-destructive/5 hover:text-destructive
+              px-4 whitespace-nowrap">
                <LogOut className="h-3.5 w-3.5 mr-2" /> Déconnexion
             </Button>
          </nav>

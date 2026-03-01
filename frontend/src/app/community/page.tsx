@@ -66,7 +66,7 @@ export default function CommunityPage() {
                 <Heart className="w-10 h-10 text-primary mb-4" />
                 <CardTitle>Showcase</CardTitle>
                 <CardDescription>
-                  Partagez vos projets et découvrez ce que les autres bâtissent avec l'API Whappi.
+                  Partagez vos projets et découvrez ce que les autres bâtissent avec l"API Whappi.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -80,7 +80,7 @@ export default function CommunityPage() {
             <h2 className="text-3xl font-bold">Événements à venir</h2>
             <Button variant="outline" size="sm">Voir tout</Button>
           </div>
-          
+
           <div className="space-y-4">
             {[
               { title: "Webinar: Automatiser son support client", date: "15 Mars 2026", type: "Online" },
@@ -97,7 +97,7 @@ export default function CommunityPage() {
                     <p className="text-sm text-muted-foreground">{event.date} • {event.type}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">S'inscrire</Button>
+                <Button variant="ghost" size="sm">S"inscrire</Button>
               </div>
             ))}
           </div>

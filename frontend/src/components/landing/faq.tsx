@@ -15,33 +15,33 @@ import { ArrowRight, MessageCircle, ShieldCheck, Zap, Globe, Lock, CreditCard } 
 
 const faqData = [
   {
-    question: "Est-ce que Whappi respecte les conditions d'utilisation de WhatsApp ?",
+    question: "Est-ce que Whappi respecte les conditions d"utilisation de WhatsApp ?",
     answer: "Absolument. Whappi est conçu pour fonctionner en harmonie avec les protocoles de WhatsApp. Nous utilisons des navigateurs isolés et des empreintes numériques uniques pour chaque session, garantissant une sécurité maximale et minimisant les risques de blocage. Notre IA de modération aide également à prévenir le spam, ce qui protège la réputation de votre numéro.",
     icon: ShieldCheck
   },
   {
     question: "Puis-je utiliser mon propre numéro de téléphone ?",
-    answer: "Oui, tout à fait ! Vous scannez simplement le QR code avec votre application WhatsApp existante (Business ou personnelle) pour lier votre compte. Aucune migration complexe n'est nécessaire, et vous conservez tout votre historique de conversations.",
+    answer: "Oui, tout à fait ! Vous scannez simplement le QR code avec votre application WhatsApp existante (Business ou personnelle) pour lier votre compte. Aucune migration complexe n"est nécessaire, et vous conservez tout votre historique de conversations.",
     icon: MessageCircle
   },
   {
     question: "Faut-il des compétences techniques pour utiliser Whappi ?",
-    answer: "Aucune compétence technique n'est requise. Notre interface est conçue pour être intuitive : si vous savez utiliser WhatsApp Web, vous saurez utiliser Whappi. La configuration de l'IA et des réponses automatiques se fait via un éditeur visuel simple.",
+    answer: "Aucune compétence technique n"est requise. Notre interface est conçue pour être intuitive : si vous savez utiliser WhatsApp Web, vous saurez utiliser Whappi. La configuration de l"IA et des réponses automatiques se fait via un éditeur visuel simple.",
     icon: Zap
   },
   {
-    question: "L'IA peut-elle gérer plusieurs langues ?",
+    question: "L"IA peut-elle gérer plusieurs langues ?",
     answer: "Oui, notre assistant IA est multilingue et peut comprendre et répondre dans plus de 95 langues instantanément. Il détecte automatiquement la langue de votre interlocuteur pour offrir une expérience fluide et naturelle.",
     icon: Globe
   },
   {
     question: "Mes données sont-elles sécurisées ?",
-    answer: "La sécurité est notre priorité absolue. Vos données sont chiffrées de bout en bout. Nous ne stockons pas vos messages sur nos serveurs de manière permanente ; ils transitent uniquement pour être traités par l'IA. De plus, notre infrastructure est conforme aux normes RGPD.",
+    answer: "La sécurité est notre priorité absolue. Vos données sont chiffrées de bout en bout. Nous ne stockons pas vos messages sur nos serveurs de manière permanente ; ils transitent uniquement pour être traités par l"IA. De plus, notre infrastructure est conforme aux normes RGPD.",
     icon: Lock
   },
   {
     question: "Puis-je annuler mon abonnement à tout moment ?",
-    answer: "Oui, sans engagement. Vous pouvez annuler votre abonnement à tout moment depuis votre tableau de bord. L'accès continuera jusqu'à la fin de la période de facturation en cours.",
+    answer: "Oui, sans engagement. Vous pouvez annuler votre abonnement à tout moment depuis votre tableau de bord. L"accès continuera jusqu"à la fin de la période de facturation en cours.",
     icon: CreditCard
   }
 ]
@@ -70,7 +70,7 @@ export function FAQ() {
               Support & Aide
             </Badge>
           </motion.div>
-          
+
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -79,7 +79,7 @@ export function FAQ() {
           >
             Questions Fréquentes
           </motion.h2>
-          
+
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -100,12 +100,12 @@ export function FAQ() {
         >
           <Accordion type="single" collapsible className="w-full space-y-4" onValueChange={(value) => setActiveItem(value)}>
             {faqData.map((item, index) => (
-              <AccordionItem 
-                key={index} 
+              <AccordionItem
+                key={index}
                 value={`item-${index}`}
                 className={`border border-border/50 rounded-xl px-6 bg-card/50 backdrop-blur-sm transition-all duration-300 ${
-                  activeItem === `item-${index}` 
-                    ? "border-primary/50 shadow-[0_0_30px_-10px_rgba(var(--primary),0.2)] bg-card" 
+                  activeItem === `item-${index}`
+                    ? "border-primary/50 shadow-[0_0_30px_-10px_rgba(var(--primary),0.2)] bg-card"
                     : "hover:border-primary/20 hover:bg-card/80"
                 }`}
               >

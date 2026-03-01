@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
+import * as React from "react";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Bot,
@@ -12,11 +12,11 @@ import {
   History,
   Users,
   Settings2
-} from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Logo } from "@/components/ui/logo"
-import { useWebSocket } from "@/providers/websocket-provider"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Logo } from "@/components/ui/logo";
+import { useWebSocket } from "@/providers/websocket-provider";
+import { cn } from "@/lib/utils";
 
 export const getNavGroups = (t: any) => [
   {
@@ -49,13 +49,13 @@ export const getNavGroups = (t: any) => [
       { name: t("nav.ai_models"), href: "/dashboard/ai-models", icon: Settings2 },
     ]
   }
-]
+];
 
 export function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
-  const Icon = item?.icon
-  if (!item || !Icon) return null
+  const Icon = item?.icon;
+  if (!item || !Icon) return null;
 
-  const id = item.href ? `nav-${item.href.replace(/\//g, "-")}` : undefined
+  const id = item.href ? `nav-${item.href.replace(/\//g, "-")}` : undefined;
 
   return (
     <Link
@@ -72,12 +72,12 @@ export function NavItem({ item, isActive, onClick }: { item: any, isActive: bool
       <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
       {item.name}
     </Link>
-  )
+  );
 }
 
 export function LiveIndicator() {
-  const { isConnected } = useWebSocket()
-  if (!isConnected) return null
+  const { isConnected } = useWebSocket();
+  if (!isConnected) return null;
   return (
     <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-primary/5 border border-primary/10">
       <span className="relative flex h-2 w-2">
@@ -86,12 +86,13 @@ export function LiveIndicator() {
       </span>
       <span className="text-[10px] font-medium text-primary uppercase tracking-wider">Live</span>
     </div>
-  )
+  );
 }
 
-export function SidebarContent({ isAdmin, pathname, onItemClick, t }: { isAdmin: boolean, pathname: string, onItemClick?: () => void, t: any }) {
-  const groups = getNavGroups(t)
-  const filteredGroups = groups.filter(group => !group.adminOnly || isAdmin)
+export function SidebarContent({ isAdmin, pathname, onItemClick, t }:
+  { isAdmin: boolean, pathname: string, onItemClick?: () => void, t: any }) {
+  const groups = getNavGroups(t);
+  const filteredGroups = groups.filter(group => !group.adminOnly || isAdmin);
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -118,5 +119,5 @@ export function SidebarContent({ isAdmin, pathname, onItemClick, t }: { isAdmin:
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }

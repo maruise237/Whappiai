@@ -84,7 +84,7 @@ function AIConfigContent() {
       await api.sessions.updateAI(sessionId, config, token || undefined)
       toast.success("Intelligence mise à jour avec succès")
     } catch (e) {
-      toast.error("Erreur lors de l'enregistrement")
+      toast.error("Erreur lors de l"enregistrement")
     } finally {
       setIsSaving(false)
     }
@@ -301,7 +301,7 @@ function AIConfigContent() {
             <div className="space-y-2">
                <Label className="text-xs">Prompt Système (Instructions)</Label>
                <Textarea
-                 placeholder="Instructions pour l'IA..."
+                 placeholder="Instructions pour l"IA..."
                  className="min-h-[200px] text-sm leading-relaxed border-border bg-card"
                  value={config?.prompt || ""}
                  onChange={e => setConfig({...config, prompt: e.target.value})}

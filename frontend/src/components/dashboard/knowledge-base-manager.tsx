@@ -7,16 +7,14 @@ import {
   Trash2,
   Globe,
   Book,
-  Upload,
   Loader2,
   AlertCircle
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -71,7 +69,7 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
       setFormData({ name: "", content: "", type: "text", source: "" })
       fetchDocs()
     } catch (error: any) {
-      toast.error("Erreur lors de l'ajout")
+      toast.error("Erreur lors de l&apos;ajout")
     } finally {
       setIsSubmitting(false)
     }
@@ -86,6 +84,10 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
     } catch (error) {
       toast.error("Erreur lors de la suppression")
     }
+  }
+
+  const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }))
   }
 
   return (
@@ -116,7 +118,7 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    {doc.type === 'url' ? <Globe className="h-4 w-4 text-blue-500" /> : <FileText className="h-4 w-4 text-primary" />}
+                    {doc.type === "url" ? <Globe className="h-4 w-4 text-blue-500" /> : <FileText className="h-4 w-4 text-primary" />}
                     <span className="text-sm font-medium truncate max-w-[200px]">{doc.name}</span>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(doc.id)}>
@@ -126,7 +128,7 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                  Ajouté le {doc?.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Date inconnue'}
+                  Ajouté le {doc?.created_at ? new Date(doc.created_at).toLocaleDateString() : "Date inconnue"}
                 </p>
                 {doc?.source && <p className="text-xs text-blue-500 truncate mt-1">{doc.source}</p>}
               </CardContent>
@@ -144,15 +146,15 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-xs uppercase">Nom du document</Label>
-              <Input placeholder="ex: Tarifs 2024, FAQ Livraison..." value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-9" />
+              <Input placeholder="ex: Tarifs 2024, FAQ Livraison..." value={formData.name} onChange={handleInputChange("name")} className="h-9" />
             </div>
             <div className="space-y-2">
               <Label className="text-xs uppercase">Contenu (Texte brut)</Label>
-              <Textarea placeholder="Collez ici les informations que l'IA doit connaître..." value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} className="min-h-[250px] text-sm" />
+              <Textarea placeholder="Collez ici les informations que l&apos;IA doit connaître..." value={formData.content} onChange={handleInputChange("content")} className="min-h-[250px] text-sm" />
             </div>
             <div className="space-y-2">
               <Label className="text-xs uppercase">Source (Optionnel)</Label>
-              <Input placeholder="ex: https://monsite.com/faq" value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} className="h-9" />
+              <Input placeholder="ex: https://monsite.com/faq" value={formData.source} onChange={handleInputChange("source")} className="h-9" />
             </div>
           </div>
           <DialogFooter>

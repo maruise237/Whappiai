@@ -13,7 +13,7 @@ const MARIUSE = {
   name: "Mariuse Kamta",
   role: "CEO & Founder",
   company: "Whappi",
-  content: "Notre mission est de rendre l'automatisation WhatsApp accessible à toutes les entreprises africaines, sans compromis sur la qualité.",
+  content: "Notre mission est de rendre l"automatisation WhatsApp accessible à toutes les entreprises africaines, sans compromis sur la qualité.",
   avatar: "https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png",
   rating: 5
 }
@@ -32,7 +32,7 @@ const AFRICAN_PROFILES = [
     name: "Moussa Diop",
     role: "Directeur Commercial",
     company: "Dakar Immo",
-    content: "L'outil idéal pour gérer nos leads immobiliers. Simple, rapide et efficace.",
+    content: "L"outil idéal pour gérer nos leads immobiliers. Simple, rapide et efficace.",
     avatar: "https://i.ibb.co/zTL3Q6t9/Male-Professional-Headshot-East-African.jpg",
     rating: 5
   },
@@ -48,7 +48,7 @@ const AFRICAN_PROFILES = [
     name: "Kofi Mensah",
     role: "Développeur Senior",
     company: "Accra Soft",
-    content: "L'API est robuste et bien documentée. Une intégration sans douleur.",
+    content: "L"API est robuste et bien documentée. Une intégration sans douleur.",
     avatar: "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg",
     rating: 4
   }

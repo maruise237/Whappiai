@@ -11,7 +11,7 @@ export default function DocsPage() {
   const router = useRouter()
 
   const sections = [
-    { id: "overview", label: "Vue d'ensemble" },
+    { id: "overview", label: "Vue d"ensemble" },
     { id: "authentication", label: "Authentification" },
     { id: "sessions", label: "Sessions" },
     { id: "messaging", label: "Messagerie" },
@@ -24,7 +24,7 @@ export default function DocsPage() {
     <SmoothScroll>
       <main className="min-h-screen bg-background flex flex-col relative">
         <DocsBackButton />
-        
+
         <div className="flex-1 container mx-auto px-4 py-24 md:py-32">
           <div className="flex flex-col lg:flex-row gap-12 animate-in fade-in duration-200">
             {/* Sidebar Navigation */}
@@ -66,7 +66,7 @@ export default function DocsPage() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="prose prose-invert max-w-none">
                 <DocsContent />
               </div>

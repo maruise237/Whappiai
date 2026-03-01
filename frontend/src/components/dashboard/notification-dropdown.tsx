@@ -1,17 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { Bell, Check, Trash2, Info, AlertTriangle, Zap, MessageSquare } from "lucide-react"
+import { Bell, Check, Info, AlertTriangle, Zap, MessageSquare } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
@@ -19,6 +16,16 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { useNotificationSound } from "@/hooks/use-notification-sound"
+
+function NotificationIcon({ type }: { type: string }) {
+  switch (type) {
+    case "credit_low": return <Zap className="h-4 w-4 text-amber-500" />
+    case "subscription_expiring": return <AlertTriangle className="h-4 w-4 text-red-500" />
+    case "system_update": return <Info className="h-4 w-4 text-blue-500" />
+    case "message_received": return <MessageSquare className="h-4 w-4 text-primary" />
+    default: return <Bell className="h-4 w-4 text-muted-foreground" />
+  }
+}
 
 export function NotificationDropdown() {
   const { getToken } = useAuth()
@@ -45,11 +52,9 @@ export function NotificationDropdown() {
     fetchNotifications()
   }, [fetchNotifications])
 
-  // Handle real-time notification updates if they come through WS
   React.useEffect(() => {
     if (lastMessage?.type === "notification") {
       fetchNotifications()
-      // Play sound
       playNotificationSound()
     }
   }, [lastMessage, fetchNotifications, playNotificationSound])
@@ -76,16 +81,6 @@ export function NotificationDropdown() {
       toast.error("Erreur lors du marquage global")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "credit_low": return <Zap className="h-4 w-4 text-amber-500" />
-      case "subscription_expiring": return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case "system_update": return <Info className="h-4 w-4 text-blue-500" />
-      case "message_received": return <MessageSquare className="h-4 w-4 text-primary" />
-      default: return <Bell className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -134,7 +129,7 @@ export function NotificationDropdown() {
                   )}
                 >
                   <div className="shrink-0 mt-0.5">
-                    {getIcon(n.type)}
+                    <NotificationIcon type={n.type} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-xs font-medium", !n.is_read ? "text-foreground" : "text-muted-foreground")}>

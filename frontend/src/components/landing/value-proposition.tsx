@@ -9,12 +9,12 @@ const benefits = [
   {
     icon: ShieldCheck,
     title: "Modère vos groupes 24/7",
-    description: "Protégez votre communauté en filtrant automatiquement les spams, les arnaques et les contenus inappropriés avant même qu'ils ne soient visibles."
+    description: "Protégez votre communauté en filtrant automatiquement les spams, les arnaques et les contenus inappropriés avant même qu"ils ne soient visibles."
   },
   {
     icon: MessageCircle,
     title: "Accueille vos nouveaux membres",
-    description: "Envoyez un message de bienvenue personnalisé à chaque nouvel arrivant pour augmenter l'engagement dès la première seconde."
+    description: "Envoyez un message de bienvenue personnalisé à chaque nouvel arrivant pour augmenter l"engagement dès la première seconde."
   },
   {
     icon: Bot,
@@ -23,7 +23,7 @@ const benefits = [
   },
   {
     icon: Zap,
-    title: "Gère l'activité en temps réel",
+    title: "Gère l"activité en temps réel",
     description: "Gardez le contrôle sur des dizaines de groupes simultanément grâce à une surveillance active et des actions automatisées ultra-rapides."
   }
 ]
@@ -83,9 +83,9 @@ export function ValueProposition() {
           className="text-center mt-16"
         >
           <p className="text-primary font-medium mb-8 text-lg">
-            ...tout cela pendant que vous vous concentrez sur l'essentiel ?
+            ...tout cela pendant que vous vous concentrez sur l"essentiel ?
           </p>
-          <Button 
+          <Button
             asChild
             size="lg"
             className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-8 py-6 text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all duration-300"

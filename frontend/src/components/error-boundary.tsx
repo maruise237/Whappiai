@@ -44,7 +44,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             </CardHeader>
             <CardContent className="space-y-6 text-center">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Une erreur inattendue est survenue lors de l'affichage de cette page.
+                Une erreur inattendue est survenue lors de l"affichage de cette page.
               </p>
 
               {process.env.NODE_ENV === "development" && this.state.error && (

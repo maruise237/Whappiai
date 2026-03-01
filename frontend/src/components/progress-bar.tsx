@@ -10,14 +10,14 @@ export default function ProgressBar() {
 
   useEffect(() => {
     // This will run on every route change
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         NProgress.done();
       } catch (e) {}
     }
-    
+
     return () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         try {
           NProgress.start();
         } catch (e) {}

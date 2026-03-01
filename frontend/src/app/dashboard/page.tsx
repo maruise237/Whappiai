@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   Plus,
   Activity,
@@ -10,10 +10,10 @@ import {
   Settings2,
   User,
   CreditCard
-} from "lucide-react"
-import { SessionCard } from "@/components/dashboard/session-card"
-import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
-import { api } from "@/lib/api"
+} from "lucide-react";
+import { SessionCard } from "@/components/dashboard/session-card";
+import { CreditCardUI } from "@/components/dashboard/credit-card-ui";
+import { api } from "@/lib/api";
 import {
   Sheet,
   SheetContent,
@@ -21,18 +21,18 @@ import {
   SheetHeader,
   SheetTitle,
   SheetFooter,
-} from "@/components/ui/sheet"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -40,8 +40,8 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   XAxis,
   YAxis,
@@ -50,113 +50,127 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area
-} from 'recharts'
-import { useRouter } from "next/navigation"
-import { useWebSocket } from "@/providers/websocket-provider"
-import { useUser, useAuth } from "@clerk/nextjs"
-import { toast } from "sonner"
-import confetti from "canvas-confetti"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+} from "recharts";
+import { useRouter } from "next/navigation";
+import { useWebSocket } from "@/providers/websocket-provider";
+import { useUser, useAuth } from "@clerk/nextjs";
+import { toast } from "sonner";
+import confetti from "canvas-confetti";
+import { cn } from "@/lib/utils";
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+const SESSION_NAME_MIN_LENGTH = 3;
+const DEFAULT_STATS_DAYS = 7;
+const RECENT_ACTIVITIES_LIMIT = 5;
 
 const sessionSchema = z.object({
-  sessionId: z.string().min(3, "L'ID de session doit comporter au moins 3 caractères").regex(/^[a-z0-9-]+$/, "Seuls les minuscules, les chiffres et les traits d-union sont autorisés"),
+  sessionId: z.string().min(SESSION_NAME_MIN_LENGTH,
+    `L&apos;ID de session doit comporter au moins ${SESSION_NAME_MIN_LENGTH} caractères`).regex(/^[a-z0-9-]+$/,
+    "Seuls les minuscules, les chiffres et les traits d-union sont autorisés"),
   phoneNumber: z.string().optional(),
-})
+});
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const { user } = useUser()
-  const { getToken } = useAuth()
-  const { lastMessage } = useWebSocket()
+  const router = useRouter();
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  const { lastMessage } = useWebSocket();
 
-  const [sessions, setSessions] = React.useState<any[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null)
-  const [isCreateOpen, setIsCreateOpen] = React.useState(false)
-  const [summary, setSummary] = React.useState({ totalActivities: 0, successRate: 0, activeSessions: 0, messagesSent: 0 })
-  const [adminStats, setAdminStats] = React.useState<any>(null)
-  const [credits, setCredits] = React.useState<any>(null)
-  const [recentActivities, setRecentActivities] = React.useState<any[]>([])
-  const [analyticsData, setAnalyticsData] = React.useState<any[]>([])
+  const [sessions, setSessions] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [summary, setSummary] = React.useState({
+    totalActivities: 0, successRate: 0, activeSessions: 0, messagesSent: 0
+  });
+  const [adminStats, setAdminStats] = React.useState<any>(null);
+  const [credits, setCredits] = React.useState<any>(null);
+  const [recentActivities, setRecentActivities] = React.useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = React.useState<any[]>([]);
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" ||
+                  user?.publicMetadata?.role === "admin";
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
     defaultValues: { sessionId: "", phoneNumber: "" }
-  })
+  });
 
   const fetchSessions = React.useCallback(async () => {
     try {
-      const token = await getToken()
-      const data = await api.sessions.list(token || undefined)
-      setSessions(data || [])
+      const token = await getToken();
+      const data = await api.sessions.list(token || undefined);
+      setSessions(data || []);
       if (data && data.length > 0 && !selectedSessionId) {
-        setSelectedSessionId(data[0].sessionId)
+        setSelectedSessionId(data[0].sessionId);
       }
-    } catch (e) {} finally {
-      setLoading(false)
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
     }
-  }, [getToken, selectedSessionId])
+  }, [getToken, selectedSessionId]);
 
   const fetchSummary = React.useCallback(async () => {
     try {
-      const token = await getToken()
+      const token = await getToken();
 
       if (isAdmin) {
         const [stats, analytics] = await Promise.all([
-            api.admin.getStats(7, token || undefined),
-            api.activities.analytics(7, token || undefined)
-        ])
-        setAdminStats(stats)
-        setAnalyticsData(analytics || [])
+            api.admin.getStats(DEFAULT_STATS_DAYS, token || undefined),
+            api.activities.analytics(DEFAULT_STATS_DAYS, token || undefined)
+        ]);
+        setAdminStats(stats);
+        setAnalyticsData(analytics || []);
         setSummary({
             totalActivities: stats?.overview?.activities || 0,
             successRate: stats?.overview?.successRate || 0,
             messagesSent: stats?.overview?.messagesSent || 0,
             activeSessions: stats?.sessions?.connected || 0
-        })
+        });
       } else {
-        const summ = await api.activities.summary(7, token || undefined)
+        const summ = await api.activities.summary(DEFAULT_STATS_DAYS, token || undefined);
         setSummary({
           totalActivities: summ?.totalActivities || 0,
           successRate: summ?.successRate || 0,
           messagesSent: summ?.byAction?.send_message || 0,
           activeSessions: sessions.filter(s => s.isConnected).length
-        })
+        });
       }
 
-      const logs = await api.activities.list(5, 0, token || undefined)
-      setRecentActivities(logs || [])
-    } catch (e) {}
-  }, [getToken, sessions, isAdmin])
+      const logs = await api.activities.list(RECENT_ACTIVITIES_LIMIT, 0, token || undefined);
+      setRecentActivities(logs || []);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [getToken, sessions, isAdmin]);
 
   const fetchCredits = React.useCallback(async () => {
     try {
-      const token = await getToken()
-      const data = await api.credits.get(token || undefined)
-      setCredits(data?.data || data)
-    } catch (e) {}
-  }, [getToken])
+      const token = await getToken();
+      const data = await api.credits.get(token || undefined);
+      setCredits(data?.data || data);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [getToken]);
 
   React.useEffect(() => {
-    fetchSessions()
-    fetchCredits()
-  }, [fetchSessions, fetchCredits])
+    fetchSessions();
+    fetchCredits();
+  }, [fetchSessions, fetchCredits]);
 
   React.useEffect(() => {
-    fetchSummary()
-  }, [fetchSummary])
+    fetchSummary();
+  }, [fetchSummary]);
 
-  const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
+  const selectedSession = sessions.find(s => s.sessionId === selectedSessionId);
 
-  if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
+  if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>;
 
   return (
     <div className="space-y-8 pb-20">
@@ -281,17 +295,17 @@ export default function DashboardPage() {
                                         dataKey="date"
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{fontSize: 9, fill: '#888888'}}
+                                        tick={{fontSize: 9, fill: "#888888"}}
                                         dy={10}
                                         tickFormatter={(str) => {
                                             const date = new Date(str);
-                                            if (isNaN(date.getTime())) return '-';
-                                            return date.toLocaleDateString('fr-FR', { weekday: 'short' });
+                                            if (isNaN(date.getTime())) return "-";
+                                            return date.toLocaleDateString("fr-FR", { weekday: "short" });
                                         }}
                                     />
-                                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#888888'}} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fill: "#888888"}} />
                                     <Tooltip
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }}
+                                        contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)", fontSize: "11px" }}
                                     />
                                     <Area type="monotone" dataKey="messages" name="Messages" stroke="#25D366" strokeWidth={2} fillOpacity={1} fill="url(#colorMessages)" />
                                     <Area type="monotone" dataKey="credits" name="Crédits" stroke="#f59e0b" strokeWidth={2} fillOpacity={0} />
@@ -341,7 +355,7 @@ export default function DashboardPage() {
                            </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg, i) => (
+                           {recentActivities.filter(a => a.action === "MESSAGE_SEND" || a.action === "send_message").map((msg, i) => (
                               <TableRow key={i} className="hover:bg-muted/50">
                                  <TableCell className="text-sm truncate max-w-[150px]">{msg.resource_id}</TableCell>
                                  <TableCell>
@@ -351,13 +365,13 @@ export default function DashboardPage() {
                                          ? "bg-green-500/10 text-green-700 dark:text-green-400"
                                          : "bg-red-500/10 text-red-700 dark:text-red-400"
                                     )}>
-                                       {(msg.success === 1 || msg.success === true) ? 'Sent' : 'Failed'}
+                                       {(msg.success === 1 || msg.success === true) ? "Sent" : "Failed"}
                                     </Badge>
                                  </TableCell>
                                  <TableCell className="text-right text-[10px] text-muted-foreground">
                                     {(() => {
-                                       const d = new Date(msg.created_at || msg.timestamp);
-                                       return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString();
+                                       const messageDate = new Date(msg.created_at || msg.timestamp);
+                                       return isNaN(messageDate.getTime()) ? "-" : messageDate.toLocaleTimeString();
                                     })()}
                                  </TableCell>
                               </TableRow>
@@ -376,13 +390,13 @@ export default function DashboardPage() {
                               <div key={i} className="flex gap-4">
                                  <span className="text-zinc-600">
                                     [{(() => {
-                                       const d = new Date(log.timestamp || log.created_at);
-                                       return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString();
+                                       const logDate = new Date(log.timestamp || log.created_at);
+                                       return isNaN(logDate.getTime()) ? "-" : logDate.toLocaleTimeString();
                                     })()}]
                                  </span>
-                                 <span className={cn(log.status === 'success' ? "text-green-500" : "text-red-500")}>{(log.action || "ACTION").toUpperCase()}</span>
+                                 <span className={cn(log.status === "success" ? "text-green-500" : "text-red-500")}>{(log.action || "ACTION").toUpperCase()}</span>
                                  <span className="truncate max-w-[400px]">
-                                    {typeof log.details === 'string' ? log.details : (log.details ? JSON.stringify(log.details) : '-')}
+                                    {typeof log.details === "string" ? log.details : (log.details ? JSON.stringify(log.details) : "-")}
                                  </span>
                               </div>
                            ))}
@@ -394,7 +408,7 @@ export default function DashboardPage() {
          </div>
 
          <div className="lg:col-span-4 space-y-8">
-            <CreditCardUI credits={credits} userRole={isAdmin ? 'admin' : 'user'} />
+            <CreditCardUI credits={credits} userRole={isAdmin ? "admin" : "user"} />
          </div>
       </div>
 
@@ -402,16 +416,17 @@ export default function DashboardPage() {
         <SheetContent className="sm:max-w-[400px]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(async (val) => {
-               const t = toast.loading("Création...");
+               const toastId = toast.loading("Création...");
                try {
                  const token = await getToken();
                  await api.sessions.create(val.sessionId, val.phoneNumber, token || undefined);
-                 toast.success("Session prête", { id: t });
+                 toast.success("Session prête", { id: toastId });
                  setIsCreateOpen(false);
                  fetchSessions();
                  confetti();
                } catch (e) {
-                 toast.error("Erreur de création", { id: t });
+                 console.error(e);
+                 toast.error("Erreur de création", { id: toastId });
                }
             })} className="space-y-6">
               <SheetHeader>
@@ -424,12 +439,12 @@ export default function DashboardPage() {
                       <FormLabel className="text-[10px] font-semibold text-muted-foreground">Session Name</FormLabel>
                       <FormControl><Input placeholder="ex: support-client" {...field} className="h-9 text-sm" /></FormControl>
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {['support', 'ventes', 'marketing', 'bot'].map(tag => (
+                        {["support", "ventes", "marketing", "bot"].map(tag => (
                             <Badge
                               key={tag}
                               variant="secondary"
                               className="text-[10px] cursor-pointer hover:bg-primary/10"
-                              onClick={() => form.setValue('sessionId', tag)}
+                              onClick={() => form.setValue("sessionId", tag)}
                             >
                               {tag}
                             </Badge>
@@ -454,7 +469,7 @@ export default function DashboardPage() {
         </SheetContent>
       </Sheet>
     </div>
-  )
+  );
 }
 
 function StatCard({ label, value, subtext, icon }: { label: string; value: string | number; subtext: string; icon: React.ReactNode }) {
@@ -462,7 +477,7 @@ function StatCard({ label, value, subtext, icon }: { label: string; value: strin
     <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] sm:text-xs text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
+          <div className="text-[10px] sm:text-xs text-muted-foreground font-semibold uppercase tracking-wider">{label}</div>
           <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
             {icon}
           </div>
@@ -476,5 +491,5 @@ function StatCard({ label, value, subtext, icon }: { label: string; value: strin
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

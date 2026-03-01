@@ -20,7 +20,7 @@ interface CreditCardUIProps {
 }
 
 export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
-  if (!credits || userRole === 'admin') return null;
+  if (!credits || userRole === "admin") return null;
 
   const total = (credits.balance || 0) + (credits.used || 0);
   const usagePercentage = total > 0 ? Math.round((credits.used || 0) / total * 100) : 0;
@@ -79,7 +79,7 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
               {recentHistory.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
                   <div className="flex items-center gap-2 text-xs">
-                    {item.type === 'debit' ? (
+                    {item.type === "debit" ? (
                       <ArrowDownLeft className="h-3 w-3 text-destructive" />
                     ) : (
                       <ArrowUpRight className="h-3 w-3 text-green-600" />
@@ -88,9 +88,9 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
                   </div>
                   <span className={cn(
                     "font-semibold",
-                    item.type === 'debit' ? "text-destructive" : "text-green-600"
+                    item.type === "debit" ? "text-destructive" : "text-green-600"
                   )}>
-                    {item.type === 'debit' ? '-' : '+'}{item.amount}
+                    {item.type === "debit" ? "-" : "+"}{item.amount}
                   </span>
                 </div>
               ))}

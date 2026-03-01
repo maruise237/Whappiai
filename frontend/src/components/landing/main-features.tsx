@@ -23,11 +23,11 @@ const features = [
     href: "/features/auto-reply",
     details: [
       "Configurez des messages de bienvenue personnalisés.",
-      "Gérez les absences et les horaires d'ouverture.",
+      "Gérez les absences et les horaires d"ouverture.",
       "Utilisez des variables dynamiques (nom, date, etc.).",
       "Intégration facile avec vos outils CRM existants."
     ],
-    cta: "Essayer l'automatisation"
+    cta: "Essayer l"automatisation"
   },
   {
     icon: ShieldCheck,
@@ -38,7 +38,7 @@ const features = [
       "Détection et suppression automatique des liens de spam.",
       "Filtrage des contenus inappropriés et haineux.",
       "Avertissements automatiques aux utilisateurs.",
-      "Rapports d'activité détaillés pour les administrateurs."
+      "Rapports d"activité détaillés pour les administrateurs."
     ],
     cta: "Activer la modération"
   },
@@ -99,8 +99,8 @@ export function MainFeatures() {
                 viewport={{ once: false }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className={`relative group rounded-2xl p-6 transition-all duration-300 cursor-pointer border ${
-                  activeFeature === index 
-                    ? "bg-primary/5 border-primary/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]" 
+                  activeFeature === index
+                    ? "bg-primary/5 border-primary/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
                     : "bg-card/50 border-transparent hover:bg-card hover:border-border/50"
                 }`}
                 onClick={() => setActiveFeature(index)}
@@ -139,12 +139,12 @@ export function MainFeatures() {
                     </p>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button 
-                            variant="link" 
+                        <Button
+                            variant="link"
                             className={`p-0 h-auto font-semibold group/btn ${activeFeature === index ? "text-primary" : "text-muted-foreground"}`}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            En savoir plus 
+                            En savoir plus
                             <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                         </Button>
                       </DialogTrigger>
@@ -160,7 +160,7 @@ export function MainFeatures() {
                             {feature.description}
                           </DialogDescription>
                         </DialogHeader>
-                        
+
                         <div className="grid gap-3 py-4">
                            <h4 className="font-semibold text-foreground mb-2">Ce que vous pouvez faire :</h4>
                            {feature.details?.map((detail, i) => (
@@ -197,9 +197,9 @@ export function MainFeatures() {
           >
             {/* Background Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-primary/20 rounded-full blur-[80px] -z-10" />
-            
-            <ChatPreview 
-              onScenarioChange={setActiveFeature} 
+
+            <ChatPreview
+              onScenarioChange={setActiveFeature}
               selectedIndex={activeFeature}
             />
           </motion.div>

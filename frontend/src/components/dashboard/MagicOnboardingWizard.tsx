@@ -116,7 +116,7 @@ export function MagicOnboardingWizard({
         prompt: config.prompt,
         constraints: config.constraints,
         model: config.model,
-        mode: 'bot'
+        mode: "bot"
       }, token || undefined)
 
       if (calStatus?.isConnected) {
@@ -194,7 +194,7 @@ export function MagicOnboardingWizard({
               <div className="space-y-2">
                 <Label>Décrivez vos activités principales</Label>
                 <Textarea
-                  placeholder="Ex: Vente et location d'appartements de luxe à Douala, conseils en investissement..."
+                  placeholder="Ex: Vente et location d"appartements de luxe à Douala, conseils en investissement..."
                   value={activities}
                   onChange={e => setActivities(e.target.value)}
                   className="min-h-[80px]"

@@ -1,7 +1,7 @@
-import NProgress from 'nprogress';
+import NProgress from "nprogress";
 
 // Configure NProgress
-NProgress.configure({ 
+NProgress.configure({
   showSpinner: false,
   trickleSpeed: 200,
   minimum: 0.08
@@ -10,62 +10,62 @@ NProgress.configure({
 const getApiBaseUrl = () => {
   // Always prioritize environment variable for API URL (crucial for Dokploy/Production)
   const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
-  
-  if (envApiUrl && envApiUrl.includes('://') && !envApiUrl.includes('://:')) {
-    return envApiUrl.endsWith('/') 
-      ? envApiUrl.slice(0, -1) 
+
+  if (envApiUrl && envApiUrl.includes("://") && !envApiUrl.includes("://:")) {
+    return envApiUrl.endsWith("/")
+      ? envApiUrl.slice(0, -1)
       : envApiUrl;
   }
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const { hostname, port, protocol } = window.location;
-    
+
     // If we are on port 3011 (Production Frontend), we need to point to port 3010 (Production Backend)
-    if (port === '3011' && hostname) {
+    if (port === "3011" && hostname) {
       return `${protocol}//${hostname}:3010`;
     }
 
     // Handle Dokploy/Production domains
     if (hostname) {
       // If we are on port 3011 (SaaS Frontend), we likely need port 3010 (SaaS Backend)
-      if (port === '3011') return `${protocol}//${hostname}:3010`;
+      if (port === "3011") return `${protocol}//${hostname}:3010`;
 
       // Subdomain routing (app -> api)
-      if (hostname.startsWith('app.')) return `${protocol}//${hostname.replace('app.', 'api.')}`;
-      if (hostname.startsWith('dashboard.')) return `${protocol}//${hostname.replace('dashboard.', 'api.')}`;
+      if (hostname.startsWith("app.")) return `${protocol}//${hostname.replace("app.", "api.")}`;
+      if (hostname.startsWith("dashboard.")) return `${protocol}//${hostname.replace("dashboard.", "api.")}`;
 
       // If there is NO port, we are on standard 80/443.
       // In same-domain setup (backend serving frontend), we just use the current origin.
       if (!port) return `${protocol}//${hostname}`;
 
-      // If we have a port but it's not a known frontend dev port,
+      // If we have a port but it"s not a known frontend dev port,
       // we assume the backend is on the same port (same-domain production).
-      if (port !== '3005' && port !== '3001' && port !== '3000') {
+      if (port !== "3005" && port !== "3001" && port !== "3000") {
           return `${protocol}//${hostname}:${port}`;
       }
     }
 
     // If we are on port 3005 or 3001 (Next.js dev server), we need to point to the backend (3000)
-    if ((port === '3005' || port === '3001') && hostname) {
+    if ((port === "3005" || port === "3001") && hostname) {
       return `${protocol}//${hostname}:3000`;
     }
   }
 
-  return '';
+  return "";
 };
 
 export const API_BASE_URL = getApiBaseUrl();
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     try { NProgress.start(); } catch (e) {}
   }
   try {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-    
+    const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
+
     // We get the token from Clerk if available (this should be handled by the caller or a hook)
-    // but for now we'll just allow passing it in options.headers
-    
+    // but for now we"ll just allow passing it in options.headers
+
     const res = await fetch(url, {
       ...options,
       credentials: "include",
@@ -100,7 +100,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     }
     return (data && data.data !== undefined) ? data.data : data;
   } finally {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try { NProgress.done(); } catch (e) {}
     }
   }

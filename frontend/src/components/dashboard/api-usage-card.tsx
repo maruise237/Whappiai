@@ -1,114 +1,80 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Terminal, Copy, Check } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { cn, copyToClipboard as copyUtil } from "@/lib/utils"
-import { toast } from "sonner"
+import * as React from "react";
+import { Code, Copy, Check, Terminal } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { copyToClipboard } from "@/lib/utils";
 
 interface ApiUsageCardProps {
   activeTab: string;
-  sessionId?: string;
-  token?: string;
+  sessionId: string;
+  token: string;
 }
 
 export function ApiUsageCard({ activeTab, sessionId, token }: ApiUsageCardProps) {
-  const [copied, setCopied] = React.useState(false)
+  const [copied, setCopied] = React.useState(false);
 
-  const getCurlExample = (tab: string) => {
-    const sId = sessionId || "SESSION_ID";
-    const tkn = token || "YOUR_TOKEN";
-    const base = `curl -X POST "http://localhost:3010/api/v1/messages?sessionId=${sId}" \\
-  -H "Authorization: Bearer ${tkn}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "to": "2250102030405",`
+  const getCurlSnippet = () => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://api.whappi.io";
 
-    switch (tab) {
-      case "image":
-        return `${base}
-    "type": "image",
-    "image": {
-      "link": "https://example.com/image.jpg",
-      "caption": "Regardez ça !"
+    if (activeTab === "send") {
+      return `curl -X POST ${baseUrl}/api/v1/sessions/${sessionId}/messages/send \
+  -H "Authorization: Bearer ${token}" \
+  -H "Content-Type: application/json" \
+  -d "{
+    "to": "2250102030405",
+    "message": "Bonjour de Whappi API !"
+  }"`;
     }
-  }'`
-      case "video":
-        return `${base}
-    "type": "video",
-    "video": {
-      "link": "https://example.com/video.mp4",
-      "caption": "Visionnez ceci !"
-    }
-  }'`
-      case "audio":
-        return `${base}
-    "type": "audio",
-    "audio": {
-      "link": "https://example.com/audio.mp3"
-    }
-  }'`
-      case "document":
-        return `${base}
-    "type": "document",
-    "document": {
-      "link": "https://example.com/file.pdf",
-      "filename": "document.pdf"
-    }
-  }'`
-      default:
-        return `${base}
-    "type": "text",
-    "text": "Bonjour de l'API Whappi !"
-  }'`
-    }
-  }
 
-  const curlExample = getCurlExample(activeTab)
+    return `curl -X GET ${baseUrl}/api/v1/sessions/${sessionId}/groups \
+  -H "Authorization: Bearer ${token}"`;
+  };
 
-  const copyToClipboard = async () => {
-    const success = await copyUtil(curlExample)
+  const handleCopy = async () => {
+    const success = await copyToClipboard(getCurlSnippet());
     if (success) {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-      toast.success("Copié dans le presse-papier")
+      setCopied(true);
+      toast.success("Snippet copié !");
+      setTimeout(() => setCopied(false), 2000);
     }
-  }
+  };
 
   return (
-    <Card className="border-border bg-card">
-      <CardHeader className="p-4 border-b">
+    <Card className="border-none shadow-none bg-zinc-900 text-zinc-100 overflow-hidden">
+      <CardHeader className="p-4 border-b border-white/5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-              <Terminal className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">Exemple d'API</p>
-              <p className="text-xs text-muted-foreground">Implémentation cURL</p>
-            </div>
+          <div className="space-y-1">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Code className="h-4 w-4 text-primary" /> API Quickstart
+            </CardTitle>
+            <CardDescription className="text-zinc-500 text-[10px]">
+              Intégrez Whappi dans vos outils en quelques secondes.
+            </CardDescription>
           </div>
-          <Button variant="outline" size="sm" className="h-8 gap-2" onClick={copyToClipboard}>
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            {copied ? "Copié" : "Copier"}
+          <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full" onClick={handleCopy}>
+            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-4">
-        <ScrollArea className="h-64 w-full bg-slate-950 rounded-md p-4">
-          <pre className="font-mono text-xs text-slate-300 whitespace-pre-wrap">
-            {curlExample}
+      <CardContent className="p-0">
+        <div className="p-4 font-mono text-[11px] bg-black/50 leading-relaxed overflow-x-auto">
+          <pre className="text-emerald-400">
+            {getCurlSnippet()}
           </pre>
-        </ScrollArea>
-        <div className="mt-4 flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <p className="text-[10px] text-muted-foreground font-medium">
-            Endpoint: <span className="text-foreground">POST /api/v1/messages</span>
-          </p>
+        </div>
+        <div className="p-3 bg-white/5 flex items-center justify-between">
+           <span className="text-[9px] uppercase font-bold tracking-widest text-zinc-500">
+            Compatible Node.js, Python, PHP
+           </span>
+           <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-primary font-bold">
+            Full Docs →
+           </Button>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

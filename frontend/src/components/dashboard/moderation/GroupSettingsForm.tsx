@@ -1,23 +1,27 @@
-import * as React from "react"
+"use client";
+
+import * as React from "react";
 import {
   ShieldCheck,
   AlertTriangle,
   ShieldAlert,
   Sparkles,
   BrainCircuit
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
-import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+
+const MAX_WARNINGS_UI_LIMIT = 10;
 
 interface GroupSettingsFormProps {
-  selectedGroup: any
-  form: any
-  setForm: (form: any) => void
+  selectedGroup: any;
+  form: any;
+  setForm: (form: any) => void;
 }
 
 export function GroupSettingsForm({
@@ -25,6 +29,18 @@ export function GroupSettingsForm({
   form,
   setForm
 }: GroupSettingsFormProps) {
+  const handleMaxWarningsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, max_warnings: parseInt(e.target.value) || 0 });
+  };
+
+  const handleResetDaysChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, warning_reset_days: parseInt(e.target.value) || 0 });
+  };
+
+  const handleTextChange = (field: string) => (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setForm({ ...form, [field]: e.target.value });
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       <div className="space-y-1">
@@ -34,7 +50,6 @@ export function GroupSettingsForm({
         </p>
       </div>
 
-      {/* Section Protection */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-primary" /> Protection Active
@@ -59,7 +74,6 @@ export function GroupSettingsForm({
 
       <Separator />
 
-      {/* Section Warnings */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-amber-500" /> Gestion des Avertissements
@@ -68,14 +82,15 @@ export function GroupSettingsForm({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-xs">Seuil d&apos;exclusion (Nombre d&apos;avertissements)</Label>
-              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-none text-[10px] font-bold">
+              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-none text-[10px]
+                font-bold">
                 {form.max_warnings} Warns = Ban
               </Badge>
             </div>
             <Input
               type="number"
               value={form.max_warnings}
-              onChange={e => setForm({ ...form, max_warnings: parseInt(e.target.value) || 0 })}
+              onChange={handleMaxWarningsChange}
               className="h-9 w-24 text-sm"
             />
             <div className="space-y-1">
@@ -83,7 +98,10 @@ export function GroupSettingsForm({
                 <span>Sévérité Faible</span>
                 <span>Critique</span>
               </div>
-              <Progress value={(Math.min(10, Math.max(0, form.max_warnings)) / 10) * 100} className="h-1.5" />
+              <Progress
+                value={(Math.min(MAX_WARNINGS_UI_LIMIT, Math.max(0, form.max_warnings)) / MAX_WARNINGS_UI_LIMIT) * 100}
+                className="h-1.5"
+              />
             </div>
           </div>
 
@@ -91,29 +109,27 @@ export function GroupSettingsForm({
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-xs font-medium">Remise à zéro automatique</Label>
-                <p className="text-[10px] text-muted-foreground">Nombre de jours avant d&apos;effacer les avertissements d&apos;un membre.</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Nombre de jours avant d&apos;effacer les avertissements.
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   value={form.warning_reset_days}
-                  onChange={e => setForm({ ...form, warning_reset_days: parseInt(e.target.value) || 0 })}
+                  onChange={handleResetDaysChange}
                   className="h-8 w-16 text-xs text-center"
                   placeholder="0"
                 />
                 <span className="text-[10px] font-bold text-muted-foreground uppercase">Jours</span>
               </div>
             </div>
-            <p className="text-[9px] italic text-muted-foreground bg-primary/5 p-2 rounded">
-              💡 Réglez sur 0 pour désactiver la remise à zéro automatique.
-            </p>
           </div>
         </div>
       </div>
 
       <Separator />
 
-      {/* Section Content Filter */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <ShieldAlert className="h-4 w-4 text-destructive" /> Filtre de Contenu
@@ -125,7 +141,7 @@ export function GroupSettingsForm({
               placeholder="insulte1, insulte2, spam..."
               className="min-h-[80px] text-sm bg-card border-border"
               value={form.bad_words}
-              onChange={e => setForm({ ...form, bad_words: e.target.value })}
+              onChange={handleTextChange("bad_words")}
             />
           </div>
           <div className="space-y-2">
@@ -134,27 +150,14 @@ export function GroupSettingsForm({
               placeholder="Attention @{{name}}, ce contenu est interdit."
               className="min-h-[80px] text-sm bg-card border-border"
               value={form.warning_template}
-              onChange={e => setForm({ ...form, warning_template: e.target.value })}
+              onChange={handleTextChange("warning_template")}
             />
-            <div className="flex flex-wrap gap-1 mt-2">
-              {['@{{name}}', '{{warns}}', '{{max}}'].map(tag => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="text-[10px] cursor-pointer font-mono hover:bg-primary/10 h-5"
-                  onClick={() => setForm({ ...form, warning_template: (form.warning_template || "") + tag })}
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
           </div>
         </div>
       </div>
 
       <Separator />
 
-      {/* Section Welcome */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" /> Message de Bienvenue
@@ -170,20 +173,8 @@ export function GroupSettingsForm({
                 placeholder="Bienvenue @{{name}} !"
                 className="min-h-[100px] text-sm bg-card border-border"
                 value={form.welcome_template}
-                onChange={e => setForm({ ...form, welcome_template: e.target.value })}
+                onChange={handleTextChange("welcome_template")}
               />
-              <div className="flex flex-wrap gap-1 mt-2">
-                {['@{{name}}', '{{subject}}', '{{time}}'].map(tag => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="text-[10px] cursor-pointer font-mono hover:bg-primary/10 h-5"
-                    onClick={() => setForm({ ...form, welcome_template: (form.welcome_template || "") + tag })}
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -191,7 +182,6 @@ export function GroupSettingsForm({
 
       <Separator />
 
-      {/* AI Assistant Group Toggle */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <BrainCircuit className="h-4 w-4 text-primary" /> Assistant IA du Groupe
@@ -199,7 +189,7 @@ export function GroupSettingsForm({
         <div className="border rounded-lg bg-primary/5 p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Activer l&apos;Assistant IA</p>
-            <p className="text-xs text-muted-foreground">Le bot répondra aux questions s&apos;il est tagué ou selon les réglages.</p>
+            <p className="text-xs text-muted-foreground">Le bot répondra aux questions.</p>
           </div>
           <Switch
             checked={form.ai_assistant_enabled}
@@ -208,5 +198,5 @@ export function GroupSettingsForm({
         </div>
       </div>
     </div>
-  )
+  );
 }

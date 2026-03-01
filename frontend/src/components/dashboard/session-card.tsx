@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, Smartphone, QrCode, Trash2, Eye, EyeOff, Copy, Check } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { RefreshCw, Smartphone, Trash2, Eye, EyeOff, Copy, Check } from "lucide-react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -23,7 +23,6 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
   const [localPairingCode, setLocalPairingCode] = React.useState<string | null>(null)
   const [activeTab, setActiveTab] = React.useState("qr")
 
-  // Reset local state when session changes
   React.useEffect(() => {
     setLocalQrCode(null)
     setLocalPairingCode(null)
@@ -36,7 +35,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
 
     setLoading(true)
-    const toastId = toast.loading("Génération du code d'appairage...")
+    const toastId = toast.loading("Génération du code d"appairage...")
 
     try {
       const token = await getToken()
@@ -53,7 +52,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
       if (response && response.pairingCode) {
         setLocalPairingCode(response.pairingCode)
-        toast.success("Code d'appairage reçu", { id: toastId })
+        toast.success("Code d"appairage reçu", { id: toastId })
       } else {
         toast.success("Demande envoyée, attendez le code...", { id: toastId })
       }
@@ -67,7 +66,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
   }
 
-  const copyToClipboard = async (text: string, label: string) => {
+  const handleCopyToClipboard = async (text: string, label: string) => {
     const success = await copyUtil(text)
     if (success) {
       toast.success(`${label} copié`)
@@ -90,7 +89,6 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         setLocalQrCode(response.qr)
         toast.success("QR Code généré", { id: toastId })
       } else {
-        // Fallback to refresh if not returned directly
         onRefresh()
         toast.success("Demande de QR Code envoyée", { id: toastId })
       }
@@ -129,10 +127,20 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
   }
 
-  // A session is connected if explicitly marked as isConnected and NOT currently generating/connecting
   const isConnected = session?.isConnected && !loading
   const qrCode = localQrCode || session?.qr
   const pairingCode = localPairingCode || session?.pairingCode
+
+  const getStatusLabel = () => {
+    if (isConnected) return "Connecté"
+    return "Déconnecté"
+  }
+
+  const getStatusBadgeClass = () => {
+    return isConnected
+      ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+      : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+  }
 
   if (!session) {
     return (
@@ -140,7 +148,9 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <Smartphone className="h-8 w-8 text-muted-foreground/40 mb-3" />
           <h3 className="text-sm font-medium mb-1">Aucune session sélectionnée</h3>
-          <p className="text-xs text-muted-foreground max-w-xs mb-4">Sélectionnez une session existante ou créez-en une nouvelle pour commencer.</p>
+          <p className="text-xs text-muted-foreground max-w-xs mb-4">
+            Sélectionnez une session existante ou créez-en une nouvelle pour commencer.
+          </p>
           <Button size="sm" onClick={onCreate}>
             Créer une session
           </Button>
@@ -162,7 +172,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs text-muted-foreground">Session WhatsApp</p>
                 <button
-                  onClick={() => copyToClipboard(session.sessionId, "ID")}
+                  onClick={() => handleCopyToClipboard(session.sessionId, "ID")}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Copy className="h-3 w-3" />
@@ -172,15 +182,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
           </div>
           <div className="flex items-center gap-2">
             <div className="flex flex-col items-end gap-1">
-              <Badge className={isConnected
-                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
-                : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
-              }>
-                {isConnected ? "Connecté" : "Déconnecté"}
+              <Badge className={getStatusBadgeClass()}>
+                {getStatusLabel()}
               </Badge>
               {session?.detail && !isConnected && (
                  <span className="text-[9px] text-destructive font-bold uppercase tracking-tight">
-                    {session.detail.includes('conflict') ? "Conflit (ouvert ailleurs)" : session.detail}
+                    {session.detail.includes("conflict") ? "Conflit (ouvert ailleurs)" : session.detail}
                  </span>
               )}
             </div>
@@ -201,13 +208,16 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </TabsList>
 
               <TabsContent value="qr" className="flex flex-col items-center space-y-4 pt-4">
-                <div className="relative aspect-square w-full max-w-[240px] border rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shadow-inner">
+                <div className="relative aspect-square w-full max-w-[240px] border rounded-lg flex
+                  items-center justify-center bg-muted/20 overflow-hidden shadow-inner">
                   {qrCode ? (
                     <img src={qrCode} alt="QR Code" className="w-full h-full p-4 bg-white rounded-md object-contain" />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
                       <RefreshCw className={cn("h-6 w-6", loading && "animate-spin")} />
-                      <span className="text-[10px] font-medium">{loading ? "Génération..." : "Cliquez sur actualiser pour obtenir un QR code"}</span>
+                      <span className="text-[10px] font-medium">
+                        {loading ? "Génération..." : "Cliquez sur actualiser pour obtenir un QR code"}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -219,7 +229,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
               <TabsContent value="code" className="space-y-6 pt-4">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Numéro de téléphone</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase
+                    tracking-wider ml-1">Numéro de téléphone</label>
                   <div className="flex gap-2">
                     <Input
                       placeholder="ex: 237600000000"
@@ -227,7 +238,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       className="h-10 text-sm"
                     />
-                    <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                    <Button
+                      size="sm"
+                      className="h-10 px-4 whitespace-nowrap"
+                      onClick={handleRequestPairingCode}
+                      disabled={loading || !phoneNumber}
+                    >
                       Obtenir le code
                     </Button>
                   </div>
@@ -235,15 +251,18 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
                 {pairingCode ? (
                   <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Votre code d&apos;appairage
+                    </p>
                     <div className="flex flex-wrap justify-center gap-1.5">
-                      {pairingCode.split('').map((char: string, i: number) => (
-                        <div key={i} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
+                      {pairingCode.split("").map((char: string, i: number) => (
+                        <div key={i} className="w-9 h-12 border bg-card rounded-md flex items-center
+                          justify-center text-xl font-black text-primary shadow-sm">
                           {char}
                         </div>
                       ))}
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(pairingCode, "Code")}>
+                    <Button variant="ghost" size="sm" onClick={() => handleCopyToClipboard(pairingCode, "Code")}>
                       <Copy className="h-3.5 w-3.5 mr-2" />
                       Copier le code
                     </Button>
@@ -264,7 +283,9 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               <Check className="h-6 w-6 text-green-600" />
             </div>
             <h4 className="text-sm font-medium">Session Opérationnelle</h4>
-            <p className="text-xs text-muted-foreground mt-1">L'instance est prête à envoyer et recevoir des messages.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              L&apos;instance est prête à envoyer et recevoir des messages.
+            </p>
 
             <div className="w-full mt-6 space-y-2">
               <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
@@ -279,7 +300,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
                     {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                   </button>
-                  <button onClick={() => copyToClipboard(session.token, "Token")} className="text-muted-foreground hover:text-foreground">
+                  <button onClick={() => handleCopyToClipboard(session.token, "Token")}
+                    className="text-muted-foreground hover:text-foreground">
                     <Copy className="h-3 w-3" />
                   </button>
                 </div>

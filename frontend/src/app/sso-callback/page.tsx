@@ -4,7 +4,7 @@ import { AuthenticateWithRedirectCallback } from "@clerk/nextjs"
 
 export default function SSOCallback() {
   return (
-    <AuthenticateWithRedirectCallback 
+    <AuthenticateWithRedirectCallback
       signInForceRedirectUrl="/dashboard"
       signUpForceRedirectUrl="/register?from=google_login&intent=signup"
     />

@@ -26,7 +26,7 @@ export function Navbar() {
     const savedTheme = localStorage.getItem("theme")
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
     const isDarkTheme = savedTheme === "dark" || (!savedTheme && prefersDark)
-    
+
     setIsDark(isDarkTheme)
     if (isDarkTheme) {
       document.documentElement.classList.add("dark")

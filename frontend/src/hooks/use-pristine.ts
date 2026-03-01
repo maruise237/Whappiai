@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import Pristine from 'pristinejs';
+import { useEffect, useRef, useState } from "react";
+import Pristine from "pristinejs";
 
 export function usePristine(options = {}) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -8,12 +8,12 @@ export function usePristine(options = {}) {
   useEffect(() => {
     if (formRef.current) {
       const p = new Pristine(formRef.current, {
-        classTo: 'space-y-2', // Match shadcn layout
-        errorClass: 'text-destructive',
-        successClass: 'text-primary',
-        errorTextParent: 'space-y-2',
-        errorTextTag: 'p',
-        errorTextClass: 'text-[0.8rem] font-medium text-destructive',
+        classTo: "space-y-2", // Match shadcn layout
+        errorClass: "text-destructive",
+        successClass: "text-primary",
+        errorTextParent: "space-y-2",
+        errorTextTag: "p",
+        errorTextClass: "text-[0.8rem] font-medium text-destructive",
         ...options
       }, true);
       setPristine(p);

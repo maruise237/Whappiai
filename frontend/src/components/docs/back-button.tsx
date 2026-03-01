@@ -10,7 +10,7 @@ export function DocsBackButton() {
   const { isSignedIn, isLoaded } = useUser()
   const [mounted, setMounted] = useState(false)
 
-  // Éviter l'hydratation incorrecte
+  // Éviter l"hydratation incorrecte
   useEffect(() => {
     setMounted(true)
   }, [])

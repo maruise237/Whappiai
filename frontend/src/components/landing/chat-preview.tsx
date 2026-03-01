@@ -19,7 +19,7 @@ const SCENARIOS = [
       { role: "system", content: "Alice a rejoint le groupe" },
       { role: "assistant", content: "Bienvenue Alice ! 👋 Voici les règles du groupe : pas de spam, respect mutuel." },
       { role: "user", content: "Merci ! Est-ce que je peux poster des liens ?" },
-      { role: "assistant", content: "Seulement si c'est pertinent pour la communauté et sans pub ! 😉" },
+      { role: "assistant", content: "Seulement si c"est pertinent pour la communauté et sans pub ! 😉" },
     ] as Message[],
   },
   {
@@ -29,7 +29,7 @@ const SCENARIOS = [
       { role: "system", content: "Ce message a été supprimé", isDeleted: true },
       { role: "assistant", content: "⚠️ Attention, les liens non autorisés sont interdits." },
       { role: "user", content: "Désolé, je ne savais pas." },
-      { role: "assistant", content: "Pas de souci, c'est noté. Merci de respecter les règles ! 🙏" },
+      { role: "assistant", content: "Pas de souci, c"est noté. Merci de respecter les règles ! 🙏" },
     ] as Message[],
   },
   {
@@ -47,7 +47,7 @@ const SCENARIOS = [
       { role: "user", content: "Je voudrais prendre rendez-vous." },
       { role: "assistant", content: "Bien sûr ! Quel jour vous convient le mieux ? 📅" },
       { role: "user", content: "Lundi prochain vers 14h." },
-      { role: "assistant", content: "C'est noté ! Je vous confirme le rendez-vous pour Lundi à 14h. ✅" },
+      { role: "assistant", content: "C"est noté ! Je vous confirme le rendez-vous pour Lundi à 14h. ✅" },
     ] as Message[],
   },
 ]
@@ -88,7 +88,7 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
 
     const processNextStep = () => {
       const currentScenario = SCENARIOS[scenarioIndex]
-      
+
       if (messageIndex >= currentScenario.messages.length) {
         timeout = setTimeout(() => {
           setMessages([])
@@ -122,14 +122,14 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
 
   return (
     <div className="relative mx-auto w-full max-w-[320px] lg:max-w-[350px]">
-      <div 
+      <div
         className="relative border-gray-900 bg-gray-900 border-[10px] rounded-[3rem] h-[580px] shadow-2xl overflow-hidden ring-1 ring-white/10"
         style={{
           maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
           WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)"
         }}
       >
-        
+
         <div className="absolute top-24 -left-[14px] w-[4px] h-8 bg-gray-800 rounded-l-md"></div>
         <div className="absolute top-36 -left-[14px] w-[4px] h-14 bg-gray-800 rounded-l-md"></div>
         <div className="absolute top-36 -right-[14px] w-[4px] h-20 bg-gray-800 rounded-r-md"></div>
@@ -139,14 +139,14 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
         </div>
 
         <div className="w-full h-full bg-[#0b141a] flex flex-col relative overflow-hidden rounded-[2.2rem]">
-          
+
           <div className="bg-[#202c33] p-3 pt-10 flex items-center justify-between z-20 shadow-md">
             <div className="flex items-center gap-2">
               <ArrowLeft className="text-[#00a884] w-5 h-5 cursor-pointer" />
               <div className="relative">
-                <img 
-                  src="https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png" 
-                  alt="Bot" 
+                <img
+                  src="https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png"
+                  alt="Bot"
                   className="w-9 h-9 rounded-full object-cover"
                 />
                 <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-[#202c33]"></div>
@@ -162,9 +162,9 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
             </div>
           </div>
 
-          <div className="flex-1 relative bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat bg-opacity-5">
-            
-            <div 
+          <div className="flex-1 relative bg-[url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")] bg-repeat bg-opacity-5">
+
+            <div
               ref={containerRef}
               className="h-full overflow-y-auto p-4 space-y-3 pb-24 scrollbar-hide"
             >
@@ -185,10 +185,10 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.2 }}
                     className={`flex w-full ${
-                      message.role === "user" 
-                        ? "justify-end" 
-                        : message.role === "system" 
-                          ? "justify-center my-4" 
+                      message.role === "user"
+                        ? "justify-end"
+                        : message.role === "system"
+                          ? "justify-center my-4"
                           : "justify-start"
                     }`}
                   >
@@ -211,15 +211,15 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
                       >
                         {message.content}
                         <div className="text-[9px] text-right mt-1 opacity-60 flex justify-end items-center gap-1">
-                          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           {message.role === "user" && (
                             <span className="text-[#53bdeb]">✓✓</span>
                           )}
                         </div>
-                        
+
                         <div className={`absolute top-0 w-0 h-0 border-[6px] border-transparent ${
-                          message.role === "user" 
-                            ? "-right-[6px] border-t-[#005c4b] border-l-[#005c4b]" 
+                          message.role === "user"
+                            ? "-right-[6px] border-t-[#005c4b] border-l-[#005c4b]"
                             : "-left-[6px] border-t-[#202c33] border-r-[#202c33]"
                         }`} />
                       </div>
