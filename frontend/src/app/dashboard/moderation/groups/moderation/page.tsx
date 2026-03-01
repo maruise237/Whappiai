@@ -264,7 +264,7 @@ function GroupModerationContent() {
                            </div>
                         </div>
                         <p className="text-[9px] italic text-muted-foreground bg-primary/5 p-2 rounded">
-                           💡 Réglez sur 0 pour désactiver la remise à zéro automatique.
+                           <Info className="h-3 w-3 mr-1" /> Réglez sur 0 pour désactiver la remise à zéro automatique.
                         </p>
                      </div>
                   </div>

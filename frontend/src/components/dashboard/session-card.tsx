@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, Smartphone, QrCode, Trash2, Eye, EyeOff, Copy, Check } from "lucide-react"
+import { RefreshCw, Smartphone, QrCode, Trash2, MoreHorizontal, Eye, EyeOff, Copy, Check } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
 import { showConfirm } from "@/lib/swal"
 import { cn, copyToClipboard as copyUtil } from "@/lib/utils"
@@ -185,7 +186,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               )}
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4" />
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </div>
         </div>

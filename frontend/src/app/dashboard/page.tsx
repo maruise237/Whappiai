@@ -463,9 +463,9 @@ export default function DashboardPage() {
          </div>
       </div>
 
-      {/* New Session Sheet */}
-      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="sm:max-w-[400px]">
+      {/* New Session Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-[425px]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(async (val) => {
                const t = toast.loading("Création...");
@@ -480,10 +480,10 @@ export default function DashboardPage() {
                  toast.error("Erreur de création", { id: t });
                }
             })} className="space-y-6">
-              <SheetHeader>
-                <SheetTitle>New WhatsApp Session</SheetTitle>
-                <SheetDescription className="text-xs">Initialisez un nouveau compte pour l&apos;automatisation.</SheetDescription>
-              </SheetHeader>
+              <DialogHeader>
+                <DialogTitle>New WhatsApp Session</DialogTitle>
+                <DialogDescription className="text-xs">Initialisez un nouveau compte pour l&apos;automatisation.</DialogDescription>
+              </DialogHeader>
               <div className="space-y-6 py-4">
                 <FormField control={form.control} name="sessionId" render={({ field }) => (
                     <FormItem className="space-y-2">
@@ -514,11 +514,11 @@ export default function DashboardPage() {
                   )}
                 />
               </div>
-              <SheetFooter><Button type="submit" className="w-full">Create Session</Button></SheetFooter>
+              <DialogFooter><Button type="submit" className="w-full">Create Session</Button></DialogFooter>
             </form>
           </Form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -528,15 +528,14 @@ function StatCard({ label, value, subtext, icon }: { label: string; value: strin
     <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] sm:text-xs text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground font-bold tracking-tight">{label}</p>
           <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
             {icon}
           </div>
         </div>
         <div className="space-y-1">
           <p className="text-xl sm:text-2xl font-bold tracking-tight">{value}</p>
-          <p className="text-[9px] sm:text-xs text-muted-foreground font-medium flex items-center gap-1">
-            <span className="inline-block w-1 h-1 rounded-full bg-primary/40" />
+          <p className="text-[10px] text-muted-foreground/60 font-medium">
             {subtext}
           </p>
         </div>
