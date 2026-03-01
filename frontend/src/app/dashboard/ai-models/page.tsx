@@ -2,10 +2,16 @@
 
 import * as React from "react"
 import {
+  Bot,
   Plus,
+  Settings2,
+  Globe,
+  Key,
   CheckCircle2,
   Trash2,
   Edit,
+  MoreVertical,
+  Loader2,
   Cpu,
   Zap,
   Star,
@@ -36,6 +42,7 @@ import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 export default function AiModelsPage() {
   const { getToken } = useAuth()
@@ -74,12 +81,12 @@ export default function AiModelsPage() {
   }, [getToken])
 
   React.useEffect(() => {
-    fetchModels()
+    fetchModels().catch(console.error)
   }, [fetchModels])
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
-  const handleModelSubmit = async () => {
+  const handleSubmit = async () => {
     if (!formData.name || !formData.endpoint || !formData.model_name) {
       return toast.error("Veuillez remplir tous les champs obligatoires")
     }
@@ -100,7 +107,7 @@ export default function AiModelsPage() {
     }
   }
 
-  const handleModelDelete = async (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Supprimer ce modèle ?")) return
     try {
       const token = await getToken()
@@ -112,7 +119,7 @@ export default function AiModelsPage() {
     }
   }
 
-  const handleOpenAdd = () => {
+  const openAdd = () => {
     setIsEditing(false)
     setSelectedModel(null)
     setFormData({
@@ -126,7 +133,7 @@ export default function AiModelsPage() {
     setIsAddOpen(true)
   }
 
-  const handleOpenEdit = (model: any) => {
+  const openEdit = (model: any) => {
     setIsEditing(true)
     setSelectedModel(model)
     setFormData({
@@ -160,7 +167,7 @@ export default function AiModelsPage() {
           <p className="text-sm text-muted-foreground">Configurez les APIs et endpoints pour l&apos;intelligence du bot.</p>
         </div>
 
-        <Button size="sm" onClick={handleOpenAdd} className="rounded-full h-8 px-4">
+        <Button size="sm" onClick={openAdd} className="rounded-full h-8 px-4">
           <Plus className="h-3 w-3 mr-2" /> Ajouter un Modèle
         </Button>
       </div>
@@ -171,7 +178,7 @@ export default function AiModelsPage() {
              <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Zap className="h-4 w-4" /></div>
              <div>
                 <p className="text-[10px] font-semibold text-muted-foreground">Moteur Actif</p>
-                <div className="text-sm font-bold">{models.find(m => m.is_default)?.name || "Non défini"}</div>
+                <p className="text-sm font-bold">{models.find(m => m.is_default)?.name || "Non défini"}</p>
              </div>
           </CardContent>
         </Card>
@@ -180,7 +187,7 @@ export default function AiModelsPage() {
              <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground"><Star className="h-4 w-4" /></div>
              <div>
                 <p className="text-[10px] font-semibold text-muted-foreground">Modèles Configurés</p>
-                <div className="text-sm font-bold">{models.length}</div>
+                <p className="text-sm font-bold">{models.length}</p>
              </div>
           </CardContent>
         </Card>
@@ -189,7 +196,7 @@ export default function AiModelsPage() {
              <div className="h-9 w-9 rounded-full bg-green-500/10 flex items-center justify-center text-green-600"><CheckCircle2 className="h-4 w-4" /></div>
              <div>
                 <p className="text-[10px] font-semibold text-muted-foreground">Messages IA Envoyés</p>
-                <div className="text-sm font-bold">{adminStats?.overview?.messagesSent || 0}</div>
+                <p className="text-sm font-bold">{adminStats?.overview?.messagesSent || 0}</p>
              </div>
           </CardContent>
         </Card>
@@ -198,7 +205,7 @@ export default function AiModelsPage() {
              <div className="h-9 w-9 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600"><TrendingUp className="h-4 w-4" /></div>
              <div>
                 <p className="text-[10px] font-semibold text-muted-foreground">Taux de Succès Global</p>
-                <div className="text-sm font-bold">{adminStats?.overview?.successRate || 0}%</div>
+                <p className="text-sm font-bold">{adminStats?.overview?.successRate || 0}%</p>
              </div>
           </CardContent>
         </Card>
@@ -264,8 +271,8 @@ export default function AiModelsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                           <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(m)} className="h-7 w-7 opacity-0 group-hover:opacity-100"><Edit className="h-3.5 w-3.5" /></Button>
-                           <Button variant="ghost" size="icon" onClick={() => handleModelDelete(m.id)} className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                           <Button variant="ghost" size="icon" onClick={() => openEdit(m)} className="h-7 w-7 opacity-0 group-hover:opacity-100"><Edit className="h-3.5 w-3.5" /></Button>
+                           <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)} className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -336,7 +343,7 @@ export default function AiModelsPage() {
 
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
             <Button variant="ghost" size="sm" onClick={() => setIsAddOpen(false)} className="w-full sm:w-auto">Annuler</Button>
-            <Button size="sm" onClick={handleModelSubmit} className="w-full sm:w-auto">Sauvegarder le Moteur</Button>
+            <Button size="sm" onClick={handleSubmit} className="w-full sm:w-auto">Sauvegarder le Moteur</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

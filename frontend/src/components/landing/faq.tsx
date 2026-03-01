@@ -99,7 +99,7 @@ export function FAQ() {
           className="max-w-3xl mx-auto"
         >
           <Accordion type="single" collapsible className="w-full space-y-4" onValueChange={(value) => setActiveItem(value)}>
-            {faqData.map((item, index) => (
+            {faqData.map((item) => (
               <AccordionItem 
                 key={index} 
                 value={`item-${index}`}
