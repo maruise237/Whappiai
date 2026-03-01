@@ -263,7 +263,7 @@ export default function DashboardPage() {
                   <SelectValue placeholder="Choisir une session" />
                </SelectTrigger>
                <SelectContent>
-                  {sessions.map(s => <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>)}
+                  {sessions.map(s => <SelectItem key={String(s.sessionId)} value={String(s.sessionId)} className="text-xs">{typeof s.sessionId === 'string' ? s.sessionId : JSON.stringify(s.sessionId)}</SelectItem>)}
                </SelectContent>
             </Select>
             {selectedSession && (
@@ -377,7 +377,7 @@ export default function DashboardPage() {
                         <TableBody>
                            {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg) => (
                               <TableRow key={msg.id || msg.timestamp} className="hover:bg-muted/50">
-                                 <TableCell className="text-sm truncate max-w-[150px]">{msg.resource_id}</TableCell>
+                                 <TableCell className="text-sm truncate max-w-[150px]">{typeof msg.resource_id === 'string' ? msg.resource_id : JSON.stringify(msg.resource_id)}</TableCell>
                                  <TableCell>
                                     <Badge className={cn(
                                        "border-none text-[9px] font-semibold",
@@ -445,7 +445,7 @@ export default function DashboardPage() {
                               <Zap className="h-3 w-3 text-muted-foreground" />
                            </div>
                            <div className="min-w-0">
-                              <p className="text-xs font-semibold truncate">{activity.action || "Action"}</p>
+                              <p className="text-xs font-semibold truncate">{typeof activity.action === 'string' ? activity.action : (activity.action ? JSON.stringify(activity.action) : "Action")}</p>
                               <p className="text-[10px] text-muted-foreground truncate">
                                  {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
                               </p>

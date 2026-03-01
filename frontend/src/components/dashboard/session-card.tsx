@@ -110,7 +110,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
     const result = await showConfirm(
       "Supprimer la session ?",
-      `Voulez-vous vraiment supprimer la session "${session.sessionId}" ?`,
+      `Voulez-vous vraiment supprimer la session "${typeof session.sessionId === 'string' ? session.sessionId : JSON.stringify(session.sessionId)}" ?`,
       "warning"
     )
 
@@ -159,7 +159,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               <Smartphone className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium">{session.sessionId}</p>
+              <p className="text-sm font-medium">{typeof session.sessionId === 'string' ? session.sessionId : JSON.stringify(session.sessionId)}</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs text-muted-foreground">Session WhatsApp</p>
                 <button
@@ -181,7 +181,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </Badge>
               {session?.detail && !isConnected && (
                  <span className="text-[9px] text-destructive font-bold uppercase tracking-tight">
-                    {session.detail.includes('conflict') ? "Conflit (ouvert ailleurs)" : session.detail}
+                    {typeof session.detail === 'string' && session.detail.includes('conflict') ? "Conflit (ouvert ailleurs)" : (typeof session.detail === 'string' ? session.detail : JSON.stringify(session.detail))}
                  </span>
               )}
             </div>
@@ -238,7 +238,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
                     <div className="flex flex-wrap justify-center gap-1.5">
-                      {pairingCode.split('').map((char: string, i: number) => (
+                      {typeof pairingCode === 'string' && pairingCode.split('').map((char: string, i: number) => (
                         <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
                           {char}
                         </div>
@@ -275,7 +275,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-muted-foreground">
-                    {showToken ? session.token : "••••••••••••"}
+                    {showToken ? (typeof session.token === 'string' ? session.token : JSON.stringify(session.token)) : "••••••••••••"}
                   </span>
                   <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
                     {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
