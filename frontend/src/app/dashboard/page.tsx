@@ -3,23 +3,13 @@
 import * as React from "react"
 import {
   Plus,
-  Zap,
   Activity,
   MessageCircle,
   Smartphone,
-  Brain,
-  Sparkles,
-  Loader2,
-  ArrowRight,
-  ChevronRight,
   TrendingUp,
-  History,
   Settings2,
-  LogOut,
-  CreditCard,
   User,
-  MoreVertical,
-  Bot
+  CreditCard
 } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
@@ -43,7 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableBody,
@@ -54,8 +43,6 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -71,7 +58,6 @@ import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { useNotificationSound } from "@/hooks/use-notification-sound"
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -88,7 +74,7 @@ const sessionSchema = z.object({
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { isLoaded, user } = useUser()
+  const { user } = useUser()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
 
@@ -182,13 +168,42 @@ export default function DashboardPage() {
     fetchSummary()
   }, [fetchSummary])
 
+  // Real-time WebSocket updates
+  React.useEffect(() => {
+    if (!lastMessage) return;
+
+    if (lastMessage.type === 'session-update') {
+      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
+      setSessions(prev => prev.map(session => {
+        const update = updates.find((u: any) => u.sessionId === session.sessionId);
+        if (update) {
+          // Robust update: preserve existing fields, override with new ones
+          const updatedSession = { ...session, ...update };
+
+          // Specifically handle pairing code and QR clearing/preservation
+          if (update.pairingCode === null) updatedSession.pairingCode = null;
+          if (update.qr === null) updatedSession.qr = null;
+
+          return updatedSession;
+        }
+        return session;
+      }));
+    }
+
+    if (lastMessage.type === 'session-deleted') {
+      const deletedId = lastMessage.data?.sessionId;
+      if (deletedId) {
+        setSessions(prev => prev.filter(s => s.sessionId !== deletedId));
+        if (selectedSessionId === deletedId) setSelectedSessionId(null);
+      }
+    }
+  }, [lastMessage, selectedSessionId]);
   const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
 
   return (
     <div className="space-y-8 pb-20">
-      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">Overview</h1>
@@ -196,7 +211,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Grid 4 cols Stats */}
       <div id="performance-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {isAdmin ? (
             <>
@@ -255,7 +269,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
             <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
@@ -282,7 +295,6 @@ export default function DashboardPage() {
          </Button>
       </div>
 
-      {/* Grid 12 cols Content */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
          <div className="lg:col-span-8 space-y-8">
             {isAdmin && (
@@ -317,7 +329,7 @@ export default function DashboardPage() {
                                         dy={10}
                                         tickFormatter={(str) => {
                                             const date = new Date(str);
-                                    if (isNaN(date.getTime())) return '-';
+                                            if (isNaN(date.getTime())) return '-';
                                             return date.toLocaleDateString('fr-FR', { weekday: 'short' });
                                         }}
                                     />
@@ -354,13 +366,11 @@ export default function DashboardPage() {
                </CardContent>
             </Card>
 
-
             <Tabs defaultValue="direct" className="space-y-4">
                <TabsList className="bg-muted/50 p-1 rounded-lg h-auto sm:h-9 flex flex-wrap sm:flex-nowrap gap-1 w-full sm:w-auto">
                   <TabsTrigger value="direct" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">Direct Message</TabsTrigger>
                   <TabsTrigger value="history" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">History</TabsTrigger>
                   {isAdmin && <TabsTrigger value="logs" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">System Logs</TabsTrigger>}
-
                </TabsList>
 
                <TabsContent value="history" className="space-y-4">
@@ -396,9 +406,6 @@ export default function DashboardPage() {
                                  </TableCell>
                               </TableRow>
                            ))}
-                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').length === 0 && (
-                              <TableRow><TableCell colSpan={3} className="text-center py-10 text-xs text-muted-foreground italic">Aucun message récent</TableCell></TableRow>
-                           )}
                         </TableBody>
                      </Table>
                     </div>
@@ -431,39 +438,10 @@ export default function DashboardPage() {
          </div>
 
          <div className="lg:col-span-4 space-y-8">
-            {isAdmin && (
-               <Card className="border-none bg-muted/10 shadow-none">
-                  <CardHeader className="p-4 pb-0">
-                     <CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
-                        <Activity className="h-3 w-3" /> System Activities
-                     </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-4">
-                     {recentActivities.slice(0, 4).map((activity, i) => (
-                        <div key={i} className="flex items-start gap-3 border-b border-border/40 last:border-0 pb-3 last:pb-0">
-                           <div className="h-6 w-6 rounded bg-background border flex items-center justify-center shrink-0">
-                              <Zap className="h-3 w-3 text-muted-foreground" />
-                           </div>
-                           <div className="min-w-0">
-                              <p className="text-xs font-semibold truncate">{activity.action || "Action"}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">
-                                 {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
-                              </p>
-                           </div>
-                        </div>
-                     ))}
-                     <Button variant="link" size="sm" className="p-0 h-auto text-[10px] font-semibold" asChild>
-                        <Link href="/dashboard/activities">View All Activities →</Link>
-                     </Button>
-                  </CardContent>
-               </Card>
-            )}
-
             <CreditCardUI credits={credits} userRole={isAdmin ? 'admin' : 'user'} />
          </div>
       </div>
 
-      {/* New Session Sheet */}
       <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <SheetContent className="sm:max-w-[400px]">
           <Form {...form}>

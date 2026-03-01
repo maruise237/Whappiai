@@ -3,17 +3,11 @@
 import * as React from "react"
 import {
   User,
-  Mail,
-  Shield,
-  Key,
   LogOut,
-  Smartphone,
-  CheckCircle2,
   AlertCircle,
   ExternalLink,
-  Settings
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -23,14 +17,13 @@ import { Separator } from "@/components/ui/separator"
 import { useUser, useClerk, useAuth } from "@clerk/nextjs"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
-  const { user, isLoaded } = useUser()
-  const { getToken } = useAuth()
-  const { signOut } = useClerk()
-  const [dbUser, setDbUser] = React.useState<any>(null)
-  const [loading, setLoading] = React.useState(true)
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
+  const { signOut } = useClerk();
+  const [dbUser, setDbUser] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
 
   const fetchDbUser = React.useCallback(async () => {
      try {
@@ -41,14 +34,25 @@ export default function ProfilePage() {
   }, [getToken])
 
   React.useEffect(() => {
-     fetchDbUser()
-  }, [fetchDbUser])
+    fetchDbUser();
+  }, [fetchDbUser]);
 
-  if (!isLoaded) return null
+  if (!isLoaded) return null;
 
-  const userEmail = user?.primaryEmailAddress?.emailAddress
-  const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
-  const userRole = isAdmin ? "Administrateur" : ((user?.publicMetadata?.role as string) || "Utilisateur")
+  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin";
+  const userRole = isAdmin ? "Administrateur" : ((user?.publicMetadata?.role as string) || "Utilisateur");
+
+  const handleSoundToggle = async (val: boolean) => {
+    try {
+      const token = await getToken();
+      await api.users.updateProfile({ sound_notifications: val ? 1 : 0 }, token || undefined);
+      setDbUser({ ...dbUser, sound_notifications: val ? 1 : 0 });
+      toast.success("Réglage mis à jour");
+    } catch (e) {
+      toast.error("Erreur de mise à jour");
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
@@ -63,7 +67,7 @@ export default function ProfilePage() {
            </div>
         </div>
         <div className="space-y-1 min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight truncate">{user?.fullName || userEmail?.split('@')[0]}</h1>
+          <h1 className="text-2xl font-bold tracking-tight truncate">{user?.fullName || userEmail?.split("@")[0]}</h1>
           <div className="flex flex-col sm:flex-row items-center gap-2">
             <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground tracking-widest">{userRole}</Badge>
             <span className="text-xs text-muted-foreground truncate w-full sm:w-auto">{userEmail}</span>
@@ -114,16 +118,7 @@ export default function ProfilePage() {
                      </div>
                      <Switch
                         checked={!!dbUser?.sound_notifications}
-                        onCheckedChange={async (val) => {
-                           try {
-                              const token = await getToken();
-                              await api.users.updateProfile({ sound_notifications: val ? 1 : 0 }, token || undefined);
-                              setDbUser({ ...dbUser, sound_notifications: val ? 1 : 0 });
-                              toast.success("Réglage mis à jour");
-                           } catch (e) {
-                              toast.error("Erreur de mise à jour");
-                           }
-                        }}
+                        onCheckedChange={handleSoundToggle}
                      />
                   </div>
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-start gap-3 mt-4">
@@ -131,7 +126,8 @@ export default function ProfilePage() {
                      <div className="space-y-1">
                         <p className="text-[11px] font-bold text-primary">Gestion via Clerk</p>
                         <p className="text-[10px] text-muted-foreground/80 leading-relaxed">
-                           Vos paramètres de sécurité, changement de mot de passe et authentification 2FA sont gérés de manière sécurisée par notre partenaire Clerk.
+                           Vos paramètres de sécurité, changement de mot de passe et authentification 2FA sont
+                           gérés de manière sécurisée par notre partenaire Clerk.
                         </p>
                         <Button variant="link" size="sm" className="h-auto p-0 text-[10px] font-bold" asChild>
                            <a href="https://accounts.clerk.dev" target="_blank" rel="noreferrer" className="flex items-center gap-1">
@@ -151,11 +147,19 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-2 gap-3">
                      <div className="p-4 rounded bg-background/50 border border-border/50">
                         <p className="text-[9px] font-semibold text-muted-foreground tracking-widest mb-1">Dernière Connexion</p>
-                        <p className="text-xs font-semibold">{user?.lastSignInAt ? new Date(user.lastSignInAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Maintenant'}</p>
+                        <p className="text-xs font-semibold">
+                          {user?.lastSignInAt ? new Date(user.lastSignInAt).toLocaleDateString("fr-FR", {
+                            day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                          }) : "Maintenant"}
+                        </p>
                      </div>
                      <div className="p-4 rounded bg-background/50 border border-border/50">
                         <p className="text-[9px] font-semibold text-muted-foreground tracking-widest mb-1">Ancienneté</p>
-                        <p className="text-xs font-semibold">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</p>
+                        <p className="text-xs font-semibold">
+                          {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("fr-FR", {
+                            day: "2-digit", month: "short", year: "numeric"
+                          }) : "-"}
+                        </p>
                      </div>
                   </div>
                </CardContent>
@@ -163,11 +167,15 @@ export default function ProfilePage() {
 
             <div className="pt-6 border-t border-dashed">
                <h4 className="text-[10px] font-semibold text-destructive  mb-3">Zone de Danger</h4>
-               <p className="text-xs text-muted-foreground mb-4">La suppression de votre compte est irréversible et effacera toutes vos sessions WhatsApp ainsi que vos historiques IA.</p>
-               <Button variant="outline" className="text-xs text-destructive hover:bg-destructive hover:text-white transition-all rounded-full px-6">Supprimer mon compte définitvement</Button>
+               <p className="text-xs text-muted-foreground mb-4">
+                 La suppression de votre compte est irréversible et effacera toutes vos sessions WhatsApp
+                 ainsi que vos historiques IA.
+               </p>
+               <Button variant="outline" className="text-xs text-destructive hover:bg-destructive
+                hover:text-white transition-all rounded-full px-6">Supprimer mon compte définitvement</Button>
             </div>
          </div>
       </div>
     </div>
-  )
+  );
 }

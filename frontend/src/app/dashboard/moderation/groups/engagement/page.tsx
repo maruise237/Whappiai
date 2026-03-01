@@ -14,11 +14,8 @@ import {
   Save,
   ArrowLeft,
   Search,
-  ExternalLink,
-  Target,
-  Layout,
-  Clock,
-  History
+  History,
+  Clock
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -37,7 +34,6 @@ import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn, copyToClipboard } from "@/lib/utils"
-import confetti from "canvas-confetti"
 
 function GroupEngagementContent() {
   const router = useRouter()
@@ -197,6 +193,10 @@ function GroupEngagementContent() {
     }
   }
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }
+
   const filteredGroups = groups.filter(g =>
     (g.subject || g.name || "").toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -229,7 +229,7 @@ function GroupEngagementContent() {
                 placeholder="Rechercher..."
                 className="pl-8 h-8 text-[11px] bg-background border-none shadow-sm"
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
           </div>

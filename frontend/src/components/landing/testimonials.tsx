@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useRef } from "react"
 import { motion, useInView } from "framer-motion"
-import { Star, Quote } from "lucide-react"
+import { Star } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -31,7 +31,6 @@ const CELINE = {
   rating: 5
 }
 
-// 3 African Profiles (Provided by User)
 const AFRICAN_PROFILES = [
   {
     name: "Moussa Diop",
@@ -59,7 +58,6 @@ const AFRICAN_PROFILES = [
   }
 ]
 
-// 4 International Profiles (White/Western)
 const INTERNATIONAL_PROFILES = [
   {
     name: "Thomas Dubois",
@@ -102,95 +100,84 @@ const ALL_TESTIMONIALS = [
   ...INTERNATIONAL_PROFILES.map((p, i) => ({ id: 6 + i, ...p }))
 ]
 
- 
-  const TestimonialCard = ({ testimonial, className }: { testimonial: typeof ALL_TESTIMONIALS[0], className?: string }) => (
-   <div className={cn(
-     "relative bg-card p-6 rounded-2xl border border-border shadow-sm mb-6 break-inside-avoid hover:shadow-md transition-shadow duration-300",
-     className
-   )}>
-     <div className="flex items-center gap-1 mb-4 text-yellow-500">
-       {[...Array(5)].map((_, i) => (
-         <Star 
-           key={i} 
-           size={14} 
-           fill={i < testimonial.rating ? "currentColor" : "none"} 
-           className={cn("opacity-80", i >= testimonial.rating && "text-muted-foreground opacity-30")} 
-         />
-       ))}
-     </div>
-     <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-       "{testimonial.content}"
-     </p>
-     <div className="flex items-center gap-3">
-       <Avatar className="h-10 w-10 border border-border">
-         <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-         <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
-       </Avatar>
-       <div>
-         <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
-         <p className="text-xs text-muted-foreground">{testimonial.role} @ {testimonial.company}</p>
-       </div>
-     </div>
-   </div>
- )
+const TestimonialCard = ({ testimonial, className }: { testimonial: typeof ALL_TESTIMONIALS[0], className?: string }) => (
+  <div className={cn(
+    "relative bg-card p-6 rounded-2xl border border-border shadow-sm mb-6 break-inside-avoid hover:shadow-md transition-shadow duration-300",
+    className
+  )}>
+    <div className="flex items-center gap-1 mb-4 text-yellow-500">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          size={14}
+          fill={i < testimonial.rating ? "currentColor" : "none"}
+          className={cn("opacity-80", i >= testimonial.rating && "text-muted-foreground opacity-30")}
+        />
+      ))}
+    </div>
+    <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+      "{testimonial.content}"
+    </p>
+    <div className="flex items-center gap-3">
+      <Avatar className="h-10 w-10 border border-border">
+        <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+        <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
+      </Avatar>
+      <div>
+        <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
+        <p className="text-xs text-muted-foreground">{testimonial.role} @ {testimonial.company}</p>
+      </div>
+    </div>
+  </div>
+)
 
- const MarqueeColumn = ({ 
-   testimonials, 
-   duration = 40, 
-   reverse = false,
-   className 
- }: { 
-   testimonials: typeof ALL_TESTIMONIALS, 
-   duration?: number, 
-   reverse?: boolean,
-   className?: string
- }) => {
-   return (
-     <div className={cn("relative flex flex-col overflow-hidden h-[800px]", className)}>
-       <motion.div
-         initial={{ y: reverse ? "-50%" : "0%" }}
-         animate={{ y: reverse ? "0%" : "-50%" }}
-         transition={{
-           duration: duration,
-           repeat: Infinity,
-           ease: "linear",
-           repeatType: "loop"
-         }}
-         className="flex flex-col pb-6"
-       >
-         {[...testimonials, ...testimonials, ...testimonials, ...testimonials].map((t, i) => (
-           <TestimonialCard key={`${t.id}-${i}`} testimonial={t} />
-         ))}
-       </motion.div>
-     </div>
-   )
- }
- 
- export function Testimonials() {
-   const containerRef = useRef<HTMLDivElement>(null)
-   const isInView = useInView(containerRef, { once: true, margin: "-10%" })
- 
-   // Distribute testimonials
-   // Ensure Mariuse (ALL_TESTIMONIALS[0]) is in EVERY column
-   // We distribute the other 8 profiles around him
-   
-   // Column 1: Mariuse + Celine + Moussa + Thomas
-   const chunk1 = [ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[1], ALL_TESTIMONIALS[2], ALL_TESTIMONIALS[5]]
-   
-   // Column 2: Awa + Mariuse + Sarah + Lukas
-   const chunk2 = [ALL_TESTIMONIALS[3], ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[6], ALL_TESTIMONIALS[7]]
-   
-   // Column 3: Kofi + Elena + Mariuse + Celine (Repeating Celine to fill 4th slot nicely)
-   const chunk3 = [ALL_TESTIMONIALS[4], ALL_TESTIMONIALS[8], ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[1]]
+const MarqueeColumn = ({
+  testimonials,
+  duration = DEFAULT_MARQUEE_DURATION,
+  reverse = false,
+  className
+}: {
+  testimonials: typeof ALL_TESTIMONIALS,
+  duration?: number,
+  reverse?: boolean,
+  className?: string
+}) => {
+  return (
+    <div className={cn("relative flex flex-col overflow-hidden h-[800px]", className)}>
+      <motion.div
+        initial={{ y: reverse ? "-50%" : "0%" }}
+        animate={{ y: reverse ? "0%" : "-50%" }}
+        transition={{
+          duration: duration,
+          repeat: Infinity,
+          ease: "linear",
+          repeatType: "loop"
+        }}
+        className="flex flex-col pb-6"
+      >
+        {[...testimonials, ...testimonials, ...testimonials, ...testimonials].map((t, i) => (
+          <TestimonialCard key={`${t.id}-${i}`} testimonial={t} />
+        ))}
+      </motion.div>
+    </div>
+  )
+}
 
-   return (
-     <section 
-       ref={containerRef} 
-       className="py-24 relative overflow-hidden bg-background"
-       aria-label="Témoignages clients"
-     >
+export function Testimonials() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isInView = useInView(containerRef, { once: true, margin: "-10%" })
+
+  const chunk1 = [ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[1], ALL_TESTIMONIALS[2], ALL_TESTIMONIALS[5]]
+  const chunk2 = [ALL_TESTIMONIALS[3], ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[6], ALL_TESTIMONIALS[7]]
+  const chunk3 = [ALL_TESTIMONIALS[4], ALL_TESTIMONIALS[8], ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[1]]
+
+  return (
+    <section
+      ref={containerRef}
+      className="py-24 relative overflow-hidden bg-background"
+      aria-label="Témoignages clients"
+    >
       <div className="container px-4 mx-auto relative z-10">
-        {/* Header */}
         <div className="text-center mb-16 space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -209,19 +196,17 @@ const ALL_TESTIMONIALS = [
           </motion.div>
         </div>
 
-        {/* Marquee Grid */}
         <div className="relative h-[600px] overflow-hidden">
-          {/* Gradient Masks */}
           <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent z-20 pointer-events-none" />
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-20 pointer-events-none" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-full">
             <MarqueeColumn testimonials={chunk1} duration={45} />
             <div className="hidden md:block">
-               <MarqueeColumn testimonials={chunk2} duration={55} reverse />
+              <MarqueeColumn testimonials={chunk2} duration={55} reverse />
             </div>
             <div className="hidden lg:block">
-               <MarqueeColumn testimonials={chunk3} duration={50} />
+              <MarqueeColumn testimonials={chunk3} duration={50} />
             </div>
           </div>
         </div>
