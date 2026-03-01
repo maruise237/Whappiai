@@ -12,7 +12,8 @@ import {
   Loader2,
   PartyPopper,
   Plus,
-  Trash2, Sparkles
+  Trash2,
+  Sparkles
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -232,7 +233,7 @@ export function MagicOnboardingWizard({
                     className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => removeLink(index)}
                   >
-                    <Trash2, Sparkles className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
