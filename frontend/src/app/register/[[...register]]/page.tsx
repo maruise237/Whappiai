@@ -30,7 +30,7 @@ function VerificationForm({ email, code, setCode, error, loading, onBack, onVeri
         >
           <InputOTPGroup>
             {Array.from({ length: 6 }).map((_, i) => (
-              <InputOTPSlot key={`otp-${i}`} index={i} className="w-10 h-12 text-lg bg-background border-input text-foreground" />
+              <InputOTPSlot key={i} index={i} className="w-10 h-12 text-lg bg-background border-input text-foreground" />
             ))}
           </InputOTPGroup>
         </InputOTP>
