@@ -84,7 +84,7 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
                     ) : (
                       <ArrowUpRight className="h-3 w-3 text-green-600" />
                     )}
-                    <span className="truncate max-w-[120px]">{item.description}</span>
+                    <span className="truncate max-w-[120px]">{typeof item.description === 'string' ? item.description : JSON.stringify(item.description)}</span>
                   </div>
                   <span className={cn(
                     "font-semibold",
