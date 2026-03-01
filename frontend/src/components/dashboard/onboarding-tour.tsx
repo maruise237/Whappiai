@@ -19,109 +19,109 @@ export function OnboardingTour() {
     const driverObj = driver({
       showProgress: true,
       animate: true,
-      doneBtnText: "Terminer",
-      closeBtnText: "Fermer",
-      nextBtnText: "Suivant",
-      prevBtnText: "Précédent",
-      popoverClass: "whappi-tour-popover",
+      doneBtnText: 'Terminer',
+      closeBtnText: 'Fermer',
+      nextBtnText: 'Suivant',
+      prevBtnText: 'Précédent',
+      popoverClass: 'whappi-tour-popover',
       steps: [
         {
-          element: "#nav--dashboard",
+          element: '#nav--dashboard',
           popover: {
-            title: "Bienvenue sur Whappi !",
-            description: "Voici votre nouveau centre de commande WhatsApp. Une interface pensée pour la performance et la simplicité.",
+            title: 'Bienvenue sur Whappi !',
+            description: 'Voici votre nouveau centre de commande WhatsApp. Une interface pensée pour la performance et la simplicité.',
             side: "right",
-            align: "start"
+            align: 'start'
           }
         },
         {
-          element: "#performance-charts",
+          element: '#performance-charts',
           popover: {
-            title: "Analyses en temps réel",
-            description: "Suivez votre volume de messages, le taux de réussite de l\"IA et votre consommation de crédits au jour le jour.",
+            title: 'Analyses en temps réel',
+            description: 'Suivez votre volume de messages, le taux de réussite de l\'IA et votre consommation de crédits au jour le jour.',
             side: "bottom",
-            align: "center"
+            align: 'center'
           }
         },
         {
-          element: "#new-session-btn",
+          element: '#new-session-btn',
           popover: {
-            title: "Connectez vos comptes",
-            description: "Commencez ici en créant une session. Vous pourrez ensuite scanner le QR code pour lier votre instance WhatsApp.",
+            title: 'Connectez vos comptes',
+            description: 'Commencez ici en créant une session. Vous pourrez ensuite scanner le QR code pour lier votre instance WhatsApp.',
             side: "bottom",
-            align: "end"
+            align: 'end'
           }
         },
         {
-          element: "#connection-area",
+          element: '#connection-area',
           popover: {
-            title: "Scanner et Connecter",
-            description: "Scannez le QR Code avec votre téléphone ou utilisez un code d\"appairage (via votre numéro de téléphone) pour activer votre session.",
+            title: 'Scanner et Connecter',
+            description: 'Scannez le QR Code avec votre téléphone ou utilisez un code d\'appairage (via votre numéro de téléphone) pour activer votre session.',
             side: "top",
-            align: "center"
+            align: 'center'
           }
         },
         {
-          element: "#nav--dashboard-ai",
+          element: '#nav--dashboard-ai',
           popover: {
-            title: "Intelligence Artificielle",
-            description: "Donnez un cerveau à votre WhatsApp. Configurez les modèles, les prompts et les règles d\"automatisation intelligentes.",
+            title: 'Intelligence Artificielle',
+            description: 'Donnez un cerveau à votre WhatsApp. Configurez les modèles, les prompts et les règles d\'automatisation intelligentes.',
             side: "right",
-            align: "start"
+            align: 'start'
           }
         },
         {
-          element: "#nav--dashboard-moderation",
+          element: '#nav--dashboard-moderation',
           popover: {
-            title: "Gestion des Groupes",
-            description: "Protégez vos communautés. Anti-spam, filtres de mots-clés et messages de bienvenue automatisés se configurent ici.",
+            title: 'Gestion des Groupes',
+            description: 'Protégez vos communautés. Anti-spam, filtres de mots-clés et messages de bienvenue automatisés se configurent ici.',
             side: "right",
-            align: "start"
+            align: 'start'
           }
         },
         {
-          element: "#nav--dashboard-credits",
+          element: '#nav--dashboard-credits',
           popover: {
-            title: "Portefeuille de Crédits",
-            description: "Gardez un oeil sur votre solde. Chaque message envoyé consomme 1 crédit. Réclamez vos 60 crédits offerts ici !",
+            title: 'Portefeuille de Crédits',
+            description: 'Gardez un oeil sur votre solde. Chaque message envoyé consomme 1 crédit. Réclamez vos 60 crédits offerts ici !',
             side: "right",
-            align: "start"
+            align: 'start'
           }
         },
         {
-          element: "#nav--dashboard-activities",
+          element: '#nav--dashboard-activities',
           popover: {
-            title: "Journal d\"activités",
-            description: "Transparence totale. Consultez l\"historique détaillé de chaque action effectuée par le système.",
+            title: 'Journal d\'activités',
+            description: 'Transparence totale. Consultez l\'historique détaillé de chaque action effectuée par le système.',
             side: "right",
-            align: "start"
+            align: 'start'
           }
         },
         {
-          element: "#nav--dashboard-ai-models",
+          element: '#nav--dashboard-ai-models',
           popover: {
-            title: "Moteurs IA",
-            description: "Section Admin : Configurez les différents modèles (DeepSeek, OpenAI, etc.) disponibles pour vos sessions.",
+            title: 'Moteurs IA',
+            description: 'Section Admin : Configurez les différents modèles (DeepSeek, OpenAI, etc.) disponibles pour vos sessions.',
             side: "right",
-            align: "start"
+            align: 'start'
           }
         },
         {
-          element: "#nav--dashboard-billing",
+          element: '#nav--dashboard-billing',
           popover: {
-            title: "Abonnements",
-            description: "Gérez vos plans et factures en toute simplicité. Changez de formule selon vos besoins.",
+            title: 'Abonnements',
+            description: 'Gérez vos plans et factures en toute simplicité. Changez de formule selon vos besoins.',
             side: "right",
-            align: "start"
+            align: 'start'
           }
         },
         {
-          element: "#nav--dashboard-profile",
+          element: '#nav--dashboard-profile',
           popover: {
-            title: "Configuration Finale",
-            description: "Réglez votre fuseau horaire, activez les notifications sonores et gérez les infos de votre organisation.",
+            title: 'Configuration Finale',
+            description: 'Réglez votre fuseau horaire, activez les notifications sonores et gérez les infos de votre organisation.',
             side: "right",
-            align: "start"
+            align: 'start'
           }
         }
       ]
@@ -132,17 +132,17 @@ export function OnboardingTour() {
 
   React.useEffect(() => {
     const checkTour = async () => {
-      if (!isLoaded || !user || hasStarted || pathname !== "/dashboard") return
+      if (!isLoaded || !user || hasStarted || pathname !== '/dashboard') return
 
       try {
         const token = await getToken()
         const sessions = await api.sessions.list(token || undefined)
 
-        // Only auto-start if user has no sessions and hasn"t seen the tour yet
-        const tourSeen = localStorage.getItem("whappi_tour_seen")
+        // Only auto-start if user has no sessions and hasn't seen the tour yet
+        const tourSeen = localStorage.getItem('whappi_tour_seen')
         if ((!sessions || sessions.length === 0) && !tourSeen) {
           setHasStarted(true)
-          localStorage.setItem("whappi_tour_seen", "true")
+          localStorage.setItem('whappi_tour_seen', 'true')
           // Small delay to ensure elements are rendered
           setTimeout(startTour, 1000)
         }

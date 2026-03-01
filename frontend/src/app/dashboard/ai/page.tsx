@@ -6,12 +6,19 @@ import {
   Brain,
   Search,
   Settings2,
+  Smartphone,
   MoreVertical,
+  Sparkles,
   Loader2,
+  Bot,
+  Cpu,
   ChevronRight,
+  User,
+  Zap,
+  CheckCircle2,
   Settings
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -115,10 +122,6 @@ function AssistantIAPageContent() {
     }
   }
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-  }
-
   const filtered = sessions.filter(s => s.sessionId.toLowerCase().includes(searchQuery.toLowerCase()))
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
@@ -139,6 +142,7 @@ function AssistantIAPageContent() {
 
   return (
     <div className="space-y-6 pb-20">
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -168,7 +172,7 @@ function AssistantIAPageContent() {
               placeholder="Chercher..."
               className="pl-8 h-8 text-[11px] bg-muted/20 border-none"
               value={searchQuery}
-              onChange={handleSearchChange}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
@@ -217,6 +221,7 @@ function AssistantIAPageContent() {
                   </DropdownMenu>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-4 flex-1">
+                   {/* Prompt Preview (Bulle subtile) */}
                    <div className="rounded-md bg-muted/50 p-3 text-[11px] text-muted-foreground line-clamp-2 border-l-2 border-primary/40 italic leading-relaxed">
                       {config?.prompt || "Aucun prompt configuré"}
                    </div>
@@ -237,6 +242,7 @@ function AssistantIAPageContent() {
                    <Switch
                      checked={!!config?.enabled}
                      onCheckedChange={(v) => handleToggleAI(session.sessionId, v)}
+                     size="sm"
                    />
                 </CardFooter>
               </Card>
@@ -245,6 +251,7 @@ function AssistantIAPageContent() {
         </div>
       )}
 
+      {/* Quick Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

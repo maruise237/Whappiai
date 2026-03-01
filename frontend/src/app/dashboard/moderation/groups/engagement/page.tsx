@@ -14,8 +14,11 @@ import {
   Save,
   ArrowLeft,
   Search,
-  History,
-  Clock
+  ExternalLink,
+  Target,
+  Layout,
+  Clock,
+  History
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -34,6 +37,7 @@ import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn, copyToClipboard } from "@/lib/utils"
+import confetti from "canvas-confetti"
 
 function GroupEngagementContent() {
   const router = useRouter()
@@ -97,7 +101,7 @@ function GroupEngagementContent() {
   }, [sessionId, selectedGroupId, getToken])
 
   React.useEffect(() => {
-    fetchGroupDetails()
+    fetchGroupDetails().catch(console.error)
   }, [fetchGroupDetails])
 
   const handleSaveProfile = async () => {
@@ -193,10 +197,6 @@ function GroupEngagementContent() {
     }
   }
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-  }
-
   const filteredGroups = groups.filter(g =>
     (g.subject || g.name || "").toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -229,7 +229,7 @@ function GroupEngagementContent() {
                 placeholder="Rechercher..."
                 className="pl-8 h-8 text-[11px] bg-background border-none shadow-sm"
                 value={searchQuery}
-                onChange={handleSearchChange}
+                onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
           </div>

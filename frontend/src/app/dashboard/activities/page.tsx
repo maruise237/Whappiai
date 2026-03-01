@@ -65,13 +65,13 @@ export default function ActivitiesPage() {
 
   const filtered = activities.filter(a => {
     const action = a.action || "";
-    const details = typeof a.details === "string" ? a.details : (a.details ? JSON.stringify(a.details) : "");
+    const details = typeof a.details === 'string' ? a.details : (a.details ? JSON.stringify(a.details) : "");
     const matchesSearch = action.toLowerCase().includes(searchQuery.toLowerCase()) ||
         details.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (a.resource_id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (a.user_email || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesUser = userFilter === "all" || a.user_email === userFilter;
+    const matchesUser = userFilter === 'all' || a.user_email === userFilter;
 
     return matchesSearch && matchesUser;
   })
@@ -80,9 +80,9 @@ export default function ActivitiesPage() {
 
   const getActionIcon = (action: string) => {
     const act = action || "";
-    if (act.includes("send")) return <MessageSquare className="h-3 w-3" />
-    if (act.includes("moderation") || act.includes("block")) return <ShieldCheck className="h-3 w-3" />
-    if (act.includes("error")) return <AlertCircle className="h-3 w-3 text-destructive" />
+    if (act.includes('send')) return <MessageSquare className="h-3 w-3" />
+    if (act.includes('moderation') || act.includes('block')) return <ShieldCheck className="h-3 w-3" />
+    if (act.includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
     return <Activity className="h-3 w-3" />
   }
 
@@ -169,15 +169,15 @@ export default function ActivitiesPage() {
                       <Clock className="h-3 w-3 opacity-40" />
                       {(() => {
                         const date = new Date(activity.created_at || activity.timestamp);
-                        return isNaN(date.getTime()) ? "Date invalide" : date.toLocaleString("fr-FR", {
-                          day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
+                        return isNaN(date.getTime()) ? 'Date invalide' : date.toLocaleString('fr-FR', {
+                          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
                         });
                       })()}
                     </div>
                   </TableCell>
                   {isAdmin && (
                     <TableCell className="hidden sm:table-cell">
-                        <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[120px]">{activity.user_email || "System"}</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[120px]">{activity.user_email || 'System'}</p>
                     </TableCell>
                   )}
                   <TableCell>
@@ -187,9 +187,9 @@ export default function ActivitiesPage() {
                         {getActionIcon(activity.action || "")}
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 min-w-0">
-                        <span className="text-xs font-semibold capitalize truncate">{(activity.action || "action").replace(/_/g, " ")}</span>
+                        <span className="text-xs font-semibold capitalize truncate">{(activity.action || "action").replace(/_/g, ' ')}</span>
                         <Badge variant="outline" className="text-[8px] sm:hidden w-fit px-1 h-3.5 opacity-60">
-                           {activity.resource_id || "sys"}
+                           {activity.resource_id || 'sys'}
                         </Badge>
                       </div>
 
@@ -197,14 +197,14 @@ export default function ActivitiesPage() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <Badge variant="outline" className="text-[10px] font-mono border-muted/50 text-muted-foreground group-hover:border-primary/30 group-hover:text-primary transition-colors">
-                      {activity.resource_id || "system"}
+                      {activity.resource_id || 'system'}
                     </Badge>
                   </TableCell>
 
                   <TableCell className="max-w-[300px] hidden md:table-cell">
 
                     <p className="text-[11px] text-muted-foreground truncate">
-                        {typeof activity.details === "string" ? activity.details : (activity.details ? JSON.stringify(activity.details) : "-")}
+                        {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
                     </p>
                   </TableCell>
                   <TableCell className="text-right">
@@ -214,7 +214,7 @@ export default function ActivitiesPage() {
                         ? "bg-green-500/10 text-green-700 dark:text-green-400"
                         : "bg-red-500/10 text-red-700 dark:text-red-400"
                     )}>
-                      {activity.success === 1 || activity.success === true ? "Success" : "Error"}
+                      {activity.success === 1 || activity.success === true ? 'Success' : 'Error'}
                     </Badge>
                   </TableCell>
                 </TableRow>

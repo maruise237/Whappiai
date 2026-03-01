@@ -386,12 +386,7 @@ const sessionTokens = new Map();
 // Helper to broadcast session updates
 const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     const isPairingCode = status === 'GENERATING_CODE';
-    const isQR = status === 'GENERATING_QR';
-
-    const codeValue = isPairingCode ? qrOrCode : (status === 'CONNECTED' ? null : undefined);
-    const qrValue = isQR ? qrOrCode : (status === 'CONNECTED' ? null : undefined);
-
-    Session.updateStatus(id, status, detail, codeValue);
+    Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : null);
 
     broadcastToClients({
         type: 'session-update',
@@ -399,9 +394,8 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
             sessionId: id,
             status,
             detail,
-            isConnected: status === 'CONNECTED',
-            qr: qrValue,
-            pairingCode: codeValue,
+            qr: status === 'GENERATING_QR' ? qrOrCode : null,
+            pairingCode: isPairingCode ? qrOrCode : null,
             token: Session.findById(id)?.token
         }]
     });

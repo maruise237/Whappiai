@@ -118,20 +118,13 @@ class Session {
      * @param {string} pairingCode - Optional pairing code
      * @returns {object} Updated session
      */
-    static updateStatus(sessionId, status, detail = null, pairingCode = undefined) {
-        let query = "UPDATE whatsapp_sessions SET status = ?, detail = ?, updated_at = datetime('now')";
-        const params = [status, detail];
-
-        if (pairingCode !== undefined) {
-            query += ", pairing_code = ?";
-            params.push(pairingCode);
-        }
-
-        query += " WHERE id = ?";
-        params.push(sessionId);
-
-        const stmt = db.prepare(query);
-        stmt.run(...params);
+    static updateStatus(sessionId, status, detail = null, pairingCode = null) {
+        const stmt = db.prepare(`
+            UPDATE whatsapp_sessions
+            SET status = ?, detail = ?, pairing_code = ?, updated_at = datetime('now')
+            WHERE id = ?
+        `);
+        stmt.run(status, detail, pairingCode, sessionId);
         return this.findById(sessionId);
     }
 

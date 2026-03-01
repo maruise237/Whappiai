@@ -34,7 +34,7 @@ export function NotificationDropdown() {
       const res = await api.notifications.list(false, token || undefined)
       if (res) {
         setNotifications(Array.isArray(res.notifications) ? res.notifications : [])
-        setUnreadCount(typeof res.unreadCount === "number" ? res.unreadCount : 0)
+        setUnreadCount(typeof res.unreadCount === 'number' ? res.unreadCount : 0)
       }
     } catch (error) {
       console.error("Failed to fetch notifications", error)
@@ -47,7 +47,7 @@ export function NotificationDropdown() {
 
   // Handle real-time notification updates if they come through WS
   React.useEffect(() => {
-    if (lastMessage?.type === "notification") {
+    if (lastMessage?.type === 'notification') {
       fetchNotifications()
       // Play sound
       playNotificationSound()
@@ -81,10 +81,10 @@ export function NotificationDropdown() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "credit_low": return <Zap className="h-4 w-4 text-amber-500" />
-      case "subscription_expiring": return <AlertTriangle className="h-4 w-4 text-red-500" />
-      case "system_update": return <Info className="h-4 w-4 text-blue-500" />
-      case "message_received": return <MessageSquare className="h-4 w-4 text-primary" />
+      case 'credit_low': return <Zap className="h-4 w-4 text-amber-500" />
+      case 'subscription_expiring': return <AlertTriangle className="h-4 w-4 text-red-500" />
+      case 'system_update': return <Info className="h-4 w-4 text-blue-500" />
+      case 'message_received': return <MessageSquare className="h-4 w-4 text-primary" />
       default: return <Bell className="h-4 w-4 text-muted-foreground" />
     }
   }
@@ -144,7 +144,7 @@ export function NotificationDropdown() {
                       {n.message}
                     </p>
                     <p className="text-[9px] text-muted-foreground/60 mt-1">
-                      {new Date(n.created_at).toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}
+                      {new Date(n.created_at).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                     </p>
                   </div>
                   {!n.is_read && (

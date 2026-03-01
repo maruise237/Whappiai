@@ -5,9 +5,10 @@ import { Footer } from "@/components/landing/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Code, Database, Zap } from "lucide-react"
+import { ArrowRight, Code, Database, Globe, Layers, Zap } from "lucide-react"
+import Link from "next/link"
 
-const INTEGRATIONS_LIST = [
+const integrations = [
   { name: "Node.js", icon: Code, description: "SDK officiel pour Node.js et TypeScript.", category: "Backend" },
   { name: "Python", icon: Code, description: "Client API async pour Python 3.8+.", category: "Backend" },
   { name: "PHP / Laravel", icon: Code, description: "Package Composer pour Laravel 9/10.", category: "Backend" },
@@ -38,7 +39,7 @@ export default function IntegrationsPage() {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {INTEGRATIONS_LIST.map((item, i) => (
+            {integrations.map((item, i) => (
               <Card key={i} className="hover:border-primary/50 transition-all cursor-pointer group">
                 <CardHeader>
                   <div className="flex items-center justify-between mb-4">

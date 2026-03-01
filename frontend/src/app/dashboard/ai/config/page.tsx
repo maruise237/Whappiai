@@ -6,14 +6,19 @@ import {
   ArrowLeft,
   Save,
   Brain,
+  Settings,
+  Zap,
   Cpu,
+  Clock,
   User,
   Sparkles,
   Bot,
   Terminal,
+  MessageSquare,
   ShieldAlert,
   Calendar,
   Sliders,
+  Database
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,18 +41,153 @@ import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
+function IntelligenceSection({ config, setConfig, modes }: any) {
+  return (
+    <section id="intelligence" className="scroll-mt-24 space-y-6">
+      <div className="flex items-center justify-between py-3 border-b border-border">
+        <div>
+          <p className="text-sm font-medium">Activation Intelligence</p>
+          <p className="text-xs text-muted-foreground">Désactivez pour stopper toute réponse IA.</p>
+        </div>
+        <Switch
+          checked={!!config?.enabled}
+          onCheckedChange={(v) => setConfig({...config, enabled: v})}
+        />
+      </div>
+
+      <div className="space-y-4">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mode de fonctionnement</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {modes.map((m: any) => (
+            <button
+              key={m.id}
+              onClick={() => setConfig({...config, mode: m.id})}
+              className={cn(
+                "flex flex-col gap-2 p-4 text-left border rounded-lg transition-colors",
+                config?.mode === m.id
+                  ? "border-primary bg-primary/5 ring-1 ring-primary"
+                  : "border-border hover:bg-muted/50"
+              )}
+            >
+              <m.icon className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{m.name}</span>
+              <span className="text-xs text-muted-foreground">{m.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {(config?.mode === 'keyword' || config?.mode === 'bot') && (
+        <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+          <Label className="text-xs font-semibold">Mots-clés déclencheurs de l'IA</Label>
+          <Input
+            placeholder="tarif, prix, commander, aide..."
+            value={config?.trigger_keywords || ""}
+            onChange={e => setConfig({...config, trigger_keywords: e.target.value})}
+            className="bg-card border-border"
+          />
+          <p className="text-[10px] text-muted-foreground italic">
+            Séparez les mots par des virgules. Si rempli, l'IA ne répondra que si l'un de ces mots est présent.
+          </p>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function AutomationSection({ config, setConfig }: any) {
+  return (
+    <section id="automation" className="scroll-mt-24 space-y-6">
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold">Automatisation & Sécurité</h3>
+        <p className="text-xs text-muted-foreground">Comportement du bot lors des interactions.</p>
+      </div>
+
+      <div className="border rounded-lg divide-y bg-card">
+        <div className="flex items-center justify-between p-4">
+          <div>
+            <p className="text-sm font-medium">Répondre aux Tags</p>
+            <p className="text-xs text-muted-foreground">Réagir uniquement si cité (@bot) dans les groupes.</p>
+          </div>
+          <Switch
+            checked={!!config?.respond_to_tags}
+            onCheckedChange={(v) => setConfig({...config, respond_to_tags: v})}
+          />
+        </div>
+        <div className="flex items-center justify-between p-4">
+          <div>
+            <p className="text-sm font-medium">Rejet d'appels</p>
+            <p className="text-xs text-muted-foreground">Raccrocher automatiquement lors d'appels vocaux/vidéo.</p>
+          </div>
+          <Switch
+            checked={!!config?.reject_calls}
+            onCheckedChange={(v) => setConfig({...config, reject_calls: v})}
+          />
+        </div>
+        <div className="flex items-center justify-between p-4">
+          <div>
+            <p className="text-sm font-medium">Pause sur écriture</p>
+            <p className="text-xs text-muted-foreground">Désactiver l'IA quand vous tapez un message manuellement.</p>
+          </div>
+          <Switch
+            checked={!!config?.deactivate_on_typing}
+            onCheckedChange={(v) => setConfig({...config, deactivate_on_typing: v})}
+          />
+        </div>
+      </div>
+
+      <Card className="border-border bg-muted/30 shadow-none">
+        <CardHeader className="p-4">
+          <CardTitle className="text-sm font-medium">Simulation Humaine (Anti-Ban)</CardTitle>
+          <CardDescription className="text-xs">Ajoute des délais aléatoires pour paraître humain.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Délai de réponse (secondes)</Label>
+              <span className="text-xs font-mono text-primary font-bold">{config?.delay_min || 1}s - {config?.delay_max || 5}s</span>
+            </div>
+            <Slider
+              defaultValue={[config?.delay_min || 1, config?.delay_max || 5]}
+              max={30}
+              step={1}
+              className="py-4"
+              onValueChange={([min, max]) => setConfig({...config, delay_min: min, delay_max: max})}
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground">Min</Label>
+              <Input type="number" value={config?.delay_min || 1} onChange={e => setConfig({...config, delay_min: intVal(e.target.value)})} className="h-8" />
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground">Max</Label>
+              <Input type="number" value={config?.delay_max || 5} onChange={e => setConfig({...config, delay_max: intVal(e.target.value)})} className="h-8" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  )
+}
+
+const intVal = (v: string) => {
+  const n = parseInt(v);
+  return isNaN(n) ? 0 : n;
+};
+
 function AIConfigContent() {
   const router = useRouter()
   const { getToken } = useAuth()
   const { user } = useUser()
   const searchParams = useSearchParams()
-  const sessionId = searchParams.get("sessionId")
+  const sessionId = searchParams.get('sessionId')
 
   const [config, setConfig] = React.useState<any>(null)
   const [models, setModels] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
-  const [activeSection, setActiveSection] = React.useState("intelligence")
+  const [activeSection, setActiveSection] = React.useState('intelligence')
 
   const fetchData = React.useCallback(async () => {
     if (!sessionId) return
@@ -90,27 +230,27 @@ function AIConfigContent() {
     }
   }
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" ||
-                  user?.publicMetadata?.role === "admin"
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
   if (!sessionId) return <div className="p-12 text-center text-muted-foreground">Session non trouvée</div>
 
   const sections = [
-    { id: "intelligence", name: "Intelligence", icon: Brain },
-    { id: "automation", name: "Automation", icon: Sparkles },
-    { id: "personality", name: "Personnalité", icon: User },
-    { id: "scheduling", name: "Rendez-vous", icon: Calendar },
-    { id: "engine", name: "Moteur API", icon: Cpu },
+    { id: 'intelligence', name: 'Intelligence', icon: Brain },
+    { id: 'automation', name: 'Automation', icon: Zap },
+    { id: 'personality', name: 'Personnalité', icon: User },
+    { id: 'scheduling', name: 'Rendez-vous', icon: Calendar },
+    { id: 'engine', name: 'Moteur API', icon: Cpu },
   ]
 
   const modes = [
-    { id: "bot", name: "Automatique", desc: "IA gère tout", icon: Bot },
-    { id: "keyword", name: "Mots-clés", desc: "Zéro IA, uniquement mots-clés", icon: Terminal },
+    { id: 'bot', name: 'Automatique', desc: 'IA gère tout', icon: Bot },
+    { id: 'keyword', name: 'Mots-clés', desc: 'Zéro IA, uniquement mots-clés', icon: Terminal },
   ]
 
   return (
     <div className="space-y-6 pb-20">
+      {/* Page Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
@@ -128,19 +268,17 @@ function AIConfigContent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">
-        <nav className="flex flex-row lg:flex-col gap-1 sticky top-14 lg:top-24 bg-background/95
-          backdrop-blur z-10 py-2 lg:py-0 overflow-x-auto no-scrollbar border-b lg:border-none">
+        {/* Sidebar Nav */}
+        <nav className="flex flex-row lg:flex-col gap-1 sticky top-14 lg:top-24 bg-background/95 backdrop-blur z-10 py-2 lg:py-0 overflow-x-auto no-scrollbar border-b lg:border-none">
           {sections.map(section => (
             <button
               key={section.id}
               onClick={() => {
                 setActiveSection(section.id)
-                document.getElementById(section.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+                document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
               }}
               data-active={activeSection === section.id}
-              className="flex-none lg:w-full flex items-center gap-2 px-3 py-2 text-xs lg:text-sm rounded-md
-                hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground
-                data-[active=true]:font-medium transition-colors whitespace-nowrap"
+              className="flex-none lg:w-full flex items-center gap-2 px-3 py-2 text-xs lg:text-sm rounded-md hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:font-medium transition-colors whitespace-nowrap"
             >
               <section.icon className="h-4 w-4" />
               {section.name}
@@ -148,7 +286,9 @@ function AIConfigContent() {
           ))}
         </nav>
 
+        {/* Sections */}
         <div className="space-y-12">
+          {/* Section Intelligence */}
           <section id="intelligence" className="scroll-mt-24 space-y-6">
             <div className="flex items-center justify-between py-3 border-b border-border">
               <div>
@@ -162,9 +302,7 @@ function AIConfigContent() {
             </div>
 
             <div className="space-y-4">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Mode de fonctionnement
-              </Label>
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mode de fonctionnement</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {modes.map(m => (
                   <button
@@ -185,7 +323,7 @@ function AIConfigContent() {
               </div>
             </div>
 
-            {(config?.mode === "keyword" || config?.mode === "bot") && (
+            {(config?.mode === 'keyword' || config?.mode === 'bot') && (
               <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
                 <Label className="text-xs font-semibold">Mots-clés déclencheurs de l&apos;IA</Label>
                 <Input
@@ -203,6 +341,7 @@ function AIConfigContent() {
 
           <Separator />
 
+          {/* Section Automation */}
           <section id="automation" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold">Automatisation & Sécurité</h3>
@@ -233,7 +372,7 @@ function AIConfigContent() {
               <div className="flex items-center justify-between p-4">
                 <div>
                   <p className="text-sm font-medium">Pause sur écriture</p>
-                  <p className="text-xs text-muted-foreground">Désactiver l&apos;IA quand vous tapez un message.</p>
+                  <p className="text-xs text-muted-foreground">Désactiver l&apos;IA quand vous tapez un message manuellement.</p>
                 </div>
                 <Switch
                   checked={!!config?.deactivate_on_typing}
@@ -251,9 +390,7 @@ function AIConfigContent() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">Délai de réponse (secondes)</Label>
-                    <span className="text-xs font-mono text-primary font-bold">
-                      {config?.delay_min || 1}s - {config?.delay_max || 5}s
-                    </span>
+                    <span className="text-xs font-mono text-primary font-bold">{config?.delay_min || 1}s - {config?.delay_max || 5}s</span>
                   </div>
                   <Slider
                     defaultValue={[config?.delay_min || 1, config?.delay_max || 5]}
@@ -263,12 +400,23 @@ function AIConfigContent() {
                     onValueChange={([min, max]) => setConfig({...config, delay_min: min, delay_max: max})}
                   />
                 </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Min</Label>
+                    <Input type="number" value={config?.delay_min || 1} onChange={e => setConfig({...config, delay_min: parseInt(e.target.value)})} className="h-8" />
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Max</Label>
+                    <Input type="number" value={config?.delay_max || 5} onChange={e => setConfig({...config, delay_max: parseInt(e.target.value)})} className="h-8" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </section>
 
           <Separator />
 
+          {/* Section Personality */}
           <section id="personality" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold">Personnalité & Instructions</h3>
@@ -276,15 +424,13 @@ function AIConfigContent() {
             </div>
 
             <div className="space-y-4">
-               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                 Modèles de ton
-               </Label>
+               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Modèles de ton</Label>
                <div className="flex flex-wrap gap-2">
                   {[
-                    { id: "pro", name: "Professionnel", icon: ShieldAlert },
-                    { id: "friendly", name: "Amical", icon: User },
-                    { id: "sales", name: "Vendeur", icon: Sparkles },
-                    { id: "support", name: "Support", icon: Sliders },
+                    { id: 'pro', name: 'Professionnel', icon: ShieldAlert },
+                    { id: 'friendly', name: 'Amical', icon: MessageSquare },
+                    { id: 'sales', name: 'Vendeur', icon: Zap },
+                    { id: 'support', name: 'Support', icon: Sliders },
                   ].map(t => (
                     <Badge
                       key={t.id}
@@ -306,11 +452,24 @@ function AIConfigContent() {
                  value={config?.prompt || ""}
                  onChange={e => setConfig({...config, prompt: e.target.value})}
                />
+               <div className="flex flex-wrap gap-1 mt-2">
+                  {['@{{name}}', '{{time}}', '{{date}}', '{{company}}'].map(tag => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="text-[10px] cursor-pointer font-mono hover:bg-primary/10 h-5"
+                      onClick={() => setConfig({...config, prompt: (config.prompt || "") + tag})}
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+               </div>
             </div>
           </section>
 
           <Separator />
 
+          {/* Section Scheduling */}
           <section id="scheduling" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold">Rendez-vous Cal.com</h3>
@@ -321,7 +480,7 @@ function AIConfigContent() {
               <div className="flex items-center justify-between p-4">
                 <div>
                   <p className="text-sm font-medium">Activer l&apos;assistant Cal.com</p>
-                  <p className="text-xs text-muted-foreground">Permet à l&apos;IA de consulter votre agenda.</p>
+                  <p className="text-xs text-muted-foreground">Permet à l&apos;IA de consulter votre agenda et prendre des RDV.</p>
                 </div>
                 <Switch
                   checked={!!config?.ai_cal_enabled}
@@ -332,11 +491,40 @@ function AIConfigContent() {
                   }}
                 />
               </div>
+              <div className="flex items-center justify-between p-4">
+                <div>
+                  <p className="text-sm font-medium">Autoriser la Vidéo</p>
+                  <p className="text-xs text-muted-foreground">Proposer des rendez-vous en visioconférence.</p>
+                </div>
+                <Switch
+                  checked={!!config?.ai_cal_video_allowed}
+                  onCheckedChange={async (v) => {
+                    const token = await getToken()
+                    await api.cal.updateSettings({ ai_cal_video_allowed: v }, token || undefined)
+                    setConfig({...config, ai_cal_video_allowed: v})
+                  }}
+                />
+              </div>
             </div>
+
+            {config?.ai_cal_enabled && (
+              <Card className="border-border bg-primary/5 shadow-none">
+                <CardHeader className="p-4">
+                  <CardTitle className="text-xs font-bold uppercase flex items-center gap-2">
+                    <Sparkles className="h-3 w-3" /> Note sur le fonctionnement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 text-[11px] space-y-2 leading-relaxed">
+                  <p>L&apos;IA utilise des commandes spéciales pour interagir avec votre calendrier. Assurez-vous que votre prompt système contient les instructions nécessaires.</p>
+                  <p className="italic text-muted-foreground">Exemple: &quot;Vérifie les disponibilités avec [CAL_CHECK:YYYY-MM-DD] et réserve avec [CAL_BOOK:...]&quot;</p>
+                </CardContent>
+              </Card>
+            )}
           </section>
 
           <Separator />
 
+          {/* Section Engine */}
           <section id="engine" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold">Moteur & Infrastructure API</h3>
@@ -346,9 +534,7 @@ function AIConfigContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div className="space-y-1.5">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground">Modèle LLM</Label>
-                  <Select
-                    value={config?.model || (models.find(m => m.is_default)?.id || "deepseek-chat")}
-                    onValueChange={(v) => setConfig({...config, model: v})}>
+                  <Select value={config?.model || (models.find(m => m.is_default)?.id || "deepseek-chat")} onValueChange={(v) => setConfig({...config, model: v})}>
                      <SelectTrigger className="h-9">
                         <SelectValue placeholder="Sélectionnez un modèle" />
                      </SelectTrigger>
@@ -363,6 +549,30 @@ function AIConfigContent() {
                      </SelectContent>
                   </Select>
                </div>
+
+               {isAdmin && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Endpoint Personnalisé</Label>
+                      <Input
+                        placeholder="https://api.openai.com/v1"
+                        value={config?.api_endpoint || ""}
+                        onChange={e => setConfig({...config, api_endpoint: e.target.value})}
+                        className="h-9 font-mono text-[11px]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Clé API (Secret)</Label>
+                      <Input
+                        type="password"
+                        placeholder="sk-..."
+                        value={config?.api_key || ""}
+                        onChange={e => setConfig({...config, api_key: e.target.value})}
+                        className="h-9 font-mono text-[11px]"
+                      />
+                    </div>
+                  </>
+               )}
             </div>
           </section>
         </div>

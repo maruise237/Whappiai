@@ -237,8 +237,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
                     <div className="flex flex-wrap justify-center gap-1.5">
-                      {typeof pairingCode === 'string' && pairingCode.split('').map((char: string, i: number) => (
-                        <div key={i} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
+                      {pairingCode.split('').map((char: string, i: number) => (
+                        <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
                           {char}
                         </div>
                       ))}
