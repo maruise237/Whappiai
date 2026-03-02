@@ -7,11 +7,6 @@ import {
   Activity,
   MessageCircle,
   Smartphone,
-  Brain,
-  Sparkles,
-  Loader2,
-  ArrowRight,
-  ChevronRight,
   TrendingUp,
   History,
   Settings2,
@@ -19,19 +14,11 @@ import {
   CreditCard,
   User,
   MoreVertical,
-  Bot
+  PlusCircle
 } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
 import { api } from "@/lib/api"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet"
 import {
   Dialog,
   DialogContent,
@@ -51,7 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableBody,
@@ -62,15 +48,13 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   AreaChart,
-  Area
+  Area,
+  XAxis,
+  YAxis
 } from 'recharts'
 import { useRouter } from "next/navigation"
 import { useWebSocket } from "@/providers/websocket-provider"
@@ -79,7 +63,6 @@ import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import Link from "next/link"
-import { useNotificationSound } from "@/hooks/use-notification-sound"
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -99,6 +82,7 @@ export default function DashboardPage() {
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
+  const lastProcessedMessageRef = React.useRef<string>("")
 
   const [sessions, setSessions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -117,45 +101,44 @@ export default function DashboardPage() {
     defaultValues: { sessionId: "", phoneNumber: "" }
   })
 
-  const fetchSessions = React.useCallback(async () => {
+  const fetchCreditsData = React.useCallback(async () => {
     try {
       const token = await getToken()
-      const data = await api.sessions.list(token || undefined)
-      setSessions(Array.isArray(data) ? data : [])
-      if (data && data.length > 0 && !selectedSessionId) {
-        setSelectedSessionId(ensureString(data[0].sessionId))
-      }
-    } catch (e) { console.error(e) } finally {
-      setLoading(false)
-    }
-  }, [getToken, selectedSessionId])
+      const data = await api.credits.get(token || undefined)
+      setCredits(data?.data || data)
+    } catch (e) { console.error(e) }
+  }, [getToken])
 
   const fetchAdminSummary = React.useCallback(async (token: string) => {
-    const [stats, analytics] = await Promise.all([
-      api.admin.getStats(DEFAULT_STATS_DAYS, token),
-      api.activities.analytics(DEFAULT_STATS_DAYS, token)
-    ])
-    setAdminStats(stats)
-    setAnalyticsData(Array.isArray(analytics) ? analytics : [])
-    setSummary({
-      totalActivities: stats?.overview?.activities || 0,
-      successRate: stats?.overview?.successRate || 0,
-      messagesSent: stats?.overview?.messagesSent || 0,
-      activeSessions: stats?.sessions?.connected || 0
-    })
+    try {
+      const [stats, analytics] = await Promise.all([
+        api.admin.getStats(DEFAULT_STATS_DAYS, token),
+        api.activities.analytics(DEFAULT_STATS_DAYS, token)
+      ])
+      setAdminStats(stats)
+      setAnalyticsData(Array.isArray(analytics) ? analytics : [])
+      setSummary({
+        totalActivities: stats?.overview?.activities || 0,
+        successRate: stats?.overview?.successRate || 0,
+        messagesSent: stats?.overview?.messagesSent || 0,
+        activeSessions: stats?.sessions?.connected || 0
+      })
+    } catch (e) { console.error(e) }
   }, [])
 
-  const fetchUserSummary = React.useCallback(async (token: string) => {
-    const summ = await api.activities.summary(DEFAULT_STATS_DAYS, token)
-    setSummary({
-      totalActivities: summ?.totalActivities || 0,
-      successRate: summ?.successRate || 0,
-      messagesSent: summ?.byAction?.send_message || 0,
-      activeSessions: Array.isArray(sessions) ? sessions.filter(s => s.isConnected).length : 0
-    })
-  }, [sessions])
+  const fetchUserSummary = React.useCallback(async (token: string, currentSessions: any[]) => {
+    try {
+      const summ = await api.activities.summary(DEFAULT_STATS_DAYS, token)
+      setSummary({
+        totalActivities: summ?.totalActivities || 0,
+        successRate: summ?.successRate || 0,
+        messagesSent: summ?.byAction?.send_message || 0,
+        activeSessions: Array.isArray(currentSessions) ? currentSessions.filter(s => s.isConnected).length : 0
+      })
+    } catch (e) { console.error(e) }
+  }, [])
 
-  const fetchSummary = React.useCallback(async () => {
+  const fetchSummaryData = React.useCallback(async (currentSessions: any[]) => {
     try {
       const token = await getToken()
       if (!token) return
@@ -163,7 +146,7 @@ export default function DashboardPage() {
       if (isAdmin) {
         await fetchAdminSummary(token)
       } else {
-        await fetchUserSummary(token)
+        await fetchUserSummary(token, currentSessions)
       }
 
       const logs = await api.activities.list(RECENT_LOGS_COUNT, 0, token)
@@ -173,35 +156,52 @@ export default function DashboardPage() {
     }
   }, [getToken, isAdmin, fetchAdminSummary, fetchUserSummary])
 
-  const fetchCredits = React.useCallback(async () => {
+  const fetchSessions = React.useCallback(async (autoSelect = false) => {
     try {
       const token = await getToken()
-      const data = await api.credits.get(token || undefined)
-      setCredits(data?.data || data)
-    } catch (e) { console.error(e) }
-  }, [getToken])
+      const data = await api.sessions.list(token || undefined)
+      const sessionsList = Array.isArray(data) ? data : []
+      setSessions(sessionsList)
 
+      if (autoSelect && sessionsList.length > 0) {
+        setSelectedSessionId(prev => prev || ensureString(sessionsList[0].sessionId))
+      }
+
+      fetchSummaryData(sessionsList)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }, [getToken, fetchSummaryData])
+
+  // Initial load effect
   React.useEffect(() => {
-    fetchSessions().catch(console.error)
-    fetchCredits().catch(console.error)
-  }, [fetchSessions, fetchCredits])
+    if (isLoaded && user) {
+      fetchSessions(true)
+      fetchCreditsData()
+    }
+  }, [isLoaded, user?.id])
 
-  React.useEffect(() => {
-    fetchSummary().catch(console.error)
-  }, [fetchSummary])
-
-  // Handle real-time updates via WebSocket
+  // Consolidated WebSocket update handling
   React.useEffect(() => {
     if (!lastMessage) return;
 
+    // Stringified comparison for deduplication
+    const messageStr = JSON.stringify(lastMessage);
+    if (messageStr === lastProcessedMessageRef.current) return;
+    lastProcessedMessageRef.current = messageStr;
+
     if (lastMessage.type === 'session-update') {
       const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
+      let needsRefresh = false;
 
       setSessions(prev => {
         const newSessions = [...prev];
         let hasChanges = false;
 
         updates.forEach(update => {
+          if (!update || !update.sessionId) return;
           const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
           if (index !== -1) {
             newSessions[index] = {
@@ -211,18 +211,20 @@ export default function DashboardPage() {
             };
             hasChanges = true;
           } else {
-             // If session doesn't exist in local state, maybe we should fetch sessions?
-             // Or just add it if we have enough info. Let's just trigger a fetch to be safe
-             // but only once to avoid loops.
-             hasChanges = true;
+             needsRefresh = true;
           }
         });
 
         return hasChanges ? newSessions : prev;
       });
 
-      // Special handling for new pairing codes or connections
+      if (needsRefresh) {
+        fetchSessions(false);
+      }
+
+      // UI Notifications
       updates.forEach(update => {
+        if (!update) return;
         if (update.status === 'CONNECTED') {
           toast.success(`Session ${update.sessionId} connectée !`);
           confetti();
@@ -231,23 +233,23 @@ export default function DashboardPage() {
         }
       });
 
-      // If we detected a missing session, refresh all
-      const hasMissing = updates.some(u => !sessions.find(s => ensureString(s.sessionId) === ensureString(u.sessionId)));
-      if (hasMissing) fetchSessions();
+      fetchCreditsData();
     }
 
     if (lastMessage.type === 'session-deleted') {
-      const { sessionId } = lastMessage.data;
-      setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
-      if (ensureString(selectedSessionId) === ensureString(sessionId)) {
-        setSelectedSessionId(null);
+      const { sessionId } = lastMessage.data || {};
+      if (sessionId) {
+        setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
+        if (ensureString(selectedSessionId) === ensureString(sessionId)) {
+          setSelectedSessionId(null);
+        }
       }
     }
-  }, [lastMessage, selectedSessionId, sessions, fetchSessions]);
+  }, [lastMessage, selectedSessionId, fetchSessions, fetchCreditsData]);
 
-  const selectedSession = (Array.isArray(sessions) ? sessions : []).find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
+  const selectedSession = sessions.find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
 
-  if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
+  if (!isLoaded || loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
 
   return (
     <div className="space-y-8 pb-20">
@@ -292,7 +294,7 @@ export default function DashboardPage() {
             <>
                 <StatCard
                   label="Sessions"
-                  value={Array.isArray(sessions) ? sessions.length : 0}
+                  value={sessions.length}
                   subtext={`${summary.activeSessions} actives`}
                   icon={<Smartphone className="h-4 w-4 text-blue-500" />}
                 />
@@ -326,7 +328,7 @@ export default function DashboardPage() {
                   <SelectValue placeholder="Choisir une session" />
                </SelectTrigger>
                <SelectContent>
-                  {Array.isArray(sessions) ? sessions.map(s => <SelectItem key={String(s.sessionId)} value={String(s.sessionId)} className="text-xs">{safeRender(s.sessionId)}</SelectItem>) : null}
+                  {sessions.map(s => <SelectItem key={String(s.sessionId)} value={String(s.sessionId)} className="text-xs">{safeRender(s.sessionId)}</SelectItem>)}
                </SelectContent>
             </Select>
             {selectedSession && (
@@ -413,7 +415,7 @@ export default function DashboardPage() {
                         <Settings2 className="h-4 w-4 text-muted-foreground" />
                      </Button>
                   </div>
-                  <SessionCard session={selectedSession} onRefresh={fetchSessions} onCreate={() => setIsCreateOpen(true)} />
+                  <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
                </CardContent>
             </Card>
 
@@ -438,7 +440,7 @@ export default function DashboardPage() {
                            </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {Array.isArray(recentActivities) ? recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg) => (
+                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg) => (
                               <TableRow key={ensureString(msg.id || msg.timestamp)} className="hover:bg-muted/50">
                                  <TableCell className="text-sm truncate max-w-[150px]">{safeRender(msg.resource_id)}</TableCell>
                                  <TableCell>
@@ -455,8 +457,8 @@ export default function DashboardPage() {
                                     {safeDate(msg.created_at || msg.timestamp)}
                                  </TableCell>
                               </TableRow>
-                           )) : null}
-                           {(Array.isArray(recentActivities) ? recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').length : 0) === 0 && (
+                           ))}
+                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').length === 0 && (
                               <TableRow><TableCell colSpan={3} className="text-center py-10 text-xs text-muted-foreground italic">Aucun message récent</TableCell></TableRow>
                            )}
                         </TableBody>
@@ -469,7 +471,7 @@ export default function DashboardPage() {
                   <TabsContent value="logs" className="space-y-4">
                      <Card className="bg-zinc-950 text-zinc-400 font-mono text-[10px] p-4 overflow-x-auto min-h-[200px] border-none shadow-inner">
                         <div className="space-y-1">
-                           {Array.isArray(recentActivities) ? recentActivities.map((log) => (
+                           {recentActivities.map((log) => (
                               <div key={ensureString(log.id || log.timestamp)} className="flex gap-4">
                                  <span className="text-zinc-600">
                                     [{safeDate(log.timestamp || log.created_at)}]
@@ -479,7 +481,7 @@ export default function DashboardPage() {
                                     {safeRender(log.details)}
                                  </span>
                               </div>
-                           )) : null}
+                           ))}
                         </div>
                      </Card>
                   </TabsContent>
@@ -496,7 +498,7 @@ export default function DashboardPage() {
                      </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-4">
-                     {Array.isArray(recentActivities) ? recentActivities.slice(0, 4).map((activity, i) => (
+                     {recentActivities.slice(0, 4).map((activity, i) => (
                         <div key={i} className="flex items-start gap-3 border-b border-border/40 last:border-0 pb-3 last:pb-0">
                            <div className="h-6 w-6 rounded bg-background border flex items-center justify-center shrink-0">
                               <Zap className="h-3 w-3 text-muted-foreground" />
@@ -508,7 +510,7 @@ export default function DashboardPage() {
                               </p>
                            </div>
                         </div>
-                     )) : null}
+                     ))}
                      <Button variant="link" size="sm" className="p-0 h-auto text-[10px] font-semibold" asChild>
                         <Link href="/dashboard/activities">View All Activities →</Link>
                      </Button>
@@ -531,7 +533,7 @@ export default function DashboardPage() {
                  await api.sessions.create(val.sessionId, val.phoneNumber, token || undefined);
                  toast.success("Session prête", { id: t });
                  setIsCreateOpen(false);
-                 fetchSessions();
+                 fetchSessions(true);
                  confetti();
                } catch (e) {
                  toast.error("Erreur de création", { id: t });
