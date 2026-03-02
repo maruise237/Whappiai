@@ -484,6 +484,10 @@ function initializeSchema() {
     });
 
     // Forced Schema Sync for 2026 Compatibility (Deep Repair)
+    runner.run('whatsapp-sessions-qr-code-v1', (db) => {
+        try { db.exec("ALTER TABLE whatsapp_sessions ADD COLUMN qr_code TEXT"); } catch (e) {}
+    });
+
     runner.run('forced-schema-repair-v2026-v7', (db) => {
         // Repair whatsapp_sessions
         const wsCols = [
