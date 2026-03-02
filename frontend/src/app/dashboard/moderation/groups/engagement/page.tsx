@@ -131,17 +131,6 @@ function GroupEngagementContent() {
     }
   }
 
-    const handleDeleteTask = async (taskId: number) => {
-    try {
-      const token = await getToken()
-      await api.sessions.deleteEngagementTask(taskId, token || undefined)
-      toast.success("Tâche supprimée")
-      fetchGroupDetails()
-    } catch (e) {
-      toast.error("Erreur de suppression")
-    }
-  }
-
   const handleScheduleMessage = async () => {
     if (!sessionId || !selectedGroupId || !directMessage.trim() || !scheduledAt) {
       return toast.error("Veuillez remplir le message et la date")
@@ -304,6 +293,7 @@ function GroupEngagementContent() {
                         </Card>
                       ))}
                       <Button size="sm" onClick={handleSaveLinks} disabled={isSaving}>Sauvegarder les liens</Button>
+                   </div>
                 </TabsContent>
 
                 <TabsContent value="engagement" className="space-y-6">
@@ -356,45 +346,6 @@ function GroupEngagementContent() {
                             <Button size="sm" className="w-full" onClick={handleScheduleMessage} disabled={isSaving}>Programmer</Button>
                          </CardContent>
                       </Card>
-
-                   <div className="space-y-4 pt-6 border-t">
-                      <div className="flex items-center gap-2">
-                         <Clock className="h-4 w-4 text-primary" />
-                         <h4 className="text-sm font-bold uppercase tracking-widest">Messages Programm&eacute;s en Attente</h4>
-                      </div>
-
-                      {tasks.filter(t => t.status === 'pending').length === 0 ? (
-                         <p className="text-xs text-muted-foreground italic">Aucun message en attente pour ce groupe.</p>
-                      ) : (
-                         <div className="grid grid-cols-1 gap-3">
-                            {tasks.filter(t => t.status === 'pending').map(task => (
-                               <Card key={task.id} className="border-none shadow-sm bg-card/50 overflow-hidden">
-                                  <CardContent className="p-4 flex items-start justify-between gap-4">
-                                     <div className="space-y-2 flex-1">
-                                        <div className="flex items-center gap-2">
-                                           <Badge variant="outline" className="text-[10px] uppercase font-bold px-1.5 h-4 bg-primary/5 border-primary/20">
-                                              {task.recurrence === 'daily' ? 'Quotidien' : task.recurrence === 'weekly' ? 'Hebdomadaire' : 'Unique'}
-                                           </Badge>
-                                           <span className="text-[10px] text-muted-foreground font-medium">
-                                              {new Date(task.scheduled_at).toLocaleString()}
-                                           </span>
-                                        </div>
-                                        <p className="text-xs line-clamp-2 text-foreground/80 leading-relaxed">{task.message_content}</p>
-                                     </div>
-                                     <Button
-                                       variant="ghost"
-                                       size="icon"
-                                       className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full shrink-0"
-                                       onClick={() => handleDeleteTask(task.id)}
-                                     >
-                                        <Trash2 className="h-4 w-4" />
-                                     </Button>
-                                  </CardContent>
-                               </Card>
-                            ))}
-                         </div>
-                      )}
-                   </div>
                    </div>
                 </TabsContent>
              </Tabs>
