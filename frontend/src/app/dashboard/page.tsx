@@ -190,6 +190,61 @@ export default function DashboardPage() {
     fetchSummary().catch(console.error)
   }, [fetchSummary])
 
+  // Handle real-time updates via WebSocket
+  React.useEffect(() => {
+    if (!lastMessage) return;
+
+    if (lastMessage.type === 'session-update') {
+      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
+
+      setSessions(prev => {
+        const newSessions = [...prev];
+        let hasChanges = false;
+
+        updates.forEach(update => {
+          const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
+          if (index !== -1) {
+            newSessions[index] = {
+              ...newSessions[index],
+              ...update,
+              isConnected: update.status === 'CONNECTED'
+            };
+            hasChanges = true;
+          } else {
+             // If session doesn't exist in local state, maybe we should fetch sessions?
+             // Or just add it if we have enough info. Let's just trigger a fetch to be safe
+             // but only once to avoid loops.
+             hasChanges = true;
+          }
+        });
+
+        return hasChanges ? newSessions : prev;
+      });
+
+      // Special handling for new pairing codes or connections
+      updates.forEach(update => {
+        if (update.status === 'CONNECTED') {
+          toast.success(`Session ${update.sessionId} connectée !`);
+          confetti();
+        } else if (update.status === 'GENERATING_CODE' && update.pairingCode) {
+          toast.info(`Code d'appairage reçu pour ${update.sessionId}`);
+        }
+      });
+
+      // If we detected a missing session, refresh all
+      const hasMissing = updates.some(u => !sessions.find(s => ensureString(s.sessionId) === ensureString(u.sessionId)));
+      if (hasMissing) fetchSessions();
+    }
+
+    if (lastMessage.type === 'session-deleted') {
+      const { sessionId } = lastMessage.data;
+      setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
+      if (ensureString(selectedSessionId) === ensureString(sessionId)) {
+        setSelectedSessionId(null);
+      }
+    }
+  }, [lastMessage, selectedSessionId, sessions, fetchSessions]);
+
   const selectedSession = (Array.isArray(sessions) ? sessions : []).find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>

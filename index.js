@@ -391,16 +391,20 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     // CRITICAL: We pass undefined instead of null to prevent clearing existing code/qr when status updates
     Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : undefined);
 
+    const updateData = {
+        sessionId: id,
+        status,
+        detail,
+        token: Session.findById(id)?.token
+    };
+
+    // Only include QR or pairingCode if they are provided, to avoid clearing them on the frontend during status transitions
+    if (isQR) updateData.qr = qrOrCode;
+    if (isPairingCode) updateData.pairingCode = qrOrCode;
+
     broadcastToClients({
         type: 'session-update',
-        data: [{
-            sessionId: id,
-            status,
-            detail,
-            qr: isQR ? qrOrCode : null, // WebSocket broadcast can still send null for UI feedback if needed
-            pairingCode: isPairingCode ? qrOrCode : null,
-            token: Session.findById(id)?.token
-        }]
+        data: [updateData]
     });
 };
 

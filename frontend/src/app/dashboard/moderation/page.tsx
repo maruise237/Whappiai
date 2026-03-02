@@ -17,12 +17,14 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
+import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 
 export default function ModerationPage() {
   const router = useRouter()
   const { getToken } = useAuth()
+  const { lastMessage } = useWebSocket()
   const [sessions, setSessions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -44,6 +46,39 @@ export default function ModerationPage() {
   React.useEffect(() => {
     fetchSessions()
   }, [fetchSessions])
+
+  // Real-time updates via WebSocket
+  React.useEffect(() => {
+    if (!lastMessage) return;
+
+    if (lastMessage.type === 'session-update') {
+      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
+
+      setSessions(prev => {
+        const newSessions = [...prev];
+        let hasChanges = false;
+
+        updates.forEach(update => {
+          const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
+          if (index !== -1) {
+            newSessions[index] = {
+              ...newSessions[index],
+              ...update,
+              isConnected: update.status === 'CONNECTED'
+            };
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? newSessions : prev;
+      });
+    }
+
+    if (lastMessage.type === 'session-deleted') {
+      const { sessionId } = lastMessage.data;
+      setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
+    }
+  }, [lastMessage]);
 
   const filtered = (Array.isArray(sessions) ? sessions : []).filter(s =>
     ensureString(s.sessionId).toLowerCase().includes(searchQuery.toLowerCase())
