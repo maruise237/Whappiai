@@ -14,7 +14,8 @@ import {
   Loader2,
   Cpu,
   Zap,
-  Star
+  Star,
+  TrendingUp
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -41,7 +42,7 @@ import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 export default function AiModelsPage() {
   const { getToken } = useAuth()
@@ -74,7 +75,7 @@ export default function AiModelsPage() {
   }, [getToken])
 
   React.useEffect(() => {
-    fetchModels()
+    fetchModels().catch(console.error)
   }, [fetchModels])
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' ||
@@ -135,7 +136,7 @@ export default function AiModelsPage() {
       provider: model.provider || 'openai',
       endpoint: model.endpoint,
       model_name: model.model_name,
-      api_key: '', // Don't show key, but allow update
+      api_key: '',
       is_default: model.is_default === 1 || model.is_default === true
     })
     setIsAddOpen(true)
@@ -255,9 +256,9 @@ export default function AiModelsPage() {
             <DialogDescription className="text-xs">Configurez une nouvelle API compatible OpenAI pour vos bots.</DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
              <div className="space-y-1.5 col-span-2">
-                <Label className="text-[10px] font-semibold text-muted-foreground">Nom d&apos;affichage</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Nom d'affichage</Label>
                 <Input
                   placeholder="GPT-4o ou Claude-3"
                   className="h-9"
@@ -305,9 +306,9 @@ export default function AiModelsPage() {
              </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setIsAddOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={handleSubmit}>Sauvegarder le Moteur</Button>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setIsAddOpen(false)} className="w-full sm:w-auto">Annuler</Button>
+            <Button size="sm" onClick={handleSubmit} className="w-full sm:w-auto">Sauvegarder le Moteur</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

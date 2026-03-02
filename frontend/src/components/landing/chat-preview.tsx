@@ -19,7 +19,7 @@ const SCENARIOS = [
       { role: "system", content: "Alice a rejoint le groupe" },
       { role: "assistant", content: "Bienvenue Alice ! 👋 Voici les règles du groupe : pas de spam, respect mutuel." },
       { role: "user", content: "Merci ! Est-ce que je peux poster des liens ?" },
-      { role: "assistant", content: "Seulement si c'est pertinent pour la communauté et sans pub ! 😉" },
+      { role: "assistant", content: "Seulement si c'est pertinent pour la communauté et sans pub ! 😉 " },
     ] as Message[],
   },
   {
@@ -45,7 +45,7 @@ const SCENARIOS = [
     name: "scheduling",
     messages: [
       { role: "user", content: "Je voudrais prendre rendez-vous." },
-      { role: "assistant", content: "Bien sûr ! Quel jour vous convient le mieux ? 📅" },
+      { role: "assistant", content: "Bien sûr ! Quel jour vous convient le mieux ? 📅 " },
       { role: "user", content: "Lundi prochain vers 14h." },
       { role: "assistant", content: "C'est noté ! Je vous confirme le rendez-vous pour Lundi à 14h. ✅" },
     ] as Message[],
@@ -184,13 +184,13 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
               <div className="flex justify-center mb-6 mt-2">
                 <div className="bg-[#182229] px-3 py-1.5 rounded-lg shadow-sm max-w-[85%] text-center">
                   <p className="text-[#8696a0] text-[10px] leading-3 flex items-center justify-center gap-1">
-                    🔒 Les messages sont chiffrés de bout en bout.
+                     🔒  Les messages sont chiffrés de bout en bout.
                   </p>
                 </div>
               </div>
 
               <AnimatePresence initial={false} mode="popLayout">
-                {messages.map((message) => (
+                {messages.map((message, idx) => (
                   <motion.div
                     key={message.id}
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}

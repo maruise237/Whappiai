@@ -68,7 +68,7 @@ export default function UsersPage() {
     try {
       const token = await getToken()
       const data = await api.users.list(token || undefined)
-      setUsers(data || [])
+      setUsers(Array.isArray(data) ? data : [])
     } catch (e) {
       toast.error("Erreur de chargement des utilisateurs")
     } finally {
@@ -77,7 +77,7 @@ export default function UsersPage() {
   }, [getToken])
 
   React.useEffect(() => {
-    fetchUsers()
+    fetchUsers().catch(console.error)
   }, [fetchUsers])
 
   const filtered = users.filter(u =>
@@ -208,20 +208,20 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
-                        {u.email.charAt(0).toUpperCase()}
+                        {ensureString(u.email, "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-semibold">{u.email}</span>
-                        <span className="text-[9px] font-mono text-muted-foreground opacity-60 uppercase">{u.id}</span>
+                        <span className="text-xs font-semibold">{safeRender(u.email)}</span>
+                        <span className="text-[9px] font-mono text-muted-foreground opacity-60 uppercase">{safeRender(u.id)}</span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <Badge variant="secondary" className={cn(
                       "text-[9px] font-semibold",
                       u.role === 'admin' ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"
                     )}>
-                      {u.role}
+                      {safeRender(u.role)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -263,6 +263,7 @@ export default function UsersPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -299,9 +300,9 @@ export default function UsersPage() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={handleCreateUser} disabled={isSubmitting}>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setIsAddDialogOpen(false)} className="w-full sm:w-auto">Annuler</Button>
+            <Button size="sm" onClick={handleCreateUser} disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
               Lancer l&apos;invitation
             </Button>

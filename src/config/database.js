@@ -32,7 +32,6 @@ db.pragma('journal_mode = WAL');
  */
 function initializeSchema() {
     // 1. Initial Migration Check (Before any CREATE TABLE)
-    // This ensures data continuity during the Animator -> Engagement rename
     const runner = new MigrationRunner(db);
     runner.init();
 
@@ -71,6 +70,7 @@ function initializeSchema() {
             status TEXT DEFAULT 'DISCONNECTED',
             detail TEXT,
             pairing_code TEXT,
+            qr_code TEXT,
             ai_enabled INTEGER DEFAULT 0,
             ai_model TEXT,
             ai_prompt TEXT,
@@ -293,17 +293,6 @@ function initializeSchema() {
         )
     `);
 
-    try {
-        db.exec(`
-            CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_search USING fts5(
-                content,
-                session_id UNINDEXED,
-                chunk_id UNINDEXED,
-                tokenize='unicode61 remove_diacritics 1'
-            )
-        `);
-    } catch (e) {}
-
     // SaaS Components
     db.exec(`
         CREATE TABLE IF NOT EXISTS pricing_plans (
@@ -371,10 +360,10 @@ function initializeSchema() {
                         bad_words TEXT,
                         warning_template TEXT DEFAULT 'ATTENTION @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
                         max_warnings INTEGER DEFAULT 5,
-            warning_reset_days INTEGER DEFAULT 0,
-            welcome_enabled INTEGER DEFAULT 0,
-            welcome_template TEXT,
-            ai_assistant_enabled INTEGER DEFAULT 0,
+                        warning_reset_days INTEGER DEFAULT 0,
+                        welcome_enabled INTEGER DEFAULT 0,
+                        welcome_template TEXT,
+                        ai_assistant_enabled INTEGER DEFAULT 0,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                         PRIMARY KEY (group_id, session_id)
@@ -423,20 +412,6 @@ function initializeSchema() {
         });
     });
 
-    // Migration: Cal.com Integration columns (New migration to ensure they are added)
-    runner.run('users-cal-com-v1', (db) => {
-        const columns = [
-            { name: 'cal_access_token', type: 'TEXT' },
-            { name: 'cal_refresh_token', type: 'TEXT' },
-            { name: 'cal_token_expiry', type: 'INTEGER' },
-            { name: 'ai_cal_enabled', type: 'INTEGER DEFAULT 0' },
-            { name: 'ai_cal_video_allowed', type: 'INTEGER DEFAULT 0' }
-        ];
-        columns.forEach(col => {
-            try { db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
-        });
-    });
-
     // WhatsApp Sessions AI and delays (Definitive Migration v6)
     runner.run('whatsapp-sessions-v2026-v6-final', (db) => {
         const columns = [
@@ -468,95 +443,18 @@ function initializeSchema() {
         });
     });
 
-    // Group Settings Welcome & Assistant (Definitive Migration v6)
-    runner.run('group-settings-engagement-v6-final', (db) => {
-        const columns = [
-            { name: 'welcome_enabled', type: 'INTEGER DEFAULT 0' },
-            { name: 'welcome_template', type: 'TEXT' },
-            { name: 'ai_assistant_enabled', type: 'INTEGER DEFAULT 0' },
-            { name: 'warning_reset_days', type: 'INTEGER DEFAULT 0' }
-        ];
-        columns.forEach(col => {
-            try { db.exec(`ALTER TABLE group_settings ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
-        });
-    });
-
-    // Forced Schema Sync for 2026 Compatibility (Deep Repair)
-    runner.run('forced-schema-repair-v2026-v7', (db) => {
-        // Repair whatsapp_sessions
-        const wsCols = [
-            { name: 'ai_mode', type: "TEXT DEFAULT 'bot'" },
-            { name: 'ai_endpoint', type: 'TEXT' },
-            { name: 'ai_key', type: 'TEXT' },
-            { name: 'ai_temperature', type: 'REAL DEFAULT 0.7' },
-            { name: 'ai_max_tokens', type: 'INTEGER DEFAULT 1000' },
-            { name: 'ai_trigger_keywords', type: 'TEXT' },
-            { name: 'ai_constraints', type: 'TEXT' },
-            { name: 'ai_messages_received', type: 'INTEGER DEFAULT 0' },
-            { name: 'ai_last_error', type: 'TEXT' },
-            { name: 'ai_last_message_at', type: 'DATETIME' },
-            { name: 'ai_respond_to_tags', type: 'INTEGER DEFAULT 1' }
-        ];
-        wsCols.forEach(col => {
-            try { db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
-        });
-
-        // Repair group_settings
-        const gsCols = [
-            { name: 'warning_reset_days', type: 'INTEGER DEFAULT 0' }
-        ];
-        gsCols.forEach(col => {
-            try { db.exec(`ALTER TABLE group_settings ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
-        });
-    });
-
-    // Migration: Encrypt existing AI keys
-    runner.run('encrypt-existing-ai-keys', (db) => {
-        const encryptionKey = process.env.TOKEN_ENCRYPTION_KEY;
-        if (!encryptionKey) return;
-
-        // 1. Encrypt session keys
-        const sessions = db.prepare("SELECT id, ai_key FROM whatsapp_sessions WHERE ai_key IS NOT NULL AND ai_key != ''").all();
-        const updateSession = db.prepare("UPDATE whatsapp_sessions SET ai_key = ? WHERE id = ?");
-
-        for (const session of sessions) {
-            if (session.ai_key && !session.ai_key.includes(':')) {
-                try {
-                    const encrypted = encrypt(session.ai_key, encryptionKey);
-                    updateSession.run(encrypted, session.id);
-                } catch (e) {
-                    log(`Migration : Échec chiffrement clé session ${session.id}`, 'SYSTEM', null, 'ERROR');
-                }
-            }
-        }
-
-        // 2. Encrypt global model keys
-        const models = db.prepare("SELECT id, api_key FROM ai_models WHERE api_key IS NOT NULL AND api_key != ''").all();
-        const updateModel = db.prepare("UPDATE ai_models SET api_key = ? WHERE id = ?");
-
-        for (const model of models) {
-            if (model.api_key && !model.api_key.includes(':')) {
-                try {
-                    const encrypted = encrypt(model.api_key, encryptionKey);
-                    updateModel.run(encrypted, model.id);
-                } catch (e) {
-                    log(`Migration : Échec chiffrement clé modèle ${model.id}`, 'SYSTEM', null, 'ERROR');
-                }
+    // Robust Fix: Ensure qr_code exists (New migration name)
+    runner.run('whatsapp-sessions-repair-v2026-v8-final', (db) => {
+        const info = db.prepare("PRAGMA table_info(whatsapp_sessions)").all();
+        if (!info.some(c => c.name === 'qr_code')) {
+            try {
+                db.exec("ALTER TABLE whatsapp_sessions ADD COLUMN qr_code TEXT");
+                log("Migration : Colonne qr_code ajoutée avec succès", "SYSTEM");
+            } catch (e) {
+                log("Migration : Échec ajout qr_code", "SYSTEM", { error: e.message }, "ERROR");
             }
         }
     });
-
-    // Initialize default plans if empty
-    const countRow = db.prepare('SELECT count(*) as count FROM pricing_plans').get();
-    if (countRow && countRow.count === 0) {
-        const insertPlan = db.prepare(`
-            INSERT INTO pricing_plans (id, code, name, price, message_limit, interval, version, chariow_product_id, payment_url, features)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        insertPlan.run('plan_starter_v1', 'starter', 'Starter', 2500, 2000, 'month', 1, 'prd_jx0jkk', 'https://esaystor.online/prd_jx0jkk', JSON.stringify({ support: 'email' }));
-        insertPlan.run('plan_pro_v1', 'pro', 'Pro', 5000, 10000, 'month', 1, 'prd_l2es24', 'https://esaystor.online/prd_l2es24', JSON.stringify({ support: 'priority' }));
-        insertPlan.run('plan_business_v1', 'business', 'Business', 10000, 100000, 'month', 1, 'prd_twafj6', 'https://esaystor.online/prd_twafj6', JSON.stringify({ support: 'dedicated' }));
-    }
 
     log('Schéma de la base de données initialisé avec succès', 'SYSTEM', { event: 'db-schema-init' }, 'INFO');
 }

@@ -14,7 +14,7 @@ Whappi est une solution complète, légère et puissante pour gérer l'automatis
 ## 🛠️ Stack Technique
 
 - **Backend** : Node.js, Express, Baileys, SQLite (better-sqlite3).
-- **Frontend** : Next.js 14, Tailwind CSS, Shadcn UI, Clerk Auth.
+- **Frontend** : Next.js 15, Tailwind CSS, Shadcn UI, Clerk Auth.
 - **Infrastructure** : Docker, Docker Compose.
 
 ## 🚀 Installation Rapide

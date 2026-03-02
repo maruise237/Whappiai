@@ -7,11 +7,6 @@ import {
   Activity,
   MessageCircle,
   Smartphone,
-  Brain,
-  Sparkles,
-  Loader2,
-  ArrowRight,
-  ChevronRight,
   TrendingUp,
   History,
   Settings2,
@@ -19,20 +14,19 @@ import {
   CreditCard,
   User,
   MoreVertical,
-  Bot
+  PlusCircle
 } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
-import { MessagingTabs } from "@/components/dashboard/messaging-tabs"
 import { api } from "@/lib/api"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -44,7 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableBody,
@@ -58,14 +51,16 @@ import { useWebSocket } from "@/providers/websocket-provider"
 import { useUser, useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import Link from "next/link"
-import { useNotificationSound } from "@/hooks/use-notification-sound"
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+
+const DEFAULT_STATS_DAYS = 7
+const RECENT_LOGS_COUNT = 5
 
 const sessionSchema = z.object({
   sessionId: z.string().min(3, "L'ID de session doit comporter au moins 3 caractères").regex(/^[a-z0-9-]+$/, "Seuls les minuscules, les chiffres et les traits d-union sont autorisés"),
@@ -76,6 +71,7 @@ export default function DashboardPage() {
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
+  const lastProcessedMessageRef = React.useRef<string>("")
 
   const [sessions, setSessions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -90,20 +86,44 @@ export default function DashboardPage() {
     defaultValues: { sessionId: "", phoneNumber: "" }
   })
 
-  const fetchSessions = React.useCallback(async () => {
+  const fetchCreditsData = React.useCallback(async () => {
     try {
       const token = await getToken()
-      const data = await api.sessions.list(token || undefined)
-      setSessions(data || [])
-      if (data && data.length > 0 && !selectedSessionId) {
-        setSelectedSessionId(data[0].sessionId)
-      }
-    } catch (e) {} finally {
-      setLoading(false)
-    }
-  }, [getToken, selectedSessionId])
+      const data = await api.credits.get(token || undefined)
+      setCredits(data?.data || data)
+    } catch (e) { console.error(e) }
+  }, [getToken])
 
-  const fetchSummary = React.useCallback(async () => {
+  const fetchAdminSummary = React.useCallback(async (token: string) => {
+    try {
+      const [stats, analytics] = await Promise.all([
+        api.admin.getStats(DEFAULT_STATS_DAYS, token),
+        api.activities.analytics(DEFAULT_STATS_DAYS, token)
+      ])
+      setAdminStats(stats)
+      setAnalyticsData(Array.isArray(analytics) ? analytics : [])
+      setSummary({
+        totalActivities: stats?.overview?.activities || 0,
+        successRate: stats?.overview?.successRate || 0,
+        messagesSent: stats?.overview?.messagesSent || 0,
+        activeSessions: stats?.sessions?.connected || 0
+      })
+    } catch (e) { console.error(e) }
+  }, [])
+
+  const fetchUserSummary = React.useCallback(async (token: string, currentSessions: any[]) => {
+    try {
+      const summ = await api.activities.summary(DEFAULT_STATS_DAYS, token)
+      setSummary({
+        totalActivities: summ?.totalActivities || 0,
+        successRate: summ?.successRate || 0,
+        messagesSent: summ?.byAction?.send_message || 0,
+        activeSessions: Array.isArray(currentSessions) ? currentSessions.filter(s => s.isConnected).length : 0
+      })
+    } catch (e) { console.error(e) }
+  }, [])
+
+  const fetchSummaryData = React.useCallback(async (currentSessions: any[]) => {
     try {
       const token = await getToken()
       const summ = await api.activities.summary(7, token || undefined)
@@ -118,27 +138,99 @@ export default function DashboardPage() {
     } catch (e) {}
   }, [getToken, sessions])
 
-  const fetchCredits = React.useCallback(async () => {
+  const fetchSessions = React.useCallback(async (autoSelect = false) => {
     try {
       const token = await getToken()
-      const data = await api.credits.get(token || undefined)
-      setCredits(data?.data || data)
-    } catch (e) {}
-  }, [getToken])
+      const data = await api.sessions.list(token || undefined)
+      const sessionsList = Array.isArray(data) ? data : []
+      setSessions(sessionsList)
 
-  React.useEffect(() => {
-    fetchSessions()
-    fetchCredits()
-  }, [fetchSessions, fetchCredits])
+      if (autoSelect && sessionsList.length > 0) {
+        setSelectedSessionId(prev => prev || ensureString(sessionsList[0].sessionId))
+      }
 
+      fetchSummaryData(sessionsList)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }, [getToken, fetchSummaryData])
+
+  // Initial load effect
   React.useEffect(() => {
-    fetchSummary()
-  }, [fetchSummary])
+    if (isLoaded && user) {
+      fetchSessions(true)
+      fetchCreditsData()
+    }
+  }, [isLoaded, user?.id])
+
+  // Consolidated WebSocket update handling
+  React.useEffect(() => {
+    if (!lastMessage) return;
+
+    // Stringified comparison for deduplication
+    const messageStr = JSON.stringify(lastMessage);
+    if (messageStr === lastProcessedMessageRef.current) return;
+    lastProcessedMessageRef.current = messageStr;
+
+    if (lastMessage.type === 'session-update') {
+      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
+      let needsRefresh = false;
 
   const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
   const isAdmin = user?.primaryEmailAddress?.emailAddress === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
 
-  if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
+        updates.forEach(update => {
+          if (!update || !update.sessionId) return;
+          const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
+          if (index !== -1) {
+            newSessions[index] = {
+              ...newSessions[index],
+              ...update,
+              isConnected: update.status === 'CONNECTED'
+            };
+            hasChanges = true;
+          } else {
+             needsRefresh = true;
+          }
+        });
+
+        return hasChanges ? newSessions : prev;
+      });
+
+      if (needsRefresh) {
+        fetchSessions(false);
+      }
+
+      // UI Notifications
+      updates.forEach(update => {
+        if (!update) return;
+        if (update.status === 'CONNECTED') {
+          toast.success(`Session ${update.sessionId} connectée !`);
+          confetti();
+        } else if (update.status === 'GENERATING_CODE' && update.pairingCode) {
+          toast.info(`Code d'appairage reçu pour ${update.sessionId}`);
+        }
+      });
+
+      fetchCreditsData();
+    }
+
+    if (lastMessage.type === 'session-deleted') {
+      const { sessionId } = lastMessage.data || {};
+      if (sessionId) {
+        setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
+        if (ensureString(selectedSessionId) === ensureString(sessionId)) {
+          setSelectedSessionId(null);
+        }
+      }
+    }
+  }, [lastMessage, selectedSessionId, fetchSessions, fetchCreditsData]);
+
+  const selectedSession = sessions.find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
+
+  if (!isLoaded || loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
 
   return (
     <div className="space-y-8 pb-20">
@@ -160,13 +252,13 @@ export default function DashboardPage() {
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
-         <div className="flex items-center gap-4">
-            <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
-               <SelectTrigger className="w-[180px] h-9 text-xs bg-muted/50 border-none">
+         <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
+            <Select value={selectedSessionId || ""} onValueChange={(v) => setSelectedSessionId(ensureString(v))}>
+               <SelectTrigger className="w-full sm:w-[180px] h-9 text-xs bg-muted/50 border-none">
                   <SelectValue placeholder="Choisir une session" />
                </SelectTrigger>
                <SelectContent>
-                  {sessions.map(s => <SelectItem key={s.sessionId} value={s.sessionId} className="text-xs">{s.sessionId}</SelectItem>)}
+                  {sessions.map(s => <SelectItem key={String(s.sessionId)} value={String(s.sessionId)} className="text-xs">{safeRender(s.sessionId)}</SelectItem>)}
                </SelectContent>
             </Select>
             {selectedSession && (
@@ -180,7 +272,7 @@ export default function DashboardPage() {
                </Badge>
             )}
          </div>
-         <Button id="new-session-btn" size="sm" onClick={() => setIsCreateOpen(true)} className="rounded-full h-9">
+         <Button id="new-session-btn" size="sm" onClick={() => setIsCreateOpen(true)} className="rounded-full h-9 w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" /> New Session
          </Button>
       </div>
@@ -196,7 +288,7 @@ export default function DashboardPage() {
                           <Smartphone className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{selectedSessionId || "Aucune session"}</p>
+                          <p className="text-sm font-medium">{safeRender(selectedSessionId, "Aucune session")}</p>
                           <p className="text-xs text-muted-foreground">WhatsApp Session</p>
                         </div>
                      </div>
@@ -204,23 +296,22 @@ export default function DashboardPage() {
                         <Settings2 className="h-4 w-4 text-muted-foreground" />
                      </Button>
                   </div>
-                  <SessionCard session={selectedSession} onRefresh={fetchSessions} onCreate={() => setIsCreateOpen(true)} />
+                  <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
                </CardContent>
             </Card>
 
+
             <Tabs defaultValue="direct" className="space-y-4">
-               <TabsList className="bg-muted/50 p-1 rounded-lg h-9 gap-1 w-full sm:w-auto">
-                  <TabsTrigger value="direct" className="text-[11px] font-semibold px-6">Direct Message</TabsTrigger>
-                  <TabsTrigger value="history" className="text-[11px] font-semibold px-6">History</TabsTrigger>
-                  {isAdmin && <TabsTrigger value="logs" className="text-[11px] font-semibold px-6">System Logs</TabsTrigger>}
+               <TabsList className="bg-muted/50 p-1 rounded-lg h-auto sm:h-9 flex flex-wrap sm:flex-nowrap gap-1 w-full sm:w-auto">
+                  <TabsTrigger value="direct" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">Direct Message</TabsTrigger>
+                  <TabsTrigger value="history" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">History</TabsTrigger>
+                  {isAdmin && <TabsTrigger value="logs" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">System Logs</TabsTrigger>}
+
                </TabsList>
 
-               <TabsContent value="direct" className="animate-in fade-in duration-300">
-                  <MessagingTabs session={selectedSession} />
-               </TabsContent>
-
                <TabsContent value="history" className="space-y-4">
-                  <Card>
+                  <Card className="overflow-hidden">
+                    <div className="overflow-x-auto">
                      <Table>
                         <TableHeader>
                            <TableRow className="hover:bg-transparent border-muted/30">
@@ -230,9 +321,9 @@ export default function DashboardPage() {
                            </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg, i) => (
-                              <TableRow key={i} className="hover:bg-muted/50">
-                                 <TableCell className="text-sm truncate max-w-[150px]">{msg.resource_id}</TableCell>
+                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg) => (
+                              <TableRow key={ensureString(msg.id || msg.timestamp)} className="hover:bg-muted/50">
+                                 <TableCell className="text-sm truncate max-w-[150px]">{safeRender(msg.resource_id)}</TableCell>
                                  <TableCell>
                                     <Badge className={cn(
                                        "border-none text-[9px] font-semibold",
@@ -244,7 +335,7 @@ export default function DashboardPage() {
                                     </Badge>
                                  </TableCell>
                                  <TableCell className="text-right text-[10px] text-muted-foreground">
-                                    {new Date(msg.created_at || msg.timestamp).toLocaleTimeString()}
+                                    {safeDate(msg.created_at || msg.timestamp)}
                                  </TableCell>
                               </TableRow>
                            ))}
@@ -253,6 +344,7 @@ export default function DashboardPage() {
                            )}
                         </TableBody>
                      </Table>
+                    </div>
                   </Card>
                </TabsContent>
 
@@ -260,11 +352,15 @@ export default function DashboardPage() {
                   <TabsContent value="logs" className="space-y-4">
                      <Card className="bg-zinc-950 text-zinc-400 font-mono text-[10px] p-4 overflow-x-auto min-h-[200px] border-none shadow-inner">
                         <div className="space-y-1">
-                           {recentActivities.map((log, i) => (
-                              <div key={i} className="flex gap-4">
-                                 <span className="text-zinc-600">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
-                                 <span className={cn(log.status === 'success' ? "text-green-500" : "text-red-500")}>{log.action.toUpperCase()}</span>
-                                 <span>{log.details}</span>
+                           {recentActivities.map((log) => (
+                              <div key={ensureString(log.id || log.timestamp)} className="flex gap-4">
+                                 <span className="text-zinc-600">
+                                    [{safeDate(log.timestamp || log.created_at)}]
+                                 </span>
+                                 <span className={cn(log.status === 'success' ? "text-green-500" : "text-red-500")}>{ensureString(log.action, 'ACTION').toUpperCase()}</span>
+                                 <span className="truncate max-w-[400px]">
+                                    {safeRender(log.details)}
+                                 </span>
                               </div>
                            ))}
                         </div>
@@ -289,8 +385,10 @@ export default function DashboardPage() {
                               <Zap className="h-3 w-3 text-muted-foreground" />
                            </div>
                            <div className="min-w-0">
-                              <p className="text-xs font-semibold truncate">{activity.action}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{activity.details}</p>
+                              <p className="text-xs font-semibold truncate">{safeRender(activity.action, 'Action')}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                 {safeRender(activity.details)}
+                              </p>
                            </div>
                         </div>
                      ))}
@@ -305,9 +403,9 @@ export default function DashboardPage() {
          </div>
       </div>
 
-      {/* New Session Sheet */}
-      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="sm:max-w-[400px]">
+      {/* New Session Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-[425px]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(async (val) => {
                const t = toast.loading("Création...");
@@ -316,16 +414,16 @@ export default function DashboardPage() {
                  await api.sessions.create(val.sessionId, val.phoneNumber, token || undefined);
                  toast.success("Session prête", { id: t });
                  setIsCreateOpen(false);
-                 fetchSessions();
+                 fetchSessions(true);
                  confetti();
                } catch (e) {
                  toast.error("Erreur de création", { id: t });
                }
             })} className="space-y-6">
-              <SheetHeader>
-                <SheetTitle>New WhatsApp Session</SheetTitle>
-                <SheetDescription className="text-xs">Initialisez un nouveau compte pour l&apos;automatisation.</SheetDescription>
-              </SheetHeader>
+              <DialogHeader>
+                <DialogTitle>New WhatsApp Session</DialogTitle>
+                <DialogDescription className="text-xs">Initialisez un nouveau compte pour l&apos;automatisation.</DialogDescription>
+              </DialogHeader>
               <div className="space-y-6 py-4">
                 <FormField control={form.control} name="sessionId" render={({ field }) => (
                     <FormItem className="space-y-2">
@@ -356,22 +454,31 @@ export default function DashboardPage() {
                   )}
                 />
               </div>
-              <SheetFooter><Button type="submit" className="w-full">Create Session</Button></SheetFooter>
+              <DialogFooter><Button type="submit" className="w-full">Create Session</Button></DialogFooter>
             </form>
           </Form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-function StatCard({ label, value, subtext }: { label: string; value: string | number; subtext: string }) {
+function StatCard({ label, value, subtext, icon }: { label: string; value: string | number; subtext: string; icon: React.ReactNode }) {
   return (
-    <Card className="border border-border bg-card rounded-lg shadow-sm">
-      <CardContent className="p-4">
-        <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
+    <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] sm:text-xs text-muted-foreground font-bold tracking-tight">{label}</p>
+          <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+            {icon}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <p className="text-xl sm:text-2xl font-bold tracking-tight">{safeRender(value)}</p>
+          <p className="text-[10px] text-muted-foreground/60 font-medium">
+            {safeRender(subtext)}
+          </p>
+        </div>
       </CardContent>
     </Card>
   )

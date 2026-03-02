@@ -62,15 +62,6 @@ export function OnboardingTour() {
           }
         },
         {
-          element: '#messaging-area',
-          popover: {
-            title: 'Envoi Direct',
-            description: 'Saisissez le numéro de téléphone de votre destinataire et envoyez des messages, images ou documents instantanément.',
-            side: "top",
-            align: 'center'
-          }
-        },
-        {
           element: '#nav--dashboard-ai',
           popover: {
             title: 'Intelligence Artificielle',

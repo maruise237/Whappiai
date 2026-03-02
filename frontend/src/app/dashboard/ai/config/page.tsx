@@ -6,18 +6,16 @@ import {
   ArrowLeft,
   Save,
   Brain,
-  Settings,
   Zap,
   Cpu,
-  Clock,
   User,
   Sparkles,
   Bot,
   Terminal,
   MessageSquare,
   ShieldAlert,
-  Sliders,
-  Database
+  Calendar,
+  Sliders
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -38,7 +36,7 @@ import { Slider } from "@/components/ui/slider"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender } from "@/lib/utils"
 
 function AIConfigContent() {
   const router = useRouter()
@@ -68,9 +66,9 @@ function AIConfigContent() {
         ai_cal_enabled: !!calData?.ai_cal_enabled,
         ai_cal_video_allowed: !!calData?.ai_cal_video_allowed
       })
-      setModels(modelsData || [])
+      setModels(Array.isArray(modelsData) ? modelsData : [])
     } catch (e) {
-      toast.error("Échec du chargement de la configuration")
+      toast.error("&Eacute;chec du chargement de la configuration")
     } finally {
       setLoading(false)
     }
@@ -86,42 +84,41 @@ function AIConfigContent() {
     try {
       const token = await getToken()
       await api.sessions.updateAI(sessionId, config, token || undefined)
-      toast.success("Intelligence mise à jour avec succès")
+      toast.success("Intelligence mise &agrave; jour avec succ&egrave;s")
     } catch (e) {
-      toast.error("Erreur lors de l'enregistrement")
+      toast.error("Erreur lors de l&apos;enregistrement")
     } finally {
       setIsSaving(false)
     }
   }
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
-  if (!sessionId) return <div className="p-12 text-center text-muted-foreground">Session non trouvée</div>
+  if (!sessionId) return <div className="p-12 text-center text-muted-foreground">Session non trouv&eacute;e</div>
 
   const sections = [
     { id: 'intelligence', name: 'Intelligence', icon: Brain },
     { id: 'automation', name: 'Automation', icon: Zap },
-    { id: 'personality', name: 'Personnalité', icon: User },
+    { id: 'personality', name: 'Personnalit&eacute;', icon: User },
     { id: 'scheduling', name: 'Rendez-vous', icon: Calendar },
     { id: 'engine', name: 'Moteur API', icon: Cpu },
   ]
 
   const modes = [
-    { id: 'bot', name: 'Automatique', desc: 'IA gère tout', icon: Bot },
-    { id: 'keyword', name: 'Mots-clés', desc: 'Zéro IA, uniquement mots-clés', icon: Terminal },
+    { id: 'bot', name: 'Automatique', desc: 'IA g&egrave;re tout', icon: Bot },
+    { id: 'keyword', name: 'Mots-cl&eacute;s', desc: 'Z&eacute;ro IA, uniquement mots-cl&eacute;s', icon: Terminal },
   ]
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Page Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-0.5">
-            <h1 className="text-xl font-semibold">Réglages IA : {sessionId}</h1>
+            <h1 className="text-xl font-semibold">R&eacute;glages IA : {safeRender(sessionId)}</h1>
             <p className="text-sm text-muted-foreground">Configurez finement le comportement de l&apos;assistant.</p>
           </div>
         </div>
@@ -132,8 +129,7 @@ function AIConfigContent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">
-        {/* Sidebar Nav */}
-        <nav className="space-y-1 sticky top-24">
+        <nav className="flex flex-row lg:flex-col gap-1 sticky top-14 lg:top-24 bg-background/95 backdrop-blur z-10 py-2 lg:py-0 overflow-x-auto no-scrollbar border-b lg:border-none">
           {sections.map(section => (
             <button
               key={section.id}
@@ -142,22 +138,20 @@ function AIConfigContent() {
                 document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
               }}
               data-active={activeSection === section.id}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:font-medium transition-colors"
+              className="flex-none lg:w-full flex items-center gap-2 px-3 py-2 text-xs lg:text-sm rounded-md hover:bg-muted text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:font-medium transition-colors whitespace-nowrap"
             >
               <section.icon className="h-4 w-4" />
-              {section.name}
+              <span dangerouslySetInnerHTML={{ __html: section.name }} />
             </button>
           ))}
         </nav>
 
-        {/* Sections */}
         <div className="space-y-12">
-          {/* Section Intelligence */}
           <section id="intelligence" className="scroll-mt-24 space-y-6">
             <div className="flex items-center justify-between py-3 border-b border-border">
               <div>
                 <p className="text-sm font-medium">Activation Intelligence</p>
-                <p className="text-xs text-muted-foreground">Désactivez pour stopper toute réponse IA.</p>
+                <p className="text-xs text-muted-foreground">D&eacute;sactivez pour stopper toute r&eacute;ponse IA.</p>
               </div>
               <Switch
                 checked={!!config?.enabled}
@@ -189,7 +183,7 @@ function AIConfigContent() {
 
             {(config?.mode === 'keyword' || config?.mode === 'bot') && (
               <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                <Label className="text-xs font-semibold">Mots-clés déclencheurs de l&apos;IA</Label>
+                <Label className="text-xs font-semibold">Mots-cl&eacute;s d&eacute;clencheurs de l&apos;IA</Label>
                 <Input
                   placeholder="tarif, prix, commander, aide..."
                   value={config?.trigger_keywords || ""}
@@ -197,7 +191,7 @@ function AIConfigContent() {
                   className="bg-card border-border"
                 />
                 <p className="text-[10px] text-muted-foreground italic">
-                  Séparez les mots par des virgules. Si rempli, l&apos;IA ne répondra que si l&apos;un de ces mots est présent.
+                  S&eacute;parez les mots par des virgules. Si rempli, l&apos;IA ne r&eacute;pondra que si l&apos;un de ces mots est pr&eacute;sent.
                 </p>
               </div>
             )}
@@ -205,18 +199,17 @@ function AIConfigContent() {
 
           <Separator />
 
-          {/* Section Automation */}
           <section id="automation" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold">Automatisation & Sécurité</h3>
+              <h3 className="text-sm font-semibold">Automatisation &amp; S&eacute;curit&eacute;</h3>
               <p className="text-xs text-muted-foreground">Comportement du bot lors des interactions.</p>
             </div>
 
             <div className="border rounded-lg divide-y bg-card">
               <div className="flex items-center justify-between p-4">
                 <div>
-                  <p className="text-sm font-medium">Répondre aux Tags</p>
-                  <p className="text-xs text-muted-foreground">Réagir uniquement si cité (@bot) dans les groupes.</p>
+                  <p className="text-sm font-medium">R&eacute;pondre aux Tags</p>
+                  <p className="text-xs text-muted-foreground">R&eacute;agir uniquement si cit&eacute; (@bot) dans les groupes.</p>
                 </div>
                 <Switch
                   checked={!!config?.respond_to_tags}
@@ -226,7 +219,7 @@ function AIConfigContent() {
               <div className="flex items-center justify-between p-4">
                 <div>
                   <p className="text-sm font-medium">Rejet d&apos;appels</p>
-                  <p className="text-xs text-muted-foreground">Raccrocher automatiquement lors d&apos;appels vocaux/vidéo.</p>
+                  <p className="text-xs text-muted-foreground">Raccrocher automatiquement lors d&apos;appels vocaux/vid&eacute;o.</p>
                 </div>
                 <Switch
                   checked={!!config?.reject_calls}
@@ -235,8 +228,8 @@ function AIConfigContent() {
               </div>
               <div className="flex items-center justify-between p-4">
                 <div>
-                  <p className="text-sm font-medium">Pause sur écriture</p>
-                  <p className="text-xs text-muted-foreground">Désactiver l&apos;IA quand vous tapez un message manuellement.</p>
+                  <p className="text-sm font-medium">Pause sur &eacute;criture</p>
+                  <p className="text-xs text-muted-foreground">D&eacute;sactiver l&apos;IA quand vous tapez un message manuellement.</p>
                 </div>
                 <Switch
                   checked={!!config?.deactivate_on_typing}
@@ -248,12 +241,12 @@ function AIConfigContent() {
             <Card className="border-border bg-muted/30 shadow-none">
               <CardHeader className="p-4">
                 <CardTitle className="text-sm font-medium">Simulation Humaine (Anti-Ban)</CardTitle>
-                <CardDescription className="text-xs">Ajoute des délais aléatoires pour paraître humain.</CardDescription>
+                <CardDescription className="text-xs">Ajoute des d&eacute;lais al&eacute;atoires pour para&icirc;tre humain.</CardDescription>
               </CardHeader>
               <CardContent className="p-4 pt-0 space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs">Délai de réponse (secondes)</Label>
+                    <Label className="text-xs">D&eacute;lai de r&eacute;ponse (secondes)</Label>
                     <span className="text-xs font-mono text-primary font-bold">{config?.delay_min || 1}s - {config?.delay_max || 5}s</span>
                   </div>
                   <Slider
@@ -264,87 +257,42 @@ function AIConfigContent() {
                     onValueChange={([min, max]) => setConfig({...config, delay_min: min, delay_max: max})}
                   />
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Min</Label>
-                    <Input type="number" value={config?.delay_min || 1} onChange={e => setConfig({...config, delay_min: parseInt(e.target.value)})} className="h-8" />
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Max</Label>
-                    <Input type="number" value={config?.delay_max || 5} onChange={e => setConfig({...config, delay_max: parseInt(e.target.value)})} className="h-8" />
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </section>
 
           <Separator />
 
-          {/* Section Personality */}
           <section id="personality" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold">Personnalité & Instructions</h3>
-              <p className="text-xs text-muted-foreground">Définissez comment le bot doit s&apos;exprimer.</p>
-            </div>
-
-            <div className="space-y-4">
-               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Modèles de ton</Label>
-               <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: 'pro', name: 'Professionnel', icon: ShieldAlert },
-                    { id: 'friendly', name: 'Amical', icon: MessageSquare },
-                    { id: 'sales', name: 'Vendeur', icon: Zap },
-                    { id: 'support', name: 'Support', icon: Sliders },
-                  ].map(t => (
-                    <Badge
-                      key={t.id}
-                      variant="secondary"
-                      className="text-xs cursor-pointer hover:bg-primary/10 px-3 py-1 transition-colors"
-                      onClick={() => setConfig({...config, prompt: `Tu es un assistant ${t.name.toLowerCase()}...`})}
-                    >
-                      {t.name}
-                    </Badge>
-                  ))}
-               </div>
+              <h3 className="text-sm font-semibold">Personnalit&eacute; &amp; Instructions</h3>
+              <p className="text-xs text-muted-foreground">D&eacute;finissez comment le bot doit s&apos;exprimer.</p>
             </div>
 
             <div className="space-y-2">
-               <Label className="text-xs">Prompt Système (Instructions)</Label>
+               <Label className="text-xs">Prompt Syst&egrave;me (Instructions)</Label>
                <Textarea
                  placeholder="Instructions pour l'IA..."
                  className="min-h-[200px] text-sm leading-relaxed border-border bg-card"
                  value={config?.prompt || ""}
                  onChange={e => setConfig({...config, prompt: e.target.value})}
                />
-               <div className="flex flex-wrap gap-1 mt-2">
-                  {['@{{name}}', '{{time}}', '{{date}}', '{{company}}'].map(tag => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="text-[10px] cursor-pointer font-mono hover:bg-primary/10 h-5"
-                      onClick={() => setConfig({...config, prompt: (config.prompt || "") + tag})}
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-               </div>
             </div>
           </section>
 
           <Separator />
 
-          {/* Section Scheduling */}
           <section id="scheduling" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold">Rendez-vous Cal.com</h3>
-              <p className="text-xs text-muted-foreground">Gérez la prise de rendez-vous automatique par l&apos;IA.</p>
+              <p className="text-xs text-muted-foreground">G&eacute;rez la prise de rendez-vous automatique par l&apos;IA.</p>
             </div>
 
             <div className="border rounded-lg divide-y bg-card">
               <div className="flex items-center justify-between p-4">
                 <div>
                   <p className="text-sm font-medium">Activer l&apos;assistant Cal.com</p>
-                  <p className="text-xs text-muted-foreground">Permet à l&apos;IA de consulter votre agenda et prendre des RDV.</p>
+                  <p className="text-xs text-muted-foreground">Permet &agrave; l&apos;IA de consulter votre agenda et prendre des RDV.</p>
                 </div>
                 <Switch
                   checked={!!config?.ai_cal_enabled}
@@ -355,43 +303,14 @@ function AIConfigContent() {
                   }}
                 />
               </div>
-              <div className="flex items-center justify-between p-4">
-                <div>
-                  <p className="text-sm font-medium">Autoriser la Vidéo</p>
-                  <p className="text-xs text-muted-foreground">Proposer des rendez-vous en visioconférence.</p>
-                </div>
-                <Switch
-                  checked={!!config?.ai_cal_video_allowed}
-                  onCheckedChange={async (v) => {
-                    const token = await getToken()
-                    await api.cal.updateSettings({ ai_cal_video_allowed: v }, token || undefined)
-                    setConfig({...config, ai_cal_video_allowed: v})
-                  }}
-                />
-              </div>
             </div>
-
-            {config?.ai_cal_enabled && (
-              <Card className="border-border bg-primary/5 shadow-none">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-xs font-bold uppercase flex items-center gap-2">
-                    <Sparkles className="h-3 w-3" /> Note sur le fonctionnement
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-[11px] space-y-2 leading-relaxed">
-                  <p>L&apos;IA utilise des commandes spéciales pour interagir avec votre calendrier. Assurez-vous que votre prompt système contient les instructions nécessaires.</p>
-                  <p className="italic text-muted-foreground">Exemple: &quot;Vérifie les disponibilités avec [CAL_CHECK:YYYY-MM-DD] et réserve avec [CAL_BOOK:...]&quot;</p>
-                </CardContent>
-              </Card>
-            )}
           </section>
 
           <Separator />
 
-          {/* Section Engine */}
           <section id="engine" className="scroll-mt-24 space-y-6">
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold">Moteur & Infrastructure API</h3>
+              <h3 className="text-sm font-semibold">Moteur &amp; Infrastructure API</h3>
               <p className="text-xs text-muted-foreground">Configuration technique de l&apos;IA (Admin uniquement).</p>
             </div>
 
@@ -400,11 +319,11 @@ function AIConfigContent() {
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground">Modèle LLM</Label>
                   <Select value={config?.model || (models.length > 0 ? models[0].model_name : "deepseek-chat")} onValueChange={(v) => setConfig({...config, model: v})}>
                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Sélectionnez un modèle" />
+                        <SelectValue placeholder="S&eacute;lectionnez un mod&egrave;le" />
                      </SelectTrigger>
                      <SelectContent>
                         {models.length === 0 ? (
-                          <SelectItem value="deepseek-chat">Whappi AI (Défaut)</SelectItem>
+                          <SelectItem value="deepseek-chat">Whappi AI (D&eacute;faut)</SelectItem>
                         ) : (
                           models.map(m => (
                             <SelectItem key={m.id} value={m.model_name || m.id}>{m.name}</SelectItem>
@@ -413,30 +332,6 @@ function AIConfigContent() {
                      </SelectContent>
                   </Select>
                </div>
-
-               {isAdmin && (
-                  <>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Endpoint Personnalisé</Label>
-                      <Input
-                        placeholder="https://api.openai.com/v1"
-                        value={config?.api_endpoint || ""}
-                        onChange={e => setConfig({...config, api_endpoint: e.target.value})}
-                        className="h-9 font-mono text-[11px]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 col-span-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Clé API (Secret)</Label>
-                      <Input
-                        type="password"
-                        placeholder="sk-..."
-                        value={config?.api_key || ""}
-                        onChange={e => setConfig({...config, api_key: e.target.value})}
-                        className="h-9 font-mono text-[11px]"
-                      />
-                    </div>
-                  </>
-               )}
             </div>
           </section>
         </div>

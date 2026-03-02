@@ -456,29 +456,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.post('/sessions/:sessionId/inbox/:jid/pause', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        try {
-            const aiService = require('../services/ai');
-            aiService.pauseForConversation(req.params.sessionId, req.params.jid, true); // true = manual pause
-
-            res.json({ status: 'success', message: 'IA mise en pause pour cette conversation' });
-        } catch (error) {
-            res.status(500).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.post('/sessions/:sessionId/inbox/:jid/resume', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        try {
-            const aiService = require('../services/ai');
-            aiService.resumeForConversation(req.params.sessionId, req.params.jid);
-            aiService.resetOwnerActivity(req.params.sessionId, req.params.jid);
-
-            res.json({ status: 'success', message: 'IA réactivée pour cette conversation' });
-        } catch (error) {
-            res.status(500).json({ status: 'error', message: error.message });
-        }
-    });
-
     router.post('/sessions/:sessionId/webhooks', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { url, events, secret } = req.body;
         if (!url) return res.status(400).json({ status: 'error', message: 'URL requise' });
@@ -495,73 +472,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         try {
             const success = WebhookService.delete(req.params.webhookId, req.params.sessionId);
             res.json({ status: success ? 'success' : 'error', message: success ? 'Webhook supprimé' : 'Échec' });
-        } catch (error) {
-            res.status(500).json({ status: 'error', message: error.message });
-        }
-    });
-
-    // --- Inbox & Memory ---
-
-    router.get('/sessions/:sessionId/inbox', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        try {
-            log(`[API] Récupération de l'inbox pour la session: ${req.params.sessionId}`, 'SYSTEM');
-            const conversations = db.prepare(`
-                SELECT remote_jid, MAX(created_at) as last_message_at,
-                (SELECT content FROM conversation_memory WHERE remote_jid = m.remote_jid AND session_id = m.session_id ORDER BY created_at DESC LIMIT 1) as last_message
-                FROM conversation_memory m
-                WHERE session_id = ?
-                GROUP BY remote_jid
-                ORDER BY last_message_at DESC
-            `).all(req.params.sessionId);
-
-            // Add AI pause status
-            const aiService = require('../services/ai');
-            const enrichedConversations = conversations.map(c => ({
-                ...c,
-                is_ai_paused: aiService.isPaused(req.params.sessionId, c.remote_jid)
-            }));
-
-            log(`[API] Inbox récupérée: ${enrichedConversations.length} conversations`, 'SYSTEM');
-            res.json({ status: 'success', data: enrichedConversations });
-        } catch (error) {
-            log(`[API] Erreur récupération inbox: ${error.message}`, 'SYSTEM', null, 'ERROR');
-            res.status(500).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.get('/sessions/:sessionId/inbox/:jid', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        try {
-            const history = db.prepare(`
-                SELECT id, role, content, created_at
-                FROM conversation_memory
-                WHERE session_id = ? AND remote_jid = ?
-                ORDER BY created_at ASC
-            `).all(req.params.sessionId, req.params.jid);
-            res.json({ status: 'success', data: history });
-        } catch (error) {
-            res.status(500).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.delete('/sessions/:sessionId/inbox/:jid', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        try {
-            const result = db.prepare(`
-                DELETE FROM conversation_memory
-                WHERE session_id = ? AND remote_jid = ?
-            `).run(req.params.sessionId, req.params.jid);
-            res.json({ status: 'success', data: { changes: result.changes } });
-        } catch (error) {
-            res.status(500).json({ status: 'error', message: error.message });
-        }
-    });
-
-    router.delete('/sessions/:sessionId/inbox/:jid/:id', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        try {
-            const result = db.prepare(`
-                DELETE FROM conversation_memory
-                WHERE id = ? AND session_id = ? AND remote_jid = ?
-            `).run(req.params.id, req.params.sessionId, req.params.jid);
-            res.json({ status: 'success', data: { changes: result.changes } });
         } catch (error) {
             res.status(500).json({ status: 'error', message: error.message });
         }

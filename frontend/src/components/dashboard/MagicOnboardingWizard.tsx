@@ -12,7 +12,8 @@ import {
   Loader2,
   PartyPopper,
   Plus,
-  Trash2
+  Trash2,
+  Sparkles
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,7 +31,7 @@ import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import confetti from "canvas-confetti"
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6
@@ -67,7 +68,7 @@ export function MagicOnboardingWizard({
         setCalEnabled(status.ai_cal_enabled)
         setVideoEnabled(status.ai_cal_video_allowed)
       }
-    } catch (e) {}
+    } catch (e) { console.error(e) }
   }
 
   React.useEffect(() => {
@@ -211,7 +212,7 @@ export function MagicOnboardingWizard({
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 max-h-[400px] overflow-y-auto pr-2">
               <Label>Ajoutez des liens importants (Site, Catalogue, Promo...)</Label>
               {links.map((link, index) => (
-                <div key={index} className="flex gap-2 items-start p-3 bg-muted/30 rounded-lg border border-muted relative group">
+                <div key={`link-${index}-${link.url}`} className="flex gap-2 items-start p-3 bg-muted/30 rounded-lg border border-muted relative group">
                   <div className="flex-1 space-y-2">
                     <Input
                       placeholder="Titre (ex: Notre site)"
@@ -302,7 +303,7 @@ export function MagicOnboardingWizard({
 
           {step === 6 && (
             <div className="space-y-6 text-center py-8 animate-in zoom-in-95 duration-500">
-               <div className="text-6xl mb-4">🎉</div>
+               <div className="text-6xl mb-4"><Sparkles className="h-12 w-12 text-primary mx-auto" /></div>
                <div className="space-y-2">
                  <h3 className="font-bold text-2xl text-primary">Félicitations !</h3>
                  <p className="text-sm font-medium">Vous venez de vous réduire <span className="text-primary font-bold text-lg">60 heures</span> de travail mensuel.</p>

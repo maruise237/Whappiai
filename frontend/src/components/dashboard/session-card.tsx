@@ -1,15 +1,16 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, Smartphone, QrCode, Trash2, Eye, EyeOff, Copy, Check } from "lucide-react"
+import { RefreshCw, Smartphone, QrCode, Trash2, MoreHorizontal, Eye, EyeOff, Copy, Check } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
 import { showConfirm } from "@/lib/swal"
-import { cn, copyToClipboard as copyUtil } from "@/lib/utils"
+import { cn, copyToClipboard as copyUtil, ensureString, safeRender, safeDate } from "@/lib/utils"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { useAuth } from "@clerk/nextjs"
@@ -28,6 +29,13 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     setLocalQrCode(null)
     setLocalPairingCode(null)
   }, [session?.sessionId])
+
+  // Automatically switch to correct tab if data arrives via WebSocket
+  React.useEffect(() => {
+    if (session?.pairingCode && !session?.qr && activeTab === "qr") {
+      setActiveTab("code")
+    }
+  }, [session?.pairingCode, session?.qr, activeTab])
 
   const handleRequestPairingCode = async () => {
     if (!phoneNumber) {
@@ -109,7 +117,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
     const result = await showConfirm(
       "Supprimer la session ?",
-      `Voulez-vous vraiment supprimer la session "${session.sessionId}" ?`,
+      `Voulez-vous vraiment supprimer la session "${ensureString(session.sessionId)}" ?`,
       "warning"
     )
 
@@ -131,8 +139,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   // A session is connected if explicitly marked as isConnected and NOT currently generating/connecting
   const isConnected = session?.isConnected && !loading
-  const qrCode = localQrCode || session?.qr
-  const pairingCode = localPairingCode || session?.pairingCode
+  const qrCode = localQrCode || session?.qr || session?.qr_code
+  const pairingCode = localPairingCode || session?.pairingCode || session?.pairing_code
 
   if (!session) {
     return (
@@ -158,7 +166,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               <Smartphone className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium">{session.sessionId}</p>
+              <p className="text-sm font-medium">{safeRender(session.sessionId)}</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs text-muted-foreground">Session WhatsApp</p>
                 <button
@@ -180,12 +188,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </Badge>
               {session?.detail && !isConnected && (
                  <span className="text-[9px] text-destructive font-bold uppercase tracking-tight">
-                    {session.detail.includes('conflict') ? "Conflit (ouvert ailleurs)" : session.detail}
+                    {ensureString(session.detail).includes('conflict') ? 'Conflit (ouvert ailleurs)' : safeRender(session.detail)}
                  </span>
               )}
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4" />
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -237,8 +245,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
                     <div className="flex flex-wrap justify-center gap-1.5">
-                      {pairingCode.split('').map((char: string, i: number) => (
-                        <div key={i} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
+                      {ensureString(pairingCode).split('').map((char: string, i: number) => (
+                        <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
                           {char}
                         </div>
                       ))}
@@ -274,7 +282,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-muted-foreground">
-                    {showToken ? session.token : "••••••••••••"}
+                    {showToken ? (typeof session.token === 'string' ? session.token : ensureString(session.token)) : "••••••••••••"}
                   </span>
                   <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
                     {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}

@@ -38,7 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
 import { ErrorBoundary } from "@/components/error-boundary"
@@ -48,21 +48,20 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 const getNavGroups = (t: any) => [
   {
-    title: t("nav.hubs.pilotage") || "PILOTAGE HUB",
+    title: t("nav.hubs.pilotage") || "Pilotage",
     items: [
       { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
-      { name: t("nav.inbox"), href: "/dashboard/inbox", icon: MessageCircle },
     ]
   },
   {
-    title: t("nav.hubs.config") || "CONFIGURATION BOT",
+    title: t("nav.hubs.config") || "Configuration",
     items: [
       { name: t("nav.ai_assistant"), href: "/dashboard/ai", icon: Bot },
       { name: t("nav.group_management"), href: "/dashboard/moderation", icon: Shield },
     ]
   },
   {
-    title: t("nav.hubs.client") || "ESPACE CLIENT",
+    title: t("nav.hubs.client") || "Espace Client",
     items: [
       { name: t("nav.credits"), href: "/dashboard/credits", icon: Zap },
       { name: t("nav.billing"), href: "/dashboard/billing", icon: CreditCard },
@@ -70,7 +69,7 @@ const getNavGroups = (t: any) => [
     ]
   },
   {
-    title: t("nav.hubs.admin") || "ADMINISTRATION",
+    title: t("nav.hubs.admin") || "Administration",
     adminOnly: true,
     items: [
       { name: t("nav.activities"), href: "/dashboard/activities", icon: History },
@@ -126,10 +125,10 @@ function SidebarContent({ userRole, pathname, onItemClick, t }: { userRole: stri
     <div className="flex flex-col h-full bg-card">
       <div className="p-6"><Logo orientation="horizontal" size={24} showText /></div>
       <ScrollArea className="flex-1 px-3">
-        <div className="space-y-6 pb-6">
+        <div className="space-y-4 pb-4">
           {filteredGroups.map((group, i) => (
-            <div key={i} className="space-y-2">
-              <h3 className="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+            <div key={i} className="space-y-1">
+              <h3 className="px-3 text-[10px] font-bold tracking-tight text-muted-foreground/50">
                 {group.title}
               </h3>
               <nav className="space-y-1">
@@ -199,25 +198,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="p-4 border-t border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-muted transition-colors text-left outline-none">
-                  <Avatar className="h-8 w-8">
+                <button className="flex items-center gap-2.5 w-full p-2 rounded-md hover:bg-muted/80 transition-all text-left outline-none group">
+                  <Avatar className="h-7 w-7 border border-border/50">
                     <AvatarImage src={user?.imageUrl} />
-                    <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{userName.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{userName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                    <p className="text-xs font-semibold text-foreground truncate">{userName}</p>
+                    <p className="text-[10px] text-muted-foreground truncate opacity-70">{userEmail}</p>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+              <DropdownMenuContent align="start" side="top" className="w-56 ml-2 mb-2">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-50 font-bold">Mon Compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}><UserCircle className="h-4 w-4 mr-2" /> Profil</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}><CreditCard className="h-4 w-4 mr-2" /> Facturation</DropdownMenuItem>
+                <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => router.push("/dashboard/profile")}><UserCircle className="h-3.5 w-3.5 mr-2 opacity-70" /> Profil</DropdownMenuItem>
+                <DropdownMenuItem className="text-xs cursor-pointer" onClick={() => router.push("/dashboard/billing")}><CreditCard className="h-3.5 w-3.5 mr-2 opacity-70" /> Facturation</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive"><LogOut className="h-4 w-4 mr-2" /> {t("nav.logout")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive text-xs cursor-pointer"><LogOut className="h-3.5 w-3.5 mr-2" /> {t("nav.logout")}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -267,8 +266,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="max-w-7xl mx-auto p-3 sm:p-6 lg:p-8 animate-in fade-in duration-500">
               <ErrorBoundary>
                 {children}
               </ErrorBoundary>

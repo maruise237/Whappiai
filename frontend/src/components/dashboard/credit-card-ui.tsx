@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Coins, History, ArrowUpRight, ArrowDownLeft, Zap } from "lucide-react"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 
 interface CreditCardUIProps {
   credits: {
@@ -84,7 +84,7 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
                     ) : (
                       <ArrowUpRight className="h-3 w-3 text-green-600" />
                     )}
-                    <span className="truncate max-w-[120px]">{item.description}</span>
+                    <span className="truncate max-w-[120px]">{typeof item.description === 'string' ? item.description : ensureString(item.description)}</span>
                   </div>
                   <span className={cn(
                     "font-semibold",

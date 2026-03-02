@@ -111,7 +111,7 @@ class EngagementService {
             const sock = whatsappService.getSocket(session_id);
             if (!sock || !whatsappService.isConnected(session_id)) {
                 // Si la session n'est pas connectée, on repasse en 'pending' pour retenter plus tard
-                db.prepare("UPDATE group_engagement_tasks SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+                const retryAt = new Date(Date.now() + 15 * 60 * 1000); db.prepare("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(retryAt.toISOString(), id);
                 throw new Error('Session non active ou non connectée. Tâche remise en attente.');
             }
             
@@ -195,10 +195,15 @@ class EngagementService {
                     db.prepare("UPDATE group_engagement_tasks SET status = 'completed', last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
                 } else {
                     let nextRun = new Date(task.scheduled_at);
-                    if (recurrence === 'daily') {
-                        nextRun.setDate(nextRun.getDate() + 1);
-                    } else if (recurrence === 'weekly') {
-                        nextRun.setDate(nextRun.getDate() + 7);
+                    const now = new Date();
+                    while (nextRun <= now) {
+                        if (recurrence === 'daily') {
+                            nextRun.setDate(nextRun.getDate() + 1);
+                        } else if (recurrence === 'weekly') {
+                            nextRun.setDate(nextRun.getDate() + 7);
+                        } else {
+                            break;
+                        }
                     }
                     
                     db.prepare("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = ?, last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(nextRun.toISOString(), id);

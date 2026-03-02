@@ -23,6 +23,8 @@ const WebhookService = require('./WebhookService');
 const KeywordService = require('./KeywordService');
 const aiService = require('./ai');
 const moderationService = require('./moderation');
+const NotificationService = require('./NotificationService');
+const User = require('../models/User');
 
 // Logger configuration
 const defaultLogLevel = process.env.NODE_ENV === 'production' ? 'silent' : 'warn';
@@ -150,7 +152,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         },
         printQRInTerminal: false,
         logger,
-        browser: Browsers.ubuntu(`Whappi-${sessionId}`),
+        browser: Browsers.ubuntu('Chrome'),
         syncFullHistory: false,
         qrTimeout: 60000,
         connectTimeoutMs: 60000,
@@ -189,28 +191,73 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         maxMsgRetryCount: 5,
     });
 
-    // Store socket reference
+    // Store socket reference and set active flag
+    sock.isActive = true;
     activeSockets.set(sessionId, sock);
+
+    // Handle credentials update EARLY
+    sock.ev.on('creds.update', saveCreds);
 
     // Handle Pairing Code request if phone number is provided
     if (phoneNumber && !state.creds.registered) {
-        // Sanitize phone number (only digits)
-        const sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
-        log(`Demande de code d'appairage pour ${sanitizedPhoneNumber}`, sessionId, { event: 'pairing-code-request', phoneNumber: sanitizedPhoneNumber }, 'INFO');
-        setTimeout(async () => {
-            try {
-                const code = await sock.requestPairingCode(sanitizedPhoneNumber);
-                log(`Code d'appairage reçu: ${code}`, sessionId, { event: 'pairing-code-received', code }, 'INFO');
-                if (onUpdate) onUpdate(sessionId, 'GENERATING_CODE', 'Pairing code generated', code);
-            } catch (err) {
-                log(`Erreur lors de la demande du code d'appairage: ${err.message}`, sessionId, { event: 'pairing-code-error', error: err.message }, 'ERROR');
-                if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', `Pairing error: ${err.message}`, null);
-            }
-        }, 5000); // Increased delay to ensure socket is fully ready
-    }
+        // Sanitize and normalize phone number
+        let sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
+        const defaultCountryCode = process.env.DEFAULT_COUNTRY_CODE || '';
 
-    // Handle credentials update
-    sock.ev.on('creds.update', saveCreds);
+        if (defaultCountryCode && sanitizedPhoneNumber.length <= 10 && !sanitizedPhoneNumber.startsWith(defaultCountryCode)) {
+            sanitizedPhoneNumber = `${defaultCountryCode}${sanitizedPhoneNumber}`;
+        }
+
+        log(`Demande de code d'appairage pour ${sanitizedPhoneNumber}`, sessionId, { event: 'pairing-code-request', phoneNumber: sanitizedPhoneNumber }, 'INFO');
+
+        // Use a retry loop for pairing code to handle cases where socket is not yet fully ready
+        const requestPairingWithRetry = async (attempt = 1) => {
+            if (!sock.isActive) return;
+
+            try {
+                // Initial wait for socket stability
+                if (attempt === 1) await new Promise(resolve => setTimeout(resolve, 5000));
+
+                const code = await sock.requestPairingCode(sanitizedPhoneNumber);
+                log(`Code d'appairage reçu: ${code} (tentative ${attempt})`, sessionId, { event: 'pairing-code-received', code, attempt }, 'INFO');
+
+                if (onUpdate) onUpdate(sessionId, 'GENERATING_CODE', 'Pairing code generated', code);
+
+                // Notify user via NotificationService
+                try {
+                    const Session = require('../models/Session');
+                    const session = Session.findById(sessionId);
+                    if (session && session.owner_email) {
+                        const user = User.findByEmail(session.owner_email);
+                        if (user) {
+                            NotificationService.create({
+                                userId: user.id,
+                                type: 'PAIRING_CODE_READY',
+                                title: 'Code d\'appairage prêt',
+                                message: `Votre code d'appairage pour la session ${sessionId} est : ${code}`,
+                                metadata: { sessionId, code }
+                            });
+                        }
+                    }
+                } catch (notifyErr) {
+                    log(`Erreur notification pairing code: ${notifyErr.message}`, sessionId, { error: notifyErr.message }, 'WARN');
+                }
+
+            } catch (err) {
+                log(`Erreur pairing code (tentative ${attempt}/5): ${err.message}`, sessionId, { event: 'pairing-code-error', error: err.message, attempt }, 'WARN');
+
+                if (attempt < 5 && sock.isActive) {
+                    const delay = 2000 * attempt;
+                    setTimeout(() => requestPairingWithRetry(attempt + 1), delay);
+                } else {
+                    log(`Échec définitif de demande du code d'appairage après 5 tentatives`, sessionId, { event: 'pairing-code-failed-final' }, 'ERROR');
+                    if (onUpdate) onUpdate(sessionId, 'DISCONNECTED', `Pairing error: ${err.message}`, null);
+                }
+            }
+        };
+
+        requestPairingWithRetry();
+    }
 
     // Release connecting lock once socket is created and added to activeSockets
     connectingSessions.delete(sessionId);
@@ -241,6 +288,26 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             const name = sock.user?.name || 'Unknown';
             log(`WhatsApp connecté: ${name}`, sessionId, { event: 'connection-open', user: name }, 'INFO');
 
+            // Notify user of successful connection
+            try {
+                const Session = require('../models/Session');
+                const session = Session.findById(sessionId);
+                if (session && session.owner_email) {
+                    const user = User.findByEmail(session.owner_email);
+                    if (user) {
+                        NotificationService.create({
+                            userId: user.id,
+                            type: 'SESSION_CONNECTED',
+                            title: 'WhatsApp Connecté',
+                            message: `Votre session ${sessionId} est maintenant connectée avec succès.`,
+                            metadata: { sessionId, name }
+                        });
+                    }
+                }
+            } catch (notifyErr) {
+                log(`Erreur notification connexion: ${notifyErr.message}`, sessionId, { error: notifyErr.message }, 'WARN');
+            }
+
             // Wait for stability before resetting retry counter to break conflict loops (440)
             setTimeout(() => {
                 const currentSock = activeSockets.get(sessionId);
@@ -259,12 +326,12 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             const reason = lastDisconnect?.error?.output?.payload?.message || 'Connection closed';
 
-            log(`WhatsApp disconnected: ${reason} (Code: ${statusCode})`, sessionId, { 
-                event: 'connection-close', 
-                statusCode, 
-                reason 
+            log(`WhatsApp disconnected: ${reason} (Code: ${statusCode})`, sessionId, {
+                event: 'connection-close',
+                statusCode,
+                reason
             }, statusCode === DisconnectReason.loggedOut ? 'WARN' : 'ERROR');
-            
+
             // Clean up socket reference immediately
             activeSockets.delete(sessionId);
             lastQrs.delete(sessionId);
@@ -277,8 +344,8 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
             // Critical: If it's a conflict, we check if we've already tried too many times recently
             // to avoid infinite fighting between two processes
-            const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
-                                  statusCode !== 401 && 
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut &&
+                                  statusCode !== 401 &&
                                   statusCode !== 403;
 
             if (shouldReconnect) {
@@ -342,7 +409,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
         try {
             const Session = require('../models/Session');
             const session = Session.findById(sessionId);
-            
+
             if (session && (session.ai_reject_calls === 1 || session.ai_reject_calls === true)) {
                 for (const call of calls) {
                     if (call.status === 'offer') {
@@ -370,16 +437,16 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
     sock.ev.on('presence.update', async (update) => {
         const { id, presences } = update;
         const session = require('../models/Session').findById(sessionId);
-        
+
         if (session && session.ai_enabled && session.ai_deactivate_on_typing) {
             // Check if any presence is 'composing' from the remote user
             for (const jid in presences) {
                 const presence = presences[jid];
                 if (presence.lastKnownPresence === 'composing') {
                     log(`Détection d'écriture de ${jid}, mise en pause temporaire de l'IA pour cette conversation`, sessionId, { event: 'ai-auto-pause-typing', jid }, 'INFO');
-                    
+
                     aiService.pauseForConversation(sessionId, jid);
-                    
+
                     // Broadcast to frontend (optional: update to show "paused" status instead of "disabled")
                     const { broadcastToClients } = require('../../index');
                     if (broadcastToClients) {
@@ -400,13 +467,13 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             if (!session || !session.ai_enabled || !session.ai_deactivate_on_read) continue;
 
             const jid = update.key.remoteJid;
-            
+
             // Detection logic for "Owner read a message"
             // 1. status 4 (READ) or 5 (PLAYED) for an incoming message
             // 2. presence of 'read: true' in the update
             const isReadByMe = !update.key.fromMe && (
-                update.update.status === 4 || 
-                update.update.status === 5 || 
+                update.update.status === 4 ||
+                update.update.status === 5 ||
                 update.update.read === true ||
                 update.update.read === 1
             );
@@ -428,7 +495,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                     timestamp: Math.floor(Date.now() / 1000),
                     reason: 'owner_read_message'
                 });
-               
+
                 // Broadcast to frontend
                 const { broadcastToClients } = require('../../index');
                 if (broadcastToClients) {
@@ -465,10 +532,15 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 return; // En cas d'erreur de métadonnées, on ignore par sécurité
             }
         }
-        
-        // If message is FROM ME, it means the owner is chatting.
-        // We should pause the AI to let the owner take over.
+
+        // If message is FROM ME, it means the owner or the bot is chatting.
         if (msg.key.fromMe) {
+            // CRITICAL BUG FIX: Ignore messages sent by the bot itself (already tracked in QueueService)
+            if (aiService.isSentByBot(sessionId, msg.key.id)) {
+                // log(`Auto-pause ignoré car le message vient du bot lui-même`, sessionId, { event: 'ai-ignore-self-sent' }, 'DEBUG');
+                return;
+            }
+
             // Record activity for Human Priority (Session Window)
             aiService.recordOwnerActivity(sessionId, remoteJid);
 
@@ -489,7 +561,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
         if (msg.message) {
             const isGroup = remoteJid.endsWith('@g.us');
-            
+
             // Dispatch Webhook: message_received
             WebhookService.dispatch(sessionId, 'message_received', {
                 remoteJid,
@@ -505,7 +577,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 pushName: msg.pushName,
                 isGroup
             }, 'INFO');
-            
+
             // Call standard message handler if provided
             if (onMessage) {
                 onMessage(sessionId, msg);
@@ -579,6 +651,7 @@ async function disconnect(sessionId, clearRetry = true) {
     // 2. Disconnect socket
     const sock = activeSockets.get(sessionId);
     if (sock) {
+        sock.isActive = false; // Mark as inactive immediately
         log(`Déconnexion demandée pour la session ${sessionId}`, sessionId, { event: 'disconnect-request' }, 'DEBUG');
         try {
             // Unregister all events to prevent callbacks during shutdown
@@ -590,10 +663,10 @@ async function disconnect(sessionId, clearRetry = true) {
             sock.ev.removeAllListeners('messages.update');
             sock.ev.removeAllListeners('group-participants.update');
             sock.ev.removeAllListeners('call');
-            
+
             // End the socket properly
             sock.end();
-            
+
             // Wait a small delay to ensure OS resources are released
             await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (err) {

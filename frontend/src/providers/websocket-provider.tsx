@@ -30,11 +30,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const token = await getToken()
-        
+
         if (!isComponentMounted || !token) return
 
         let wsUrl: string
-        
+
         if (API_BASE_URL && API_BASE_URL.includes('://')) {
           try {
             const url = new URL(API_BASE_URL)
@@ -74,13 +74,13 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           if (!isComponentMounted) return
           console.log('WebSocket disconnected, retrying...', event.reason)
           setIsConnected(false)
-          
+
           const delay = Math.min(
             baseReconnectDelay * Math.pow(2, reconnectCountRef.current),
             maxReconnectDelay
           )
           reconnectCountRef.current += 1
-          
+
           reconnectTimeout = setTimeout(connect, delay)
         }
 

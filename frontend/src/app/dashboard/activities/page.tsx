@@ -1,5 +1,8 @@
 "use client"
 
+const ACTIVITIES_PAGE_SIZE = 50
+const SKELETON_ROWS = 5
+
 import * as React from "react"
 import {
   Activity,
@@ -28,7 +31,7 @@ import {
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 
 export default function ActivitiesPage() {
   const { getToken } = useAuth()
@@ -40,8 +43,8 @@ export default function ActivitiesPage() {
     setLoading(true)
     try {
       const token = await getToken()
-      const data = await api.activities.list(50, 0, token || undefined)
-      setActivities(data || [])
+      const data = await api.activities.list(ACTIVITIES_PAGE_SIZE, 0, token || undefined)
+      setActivities(Array.isArray(data) ? data : [])
     } catch (e) {
       toast.error("Erreur de chargement du journal")
     } finally {
@@ -60,9 +63,10 @@ export default function ActivitiesPage() {
   )
 
   const getActionIcon = (action: string) => {
-    if (action.includes('send')) return <MessageSquare className="h-3 w-3" />
-    if (action.includes('moderation') || action.includes('block')) return <ShieldCheck className="h-3 w-3" />
-    if (action.includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
+    const act = action || "";
+    if (ensureString(act).includes('send')) return <MessageSquare className="h-3 w-3" />
+    if (ensureString(act).includes('moderation') || ensureString(act).includes('block')) return <ShieldCheck className="h-3 w-3" />
+    if (ensureString(act).includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
     return <Activity className="h-3 w-3" />
   }
 
@@ -113,20 +117,20 @@ export default function ActivitiesPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i} className="animate-pulse border-muted/20">
-                  <TableCell colSpan={5} className="h-12 bg-muted/5"></TableCell>
+              Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                <TableRow key={`skeleton-${i}`} className="animate-pulse border-muted/20">
+                  <TableCell colSpan={6} className="h-12 bg-muted/5"></TableCell>
                 </TableRow>
               ))
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground text-xs italic">
+                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs italic">
                   Aucune activité trouvée.
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((activity) => (
-                <TableRow key={activity.id} className="border-muted/20 hover:bg-muted/30 transition-colors group">
+              Array.isArray(filtered) ? filtered.map((activity) => (
+                <TableRow key={ensureString(activity.id)} className="border-muted/20 hover:bg-muted/30 transition-colors group">
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3 w-3 opacity-40" />
@@ -137,19 +141,30 @@ export default function ActivitiesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary">
-                        {getActionIcon(activity.action)}
+
+                      <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        {getActionIcon(activity.action || "")}
                       </div>
-                      <span className="text-xs font-semibold capitalize">{activity.action.replace(/_/g, ' ')}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 min-w-0">
+                        <span className="text-xs font-semibold capitalize truncate">{ensureString(activity.action, 'action').replace(/_/g, ' ')}</span>
+                        <Badge variant="outline" className="text-[8px] sm:hidden w-fit px-1 h-3.5 opacity-60">
+                           {safeRender(activity.resource_id, 'sys')}
+                        </Badge>
+                      </div>
+
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <Badge variant="outline" className="text-[10px] font-mono border-muted/50 text-muted-foreground group-hover:border-primary/30 group-hover:text-primary transition-colors">
-                      {activity.resource_id || 'system'}
+                      {safeRender(activity.resource_id, 'system')}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-[300px]">
-                    <p className="text-[11px] text-muted-foreground truncate">{activity.details || '-'}</p>
+
+                  <TableCell className="max-w-[300px] hidden md:table-cell">
+
+                    <p className="text-[11px] text-muted-foreground truncate">
+                        {safeRender(activity.details)}
+                    </p>
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge className={cn(
@@ -162,10 +177,11 @@ export default function ActivitiesPage() {
                     </Badge>
                   </TableCell>
                 </TableRow>
-              ))
+              )) : null
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   )

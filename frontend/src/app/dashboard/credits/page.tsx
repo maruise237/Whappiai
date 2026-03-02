@@ -102,6 +102,7 @@ export default function CreditsPage() {
                      Graphique de consommation (Bientôt disponible)
                   </div>
 
+                  <div className="overflow-x-auto">
                   <Table className="mt-8">
                      <TableHeader>
                         <TableRow className="border-muted/30">
@@ -118,6 +119,7 @@ export default function CreditsPage() {
                         </TableRow>
                      </TableBody>
                   </Table>
+                  </div>
                </CardContent>
             </Card>
          </div>

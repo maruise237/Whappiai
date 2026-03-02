@@ -6,19 +6,12 @@ import {
   Brain,
   Search,
   Settings2,
-  Smartphone,
   MoreVertical,
-  Sparkles,
   Loader2,
-  Bot,
-  Cpu,
   ChevronRight,
-  User,
-  Zap,
-  CheckCircle2,
   Settings
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -48,13 +41,15 @@ import {
 import { api } from "@/lib/api"
 import { MagicOnboardingWizard } from "@/components/dashboard/MagicOnboardingWizard"
 import { useAuth, useUser } from "@clerk/nextjs"
+import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender } from "@/lib/utils"
 
 function AssistantIAPageContent() {
   const router = useRouter()
   const { getToken } = useAuth()
   const { user } = useUser()
+  const { lastMessage } = useWebSocket()
   const [sessions, setSessions] = React.useState<any[]>([])
   const [aiConfigs, setAiConfigs] = React.useState<Record<string, any>>({})
   const [models, setModels] = React.useState<any[]>([])
@@ -73,17 +68,21 @@ function AssistantIAPageContent() {
         api.ai.listModels(token || undefined)
       ])
 
-      setSessions(sessionsData || [])
-      setModels(modelsData || [])
+      const sData = Array.isArray(sessionsData) ? sessionsData : []
+      setSessions(sData)
+      setModels(Array.isArray(modelsData) ? modelsData : [])
 
-      // Fetch AI configs for each session
       const configs: Record<string, any> = {}
-      for (const s of (sessionsData || [])) {
-        try {
-          const ai = await api.sessions.getAI(s.sessionId, token || undefined)
-          configs[s.sessionId] = ai
-        } catch (e) {}
-      }
+      await Promise.all(
+        sData.map(async (s: any) => {
+          try {
+            const ai = await api.sessions.getAI(s.sessionId, token || undefined)
+            if (ai) configs[s.sessionId] = ai
+          } catch (e) {
+            console.error(e)
+          }
+        })
+      )
       setAiConfigs(configs)
     } catch (e) {
       toast.error("Erreur de chargement")
@@ -100,6 +99,39 @@ function AssistantIAPageContent() {
     }
   }, [fetchData])
 
+  // Real-time updates via WebSocket
+  React.useEffect(() => {
+    if (!lastMessage) return;
+
+    if (lastMessage.type === 'session-update') {
+      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
+
+      setSessions(prev => {
+        const newSessions = [...prev];
+        let hasChanges = false;
+
+        updates.forEach(update => {
+          const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
+          if (index !== -1) {
+            newSessions[index] = {
+              ...newSessions[index],
+              ...update,
+              isConnected: update.status === 'CONNECTED'
+            };
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? newSessions : prev;
+      });
+    }
+
+    if (lastMessage.type === 'session-deleted') {
+      const { sessionId } = lastMessage.data;
+      setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
+    }
+  }, [lastMessage]);
+
   const handleToggleAI = async (sessionId: string, enabled: boolean) => {
     const config = aiConfigs[sessionId]
     if (!config) return
@@ -107,7 +139,7 @@ function AssistantIAPageContent() {
       const token = await getToken()
       await api.sessions.updateAI(sessionId, { ...config, enabled }, token || undefined)
       setAiConfigs(prev => ({ ...prev, [sessionId]: { ...config, enabled } }))
-      toast.success(enabled ? "IA activée" : "IA désactivée")
+      toast.success(enabled ? "IA activ&eacute;e" : "IA d&eacute;sactiv&eacute;e")
     } catch (e) {
       toast.error("Erreur")
     }
@@ -118,7 +150,6 @@ function AssistantIAPageContent() {
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -127,19 +158,21 @@ function AssistantIAPageContent() {
           <p className="text-sm text-muted-foreground">Pilotez l&apos;intelligence de vos sessions WhatsApp.</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Button variant="outline" size="sm" className="h-8 rounded-full" onClick={() => router.push('/dashboard/ai-models')}>
-               <Settings className="h-3 w-3 mr-2" /> Gérer les modèles
-            </Button>
-          )}
-          {sessions.length > 0 && (
-            <MagicOnboardingWizard
-              sessionId={sessions[0].sessionId}
-              onComplete={fetchData}
-              defaultOpen={showWizard}
-            />
-          )}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+            {isAdmin && (
+                <Button variant="outline" size="sm" className="h-8 rounded-full flex-1 sm:flex-none px-4" onClick={() => router.push('/dashboard/ai-models')}>
+                <Settings className="h-3 w-3 mr-2" /> G&eacute;rer les mod&egrave;les
+                </Button>
+            )}
+            {sessions.length > 0 && (
+                <MagicOnboardingWizard
+                sessionId={sessions[0].sessionId}
+                onComplete={fetchData}
+                defaultOpen={showWizard}
+                />
+            )}
+          </div>
           <div className="relative w-full sm:w-48">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -161,10 +194,10 @@ function AssistantIAPageContent() {
           {filtered.map(session => {
             const config = aiConfigs[session.sessionId]
             return (
-              <Card key={session.sessionId} className="group hover:border-primary/30 transition-all shadow-sm flex flex-col">
+              <Card key={ensureString(session.sessionId)} className="group hover:border-primary/30 transition-all shadow-sm flex flex-col">
                 <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
                   <div className="space-y-1 min-w-0">
-                    <CardTitle className="text-sm font-bold truncate">{session.sessionId}</CardTitle>
+                    <CardTitle className="text-sm font-bold truncate">{safeRender(session.sessionId)}</CardTitle>
                     <div className="flex items-center gap-2">
                       <Badge className={cn(
                         "text-[9px] font-semibold border-none h-4 px-1.5",
@@ -187,16 +220,15 @@ function AssistantIAPageContent() {
                       <DropdownMenuItem onClick={() => { setEditingSessionId(session.sessionId); setIsEditDialogOpen(true); }} className="text-xs">
                         <Settings2 className="h-3.5 w-3.5 mr-2" /> Quick Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/ai/config?sessionId=${session.sessionId}`)} className="text-xs">
-                        <Brain className="h-3.5 w-3.5 mr-2" /> Config Avancée
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/ai/config?sessionId=${safeRender(session.sessionId)}`)} className="text-xs">
+                        <Brain className="h-3.5 w-3.5 mr-2" /> Config Avanc&eacute;e
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-4 flex-1">
-                   {/* Prompt Preview (Bulle subtile) */}
                    <div className="rounded-md bg-muted/50 p-3 text-[11px] text-muted-foreground line-clamp-2 border-l-2 border-primary/40 italic leading-relaxed">
-                      {config?.prompt || "Aucun prompt configuré"}
+                      {safeRender(config?.prompt, 'Aucun prompt configur&eacute;')}
                    </div>
 
                    <div className="grid grid-cols-2 gap-2">
@@ -215,7 +247,6 @@ function AssistantIAPageContent() {
                    <Switch
                      checked={!!config?.enabled}
                      onCheckedChange={(v) => handleToggleAI(session.sessionId, v)}
-                     size="sm"
                    />
                 </CardFooter>
               </Card>
@@ -224,12 +255,11 @@ function AssistantIAPageContent() {
         </div>
       )}
 
-      {/* Quick Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-base">Configuration IA Rapide</DialogTitle>
-            <DialogDescription className="text-xs">Ajustez les paramètres essentiels de {editingSessionId}.</DialogDescription>
+            <DialogDescription className="text-xs">Ajustez les param&egrave;tres essentiels de {safeRender(editingSessionId)}.</DialogDescription>
           </DialogHeader>
           {editingSessionId && aiConfigs[editingSessionId] && (
             <div className="space-y-4 py-4">
@@ -252,12 +282,12 @@ function AssistantIAPageContent() {
                   <SelectContent>
                     <SelectItem value="bot">Automatique (Bot)</SelectItem>
                     <SelectItem value="human">Suggestion (Humain)</SelectItem>
-                    <SelectItem value="keyword">Mots-clés uniquement</SelectItem>
+                    <SelectItem value="keyword">Mots-cl&eacute;s uniquement</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-muted-foreground">Modèle LLM</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Mod&egrave;le LLM</Label>
                 <Select
                   value={aiConfigs[editingSessionId].model || (models.length > 0 ? models[0].model_name : "deepseek-chat")}
                   onValueChange={(v) => {
@@ -267,7 +297,7 @@ function AssistantIAPageContent() {
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {models.length === 0 ? (
-                      <SelectItem value="deepseek-chat">Whappi AI (Défaut)</SelectItem>
+                      <SelectItem value="deepseek-chat">Whappi AI (D&eacute;faut)</SelectItem>
                     ) : (
                       models.map(m => (
                         <SelectItem key={m.id} value={m.model_name || m.id}>{m.name}</SelectItem>
@@ -282,10 +312,10 @@ function AssistantIAPageContent() {
                 className="w-full text-xs h-auto p-0 text-primary font-bold"
                 onClick={() => {
                   setIsEditDialogOpen(false);
-                  router.push(`/dashboard/ai/config?sessionId=${editingSessionId}`);
+                  router.push(`/dashboard/ai/config?sessionId=${safeRender(editingSessionId)}`);
                 }}
               >
-                Accéder à la configuration avancée <ChevronRight className="h-3 w-3 ml-1" />
+                Acc&eacute;der &agrave; la configuration avanc&eacute;e <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
           )}
@@ -295,7 +325,7 @@ function AssistantIAPageContent() {
                 if (editingSessionId) {
                   const token = await getToken();
                   await api.sessions.updateAI(editingSessionId, aiConfigs[editingSessionId], token || undefined);
-                  toast.success("Enregistré");
+                  toast.success("Enregistr&eacute;");
                   setIsEditDialogOpen(false);
                 }
              }}>Sauvegarder</Button>

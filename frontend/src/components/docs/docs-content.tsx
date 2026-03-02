@@ -1,12 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { 
-  Book, 
-  Lock, 
-  Settings, 
-  MessageSquare, 
-  Share2, 
+import {
+  Book,
+  Lock,
+  Settings,
+  MessageSquare,
+  Share2,
   FileJson,
   Info,
   Copy,
@@ -55,7 +55,7 @@ function CodeBlock({ code, lang = "bash" }: CodeBlockProps) {
         <span className="text-[9px] font-black text-primary/70 uppercase tracking-widest bg-background/80 backdrop-blur-md px-3 py-1.5 rounded-lg border-2 border-primary/10 shadow-sm">
           {lang}
         </span>
-        <button 
+        <button
           onClick={copyToClipboard}
           className="p-2 bg-background/80 backdrop-blur-md border-2 border-primary/10 rounded-lg hover:bg-primary/10 hover:border-primary/20 transition-all duration-200 text-muted-foreground hover:text-primary shadow-sm active:scale-90"
         >
@@ -184,13 +184,13 @@ export function DocsContent() {
           <p className="text-muted-foreground text-[11px] font-bold uppercase tracking-widest opacity-70 mb-8 leading-relaxed">
             Crée une nouvelle session WhatsApp avec un identifiant unique. Nécessite une clé API Master ou une authentification administrateur.
           </p>
-          
+
           <div className="space-y-6">
             <div className="space-y-3">
               <h5 className="font-black text-[10px] uppercase tracking-[0.2em] text-primary/70 ml-2">Corps de la Requête</h5>
               <CodeBlock code={JSON.stringify({ sessionId: "maSession" }, null, 2)} lang="json" />
             </div>
-            
+
             <div className="space-y-3">
               <h5 className="font-black text-[10px] uppercase tracking-[0.2em] text-primary/70 ml-2">Exemple cURL</h5>
               <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/sessions' \\
@@ -233,7 +233,7 @@ export function DocsContent() {
               <TabsTrigger value="video" className="rounded-lg font-black text-[10px] uppercase tracking-widest transition-all duration-200">Vidéo</TabsTrigger>
               <TabsTrigger value="document" className="rounded-lg font-black text-[10px] uppercase tracking-widest transition-all duration-200">Doc</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="text" className="animate-in fade-in slide-in-from-bottom-4 duration-300">
               <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/messages?sessionId=maSession' \\
 -H 'Authorization: Bearer votre_token' \\
@@ -245,7 +245,7 @@ export function DocsContent() {
   "text": { "body": "Bonjour le monde" }
 }'`} lang="bash" />
             </TabsContent>
-            
+
             <TabsContent value="image" className="animate-in fade-in slide-in-from-bottom-4 duration-300">
               <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/messages?sessionId=maSession' \\
 -H 'Authorization: Bearer votre_token' \\
@@ -275,7 +275,7 @@ export function DocsContent() {
   }
 }'`} lang="bash" />
             </TabsContent>
-            
+
             <TabsContent value="video" className="animate-in fade-in slide-in-from-bottom-4 duration-300">
               <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/messages?sessionId=maSession' \\
 -H 'Authorization: Bearer votre_token' \\
@@ -290,7 +290,7 @@ export function DocsContent() {
   }
 }'`} lang="bash" />
             </TabsContent>
-            
+
             <TabsContent value="document" className="animate-in fade-in slide-in-from-bottom-4 duration-300">
               <CodeBlock code={`curl -X POST 'http://localhost:3000/api/v1/messages?sessionId=maSession' \\
 -H 'Authorization: Bearer votre_token' \\

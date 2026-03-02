@@ -1,7 +1,7 @@
 import NProgress from 'nprogress';
 
 // Configure NProgress
-NProgress.configure({ 
+NProgress.configure({
   showSpinner: false,
   trickleSpeed: 200,
   minimum: 0.08
@@ -10,16 +10,16 @@ NProgress.configure({
 const getApiBaseUrl = () => {
   // Always prioritize environment variable for API URL (crucial for Dokploy/Production)
   const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
-  
+
   if (envApiUrl && envApiUrl.includes('://') && !envApiUrl.includes('://:')) {
-    return envApiUrl.endsWith('/') 
-      ? envApiUrl.slice(0, -1) 
+    return envApiUrl.endsWith('/')
+      ? envApiUrl.slice(0, -1)
       : envApiUrl;
   }
 
   if (typeof window !== 'undefined') {
     const { hostname, port, protocol } = window.location;
-    
+
     // If we are on port 3011 (Production Frontend), we need to point to port 3010 (Production Backend)
     if (port === '3011' && hostname) {
       return `${protocol}//${hostname}:3010`;
@@ -56,16 +56,32 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+// Recursive function to sanitize data from API
+function sanitizeData(data: any): any {
+  if (data === null || data === undefined) return null;
+
+  if (Array.isArray(data)) {
+    return data.map(sanitizeData);
+  }
+
+  if (typeof data === 'object') {
+    const sanitized: any = {};
+    for (const key in data) {
+      sanitized[key] = sanitizeData(data[key]);
+    }
+    return sanitized;
+  }
+
+  return data;
+}
+
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   if (typeof window !== 'undefined') {
-    try { NProgress.start(); } catch (e) {}
+    try { NProgress.start(); } catch (e) { console.error(e) }
   }
   try {
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-    
-    // We get the token from Clerk if available (this should be handled by the caller or a hook)
-    // but for now we'll just allow passing it in options.headers
-    
+
     const res = await fetch(url, {
       ...options,
       credentials: "include",
@@ -77,16 +93,12 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     });
 
     if (!res.ok) {
-      if (res.status === 401) {
-        // Unauthorized - handle redirect to login if needed
-        // but Clerk middleware usually handles this
-      }
       let errorMessage = res.statusText || "An error occurred";
       try {
         const error = await res.json();
         errorMessage = error.message || errorMessage;
       } catch (e) {
-        // If not JSON, use status text or default
+        // Not JSON
       }
       throw new Error(errorMessage);
     }
@@ -95,13 +107,15 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     try {
       data = await res.json();
     } catch (e) {
-      // If response is not JSON, but was ok, just return empty object
+      // Not JSON
       return {};
     }
-    return (data && data.data !== undefined) ? data.data : data;
+
+    const result = (data && data.data !== undefined) ? data.data : data;
+    return sanitizeData(result);
   } finally {
     if (typeof window !== 'undefined') {
-      try { NProgress.done(); } catch (e) {}
+      try { NProgress.done(); } catch (e) { console.error(e) }
     }
   }
 }
@@ -155,14 +169,6 @@ export const api = {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    resumeAI: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}/resume`, {
-      method: "POST",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    pauseAI: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}/pause`, {
-      method: "POST",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
     qr: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/qr`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
@@ -213,7 +219,6 @@ export const api = {
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
       });
     },
-    // New Group Management Endpoints
     getGroupProfile: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/groups/${groupId}/profile`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
@@ -247,20 +252,6 @@ export const api = {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    getInbox: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox`, {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    getChatHistory: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}`, {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    deleteChat: (sessionId: string, jid: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}`, {
-      method: "DELETE",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    deleteMessage: (sessionId: string, jid: string, messageId: number, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/inbox/${jid}/${messageId}`, {
-      method: "DELETE",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
     getWebhooks: (sessionId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/webhooks`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
@@ -290,39 +281,6 @@ export const api = {
       method: "DELETE",
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-  },
-  messages: {
-    send: (sessionId: string, data: any, token?: string) => fetchApi(`/api/v1/messages?sessionId=${sessionId}`, {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    upload: async (file: File, token?: string) => {
-      NProgress.start();
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const headers: any = {};
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        const res = await fetch(`${API_BASE_URL}/api/v1/media`, {
-          method: "POST",
-          body: formData,
-          headers: headers,
-          credentials: "include",
-          // Don't set Content-Type, let the browser do it with boundary
-        });
-        
-        if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.message || "Upload failed");
-        }
-        return await res.json();
-      } finally {
-        NProgress.done();
-      }
-    },
   },
   users: {
     list: (token?: string) => fetchApi("/admin/users", {

@@ -118,13 +118,23 @@ class Session {
      * @param {string} pairingCode - Optional pairing code
      * @returns {object} Updated session
      */
-    static updateStatus(sessionId, status, detail = null, pairingCode = null) {
+    static updateStatus(sessionId, status, detail = null, pairingCode = undefined, qrCode = undefined) {
+        const existing = this.findById(sessionId);
+        if (!existing) return null;
+
+        // Partial update: only update if value is not undefined
+        // Note: qr_code field is not explicitly in this method but pairing_code is
+        const newStatus = status !== undefined ? status : existing.status;
+        const newDetail = detail !== undefined ? detail : existing.detail;
+        const newPairingCode = pairingCode !== undefined ? pairingCode : existing.pairing_code;
+        const newQrCode = qrCode !== undefined ? qrCode : existing.qr_code;
+
         const stmt = db.prepare(`
             UPDATE whatsapp_sessions
-            SET status = ?, detail = ?, pairing_code = ?, updated_at = datetime('now')
+            SET status = ?, detail = ?, pairing_code = ?, qr_code = ?, updated_at = datetime('now')
             WHERE id = ?
         `);
-        stmt.run(status, detail, pairingCode, sessionId);
+        stmt.run(newStatus, newDetail, newPairingCode, newQrCode, sessionId);
         return this.findById(sessionId);
     }
 

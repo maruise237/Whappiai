@@ -8,17 +8,10 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 
 // --- Data Generation ---
-const ROLES = ["Directeur Marketing", "Fondateur", "Service Client", "Développeur", "Community Manager", "Commercial", "Responsable Tech"]
-const COMPANIES = ["AfriTech Solutions", "Dakar Digital", "Abidjan Startups", "TechCamer", "Lagos Ventures", "Kinshasa Connect", "Bamako Innovations"]
-const NAMES = [
-  "Amara", "Kwame", "Chioma", "Tunde", "Zainab", "Idrissa", "Fatou", "Kofi", "Nia", "Malik", 
-  "Awa", "Bakary", "Jelani", "Zola", "Oumar", "Sekou", "Binta", "Moussa", "Aminata", "Cheikh", 
-  "Nneka", "Emeka", "Aisha", "Babacar", "Seda", "Kouamé", "Adama", "Saly", "Mamadou", "Fanta"
-]
-const LAST_NAMES = [
-  "Diop", "Kone", "Sow", "Diallo", "Traore", "Kamara", "Mensah", "Okafor", "Ndiaye", "Cisse",
-  "Fall", "Gueye", "Keita", "Sylla", "Ba", "Fofana", "Barry", "Toure", "Mbaye", "Sane"
-]
+
+
+
+
 
 const MARIUSE = {
   name: "Mariuse Kamta",
@@ -109,7 +102,7 @@ const ALL_TESTIMONIALS = [
   ...INTERNATIONAL_PROFILES.map((p, i) => ({ id: 6 + i, ...p }))
 ]
 
- 
+
   const TestimonialCard = ({ testimonial, className }: { testimonial: typeof ALL_TESTIMONIALS[0], className?: string }) => (
    <div className={cn(
      "relative bg-card p-6 rounded-2xl border border-border shadow-sm mb-6 break-inside-avoid hover:shadow-md transition-shadow duration-300",
@@ -117,11 +110,11 @@ const ALL_TESTIMONIALS = [
    )}>
      <div className="flex items-center gap-1 mb-4 text-yellow-500">
        {[...Array(5)].map((_, i) => (
-         <Star 
-           key={i} 
-           size={14} 
-           fill={i < testimonial.rating ? "currentColor" : "none"} 
-           className={cn("opacity-80", i >= testimonial.rating && "text-muted-foreground opacity-30")} 
+         <Star
+           key={i}
+           size={14}
+           fill={i < testimonial.rating ? "currentColor" : "none"}
+           className={cn("opacity-80", i >= testimonial.rating && "text-muted-foreground opacity-30")}
          />
        ))}
      </div>
@@ -141,14 +134,14 @@ const ALL_TESTIMONIALS = [
    </div>
  )
 
- const MarqueeColumn = ({ 
-   testimonials, 
-   duration = 40, 
+ const MarqueeColumn = ({
+   testimonials,
+   duration = 40,
    reverse = false,
-   className 
- }: { 
-   testimonials: typeof ALL_TESTIMONIALS, 
-   duration?: number, 
+   className
+ }: {
+   testimonials: typeof ALL_TESTIMONIALS,
+   duration?: number,
    reverse?: boolean,
    className?: string
  }) => {
@@ -172,27 +165,27 @@ const ALL_TESTIMONIALS = [
      </div>
    )
  }
- 
+
  export function Testimonials() {
    const containerRef = useRef<HTMLDivElement>(null)
    const isInView = useInView(containerRef, { once: true, margin: "-10%" })
- 
+
    // Distribute testimonials
    // Ensure Mariuse (ALL_TESTIMONIALS[0]) is in EVERY column
    // We distribute the other 8 profiles around him
-   
+
    // Column 1: Mariuse + Celine + Moussa + Thomas
    const chunk1 = [ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[1], ALL_TESTIMONIALS[2], ALL_TESTIMONIALS[5]]
-   
+
    // Column 2: Awa + Mariuse + Sarah + Lukas
    const chunk2 = [ALL_TESTIMONIALS[3], ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[6], ALL_TESTIMONIALS[7]]
-   
+
    // Column 3: Kofi + Elena + Mariuse + Celine (Repeating Celine to fill 4th slot nicely)
    const chunk3 = [ALL_TESTIMONIALS[4], ALL_TESTIMONIALS[8], ALL_TESTIMONIALS[0], ALL_TESTIMONIALS[1]]
 
    return (
-     <section 
-       ref={containerRef} 
+     <section
+       ref={containerRef}
        className="py-24 relative overflow-hidden bg-background"
        aria-label="Témoignages clients"
      >

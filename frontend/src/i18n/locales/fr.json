@@ -7,7 +7,6 @@
       "admin": "ADMINISTRATION"
     },
     "overview": "Tableau de Bord",
-    "inbox": "Messagerie Directe",
     "activities": "Journal Activités",
     "ai_assistant": "Intelligence & IA",
     "auto_responses": "Mots-clés Auto",
@@ -29,15 +28,6 @@
       "messages_sent": "Messages envoyés",
       "remaining_credits": "Crédits restants"
     }
-  },
-  "inbox": {
-    "title": "Inbox Interactive",
-    "desc": "Discutez en direct et gérez la mémoire de l'IA.",
-    "search": "Rechercher...",
-    "human_takeover": "Human Takeover actif",
-    "live": "EN DIRECT",
-    "type_message": "Tapez votre message...",
-    "ai_pause_notice": "L'envoi d'un message met l'IA en pause pendant 5 min (Priorité Humaine)."
   },
   "common": {
     "save": "Enregistrer",
