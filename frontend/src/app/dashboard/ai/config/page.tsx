@@ -316,8 +316,8 @@ function AIConfigContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Modèle LLM</Label>
-                  <Select value={config?.model || (models.length > 0 ? models[0].model_name : "deepseek-chat")} onValueChange={(v) => setConfig({...config, model: v})}>
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Mod&egrave;le LLM</Label>
+                  <Select value={config?.model || (models.find(m => m.is_default)?.id || "deepseek-chat")} onValueChange={(v) => setConfig({...config, model: v})}>
                      <SelectTrigger className="h-9">
                         <SelectValue placeholder="S&eacute;lectionnez un mod&egrave;le" />
                      </SelectTrigger>
@@ -326,7 +326,7 @@ function AIConfigContent() {
                           <SelectItem value="deepseek-chat">Whappi AI (D&eacute;faut)</SelectItem>
                         ) : (
                           models.map(m => (
-                            <SelectItem key={m.id} value={m.model_name || m.id}>{m.name}</SelectItem>
+                            <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                           ))
                         )}
                      </SelectContent>

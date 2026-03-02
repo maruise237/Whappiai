@@ -145,8 +145,10 @@ function AssistantIAPageContent() {
     }
   }
 
-  const filtered = sessions.filter(s => s.sessionId.toLowerCase().includes(searchQuery.toLowerCase()))
-  const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'maruise237@gmail.com' || user?.publicMetadata?.role === 'admin'
+  const filtered = (Array.isArray(sessions) ? sessions : []).filter(s =>
+    ensureString(s.sessionId).toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   return (
     <div className="space-y-6 pb-20">
@@ -193,6 +195,7 @@ function AssistantIAPageContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(session => {
             const config = aiConfigs[session.sessionId]
+            const modelName = models.find(m => m.id === config?.model)?.name || config?.model || 'Whappi IA'
             return (
               <Card key={ensureString(session.sessionId)} className="group hover:border-primary/30 transition-all shadow-sm flex flex-col">
                 <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
@@ -233,12 +236,12 @@ function AssistantIAPageContent() {
 
                    <div className="grid grid-cols-2 gap-2">
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
-                         <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Modèle</p>
-                         <p className="text-[10px] font-semibold truncate">{config?.model || 'Whappi AI'}</p>
+                         <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Mod&egrave;le</p>
+                         <p className="text-[10px] font-semibold truncate">{safeRender(modelName)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
-                         <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Retard</p>
-                         <p className="text-[10px] font-semibold">{config?.delay_min || 1}s - {config?.delay_max || 5}s</p>
+                         <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Usage IA</p>
+                         <p className="text-[10px] font-semibold">{(config?.stats?.sent || 0) + (config?.stats?.received || 0)} msg</p>
                       </div>
                    </div>
                 </CardContent>
@@ -289,7 +292,7 @@ function AssistantIAPageContent() {
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-semibold text-muted-foreground">Mod&egrave;le LLM</Label>
                 <Select
-                  value={aiConfigs[editingSessionId].model || (models.length > 0 ? models[0].model_name : "deepseek-chat")}
+                  value={aiConfigs[editingSessionId].model || (models.find(m => m.is_default)?.id || "deepseek-chat")}
                   onValueChange={(v) => {
                     setAiConfigs(prev => ({ ...prev, [editingSessionId]: { ...prev[editingSessionId], model: v } }))
                   }}
@@ -300,7 +303,7 @@ function AssistantIAPageContent() {
                       <SelectItem value="deepseek-chat">Whappi AI (D&eacute;faut)</SelectItem>
                     ) : (
                       models.map(m => (
-                        <SelectItem key={m.id} value={m.model_name || m.id}>{m.name}</SelectItem>
+                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                       ))
                     )}
                   </SelectContent>
