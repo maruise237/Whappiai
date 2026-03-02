@@ -18,6 +18,7 @@ import {
   History
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -49,6 +50,7 @@ function GroupEngagementContent() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [generationGoal, setGenerationGoal] = React.useState("")
   const [scheduledAt, setScheduledAt] = React.useState("")
+  const [recurrence, setRecurrence] = React.useState<"none" | "daily" | "weekly">("none")
   const [directMessage, setDirectMessage] = React.useState("")
 
   const [profile, setProfile] = React.useState<any>({
@@ -139,6 +141,7 @@ function GroupEngagementContent() {
       const token = await getToken()
       await api.sessions.addEngagementTask(sessionId, selectedGroupId, {
         message_content: directMessage,
+        recurrence: recurrence,
         scheduled_at: new Date(scheduledAt).toISOString(),
         type: 'text'
       }, token || undefined)
@@ -146,6 +149,7 @@ function GroupEngagementContent() {
       toast.success("Message programm&eacute;")
       setDirectMessage("")
       setScheduledAt("")
+      setRecurrence("none")
       fetchGroupDetails()
     } catch (e: any) {
       toast.error("Erreur de programmation")
@@ -320,7 +324,25 @@ function GroupEngagementContent() {
                               value={directMessage}
                               onChange={(e) => setDirectMessage(e.target.value)}
                             />
-                            <Input type="datetime-local" className="h-9 text-xs" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Date et Heure</Label>
+                                 <Input type="datetime-local" className="h-9 text-xs" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">R&eacute;p&eacute;tition</Label>
+                                 <Select value={recurrence} onValueChange={(v: any) => setRecurrence(v)}>
+                                    <SelectTrigger className="h-9 text-xs">
+                                       <SelectValue placeholder="R&eacute;p&eacute;tition" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                       <SelectItem value="none" className="text-xs">Pas de r&eacute;p&eacute;tition</SelectItem>
+                                       <SelectItem value="daily" className="text-xs">Quotidien</SelectItem>
+                                       <SelectItem value="weekly" className="text-xs">Hebdomadaire</SelectItem>
+                                    </SelectContent>
+                                 </Select>
+                              </div>
+                            </div>
                             <Button size="sm" className="w-full" onClick={handleScheduleMessage} disabled={isSaving}>Programmer</Button>
                          </CardContent>
                       </Card>
