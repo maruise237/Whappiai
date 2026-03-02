@@ -25,7 +25,9 @@ class CalService {
      * @returns {string}
      */
     getAuthUrl(userId) {
-        if (!this.clientId || this.clientId.includes('xxxx')) {
+        log(`getAuthUrl CAL_CLIENT_ID check: "${this.clientId}"`, 'SYSTEM', { clientId: this.clientId }, 'DEBUG');
+
+        if (!this.clientId || this.clientId.trim() === '' || this.clientId.includes('xxxx')) {
             throw new Error('Configuration Cal.com incorrecte : CAL_CLIENT_ID est manquant ou contient des caractères d\'exemple (xxxx). Veuillez vérifier vos variables d\'environnement.');
         }
         return `https://app.cal.com/auth/oauth2/authorize?client_id=${this.clientId}&redirect_uri=${encodeURIComponent(this.redirectUri)}&state=${userId}&response_type=code`;
@@ -37,7 +39,7 @@ class CalService {
      * @param {string} userId
      */
     async exchangeCode(code, userId) {
-        if (!this.clientSecret) {
+        if (!this.clientSecret || this.clientSecret.trim() === '' || this.clientSecret.includes('votre_secret')) {
             throw new Error('Configuration Cal.com incomplète : CAL_CLIENT_SECRET est manquant dans le .env');
         }
         try {

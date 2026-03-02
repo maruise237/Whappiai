@@ -17,6 +17,9 @@ services:
       - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
       - FRONTEND_URL=${FRONTEND_URL}
       - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD}
+      - CAL_CLIENT_ID=${CAL_CLIENT_ID}
+      - CAL_CLIENT_SECRET=${CAL_CLIENT_SECRET}
+      - CAL_REDIRECT_URI=${CAL_REDIRECT_URI}
     volumes:
       - whappi-data:/app/data
       - whappi-sessions:/app/sessions
