@@ -1,74 +1,69 @@
 "use client"
 
 import * as React from "react"
-import {
-  Smartphone,
-  Copy,
-  RefreshCw,
-  Check,
-  Eye,
-  EyeOff,
-  MoreHorizontal,
-  Trash2,
-  ExternalLink,
-  ShieldCheck
-} from "lucide-react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { RefreshCw, Smartphone, QrCode, Trash2, MoreHorizontal, Eye, EyeOff, Copy, Check } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
-import { toast } from "sonner"
-import { cn, ensureString, safeRender } from "@/lib/utils"
 import { showConfirm } from "@/lib/swal"
-import { useRouter } from "next/navigation"
+import { cn, copyToClipboard as copyUtil, ensureString, safeRender, safeDate } from "@/lib/utils"
+import { toast } from "sonner"
+import confetti from "canvas-confetti"
+import { useAuth } from "@clerk/nextjs"
 
-interface SessionCardProps {
-  session: any
-  onRefresh: () => void
-  onCreate?: () => void
-}
-
-export function SessionCard({ session, onRefresh, onCreate }: SessionCardProps) {
-  const router = useRouter()
+export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
   const { getToken } = useAuth()
   const [loading, setLoading] = React.useState(false)
-  const [phoneNumber, setPhoneNumber] = React.useState("")
-  const [activeTab, setActiveTab] = React.useState("qr")
   const [showToken, setShowToken] = React.useState(false)
+  const [phoneNumber, setPhoneNumber] = React.useState("")
   const [localQrCode, setLocalQrCode] = React.useState<string | null>(null)
   const [localPairingCode, setLocalPairingCode] = React.useState<string | null>(null)
+  const [activeTab, setActiveTab] = React.useState("qr")
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(ensureString(text))
-    toast.success(`${label} copié dans le presse-papier`)
-  }
+  // Reset local state when session changes
+  React.useEffect(() => {
+    setLocalQrCode(null)
+    setLocalPairingCode(null)
+  }, [session?.sessionId])
+
+  // Automatically switch to correct tab if data arrives via WebSocket
+  React.useEffect(() => {
+    if (session?.pairingCode && !session?.qr && activeTab === "qr") {
+      setActiveTab("code")
+    }
+  }, [session?.pairingCode, session?.qr, activeTab])
 
   const handleRequestPairingCode = async () => {
-    if (!phoneNumber) return toast.error("Veuillez entrer un numéro de téléphone")
+    if (!phoneNumber) {
+      toast.error("Veuillez saisir un numéro de téléphone")
+      return
+    }
 
     setLoading(true)
-    const toastId = toast.loading("Demande de code...")
+    const toastId = toast.loading("Génération du code d'appairage...")
 
     try {
       const token = await getToken()
-      const response = await api.sessions.pairingCode(session.sessionId, phoneNumber, token || undefined)
-      if (response && response.code) {
-        setLocalPairingCode(response.code)
-        toast.success("Code d'appairage généré", { id: toastId })
-      } else {
+      let response;
+      if (!session) {
+        const newSessionId = `session_${Math.random().toString(36).substring(2, 9)}`
+        response = await api.sessions.create(newSessionId, phoneNumber, token || undefined)
         onRefresh()
-        toast.success("Demande envoyée", { id: toastId })
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+      } else {
+        response = await api.sessions.create(session.sessionId, phoneNumber, token || undefined)
+        onRefresh()
+      }
+
+      if (response && response.pairingCode) {
+        setLocalPairingCode(response.pairingCode)
+        toast.success("Code d'appairage reçu", { id: toastId })
+      } else {
+        toast.success("Demande envoyée, attendez le code...", { id: toastId })
       }
     } catch (error: any) {
       toast.error("Échec de la demande", {
@@ -80,7 +75,19 @@ export function SessionCard({ session, onRefresh, onCreate }: SessionCardProps) 
     }
   }
 
+  const copyToClipboard = async (text: string, label: string) => {
+    const success = await copyUtil(text)
+    if (success) {
+      toast.success(`${label} copié`)
+    }
+  }
+
   const handleRefreshQr = async () => {
+    if (!session) {
+      onCreate()
+      return
+    }
+
     setLoading(true)
     const toastId = toast.loading("Génération du QR Code...")
 
@@ -91,6 +98,7 @@ export function SessionCard({ session, onRefresh, onCreate }: SessionCardProps) 
         setLocalQrCode(response.qr)
         toast.success("QR Code généré", { id: toastId })
       } else {
+        // Fallback to refresh if not returned directly
         onRefresh()
         toast.success("Demande de QR Code envoyée", { id: toastId })
       }
@@ -129,6 +137,7 @@ export function SessionCard({ session, onRefresh, onCreate }: SessionCardProps) 
     }
   }
 
+  // A session is connected if explicitly marked as isConnected and NOT currently generating/connecting
   const isConnected = session?.isConnected && !loading
   const qrCode = localQrCode || session?.qr || session?.qr_code
   const pairingCode = localPairingCode || session?.pairingCode || session?.pairing_code
@@ -149,46 +158,43 @@ export function SessionCard({ session, onRefresh, onCreate }: SessionCardProps) 
   }
 
   return (
-    <Card className="border-border bg-card overflow-hidden">
-      <CardHeader className="p-4 border-b bg-muted/5">
+    <Card className="border-border bg-card">
+      <CardHeader className="p-4 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
               <Smartphone className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-bold tracking-tight">{safeRender(session.sessionId)}</p>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className={cn(
-                  "text-[9px] px-1.5 h-4 font-bold uppercase tracking-widest border-none",
-                  isConnected ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                )}>
-                  {isConnected ? "Connecté" : "Déconnecté"}
-                </Badge>
+              <p className="text-sm font-medium">{safeRender(session.sessionId)}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-muted-foreground">Session WhatsApp</p>
+                <button
+                  onClick={() => copyToClipboard(session.sessionId, "ID")}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => router.push(`/dashboard/moderation/groups/engagement?sessionId=${session.sessionId}`)}>
-                  <ShieldCheck className="mr-2 h-4 w-4" /> Engagement
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => copyToClipboard(session.sessionId, "ID")}>
-                  <Copy className="mr-2 h-4 w-4" /> Copier l'ID
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDelete}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Supprimer
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end gap-1">
+              <Badge className={isConnected
+                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
+                : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+              }>
+                {isConnected ? "Connecté" : "Déconnecté"}
+              </Badge>
+              {session?.detail && !isConnected && (
+                 <span className="text-[9px] text-destructive font-bold uppercase tracking-tight">
+                    {ensureString(session.detail).includes('conflict') ? 'Conflit (ouvert ailleurs)' : safeRender(session.detail)}
+                 </span>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -197,63 +203,63 @@ export function SessionCard({ session, onRefresh, onCreate }: SessionCardProps) 
         {!isConnected ? (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4 h-8 p-1 bg-muted/50">
-                <TabsTrigger value="qr" className="text-[10px] uppercase font-bold tracking-widest">QR Code</TabsTrigger>
-                <TabsTrigger value="code" className="text-[10px] uppercase font-bold tracking-widest">Pairing Code</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="qr" className="text-xs">QR Code</TabsTrigger>
+                <TabsTrigger value="code" className="text-xs">Pairing Code</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="qr" className="flex flex-col items-center space-y-4 pt-2">
-                <div className="relative aspect-square w-full max-w-[200px] border border-border/40 rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden">
+              <TabsContent value="qr" className="flex flex-col items-center space-y-4 pt-4">
+                <div className="relative aspect-square w-full max-w-[240px] border rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shadow-inner">
                   {qrCode ? (
-                    <img src={qrCode} alt="QR Code" className="w-full h-full p-3 bg-white object-contain" />
+                    <img src={qrCode} alt="QR Code" className="w-full h-full p-4 bg-white rounded-md object-contain" />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
-                      <RefreshCw className={cn("h-5 w-5 opacity-20", loading && "animate-spin")} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{loading ? "Génération..." : "En attente"}</span>
+                      <RefreshCw className={cn("h-6 w-6", loading && "animate-spin")} />
+                      <span className="text-[10px] font-medium">{loading ? "Génération..." : "Cliquez sur actualiser pour obtenir un QR code"}</span>
                     </div>
                   )}
                 </div>
-                <Button size="sm" variant="outline" className="h-8 text-[10px] font-bold uppercase tracking-widest px-4 rounded-full" onClick={handleRefreshQr} disabled={loading}>
-                  <RefreshCw className={cn("h-3 w-3 mr-2", loading && "animate-spin")} />
-                  Actualiser
+                <Button size="sm" variant="outline" className="h-9 px-6" onClick={handleRefreshQr} disabled={loading}>
+                  <RefreshCw className={cn("h-3.5 w-3.5 mr-2", loading && "animate-spin")} />
+                  Actualiser QR
                 </Button>
               </TabsContent>
 
-              <TabsContent value="code" className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest ml-1 opacity-50">Numéro de téléphone</label>
+              <TabsContent value="code" className="space-y-6 pt-4">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Numéro de téléphone</label>
                   <div className="flex gap-2">
                     <Input
                       placeholder="ex: 237600000000"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="h-8 text-xs bg-muted/20 border-none"
+                      className="h-10 text-sm"
                     />
-                    <Button size="sm" className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest rounded-full" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
-                      Obtenir
+                    <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                      Obtenir le code
                     </Button>
                   </div>
                 </div>
 
                 {pairingCode ? (
-                  <div className="p-4 rounded-md bg-muted/30 border border-border/40 flex flex-col items-center space-y-3">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-50">Code d'appairage</p>
-                    <div className="flex flex-wrap justify-center gap-1">
+                  <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
+                    <div className="flex flex-wrap justify-center gap-1.5">
                       {ensureString(pairingCode).split('').map((char: string, i: number) => (
-                        <div key={`char-${i}`} className="w-7 h-9 border bg-card rounded flex items-center justify-center text-sm font-black text-primary shadow-sm">
+                        <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
                           {char}
                         </div>
                       ))}
                     </div>
-                    <Button variant="ghost" size="sm" className="h-7 text-[9px] font-bold uppercase tracking-widest" onClick={() => copyToClipboard(pairingCode, "Code")}>
-                      <Copy className="h-3 w-3 mr-1.5 opacity-50" />
-                      Copier
+                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(pairingCode, "Code")}>
+                      <Copy className="h-3.5 w-3.5 mr-2" />
+                      Copier le code
                     </Button>
                   </div>
                 ) : (
-                   <div className="p-6 text-center border border-dashed rounded-md bg-muted/10">
-                      <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest opacity-40">
-                         {loading ? "Chargement..." : "Entrez un numéro"}
+                   <div className="p-8 text-center border border-dashed rounded-lg bg-muted/20">
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                         {loading ? "Demande de code..." : "Entrez un numéro pour lier manuellement"}
                       </p>
                    </div>
                 )}
@@ -261,22 +267,22 @@ export function SessionCard({ session, onRefresh, onCreate }: SessionCardProps) 
             </Tabs>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-4 text-center">
-            <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
-              <Check className="h-5 w-5 text-emerald-600" />
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
+              <Check className="h-6 w-6 text-green-600" />
             </div>
-            <h4 className="text-sm font-bold tracking-tight">Session Opérationnelle</h4>
-            <p className="text-[11px] text-muted-foreground mt-1 max-w-[180px] leading-tight">Instance prête pour l'automatisation intelligente.</p>
+            <h4 className="text-sm font-medium">Session Opérationnelle</h4>
+            <p className="text-xs text-muted-foreground mt-1">L'instance est prête à envoyer et recevoir des messages.</p>
 
             <div className="w-full mt-6 space-y-2">
-              <div className="flex items-center justify-between p-2 rounded-md border border-border/40 bg-muted/20">
+              <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Token</span>
+                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium">Token de Session</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-muted-foreground/60">
-                    {showToken ? (typeof session.token === 'string' ? session.token.substring(0, 12) + "..." : "••••••••") : "••••••••"}
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {showToken ? (typeof session.token === 'string' ? session.token : ensureString(session.token)) : "••••••••••••"}
                   </span>
                   <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
                     {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}

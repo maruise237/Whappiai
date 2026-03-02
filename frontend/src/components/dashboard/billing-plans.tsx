@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Loader2, Sparkles } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -10,22 +10,17 @@ import { useAuth } from "@clerk/nextjs"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 
-interface BillingPlansProps {
-  cycle?: "monthly" | "yearly"
-}
-
 const plans = [
   {
     id: "starter",
     name: "Starter",
-    priceMonthly: "2,500",
-    priceYearly: "2,000",
-    description: "Parfait pour débuter l'automatisation.",
+    price: "2,500 FCFA",
     features: [
       "500 messages IA / mois",
       "1 session WhatsApp",
       "Réponses auto 24/7",
-      "Support technique par email"
+      "Support technique par email",
+      "Accès API standard"
     ],
     cta: "Choisir Starter",
     highlighted: false,
@@ -33,15 +28,14 @@ const plans = [
   {
     id: "pro",
     name: "Pro",
-    priceMonthly: "5,000",
-    priceYearly: "4,000",
-    description: "La puissance maximale pour votre business.",
+    price: "5,000 FCFA",
     features: [
       "2,000 messages IA / mois",
-      "Sessions illimitées",
-      "Analyses avancées & Anti-spam",
+      "Groupes WhatsApp illimités",
+      "Analyses avancées",
+      "Anti-spam intelligent",
       "Support client prioritaire",
-      "Export de données & API"
+      "Export de données (CSV/JSON)"
     ],
     cta: "Choisir Pro",
     highlighted: true,
@@ -49,22 +43,21 @@ const plans = [
   {
     id: "business",
     name: "Business",
-    priceMonthly: "10,000",
-    priceYearly: "8,000",
-    description: "Pour les équipes et la croissance.",
+    price: "10,000 FCFA",
     features: [
       "10,000 messages IA / mois",
+      "Tout ce qui est dans Pro",
       "Gestionnaire de compte dédié",
-      "Intégrations API sur mesure",
+      "Intégrations API personnalisées",
       "Logs d'audit & Sécurité",
-      "Formation d'équipe"
+      "Sessions de formation d'équipe"
     ],
     cta: "Choisir Business",
     highlighted: false,
   },
 ]
 
-export function BillingPlans({ cycle = "monthly" }: BillingPlansProps) {
+export function BillingPlans() {
   const [loading, setLoading] = useState<string | null>(null)
   const { getToken } = useAuth()
 
@@ -74,7 +67,7 @@ export function BillingPlans({ cycle = "monthly" }: BillingPlansProps) {
       const token = await getToken()
       const response = await fetchApi('/api/v1/payments/checkout', {
         method: 'POST',
-        body: JSON.stringify({ planId, cycle }),
+        body: JSON.stringify({ planId }),
         headers: { Authorization: `Bearer ${token}` }
       })
       if (response.url) {
@@ -93,54 +86,33 @@ export function BillingPlans({ cycle = "monthly" }: BillingPlansProps) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {plans.map((plan) => (
         <Card key={plan.id} className={cn(
-          "relative flex flex-col h-full transition-all duration-300 border-border/40 overflow-hidden rounded-2xl group",
-          plan.highlighted ? "border-primary/50 shadow-2xl shadow-primary/10 scale-105 z-10 bg-card" : "bg-card/50 hover:bg-card hover:border-border/80"
+          "relative flex flex-col h-full border-border bg-card",
+          plan.highlighted && "border-primary ring-1 ring-primary"
         )}>
-          {plan.highlighted && (
-            <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
-          )}
 
-          <CardHeader className="p-8 pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <CardTitle className="text-lg font-black tracking-tight uppercase">{plan.name}</CardTitle>
-              {plan.highlighted && (
-                <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full">
-                  <Sparkles className="h-3 w-3 mr-1" /> Recommandé
-                </Badge>
-              )}
+          <CardHeader className="p-6 pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold tracking-tight">{plan.name}</CardTitle>
+              {plan.highlighted && <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-bold uppercase">Recommandé</Badge>}
             </div>
-            <p className="text-xs text-muted-foreground font-medium leading-relaxed mb-6">{plan.description}</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-black tracking-tighter">
-                {cycle === "monthly" ? plan.priceMonthly : plan.priceYearly}
-              </span>
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em]">FCFA / mois</span>
+            <div className="mt-4 flex items-baseline gap-1">
+              <span className="text-4xl font-black tracking-tighter">{plan.price}</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">/ mois</span>
             </div>
-            {cycle === "yearly" && (
-              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mt-1">Facturé annuellement</p>
-            )}
           </CardHeader>
-
-          <CardContent className="p-8 flex-1">
-            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-6">Ce qui est inclus :</div>
-            <ul className="space-y-4">
+          <CardContent className="p-6 flex-1">
+            <ul className="space-y-3">
               {plan.features.map((feature, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <div className={cn("h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-0.5", plan.highlighted ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
-                    <Check className="h-3 w-3" />
-                  </div>
-                  <span className="text-xs text-muted-foreground font-medium leading-tight">{feature}</span>
+                  <Check className="h-3.5 w-3.5 text-primary mt-0.5" />
+                  <span className="text-xs text-muted-foreground">{feature}</span>
                 </li>
               ))}
             </ul>
           </CardContent>
-
-          <CardFooter className="p-8 pt-0">
+          <CardFooter className="p-6 pt-0">
             <Button
-              className={cn(
-                "w-full h-12 rounded-xl font-bold text-[11px] uppercase tracking-[0.2em] transition-all",
-                plan.highlighted ? "shadow-lg shadow-primary/20 hover:scale-[1.02]" : "hover:bg-muted"
-              )}
+              className="w-full"
               variant={plan.highlighted ? "default" : "outline"}
               onClick={() => handleSubscribe(plan.id)}
               disabled={loading === plan.id}

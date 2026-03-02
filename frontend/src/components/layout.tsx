@@ -91,7 +91,7 @@ function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, on
       id={id}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+        "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
         isActive
           ? "bg-muted text-foreground"
           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -125,13 +125,13 @@ function SidebarContent({ isAdmin, pathname, onItemClick, t }: { isAdmin: boolea
     <div className="flex flex-col h-full bg-card">
       <div className="p-6"><Logo orientation="horizontal" size={24} showText /></div>
       <ScrollArea className="flex-1 px-3">
-        <div className="space-y-6 pb-4">
+        <div className="space-y-4 pb-4">
           {filteredGroups.map((group, i) => (
-            <div key={i} className="space-y-0.5">
+            <div key={i} className="space-y-1">
               <h3 className="px-3 text-[10px] font-bold tracking-tight text-muted-foreground/50">
                 {group.title}
               </h3>
-              <nav className="space-y-0.5">
+              <nav className="space-y-1">
                 {group.items.map((item) => (
                   <NavItem
                     key={item.href || Math.random()}
