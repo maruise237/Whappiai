@@ -2,6 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
+import { ensureString } from '@/lib/utils';
 
 const plans = [
   {
@@ -65,7 +66,7 @@ export default function PricingPage() {
       </div>
 
       <div className="mt-16 grid gap-8 lg:grid-cols-3 lg:gap-x-8 max-w-7xl mx-auto">
-        {plans.map((plan) => (
+        {(Array.isArray(plans) ? plans : []).map((plan) => (
           <div 
             key={plan.name}
             className={`relative p-8 bg-white border rounded-2xl shadow-sm flex flex-col ${
@@ -89,7 +90,7 @@ export default function PricingPage() {
               <p className="mt-6 text-gray-500">{plan.description}</p>
 
               <ul className="mt-6 space-y-4">
-                {plan.features.map((feature) => (
+                {(Array.isArray(plan.features) ? plan.features : []).map((feature) => (
                   <li key={feature} className="flex">
                     <Check className="flex-shrink-0 w-5 h-5 text-green-500" />
                     <span className="ml-3 text-gray-500">{feature}</span>
@@ -99,7 +100,7 @@ export default function PricingPage() {
             </div>
 
             <Link
-              href={`/register?plan=${plan.name.toLowerCase()}`}
+              href={`/register?plan=${ensureString(plan.name).toLowerCase()}`}
               className={`mt-8 block w-full py-3 px-6 border border-transparent rounded-md text-center font-medium ${
                 plan.highlight
                   ? 'bg-indigo-600 text-white hover:bg-indigo-700'

@@ -38,7 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
 import { ErrorBoundary } from "@/components/error-boundary"

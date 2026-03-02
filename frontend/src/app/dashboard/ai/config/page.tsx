@@ -39,7 +39,7 @@ import { Slider } from "@/components/ui/slider"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 function IntelligenceSection({ config, setConfig, modes }: any) {
   return (
@@ -58,7 +58,7 @@ function IntelligenceSection({ config, setConfig, modes }: any) {
       <div className="space-y-4">
         <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mode de fonctionnement</Label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {modes.map((m: any) => (
+          {Array.isArray(modes) ? modes.map((m: any) => (
             <button
               key={m.id}
               onClick={() => setConfig({...config, mode: m.id})}
@@ -270,7 +270,7 @@ function AIConfigContent() {
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">
         {/* Sidebar Nav */}
         <nav className="flex flex-row lg:flex-col gap-1 sticky top-14 lg:top-24 bg-background/95 backdrop-blur z-10 py-2 lg:py-0 overflow-x-auto no-scrollbar border-b lg:border-none">
-          {sections.map(section => (
+          {Array.isArray(sections) ? sections.map(section => (
             <button
               key={section.id}
               onClick={() => {
@@ -304,7 +304,7 @@ function AIConfigContent() {
             <div className="space-y-4">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mode de fonctionnement</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {modes.map(m => (
+                {Array.isArray(modes) ? modes.map(m => (
                   <button
                     key={m.id}
                     onClick={() => setConfig({...config, mode: m.id})}
@@ -542,7 +542,7 @@ function AIConfigContent() {
                         {models.length === 0 ? (
                           <SelectItem value="deepseek-chat">Whappi AI (Défaut)</SelectItem>
                         ) : (
-                          models.map(m => (
+                          Array.isArray(models) ? models.map(m => (
                             <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                           ))
                         )}

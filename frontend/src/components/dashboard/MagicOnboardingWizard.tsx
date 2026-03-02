@@ -31,7 +31,7 @@ import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import confetti from "canvas-confetti"
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6

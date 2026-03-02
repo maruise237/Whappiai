@@ -33,7 +33,7 @@ import { Progress } from "@/components/ui/progress"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 function GroupModerationContent() {
   const router = useRouter()
@@ -156,7 +156,7 @@ function GroupModerationContent() {
             </div>
           </div>
           <div className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-y-auto p-2 gap-1 no-scrollbar">
-              {filteredGroups.map(group => (
+              {Array.isArray(filteredGroups) ? filteredGroups.map(group => (
                 <button
                   key={group.id}
                   onClick={() => setSelectedGroupId(group.id)}

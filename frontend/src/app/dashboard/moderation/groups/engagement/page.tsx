@@ -36,7 +36,7 @@ import { Label } from "@/components/ui/label"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn, copyToClipboard } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, copyToClipboard, ensureString, safeRender, safeDate } from "@/lib/utils"
 import confetti from "canvas-confetti"
 
 function GroupEngagementContent() {
@@ -234,7 +234,7 @@ function GroupEngagementContent() {
             </div>
           </div>
           <div className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-y-auto p-2 gap-1 no-scrollbar">
-              {filteredGroups.map(group => (
+              {Array.isArray(filteredGroups) ? filteredGroups.map(group => (
                 <button
                   key={group.id}
                   onClick={() => setSelectedGroupId(group.id)}
@@ -336,7 +336,7 @@ function GroupEngagementContent() {
                            </div>
                          ) : (
                            <Accordion type="single" collapsible className="w-full space-y-2">
-                              {links.map((link, idx) => (
+                              {Array.isArray(links) ? links.map((link, idx) => (
                                 <AccordionItem key={idx} value={`item-${idx}`} className="border rounded-lg bg-card px-4">
                                   <AccordionTrigger className="text-sm hover:no-underline font-medium">{safeRender(link.title, 'Lien sans titre')}</AccordionTrigger>
                                   <AccordionContent className="text-xs space-y-4 pb-4">
@@ -509,7 +509,7 @@ function GroupEngagementContent() {
                         </div>
                       ) : (
                         <div className="border rounded-lg bg-card divide-y overflow-hidden shadow-sm">
-                           {tasks.map(task => (
+                           {Array.isArray(tasks) ? tasks.map(task => (
                               <div key={task.id} className="p-4 flex items-center justify-between group hover:bg-muted/30 transition-colors">
                                  <div className="flex items-center gap-3 min-w-0">
                                     <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
