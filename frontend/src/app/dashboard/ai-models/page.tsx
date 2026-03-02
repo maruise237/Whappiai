@@ -277,7 +277,7 @@ export default function AiModelsPage() {
                       </TableCell>
                     </TableRow>
                   )
-                })
+                }) : null
               )}
             </TableBody>
           </Table>
@@ -293,7 +293,7 @@ export default function AiModelsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
              <div className="space-y-1.5 col-span-2">
-                <Label className="text-[10px] font-semibold text-muted-foreground">Nom d&apos;affichage</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Nom d'affichage</Label>
                 <Input
                   placeholder="GPT-4o ou Claude-3"
                   className="h-9"
