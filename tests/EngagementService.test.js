@@ -2,10 +2,10 @@
  * Engagement Service Tests
  */
 
-// Mock dependencies
+// Mock dependencies BEFORE requiring the service
 jest.mock('../src/config/database', () => ({
     db: {
-        transaction: (fn) => fn,
+        transaction: (fn) => fn(),
         prepare: jest.fn().mockReturnValue({
             all: jest.fn().mockReturnValue([]),
             run: jest.fn().mockReturnValue({ changes: 1, lastInsertRowid: 1 }),
@@ -23,9 +23,16 @@ jest.mock('../src/services/whatsapp', () => ({
     isConnected: jest.fn()
 }));
 
+// Mock uuid to prevent ESM issues
 jest.mock('uuid', () => ({
-    v4: jest.fn().mockReturnValue('mock-uuid')
+    v4: () => 'mock-uuid'
 }));
+
+// Mock bcryptjs/bcrypt to prevent exit
+jest.mock('bcryptjs', () => ({
+    compareSync: () => true,
+    hashSync: () => 'hashed'
+}), { virtual: true });
 
 const EngagementService = require('../src/services/engagement');
 const { db } = require('../src/config/database');
