@@ -434,9 +434,9 @@ export default function DashboardPage() {
                      <Table>
                         <TableHeader>
                            <TableRow className="hover:bg-transparent border-muted/30">
-                              <TableHead className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/50">Destination</TableHead>
-                              <TableHead className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/50">Status</TableHead>
-                              <TableHead className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/50 text-right">Time</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Destination</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Status</TableHead>
+                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Time</TableHead>
                            </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -546,7 +546,7 @@ export default function DashboardPage() {
               <div className="space-y-6 py-4">
                 <FormField control={form.control} name="sessionId" render={({ field }) => (
                     <FormItem className="space-y-2">
-                      <FormLabel className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/50">Session Name</FormLabel>
+                      <FormLabel className="text-[10px] font-semibold text-muted-foreground">Session Name</FormLabel>
                       <FormControl><Input placeholder="ex: support-client" {...field} className="h-9 text-sm" /></FormControl>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {['support', 'ventes', 'marketing', 'bot'].map(tag => (
@@ -566,7 +566,7 @@ export default function DashboardPage() {
                 />
                 <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                     <FormItem className="space-y-2">
-                      <FormLabel className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/50">Phone Number (Optional)</FormLabel>
+                      <FormLabel className="text-[10px] font-semibold text-muted-foreground">Phone Number (Optional)</FormLabel>
                       <FormControl><Input placeholder="ex: 2376..." {...field} className="h-9 text-sm" /></FormControl>
                       <FormMessage className="text-[10px]" />
                     </FormItem>
@@ -584,16 +584,16 @@ export default function DashboardPage() {
 
 function StatCard({ label, value, subtext, icon }: { label: string; value: string | number; subtext: string; icon: React.ReactNode }) {
   return (
-    <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-md shadow-none border-border/40 transition-all duration-200 overflow-hidden group">
+    <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70">{label}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground font-bold tracking-tight">{label}</p>
           <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
             {icon}
           </div>
         </div>
         <div className="space-y-1">
-          <p className="text-2xl font-bold tracking-tight">{safeRender(value)}</p>
+          <p className="text-xl sm:text-2xl font-bold tracking-tight">{safeRender(value)}</p>
           <p className="text-[10px] text-muted-foreground/60 font-medium">
             {safeRender(subtext)}
           </p>
