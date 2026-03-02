@@ -41,6 +41,7 @@ import {
 import { api } from "@/lib/api"
 import { MagicOnboardingWizard } from "@/components/dashboard/MagicOnboardingWizard"
 import { useAuth, useUser } from "@clerk/nextjs"
+import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 
@@ -48,6 +49,7 @@ function AssistantIAPageContent() {
   const router = useRouter()
   const { getToken } = useAuth()
   const { user } = useUser()
+  const { lastMessage } = useWebSocket()
   const [sessions, setSessions] = React.useState<any[]>([])
   const [aiConfigs, setAiConfigs] = React.useState<Record<string, any>>({})
   const [models, setModels] = React.useState<any[]>([])
@@ -96,6 +98,39 @@ function AssistantIAPageContent() {
       setShowWizard(true)
     }
   }, [fetchData])
+
+  // Real-time updates via WebSocket
+  React.useEffect(() => {
+    if (!lastMessage) return;
+
+    if (lastMessage.type === 'session-update') {
+      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
+
+      setSessions(prev => {
+        const newSessions = [...prev];
+        let hasChanges = false;
+
+        updates.forEach(update => {
+          const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
+          if (index !== -1) {
+            newSessions[index] = {
+              ...newSessions[index],
+              ...update,
+              isConnected: update.status === 'CONNECTED'
+            };
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? newSessions : prev;
+      });
+    }
+
+    if (lastMessage.type === 'session-deleted') {
+      const { sessionId } = lastMessage.data;
+      setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
+    }
+  }, [lastMessage]);
 
   const handleToggleAI = async (sessionId: string, enabled: boolean) => {
     const config = aiConfigs[sessionId]
@@ -160,7 +195,7 @@ function AssistantIAPageContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(session => {
             const config = aiConfigs[session.sessionId]
-            const modelName = models.find(m => m.id === config?.model)?.name || config?.model || 'Whappi AI'
+            const modelName = models.find(m => m.id === config?.model)?.name || config?.model || 'Whappi IA'
             return (
               <Card key={ensureString(session.sessionId)} className="group hover:border-primary/30 transition-all shadow-sm flex flex-col">
                 <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
