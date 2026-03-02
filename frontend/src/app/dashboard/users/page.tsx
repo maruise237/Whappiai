@@ -61,7 +61,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function UsersPage() {
@@ -126,8 +126,8 @@ export default function UsersPage() {
   }, [selectedUserId, fetchUserDetails])
 
   const filtered = users.filter(u =>
-    u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (u.id && u.id.toLowerCase().includes(searchQuery.toLowerCase()))
+    ensureString(u.email).toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (ensureString(u.id).toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   const isAdmin = currentUser?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || currentUser?.publicMetadata?.role === "admin"
@@ -259,7 +259,7 @@ export default function UsersPage() {
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={c.id || i} className="animate-pulse border-muted/20">
+                <TableRow key={i} className="animate-pulse border-muted/20">
                   <TableCell colSpan={5} className="h-14 bg-muted/5"></TableCell>
                 </TableRow>
               ))
@@ -275,11 +275,11 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
-                        {u.email.charAt(0).toUpperCase()}
+                        {ensureString(u.email, "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-semibold">{u.email}</span>
-                        <span className="text-[9px] font-mono text-muted-foreground opacity-60 uppercase">{u.id}</span>
+                        <span className="text-xs font-semibold">{safeRender(u.email)}</span>
+                        <span className="text-[9px] font-mono text-muted-foreground opacity-60 uppercase">{safeRender(u.id)}</span>
                       </div>
                     </div>
                   </TableCell>
@@ -288,7 +288,7 @@ export default function UsersPage() {
                       "text-[9px] font-semibold",
                       u.role === 'admin' ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground"
                     )}>
-                      {u.role}
+                      {safeRender(u.role)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -301,7 +301,7 @@ export default function UsersPage() {
                             "sm:hidden text-[8px] h-3.5 w-fit px-1",
                             u.role === 'admin' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                         )}>
-                            {u.role}
+                            {safeRender(u.role)}
                         </Badge>
                     </div>
                   </TableCell>
@@ -351,11 +351,11 @@ export default function UsersPage() {
           <SheetHeader className="pb-6">
             <SheetTitle className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                    {userDetails?.user?.email?.charAt(0).toUpperCase()}
+                    {ensureString(userDetails?.user?.email, "?").charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left">
-                    <p className="text-base font-bold">{userDetails?.user?.email}</p>
-                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest">{userDetails?.user?.role}</Badge>
+                    <p className="text-base font-bold">{safeRender(userDetails?.user?.email)}</p>
+                    <Badge variant="outline" className="text-[9px] uppercase tracking-widest">{safeRender(userDetails?.user?.role)}</Badge>
                 </div>
             </SheetTitle>
             <SheetDescription className="text-xs">
@@ -398,10 +398,10 @@ export default function UsersPage() {
                         </h4>
                         <div className="space-y-2">
                             {userDetails?.sessions?.map((s: any) => (
-                                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                                <div key={safeRender(s.id)} className="flex items-center justify-between p-3 rounded-lg border bg-card">
                                     <div className="min-w-0">
-                                        <p className="text-xs font-bold truncate">{s.id}</p>
-                                        <p className="text-[10px] text-muted-foreground">{s.status}</p>
+                                        <p className="text-xs font-bold truncate">{safeRender(s.id)}</p>
+                                        <p className="text-[10px] text-muted-foreground">{safeRender(s.status)}</p>
                                     </div>
                                     <Badge className={cn("text-[9px]", s.status === 'CONNECTED' ? "bg-green-500/10 text-green-600 border-none" : "bg-muted text-muted-foreground border-none")}>
                                         {s.status === 'CONNECTED' ? 'Live' : 'Off'}
@@ -469,11 +469,11 @@ export default function UsersPage() {
                         <div className="border rounded-lg overflow-hidden">
                             <Table>
                                 <TableBody>
-                                    {userDetails?.credits?.map((c: any) => (
-                                        <TableRow key={c.id} className="hover:bg-muted/30">
+                                    {userDetails?.credits?.map((c: any, i: number) => (
+                                        <TableRow key={c.id || i} className="hover:bg-muted/30">
                                             <TableCell className="p-3">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[11px] font-bold">{c.description}</span>
+                                                    <span className="text-[11px] font-bold">{safeRender(c.description)}</span>
                                                     <span className="text-[9px] text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span>
                                                 </div>
                                             </TableCell>
@@ -499,8 +499,8 @@ export default function UsersPage() {
                             <div key={l.id || l.timestamp} className="p-3 rounded-lg border bg-muted/5 flex items-start gap-3">
                                 <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", l.status === 'success' ? "bg-green-500" : "bg-red-500")} />
                                 <div className="min-w-0">
-                                    <p className="text-[11px] font-bold uppercase tracking-wider">{l.action}</p>
-                                    <p className="text-[10px] text-muted-foreground truncate">{JSON.stringify(l.details)}</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider">{safeRender(l.action)}</p>
+                                    <p className="text-[10px] text-muted-foreground truncate">{safeRender(l.details)}</p>
                                     <p className="text-[9px] text-muted-foreground/60 mt-1">{new Date(l.timestamp).toLocaleString()}</p>
                                 </div>
                             </div>

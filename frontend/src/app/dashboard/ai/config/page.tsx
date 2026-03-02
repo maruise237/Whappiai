@@ -436,7 +436,7 @@ function AIConfigContent() {
                       key={t.id}
                       variant="secondary"
                       className="text-xs cursor-pointer hover:bg-primary/10 px-3 py-1 transition-colors"
-                      onClick={() => setConfig({...config, prompt: `Tu es un assistant ${t.name.toLowerCase()}...`})}
+                      onClick={() => setConfig({...config, prompt: `Tu es un assistant ${ensureString(t.name).toLowerCase()}...`})}
                     >
                       {t.name}
                     </Badge>

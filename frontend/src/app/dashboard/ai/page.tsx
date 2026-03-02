@@ -49,7 +49,7 @@ import { api } from "@/lib/api"
 import { MagicOnboardingWizard } from "@/components/dashboard/MagicOnboardingWizard"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
 
 function AssistantIAPageContent() {
   const router = useRouter()
@@ -122,7 +122,7 @@ function AssistantIAPageContent() {
     }
   }
 
-  const filtered = sessions.filter(s => s.sessionId.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filtered = sessions.filter(s => ensureString(s.sessionId).toLowerCase().includes(searchQuery.toLowerCase()))
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const [adminStats, setAdminStats] = React.useState<any>(null)
@@ -188,10 +188,10 @@ function AssistantIAPageContent() {
             const config = aiConfigs[session.sessionId]
             const modelName = models.find(m => m.id === config?.model)?.name || config?.model || 'Whappi AI'
             return (
-              <Card key={session.sessionId} className="group hover:border-primary/30 transition-all shadow-sm flex flex-col">
+              <Card key={ensureString(session.sessionId)} className="group hover:border-primary/30 transition-all shadow-sm flex flex-col">
                 <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
                   <div className="space-y-1 min-w-0">
-                    <CardTitle className="text-sm font-bold truncate">{session.sessionId}</CardTitle>
+                    <CardTitle className="text-sm font-bold truncate">{safeRender(session.sessionId)}</CardTitle>
                     <div className="flex items-center gap-2">
                       <Badge className={cn(
                         "text-[9px] font-semibold border-none h-4 px-1.5",
@@ -214,7 +214,7 @@ function AssistantIAPageContent() {
                       <DropdownMenuItem onClick={() => { setEditingSessionId(session.sessionId); setIsEditDialogOpen(true); }} className="text-xs">
                         <Settings2 className="h-3.5 w-3.5 mr-2" /> Quick Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/ai/config?sessionId=${session.sessionId}`)} className="text-xs">
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/ai/config?sessionId=${safeRender(session.sessionId)}`)} className="text-xs">
                         <Brain className="h-3.5 w-3.5 mr-2" /> Config Avancée
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -223,13 +223,13 @@ function AssistantIAPageContent() {
                 <CardContent className="p-4 pt-0 space-y-4 flex-1">
                    {/* Prompt Preview (Bulle subtile) */}
                    <div className="rounded-md bg-muted/50 p-3 text-[11px] text-muted-foreground line-clamp-2 border-l-2 border-primary/40 italic leading-relaxed">
-                      {config?.prompt || "Aucun prompt configuré"}
+                      {safeRender(config?.prompt, 'Aucun prompt configuré')}
                    </div>
 
                    <div className="grid grid-cols-2 gap-2">
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
                          <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Modèle</p>
-                         <p className="text-[10px] font-semibold truncate">{modelName}</p>
+                         <p className="text-[10px] font-semibold truncate">{safeRender(modelName)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
                          <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Usage IA</p>
@@ -256,7 +256,7 @@ function AssistantIAPageContent() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-base">Configuration IA Rapide</DialogTitle>
-            <DialogDescription className="text-xs">Ajustez les paramètres essentiels de {editingSessionId}.</DialogDescription>
+            <DialogDescription className="text-xs">Ajustez les paramètres essentiels de {safeRender(editingSessionId)}.</DialogDescription>
           </DialogHeader>
           {editingSessionId && aiConfigs[editingSessionId] && (
             <div className="space-y-4 py-4">
@@ -309,7 +309,7 @@ function AssistantIAPageContent() {
                 className="w-full text-xs h-auto p-0 text-primary font-bold"
                 onClick={() => {
                   setIsEditDialogOpen(false);
-                  router.push(`/dashboard/ai/config?sessionId=${editingSessionId}`);
+                  router.push(`/dashboard/ai/config?sessionId=${safeRender(editingSessionId)}`);
                 }}
               >
                 Accéder à la configuration avancée <ChevronRight className="h-3 w-3 ml-1" />

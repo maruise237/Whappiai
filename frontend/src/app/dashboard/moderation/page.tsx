@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
 
 export default function ModerationPage() {
   const router = useRouter()
@@ -48,7 +48,7 @@ export default function ModerationPage() {
     fetchSessions()
   }, [fetchSessions])
 
-  const filtered = sessions.filter(s => s.sessionId.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filtered = sessions.filter(s => ensureString(s.sessionId).toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
     <div className="space-y-6 pb-20">
@@ -94,7 +94,7 @@ export default function ModerationPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(session => (
-            <Card key={session.sessionId} className="group hover:border-primary/30 transition-all shadow-sm">
+            <Card key={ensureString(session.sessionId)} className="group hover:border-primary/30 transition-all shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
@@ -110,7 +110,7 @@ export default function ModerationPage() {
                   </Badge>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-bold truncate">{session.sessionId}</p>
+                  <p className="text-sm font-bold truncate">{safeRender(session.sessionId)}</p>
                   <p className="text-xs text-muted-foreground">Session WhatsApp active</p>
                 </div>
               </CardContent>
@@ -119,7 +119,7 @@ export default function ModerationPage() {
                   variant="outline"
                   size="sm"
                   className="h-8 text-[10px] font-semibold tracking-wider"
-                  onClick={() => router.push(`/dashboard/moderation/groups/moderation?sessionId=${session.sessionId}`)}
+                  onClick={() => router.push(`/dashboard/moderation/groups/moderation?sessionId=${safeRender(session.sessionId)}`)}
                 >
                   <ShieldCheck className="h-3 w-3 mr-1.5" /> Sécurité
                 </Button>
@@ -127,7 +127,7 @@ export default function ModerationPage() {
                   variant="secondary"
                   size="sm"
                   className="h-8 text-[10px] font-semibold tracking-wider"
-                  onClick={() => router.push(`/dashboard/moderation/groups/engagement?sessionId=${session.sessionId}`)}
+                  onClick={() => router.push(`/dashboard/moderation/groups/engagement?sessionId=${safeRender(session.sessionId)}`)}
                 >
                   <Users className="h-3 w-3 mr-1.5" /> Engagement
                 </Button>
