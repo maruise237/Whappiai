@@ -139,8 +139,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   // A session is connected if explicitly marked as isConnected and NOT currently generating/connecting
   const isConnected = session?.isConnected && !loading
-  const qrCode = localQrCode || session?.qr
-  const pairingCode = localPairingCode || session?.pairingCode
+  const qrCode = localQrCode || session?.qr || session?.qr_code
+  const pairingCode = localPairingCode || session?.pairingCode || session?.pairing_code
 
   if (!session) {
     return (
