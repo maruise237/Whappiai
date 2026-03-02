@@ -304,6 +304,7 @@ function GroupEngagementContent() {
                         </Card>
                       ))}
                       <Button size="sm" onClick={handleSaveLinks} disabled={isSaving}>Sauvegarder les liens</Button>
+                   </div>
                 </TabsContent>
 
                 <TabsContent value="engagement" className="space-y-6">
@@ -356,6 +357,7 @@ function GroupEngagementContent() {
                             <Button size="sm" className="w-full" onClick={handleScheduleMessage} disabled={isSaving}>Programmer</Button>
                          </CardContent>
                       </Card>
+                   </div>
 
                    <div className="space-y-4 pt-6 border-t">
                       <div className="flex items-center gap-2">
@@ -394,7 +396,6 @@ function GroupEngagementContent() {
                             ))}
                          </div>
                       )}
-                   </div>
                    </div>
                 </TabsContent>
              </Tabs>
