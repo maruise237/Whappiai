@@ -3,11 +3,20 @@ const { log } = require('../utils/logger');
 const User = require('../models/User');
 
 class CalService {
-    constructor() {
-        this.clientId = process.env.CAL_CLIENT_ID;
-        this.clientSecret = process.env.CAL_CLIENT_SECRET;
-        this.redirectUri = process.env.CAL_REDIRECT_URI || 'http://localhost:3010/api/v1/cal/callback';
-        this.apiUrl = 'https://api.cal.com/v2';
+    get clientId() {
+        return process.env.CAL_CLIENT_ID;
+    }
+
+    get clientSecret() {
+        return process.env.CAL_CLIENT_SECRET;
+    }
+
+    get redirectUri() {
+        return process.env.CAL_REDIRECT_URI || 'http://localhost:3010/api/v1/cal/callback';
+    }
+
+    get apiUrl() {
+        return 'https://api.cal.com/v2';
     }
 
     /**
