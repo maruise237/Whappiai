@@ -71,6 +71,7 @@ function initializeSchema() {
             status TEXT DEFAULT 'DISCONNECTED',
             detail TEXT,
             pairing_code TEXT,
+            qr_code TEXT,
             ai_enabled INTEGER DEFAULT 0,
             ai_model TEXT,
             ai_prompt TEXT,
@@ -441,6 +442,7 @@ function initializeSchema() {
     runner.run('whatsapp-sessions-v2026-v6-final', (db) => {
         const columns = [
             { name: 'pairing_code', type: 'TEXT' },
+            { name: 'qr_code', type: 'TEXT' },
             { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_model', type: 'TEXT' },
             { name: 'ai_prompt', type: 'TEXT' },

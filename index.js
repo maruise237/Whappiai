@@ -389,7 +389,7 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     const isQR = status === 'GENERATING_QR';
 
     // CRITICAL: We pass undefined instead of null to prevent clearing existing code/qr when status updates
-    Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : undefined);
+    Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : undefined, isQR ? qrOrCode : undefined);
 
     const updateData = {
         sessionId: id,
@@ -461,7 +461,7 @@ const getSessionsDetailsWrapper = (email, isAdmin) => {
             sessionId: s.id,
             isConnected: isConnected,
             pairingCode: s.pairing_code,
-            qr: whatsappService.getLastQr(s.id)
+            qr: s.qr_code || whatsappService.getLastQr(s.id)
         };
     });
 };
