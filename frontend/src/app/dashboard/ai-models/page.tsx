@@ -42,7 +42,7 @@ import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 export default function AiModelsPage() {
   const { getToken } = useAuth()
@@ -238,7 +238,7 @@ export default function AiModelsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                models.map((m) => {
+                Array.isArray(models) ? models.map((m) => {
                   const usage = adminStats?.ai?.find((s: any) => s.model === m.id || s.model === m.model_name);
                   return (
                     <TableRow key={m.id} className="border-muted/20 group">

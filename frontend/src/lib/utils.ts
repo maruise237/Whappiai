@@ -82,3 +82,17 @@ export function safeRender(val: any, fallback = "-"): string {
   const str = ensureString(val, fallback);
   return str === "" ? fallback : str;
 }
+
+export function safeDate(val: any, options: Intl.DateTimeFormatOptions = {}, fallback: string = "-") {
+  if (!val) return fallback;
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return fallback;
+  return d.toLocaleString('fr-FR', options);
+}
+
+export function ensureNumber(val: any, fallback = 0): number {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'number') return val;
+  const n = Number(val);
+  return isNaN(n) ? fallback : n;
+}

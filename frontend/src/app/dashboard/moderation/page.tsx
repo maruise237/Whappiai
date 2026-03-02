@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 export default function ModerationPage() {
   const router = useRouter()
@@ -93,7 +93,7 @@ export default function ModerationPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(session => (
+          {Array.isArray(filtered) ? filtered.map(session => (
             <Card key={ensureString(session.sessionId)} className="group hover:border-primary/30 transition-all shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-4">

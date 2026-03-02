@@ -61,7 +61,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function UsersPage() {
@@ -270,7 +270,7 @@ export default function UsersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((u) => (
+              Array.isArray(filtered) ? filtered.map((u) => (
                 <TableRow key={u.id || u.email} className="border-muted/20 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setSelectedUserId(u.id)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -397,7 +397,7 @@ export default function UsersPage() {
                             <Smartphone className="h-3 w-3" /> Sessions Connectées ({userDetails?.sessions?.length || 0})
                         </h4>
                         <div className="space-y-2">
-                            {userDetails?.sessions?.map((s: any) => (
+                            {Array.isArray(userDetails?.sessions) ? userDetails.sessions.map((s: any) => (
                                 <div key={safeRender(s.id)} className="flex items-center justify-between p-3 rounded-lg border bg-card">
                                     <div className="min-w-0">
                                         <p className="text-xs font-bold truncate">{safeRender(s.id)}</p>
@@ -469,7 +469,7 @@ export default function UsersPage() {
                         <div className="border rounded-lg overflow-hidden">
                             <Table>
                                 <TableBody>
-                                    {userDetails?.credits?.map((c: any, i: number) => (
+                                    {Array.isArray(userDetails?.credits) ? userDetails.credits.map((c: any, i: number) => (
                                         <TableRow key={c.id || i} className="hover:bg-muted/30">
                                             <TableCell className="p-3">
                                                 <div className="flex flex-col">
@@ -495,7 +495,7 @@ export default function UsersPage() {
                         <History className="h-3 w-3" /> Dernières Activités
                     </h4>
                     <div className="space-y-2">
-                        {userDetails?.logs?.map((l: any) => (
+                        {Array.isArray(userDetails?.logs) ? userDetails.logs.map((l: any) => (
                             <div key={l.id || l.timestamp} className="p-3 rounded-lg border bg-muted/5 flex items-start gap-3">
                                 <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", l.status === 'success' ? "bg-green-500" : "bg-red-500")} />
                                 <div className="min-w-0">

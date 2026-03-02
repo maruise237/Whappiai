@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
 import { showConfirm } from "@/lib/swal"
-import { cn, copyToClipboard as copyUtil } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, copyToClipboard as copyUtil, ensureString, safeRender, safeDate } from "@/lib/utils"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { useAuth } from "@clerk/nextjs"
@@ -275,7 +275,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-muted-foreground">
-                    {showToken ? (typeof session.token === 'string' ? session.token : JSON.stringify(session.token)) : "••••••••••••"}
+                    {showToken ? (typeof session.token === 'string' ? session.token : ensureString(session.token)) : "••••••••••••"}
                   </span>
                   <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
                     {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}

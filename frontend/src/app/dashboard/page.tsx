@@ -32,6 +32,14 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -69,7 +77,7 @@ import { useWebSocket } from "@/providers/websocket-provider"
 import { useUser, useAuth } from "@clerk/nextjs"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
-import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import Link from "next/link"
 import { useNotificationSound } from "@/hooks/use-notification-sound"
 
@@ -113,9 +121,9 @@ export default function DashboardPage() {
     try {
       const token = await getToken()
       const data = await api.sessions.list(token || undefined)
-      setSessions(data || [])
+      setSessions(Array.isArray(data) ? data : [])
       if (data && data.length > 0 && !selectedSessionId) {
-        setSelectedSessionId(data[0].sessionId)
+        setSelectedSessionId(ensureString(data[0].sessionId))
       }
     } catch (e) { console.error(e) } finally {
       setLoading(false)
@@ -128,7 +136,7 @@ export default function DashboardPage() {
       api.activities.analytics(DEFAULT_STATS_DAYS, token)
     ])
     setAdminStats(stats)
-    setAnalyticsData(analytics || [])
+    setAnalyticsData(Array.isArray(analytics) ? analytics : [])
     setSummary({
       totalActivities: stats?.overview?.activities || 0,
       successRate: stats?.overview?.successRate || 0,
@@ -143,7 +151,7 @@ export default function DashboardPage() {
       totalActivities: summ?.totalActivities || 0,
       successRate: summ?.successRate || 0,
       messagesSent: summ?.byAction?.send_message || 0,
-      activeSessions: sessions.filter(s => s.isConnected).length
+      activeSessions: Array.isArray(sessions) ? sessions.filter(s => s.isConnected).length : 0
     })
   }, [sessions])
 
@@ -159,7 +167,7 @@ export default function DashboardPage() {
       }
 
       const logs = await api.activities.list(RECENT_LOGS_COUNT, 0, token)
-      setRecentActivities(logs || [])
+      setRecentActivities(Array.isArray(logs) ? logs : [])
     } catch (e) {
       console.error("Error fetching summary:", e)
     }
@@ -182,7 +190,7 @@ export default function DashboardPage() {
     fetchSummary().catch(console.error)
   }, [fetchSummary])
 
-  const selectedSession = sessions.find(s => s.sessionId === selectedSessionId)
+  const selectedSession = (Array.isArray(sessions) ? sessions : []).find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
 
@@ -229,7 +237,7 @@ export default function DashboardPage() {
             <>
                 <StatCard
                   label="Sessions"
-                  value={sessions.length}
+                  value={Array.isArray(sessions) ? sessions.length : 0}
                   subtext={`${summary.activeSessions} actives`}
                   icon={<Smartphone className="h-4 w-4 text-blue-500" />}
                 />
@@ -258,12 +266,12 @@ export default function DashboardPage() {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
-            <Select value={selectedSessionId || ""} onValueChange={setSelectedSessionId}>
+            <Select value={selectedSessionId || ""} onValueChange={(v) => setSelectedSessionId(ensureString(v))}>
                <SelectTrigger className="w-full sm:w-[180px] h-9 text-xs bg-muted/50 border-none">
                   <SelectValue placeholder="Choisir une session" />
                </SelectTrigger>
                <SelectContent>
-                  {sessions.map(s => <SelectItem key={String(s.sessionId)} value={String(s.sessionId)} className="text-xs">{safeRender(s.sessionId)}</SelectItem>)}
+                  {Array.isArray(sessions) ? sessions.map(s => <SelectItem key={String(s.sessionId)} value={String(s.sessionId)} className="text-xs">{safeRender(s.sessionId)}</SelectItem>) : null}
                </SelectContent>
             </Select>
             {selectedSession && (
@@ -317,8 +325,8 @@ export default function DashboardPage() {
                                         dy={10}
                                         tickFormatter={(str) => {
                                             const date = new Date(str);
-                                    if (isNaN(date.getTime())) return '-';
-                                            return date.toLocaleDateString('fr-FR', { weekday: 'short' });
+                                            if (isNaN(date.getTime())) return '-';
+                                            return safeDate(date, { weekday: 'short' });
                                         }}
                                     />
                                     <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#888888'}} />
@@ -342,7 +350,7 @@ export default function DashboardPage() {
                           <Smartphone className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{selectedSessionId || "Aucune session"}</p>
+                          <p className="text-sm font-medium">{safeRender(selectedSessionId, "Aucune session")}</p>
                           <p className="text-xs text-muted-foreground">WhatsApp Session</p>
                         </div>
                      </div>
@@ -375,8 +383,8 @@ export default function DashboardPage() {
                            </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg) => (
-                              <TableRow key={msg.id || msg.timestamp} className="hover:bg-muted/50">
+                           {Array.isArray(recentActivities) ? recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg) => (
+                              <TableRow key={ensureString(msg.id || msg.timestamp)} className="hover:bg-muted/50">
                                  <TableCell className="text-sm truncate max-w-[150px]">{safeRender(msg.resource_id)}</TableCell>
                                  <TableCell>
                                     <Badge className={cn(
@@ -389,14 +397,11 @@ export default function DashboardPage() {
                                     </Badge>
                                  </TableCell>
                                  <TableCell className="text-right text-[10px] text-muted-foreground">
-                                    {(() => {
-                                       const d = new Date(msg.created_at || msg.timestamp);
-                                       return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString();
-                                    })()}
+                                    {safeDate(msg.created_at || msg.timestamp)}
                                  </TableCell>
                               </TableRow>
-                           ))}
-                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').length === 0 && (
+                           )) : null}
+                           {(Array.isArray(recentActivities) ? recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').length : 0) === 0 && (
                               <TableRow><TableCell colSpan={3} className="text-center py-10 text-xs text-muted-foreground italic">Aucun message récent</TableCell></TableRow>
                            )}
                         </TableBody>
@@ -409,20 +414,17 @@ export default function DashboardPage() {
                   <TabsContent value="logs" className="space-y-4">
                      <Card className="bg-zinc-950 text-zinc-400 font-mono text-[10px] p-4 overflow-x-auto min-h-[200px] border-none shadow-inner">
                         <div className="space-y-1">
-                           {recentActivities.map((log) => (
-                              <div key={log.id || log.timestamp} className="flex gap-4">
+                           {Array.isArray(recentActivities) ? recentActivities.map((log) => (
+                              <div key={ensureString(log.id || log.timestamp)} className="flex gap-4">
                                  <span className="text-zinc-600">
-                                    [{(() => {
-                                       const d = new Date(log.timestamp || log.created_at);
-                                       return isNaN(d.getTime()) ? '-' : d.toLocaleTimeString();
-                                    })()}]
+                                    [{safeDate(log.timestamp || log.created_at)}]
                                  </span>
                                  <span className={cn(log.status === 'success' ? "text-green-500" : "text-red-500")}>{ensureString(log.action, 'ACTION').toUpperCase()}</span>
                                  <span className="truncate max-w-[400px]">
                                     {safeRender(log.details)}
                                  </span>
                               </div>
-                           ))}
+                           )) : null}
                         </div>
                      </Card>
                   </TabsContent>
@@ -439,7 +441,7 @@ export default function DashboardPage() {
                      </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-4">
-                     {recentActivities.slice(0, 4).map((activity, i) => (
+                     {Array.isArray(recentActivities) ? recentActivities.slice(0, 4).map((activity, i) => (
                         <div key={i} className="flex items-start gap-3 border-b border-border/40 last:border-0 pb-3 last:pb-0">
                            <div className="h-6 w-6 rounded bg-background border flex items-center justify-center shrink-0">
                               <Zap className="h-3 w-3 text-muted-foreground" />
@@ -451,7 +453,7 @@ export default function DashboardPage() {
                               </p>
                            </div>
                         </div>
-                     ))}
+                     )) : null}
                      <Button variant="link" size="sm" className="p-0 h-auto text-[10px] font-semibold" asChild>
                         <Link href="/dashboard/activities">View All Activities →</Link>
                      </Button>
@@ -534,9 +536,9 @@ function StatCard({ label, value, subtext, icon }: { label: string; value: strin
           </div>
         </div>
         <div className="space-y-1">
-          <p className="text-xl sm:text-2xl font-bold tracking-tight">{value}</p>
+          <p className="text-xl sm:text-2xl font-bold tracking-tight">{safeRender(value)}</p>
           <p className="text-[10px] text-muted-foreground/60 font-medium">
-            {subtext}
+            {safeRender(subtext)}
           </p>
         </div>
       </CardContent>

@@ -49,7 +49,7 @@ import { api } from "@/lib/api"
 import { MagicOnboardingWizard } from "@/components/dashboard/MagicOnboardingWizard"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 function AssistantIAPageContent() {
   const router = useRouter()
@@ -184,7 +184,7 @@ function AssistantIAPageContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(session => {
+          {Array.isArray(filtered) ? filtered.map(session => {
             const config = aiConfigs[session.sessionId]
             const modelName = models.find(m => m.id === config?.model)?.name || config?.model || 'Whappi AI'
             return (
@@ -296,7 +296,7 @@ function AssistantIAPageContent() {
                     {models.length === 0 ? (
                       <SelectItem value="deepseek-chat">Whappi AI (Défaut)</SelectItem>
                     ) : (
-                      models.map(m => (
+                      Array.isArray(models) ? models.map(m => (
                         <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                       ))
                     )}

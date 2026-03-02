@@ -34,7 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 export default function ActivitiesPage() {
   const { getToken } = useAuth()
@@ -119,7 +119,7 @@ export default function ActivitiesPage() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                    {uniqueUsers.map(u => (
+                    {Array.isArray(uniqueUsers) ? uniqueUsers.map(u => (
                         <SelectItem key={u} value={u}>{u}</SelectItem>
                     ))}
                 </SelectContent>
@@ -162,7 +162,7 @@ export default function ActivitiesPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((activity) => (
+              Array.isArray(filtered) ? filtered.map((activity) => (
                 <TableRow key={activity.id} className="border-muted/20 hover:bg-muted/30 transition-colors group">
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     <div className="flex items-center gap-2">

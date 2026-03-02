@@ -23,7 +23,7 @@ import { Separator } from "@/components/ui/separator"
 import { useUser, useClerk, useAuth } from "@clerk/nextjs"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"; import { ensureString, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser()

@@ -56,15 +56,31 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+// Recursive function to sanitize data from API
+function sanitizeData(data: any): any {
+  if (data === null || data === undefined) return null;
+
+  if (Array.isArray(data)) {
+    return data.map(sanitizeData);
+  }
+
+  if (typeof data === 'object') {
+    const sanitized: any = {};
+    for (const key in data) {
+      sanitized[key] = sanitizeData(data[key]);
+    }
+    return sanitized;
+  }
+
+  return data;
+}
+
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   if (typeof window !== 'undefined') {
     try { NProgress.start(); } catch (e) { console.error(e) }
   }
   try {
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-
-    // We get the token from Clerk if available (this should be handled by the caller or a hook)
-    // but for now we'll just allow passing it in options.headers
 
     const res = await fetch(url, {
       ...options,
@@ -77,16 +93,12 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     });
 
     if (!res.ok) {
-      if (res.status === 401) {
-        // Unauthorized - handle redirect to login if needed
-        // but Clerk middleware usually handles this
-      }
       let errorMessage = res.statusText || "An error occurred";
       try {
         const error = await res.json();
         errorMessage = error.message || errorMessage;
       } catch (e) {
-        // If not JSON, use status text or default
+        // Not JSON
       }
       throw new Error(errorMessage);
     }
@@ -95,10 +107,12 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     try {
       data = await res.json();
     } catch (e) {
-      // If response is not JSON, but was ok, just return empty object
+      // Not JSON
       return {};
     }
-    return (data && data.data !== undefined) ? data.data : data;
+
+    const result = (data && data.data !== undefined) ? data.data : data;
+    return sanitizeData(result);
   } finally {
     if (typeof window !== 'undefined') {
       try { NProgress.done(); } catch (e) { console.error(e) }
@@ -205,7 +219,6 @@ export const api = {
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
       });
     },
-    // New Group Management Endpoints
     getGroupProfile: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/groups/${groupId}/profile`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
