@@ -118,9 +118,9 @@ function LiveIndicator() {
   )
 }
 
-function SidebarContent({ isAdmin, pathname, onItemClick, t }: { isAdmin: boolean, pathname: string, onItemClick?: () => void, t: any }) {
+function SidebarContent({ userRole, pathname, onItemClick, t }: { userRole: string, pathname: string, onItemClick?: () => void, t: any }) {
   const groups = getNavGroups(t)
-  const filteredGroups = groups.filter(group => !group.adminOnly || isAdmin)
+  const filteredGroups = groups.filter(group => !group.adminOnly || userRole === 'admin')
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -163,7 +163,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const userEmail = user?.primaryEmailAddress?.emailAddress
   const userName = user?.firstName || userEmail?.split("@")[0] || "User"
-  const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
+  let userRole = (user?.publicMetadata?.role as string) || "user"
+  if (userEmail?.toLowerCase() === "maruise237@gmail.com") userRole = "admin"
 
   React.useEffect(() => {
     setMounted(true)
@@ -194,7 +195,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <OnboardingTour />
       <div className="flex h-screen bg-background overflow-hidden">
         <aside className="hidden md:flex w-64 flex-col border-r border-border">
-          <SidebarContent isAdmin={isAdmin} pathname={pathname} t={t} />
+          <SidebarContent userRole={userRole} pathname={pathname} t={t} />
           <div className="p-4 border-t border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -234,7 +235,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </SheetTrigger>
                   <SheetContent side="left" className="p-0 w-64">
                     <SidebarContent
-                      isAdmin={isAdmin}
+                      userRole={userRole}
                       pathname={pathname}
                       onItemClick={() => setIsMobileMenuOpen(false)}
                       t={t}

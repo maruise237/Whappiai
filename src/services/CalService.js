@@ -4,10 +4,19 @@ const User = require('../models/User');
 
 class CalService {
     constructor() {
-        this.clientId = process.env.CAL_CLIENT_ID;
-        this.clientSecret = process.env.CAL_CLIENT_SECRET;
-        this.redirectUri = process.env.CAL_REDIRECT_URI || 'http://localhost:3010/api/v1/cal/callback';
         this.apiUrl = 'https://api.cal.com/v2';
+    }
+
+    get clientId() {
+        return process.env.CAL_CLIENT_ID;
+    }
+
+    get clientSecret() {
+        return process.env.CAL_CLIENT_SECRET;
+    }
+
+    get redirectUri() {
+        return process.env.CAL_REDIRECT_URI || 'http://localhost:3010/api/v1/cal/callback';
     }
 
     /**
@@ -16,10 +25,12 @@ class CalService {
      * @returns {string}
      */
     getAuthUrl(userId) {
-        if (!this.clientId || this.clientId.includes('xxxx')) {
-            throw new Error('Configuration Cal.com incorrecte : CAL_CLIENT_ID est manquant ou contient des caractères d\'exemple (xxxx). Veuillez vérifier vos variables d\'environnement.');
+        const id = this.clientId;
+        if (!id || id.trim() === '') {
+            log(`Cal.com Config Error: CAL_CLIENT_ID is missing`, 'SYSTEM', null, 'ERROR');
+            throw new Error(`Configuration Cal.com incomplète : CAL_CLIENT_ID est absent de vos variables d'environnement. Veuillez l'ajouter dans Dokploy et redémarrer le serveur.`);
         }
-        return `https://app.cal.com/auth/oauth2/authorize?client_id=${this.clientId}&redirect_uri=${encodeURIComponent(this.redirectUri)}&state=${userId}&response_type=code`;
+        return `https://app.cal.com/auth/oauth2/authorize?client_id=${id}&redirect_uri=${encodeURIComponent(this.redirectUri)}&state=${userId}&response_type=code`;
     }
 
     /**

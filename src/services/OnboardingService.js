@@ -39,7 +39,13 @@ class OnboardingService {
         try {
             // Use the default model for system generation
             const defaultModel = AIModel.getDefault();
-            if (!defaultModel) throw new Error('No default AI model configured for system generation');
+            if (!defaultModel) {
+                throw new Error('Aucun modèle IA par défaut configuré. Veuillez demander à l\'administrateur de configurer "Whappi AI" dans les réglages modèles.');
+            }
+
+            if (!defaultModel.api_key || defaultModel.api_key === 'YOUR_API_KEY_HERE') {
+                throw new Error('La clé API du modèle par défaut est manquante. Veuillez configurer une clé valide pour "Whappi AI".');
+            }
 
             // Call AI without deducting credits (system action)
             const generatedPrompt = await AIService.callAI(
