@@ -597,7 +597,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/cal/auth', checkSessionOrTokenAuth, (req, res) => {
         try {
             const CalService = require('../services/CalService');
-            const authUrl = CalService.getAuthUrl(req.currentUser.id);
+            const baseUrl = `${req.protocol}://${req.get("host")}`;
+            const authUrl = CalService.getAuthUrl(req.currentUser.id, baseUrl);
             res.json({ status: 'success', data: { authUrl } });
         } catch (error) {
             res.status(400).json({ status: 'error', message: error.message });
