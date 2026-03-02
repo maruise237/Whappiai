@@ -4,18 +4,13 @@ import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Users,
-  MessageSquare,
-  Calendar,
   Sparkles,
-  Zap,
-  Plus,
   Trash2,
   Loader2,
   Save,
   ArrowLeft,
   Search,
-  Clock,
-  History
+  Clock
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -24,12 +19,6 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/nextjs"
@@ -109,7 +98,7 @@ function GroupEngagementContent() {
     try {
       const token = await getToken()
       await api.sessions.updateGroupProfile(sessionId, selectedGroupId, profile, token || undefined)
-      toast.success("Profil du groupe mis &agrave; jour")
+      toast.success("Profil du groupe mis a jour")
     } catch (e: any) {
       toast.error("Erreur de sauvegarde")
     } finally {
@@ -123,7 +112,7 @@ function GroupEngagementContent() {
     try {
       const token = await getToken()
       await api.sessions.updateGroupLinks(sessionId, selectedGroupId, links, token || undefined)
-      toast.success("Liens enregistr&eacute;s")
+      toast.success("Liens enregistres")
     } catch (e: any) {
       toast.error("Erreur de sauvegarde des liens")
     } finally {
@@ -131,11 +120,11 @@ function GroupEngagementContent() {
     }
   }
 
-    const handleDeleteTask = async (taskId: number) => {
+  const handleDeleteTask = async (taskId: number) => {
     try {
       const token = await getToken()
       await api.sessions.deleteEngagementTask(taskId, token || undefined)
-      toast.success("Tâche supprimée")
+      toast.success("Tache supprimee")
       fetchGroupDetails()
     } catch (e) {
       toast.error("Erreur de suppression")
@@ -157,7 +146,7 @@ function GroupEngagementContent() {
         type: 'text'
       }, token || undefined)
 
-      toast.success("Message programm&eacute;")
+      toast.success("Message programme")
       setDirectMessage("")
       setScheduledAt("")
       setRecurrence("none")
@@ -171,17 +160,17 @@ function GroupEngagementContent() {
 
   const handleGenerate = async () => {
     if (!sessionId || !selectedGroupId || !generationGoal.trim()) {
-       return toast.error("Veuillez d&eacute;crire un objectif de campagne")
+       return toast.error("Veuillez decrire un objectif de campagne")
     }
 
     setIsGenerating(true)
-    const toastId = toast.loading("L&apos;IA g&eacute;n&egrave;re votre campagne...")
+    const toastId = toast.loading("L'IA genere votre campagne...")
 
     try {
        const token = await getToken()
        const response = await api.sessions.generateGroupMessage(sessionId, selectedGroupId, { objective: generationGoal, includeLinks: true }, token || undefined)
 
-       toast.success("Message g&eacute;n&eacute;r&eacute; avec succ&egrave;s", { id: toastId })
+       toast.success("Message genere avec succes", { id: toastId })
 
        if (response && response.message) {
           setDirectMessage(response.message)
@@ -189,7 +178,7 @@ function GroupEngagementContent() {
        }
        setGenerationGoal("")
     } catch (e: any) {
-       toast.error("&Eacute;chec de la g&eacute;n&eacute;ration", { id: toastId })
+       toast.error("Echec de la generation", { id: toastId })
     } finally {
        setIsGenerating(false)
     }
@@ -200,7 +189,7 @@ function GroupEngagementContent() {
   )
 
   if (loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
-  if (!sessionId) return <div className="p-12 text-center text-muted-foreground">Session non trouv&eacute;e</div>
+  if (!sessionId) return <div className="p-12 text-center text-muted-foreground">Session non trouvee</div>
 
   return (
     <div className="space-y-6 pb-20">
@@ -210,7 +199,7 @@ function GroupEngagementContent() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-0.5">
-            <h1 className="text-xl font-semibold">Engagement &amp; Strat&eacute;gie</h1>
+            <h1 className="text-xl font-semibold">Engagement & Strategie</h1>
             <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase font-bold tracking-widest px-2 h-5">
               {safeRender(sessionId)}
             </Badge>
@@ -253,7 +242,7 @@ function GroupEngagementContent() {
            {!selectedGroupId ? (
              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground/20">
                 <Users className="h-12 w-12 mb-3" />
-                <p className="text-sm font-bold uppercase tracking-widest">S&eacute;lectionnez un groupe</p>
+                <p className="text-sm font-bold uppercase tracking-widest">Selectionnez un groupe</p>
              </div>
            ) : (
              <Tabs defaultValue="profil" className="space-y-6">
@@ -266,14 +255,14 @@ function GroupEngagementContent() {
                 <TabsContent value="profil" className="space-y-6">
                    <Card className="border-none shadow-none bg-muted/20">
                       <CardHeader className="pb-4">
-                         <CardTitle className="text-sm">Identit&eacute; du Groupe</CardTitle>
-                         <CardDescription className="text-xs">D&eacute;finissez l&apos;ADN du groupe pour orienter l&apos;IA.</CardDescription>
+                         <CardTitle className="text-sm">Identite du Groupe</CardTitle>
+                         <CardDescription className="text-xs">Definissez l'ADN du groupe pour orienter l'IA.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4 pt-0">
                          <div className="space-y-1.5">
                             <Label className="text-[10px] uppercase font-bold text-muted-foreground">Mission du groupe</Label>
                             <Textarea
-                               placeholder="D&eacute;crivez la raison d&apos;&ecirc;tre du groupe..."
+                               placeholder="Decrivez la raison d'etre du groupe..."
                                className="min-h-[80px] text-xs bg-card"
                                value={profile.mission || ""}
                                onChange={e => setProfile({...profile, mission: e.target.value})}
@@ -314,14 +303,14 @@ function GroupEngagementContent() {
                             <div className="flex items-start gap-4">
                                <Sparkles className="h-5 w-5 text-primary" />
                                <div className="space-y-3 flex-1">
-                                  <h4 className="text-sm font-bold">G&eacute;n&eacute;rateur de Campagne IA</h4>
+                                  <h4 className="text-sm font-bold">Generateur de Campagne IA</h4>
                                   <Textarea
                                     placeholder="Objectif de la campagne..."
                                     className="min-h-[80px] bg-background text-xs"
                                     value={generationGoal}
                                     onChange={(e) => setGenerationGoal(e.target.value)}
                                   />
-                                  <Button size="sm" className="w-full" onClick={handleGenerate} disabled={isGenerating}>G&eacute;n&eacute;rer</Button>
+                                  <Button size="sm" className="w-full" onClick={handleGenerate} disabled={isGenerating}>Generer</Button>
                                </div>
                             </div>
                          </CardContent>
@@ -330,7 +319,7 @@ function GroupEngagementContent() {
                       <Card className="border-none shadow-none bg-muted/20 h-fit">
                          <CardContent className="p-6 space-y-4">
                             <Textarea
-                              placeholder="Message &agrave; envoyer..."
+                              placeholder="Message a envoyer..."
                               className="min-h-[120px] text-xs bg-card"
                               value={directMessage}
                               onChange={(e) => setDirectMessage(e.target.value)}
@@ -341,13 +330,13 @@ function GroupEngagementContent() {
                                  <Input type="datetime-local" className="h-9 text-xs" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />
                               </div>
                               <div className="space-y-1">
-                                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">R&eacute;p&eacute;tition</Label>
+                                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Repetition</Label>
                                  <Select value={recurrence} onValueChange={(v: any) => setRecurrence(v)}>
                                     <SelectTrigger className="h-9 text-xs">
-                                       <SelectValue placeholder="R&eacute;p&eacute;tition" />
+                                       <SelectValue placeholder="Repetition" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                       <SelectItem value="none" className="text-xs">Pas de r&eacute;p&eacute;tition</SelectItem>
+                                       <SelectItem value="none" className="text-xs">Pas de repetition</SelectItem>
                                        <SelectItem value="daily" className="text-xs">Quotidien</SelectItem>
                                        <SelectItem value="weekly" className="text-xs">Hebdomadaire</SelectItem>
                                     </SelectContent>
@@ -362,7 +351,7 @@ function GroupEngagementContent() {
                    <div className="space-y-4 pt-6 border-t">
                       <div className="flex items-center gap-2">
                          <Clock className="h-4 w-4 text-primary" />
-                         <h4 className="text-sm font-bold uppercase tracking-widest">Messages Programm&eacute;s en Attente</h4>
+                         <h4 className="text-sm font-bold uppercase tracking-widest">Messages Programmes en Attente</h4>
                       </div>
 
                       {tasks.filter(t => t.status === 'pending').length === 0 ? (
