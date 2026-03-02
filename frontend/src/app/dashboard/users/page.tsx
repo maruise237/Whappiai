@@ -61,7 +61,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function UsersPage() {
@@ -92,7 +92,7 @@ export default function UsersPage() {
     try {
       const token = await getToken()
       const data = await api.users.list(token || undefined)
-      setUsers(data || [])
+      setUsers(Array.isArray(data) ? data : [])
     } catch (e) {
       toast.error("Erreur de chargement des utilisateurs")
     } finally {
@@ -125,7 +125,7 @@ export default function UsersPage() {
     }
   }, [selectedUserId, fetchUserDetails])
 
-  const filtered = users.filter(u =>
+  const filtered = (Array.isArray(users) ? users : []).filter(u =>
     ensureString(u.email).toLowerCase().includes(searchQuery.toLowerCase()) ||
     (ensureString(u.id).toLowerCase().includes(searchQuery.toLowerCase()))
   )
@@ -270,8 +270,8 @@ export default function UsersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              Array.isArray(filtered) ? filtered.map((u) => (
-                <TableRow key={u.id || u.email} className="border-muted/20 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setSelectedUserId(u.id)}>
+              filtered.slice().map((u) => (
+                <TableRow key={ensureString(u.id || u.email)} className="border-muted/20 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setSelectedUserId(u.id)}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
@@ -398,7 +398,7 @@ export default function UsersPage() {
                         </h4>
                         <div className="space-y-2">
                             {Array.isArray(userDetails?.sessions) ? userDetails.sessions.map((s: any) => (
-                                <div key={safeRender(s.id)} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                                <div key={ensureString(s.id)} className="flex items-center justify-between p-3 rounded-lg border bg-card">
                                     <div className="min-w-0">
                                         <p className="text-xs font-bold truncate">{safeRender(s.id)}</p>
                                         <p className="text-[10px] text-muted-foreground">{safeRender(s.status)}</p>
@@ -407,7 +407,7 @@ export default function UsersPage() {
                                         {s.status === 'CONNECTED' ? 'Live' : 'Off'}
                                     </Badge>
                                 </div>
-                            ))}
+                            )) : null}
                             {(!userDetails?.sessions || userDetails.sessions.length === 0) && (
                                 <p className="text-xs text-muted-foreground italic text-center py-4 bg-muted/5 rounded-lg border-2 border-dashed">Aucune session active.</p>
                             )}
@@ -470,11 +470,11 @@ export default function UsersPage() {
                             <Table>
                                 <TableBody>
                                     {Array.isArray(userDetails?.credits) ? userDetails.credits.map((c: any, i: number) => (
-                                        <TableRow key={c.id || i} className="hover:bg-muted/30">
+                                        <TableRow key={ensureString(c.id || i)} className="hover:bg-muted/30">
                                             <TableCell className="p-3">
                                                 <div className="flex flex-col">
                                                     <span className="text-[11px] font-bold">{safeRender(c.description)}</span>
-                                                    <span className="text-[9px] text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span>
+                                                    <span className="text-[9px] text-muted-foreground">{safeDate(c.created_at)}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="p-3 text-right">
@@ -483,7 +483,7 @@ export default function UsersPage() {
                                                 </span>
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                    )) : null}
                                 </TableBody>
                             </Table>
                         </div>
@@ -496,15 +496,15 @@ export default function UsersPage() {
                     </h4>
                     <div className="space-y-2">
                         {Array.isArray(userDetails?.logs) ? userDetails.logs.map((l: any) => (
-                            <div key={l.id || l.timestamp} className="p-3 rounded-lg border bg-muted/5 flex items-start gap-3">
+                            <div key={ensureString(l.id || l.timestamp)} className="p-3 rounded-lg border bg-muted/5 flex items-start gap-3">
                                 <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", l.status === 'success' ? "bg-green-500" : "bg-red-500")} />
                                 <div className="min-w-0">
                                     <p className="text-[11px] font-bold uppercase tracking-wider">{safeRender(l.action)}</p>
                                     <p className="text-[10px] text-muted-foreground truncate">{safeRender(l.details)}</p>
-                                    <p className="text-[9px] text-muted-foreground/60 mt-1">{new Date(l.timestamp).toLocaleString()}</p>
+                                    <p className="text-[9px] text-muted-foreground/60 mt-1">{safeDate(l.timestamp)}</p>
                                 </div>
                             </div>
-                        ))}
+                        )) : null}
                     </div>
                 </TabsContent>
             </Tabs>

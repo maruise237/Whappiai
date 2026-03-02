@@ -6,19 +6,12 @@ import {
   Brain,
   Search,
   Settings2,
-  Smartphone,
   MoreVertical,
-  Sparkles,
   Loader2,
-  Bot,
-  Cpu,
   ChevronRight,
-  User,
-  Zap,
-  CheckCircle2,
   Settings
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -49,7 +42,7 @@ import { api } from "@/lib/api"
 import { MagicOnboardingWizard } from "@/components/dashboard/MagicOnboardingWizard"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
+import { cn, ensureString, safeRender } from "@/lib/utils"
 
 function AssistantIAPageContent() {
   const router = useRouter()
@@ -73,26 +66,21 @@ function AssistantIAPageContent() {
         api.ai.listModels(token || undefined)
       ])
 
-      setSessions(sessionsData || [])
-      setModels(modelsData || [])
+      const sData = Array.isArray(sessionsData) ? sessionsData : []
+      setSessions(sData)
+      setModels(Array.isArray(modelsData) ? modelsData : [])
 
-      // Fetch AI configs for each session in parallel
       const configs: Record<string, any> = {}
-      const configResults = await Promise.all(
-        (sessionsData || []).map(async (s: any) => {
+      await Promise.all(
+        sData.map(async (s: any) => {
           try {
             const ai = await api.sessions.getAI(s.sessionId, token || undefined)
-            return { sessionId: s.sessionId, ai }
+            if (ai) configs[s.sessionId] = ai
           } catch (e) {
-            console.error(`Failed to fetch AI config for session ${s.sessionId}:`, e)
-            return { sessionId: s.sessionId, ai: null }
+            console.error(e)
           }
         })
       )
-
-      configResults.forEach(res => {
-        if (res.ai) configs[res.sessionId] = res.ai
-      })
       setAiConfigs(configs)
     } catch (e) {
       toast.error("Erreur de chargement")
@@ -116,33 +104,19 @@ function AssistantIAPageContent() {
       const token = await getToken()
       await api.sessions.updateAI(sessionId, { ...config, enabled }, token || undefined)
       setAiConfigs(prev => ({ ...prev, [sessionId]: { ...config, enabled } }))
-      toast.success(enabled ? "IA activée" : "IA désactivée")
+      toast.success(enabled ? "IA activ&eacute;e" : "IA d&eacute;sactiv&eacute;e")
     } catch (e) {
       toast.error("Erreur")
     }
   }
 
-  const filtered = sessions.filter(s => ensureString(s.sessionId).toLowerCase().includes(searchQuery.toLowerCase()))
+  const filtered = (Array.isArray(sessions) ? sessions : []).filter(s =>
+    ensureString(s.sessionId).toLowerCase().includes(searchQuery.toLowerCase())
+  )
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
-
-  const [adminStats, setAdminStats] = React.useState<any>(null)
-
-  const fetchAdminStats = React.useCallback(async () => {
-    if (!isAdmin) return
-    try {
-        const token = await getToken()
-        const stats = await api.admin.getStats(7, token || undefined)
-        setAdminStats(stats)
-    } catch (e) { console.error(e) }
-  }, [isAdmin, getToken])
-
-  React.useEffect(() => {
-    fetchAdminStats()
-  }, [fetchAdminStats])
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -155,7 +129,7 @@ function AssistantIAPageContent() {
           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
             {isAdmin && (
                 <Button variant="outline" size="sm" className="h-8 rounded-full flex-1 sm:flex-none px-4" onClick={() => router.push('/dashboard/ai-models')}>
-                <Settings className="h-3 w-3 mr-2" /> Gérer les modèles
+                <Settings className="h-3 w-3 mr-2" /> G&eacute;rer les mod&egrave;les
                 </Button>
             )}
             {sessions.length > 0 && (
@@ -184,7 +158,7 @@ function AssistantIAPageContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.isArray(filtered) ? filtered.map(session => {
+          {filtered.map(session => {
             const config = aiConfigs[session.sessionId]
             const modelName = models.find(m => m.id === config?.model)?.name || config?.model || 'Whappi AI'
             return (
@@ -215,20 +189,19 @@ function AssistantIAPageContent() {
                         <Settings2 className="h-3.5 w-3.5 mr-2" /> Quick Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => router.push(`/dashboard/ai/config?sessionId=${safeRender(session.sessionId)}`)} className="text-xs">
-                        <Brain className="h-3.5 w-3.5 mr-2" /> Config Avancée
+                        <Brain className="h-3.5 w-3.5 mr-2" /> Config Avanc&eacute;e
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-4 flex-1">
-                   {/* Prompt Preview (Bulle subtile) */}
                    <div className="rounded-md bg-muted/50 p-3 text-[11px] text-muted-foreground line-clamp-2 border-l-2 border-primary/40 italic leading-relaxed">
-                      {safeRender(config?.prompt, 'Aucun prompt configuré')}
+                      {safeRender(config?.prompt, 'Aucun prompt configur&eacute;')}
                    </div>
 
                    <div className="grid grid-cols-2 gap-2">
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
-                         <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Modèle</p>
+                         <p className="text-[9px] font-semibold text-muted-foreground mb-0.5">Mod&egrave;le</p>
                          <p className="text-[10px] font-semibold truncate">{safeRender(modelName)}</p>
                       </div>
                       <div className="p-2 rounded bg-muted/20 border border-muted/30">
@@ -242,7 +215,6 @@ function AssistantIAPageContent() {
                    <Switch
                      checked={!!config?.enabled}
                      onCheckedChange={(v) => handleToggleAI(session.sessionId, v)}
-                     size="sm"
                    />
                 </CardFooter>
               </Card>
@@ -251,12 +223,11 @@ function AssistantIAPageContent() {
         </div>
       )}
 
-      {/* Quick Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-base">Configuration IA Rapide</DialogTitle>
-            <DialogDescription className="text-xs">Ajustez les paramètres essentiels de {safeRender(editingSessionId)}.</DialogDescription>
+            <DialogDescription className="text-xs">Ajustez les param&egrave;tres essentiels de {safeRender(editingSessionId)}.</DialogDescription>
           </DialogHeader>
           {editingSessionId && aiConfigs[editingSessionId] && (
             <div className="space-y-4 py-4">
@@ -279,12 +250,12 @@ function AssistantIAPageContent() {
                   <SelectContent>
                     <SelectItem value="bot">Automatique (Bot)</SelectItem>
                     <SelectItem value="human">Suggestion (Humain)</SelectItem>
-                    <SelectItem value="keyword">Mots-clés uniquement</SelectItem>
+                    <SelectItem value="keyword">Mots-cl&eacute;s uniquement</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-muted-foreground">Modèle LLM</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Mod&egrave;le LLM</Label>
                 <Select
                   value={aiConfigs[editingSessionId].model || (models.find(m => m.is_default)?.id || "deepseek-chat")}
                   onValueChange={(v) => {
@@ -294,9 +265,9 @@ function AssistantIAPageContent() {
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {models.length === 0 ? (
-                      <SelectItem value="deepseek-chat">Whappi AI (Défaut)</SelectItem>
+                      <SelectItem value="deepseek-chat">Whappi AI (D&eacute;faut)</SelectItem>
                     ) : (
-                      Array.isArray(models) ? models.map(m => (
+                      models.map(m => (
                         <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                       ))
                     )}
@@ -312,7 +283,7 @@ function AssistantIAPageContent() {
                   router.push(`/dashboard/ai/config?sessionId=${safeRender(editingSessionId)}`);
                 }}
               >
-                Accéder à la configuration avancée <ChevronRight className="h-3 w-3 ml-1" />
+                Acc&eacute;der &agrave; la configuration avanc&eacute;e <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
           )}
@@ -322,7 +293,7 @@ function AssistantIAPageContent() {
                 if (editingSessionId) {
                   const token = await getToken();
                   await api.sessions.updateAI(editingSessionId, aiConfigs[editingSessionId], token || undefined);
-                  toast.success("Enregistré");
+                  toast.success("Enregistr&eacute;");
                   setIsEditDialogOpen(false);
                 }
              }}>Sauvegarder</Button>

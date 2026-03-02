@@ -3,8 +3,6 @@
 const ACTIVITIES_PAGE_SIZE = 50
 const SKELETON_ROWS = 5
 
-
-
 import * as React from "react"
 import {
   Activity,
@@ -34,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { api } from "@/lib/api"
 import { useAuth, useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
-import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 
 export default function ActivitiesPage() {
   const { getToken } = useAuth()
@@ -51,7 +49,7 @@ export default function ActivitiesPage() {
     try {
       const token = await getToken()
       const data = await api.activities.list(ACTIVITIES_PAGE_SIZE, 0, token || undefined)
-      setActivities(data || [])
+      setActivities(Array.isArray(data) ? data : [])
     } catch (e) {
       toast.error("Erreur de chargement du journal")
     } finally {
@@ -63,7 +61,7 @@ export default function ActivitiesPage() {
     fetchActivities()
   }, [fetchActivities])
 
-  const filtered = activities.filter(a => {
+  const filtered = (Array.isArray(activities) ? activities : []).filter(a => {
     const action = ensureString(a.action);
     const details = ensureString(a.details);
     const matchesSearch = ensureString(action).toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,7 +74,7 @@ export default function ActivitiesPage() {
     return matchesSearch && matchesUser;
   })
 
-  const uniqueUsers = Array.from(new Set(activities.map(a => a.user_email))).filter(Boolean)
+  const uniqueUsers = Array.from(new Set((Array.isArray(activities) ? activities : []).map(a => a.user_email))).filter(Boolean)
 
   const getActionIcon = (action: string) => {
     const act = action || "";
@@ -120,8 +118,8 @@ export default function ActivitiesPage() {
                 <SelectContent>
                     <SelectItem value="all">Tous les utilisateurs</SelectItem>
                     {Array.isArray(uniqueUsers) ? uniqueUsers.map(u => (
-                        <SelectItem key={u} value={u}>{u}</SelectItem>
-                    ))}
+                        <SelectItem key={ensureString(u)} value={ensureString(u)}>{safeRender(u)}</SelectItem>
+                    )) : null}
                 </SelectContent>
             </Select>
         )}
@@ -152,27 +150,24 @@ export default function ActivitiesPage() {
             {loading ? (
               Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                 <TableRow key={`skeleton-${i}`} className="animate-pulse border-muted/20">
-                  <TableCell colSpan={5} className="h-12 bg-muted/5"></TableCell>
+                  <TableCell colSpan={6} className="h-12 bg-muted/5"></TableCell>
                 </TableRow>
               ))
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground text-xs italic">
+                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs italic">
                   Aucune activité trouvée.
                 </TableCell>
               </TableRow>
             ) : (
               Array.isArray(filtered) ? filtered.map((activity) => (
-                <TableRow key={activity.id} className="border-muted/20 hover:bg-muted/30 transition-colors group">
+                <TableRow key={ensureString(activity.id)} className="border-muted/20 hover:bg-muted/30 transition-colors group">
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3 w-3 opacity-40" />
-                      {(() => {
-                        const date = new Date(activity.created_at || activity.timestamp);
-                        return isNaN(date.getTime()) ? 'Date invalide' : date.toLocaleString('fr-FR', {
-                          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-                        });
-                      })()}
+                      {safeDate(activity.created_at || activity.timestamp, {
+                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                      })}
                     </div>
                   </TableCell>
                   {isAdmin && (
@@ -218,7 +213,7 @@ export default function ActivitiesPage() {
                     </Badge>
                   </TableCell>
                 </TableRow>
-              ))
+              )) : null
             )}
           </TableBody>
         </Table>
