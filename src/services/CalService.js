@@ -3,16 +3,21 @@ const { log } = require('../utils/logger');
 const User = require('../models/User');
 
 class CalService {
+    _clean(val) {
+        if (!val) return '';
+        return val.trim().replace(/^["']|["']$/g, '');
+    }
+
     get clientId() {
-        return (process.env.CAL_CLIENT_ID || '').trim();
+        return this._clean(process.env.CAL_CLIENT_ID);
     }
 
     get clientSecret() {
-        return (process.env.CAL_CLIENT_SECRET || '').trim();
+        return this._clean(process.env.CAL_CLIENT_SECRET);
     }
 
     get redirectUri() {
-        return (process.env.CAL_REDIRECT_URI || '').trim();
+        return this._clean(process.env.CAL_REDIRECT_URI);
     }
 
     get apiUrl() {
@@ -25,29 +30,35 @@ class CalService {
      * @returns {string}
      */
     resolveRedirectUri(fallbackBaseUrl = null) {
+        let uri = this.redirectUri;
+
         // 1. Priority: CAL_REDIRECT_URI from environment
-        if (this.redirectUri) {
-            log(`Redirect URI resolved from CAL_REDIRECT_URI: ${this.redirectUri}`, 'SYSTEM', null, 'DEBUG');
-            return this.redirectUri;
+        if (uri) {
+            // Automatically append path if missing
+            if (!uri.includes('/api/v1/cal/callback')) {
+                uri = `${uri.replace(/\/$/, '')}/api/v1/cal/callback`;
+            }
+            log(`Redirect URI resolved from CAL_REDIRECT_URI: ${uri}`, 'SYSTEM', null, 'DEBUG');
+            return uri;
         }
 
         // 2. Secondary: Construct from NEXT_PUBLIC_API_URL or APP_URL
-        const apiBase = (process.env.NEXT_PUBLIC_API_URL || process.env.APP_URL || '').trim();
+        const apiBase = this._clean(process.env.NEXT_PUBLIC_API_URL || process.env.APP_URL);
         if (apiBase) {
-            const uri = `${apiBase.replace(/\/$/, '')}/api/v1/cal/callback`;
+            uri = `${apiBase.replace(/\/$/, '')}/api/v1/cal/callback`;
             log(`Redirect URI resolved from API_URL: ${uri}`, 'SYSTEM', null, 'DEBUG');
             return uri;
         }
 
         // 3. Tertiary: Construct from dynamic request host
         if (fallbackBaseUrl) {
-            const uri = `${fallbackBaseUrl.replace(/\/$/, '')}/api/v1/cal/callback`;
+            uri = `${this._clean(fallbackBaseUrl).replace(/\/$/, '')}/api/v1/cal/callback`;
             log(`Redirect URI resolved from Dynamic Fallback: ${uri}`, 'SYSTEM', null, 'DEBUG');
             return uri;
         }
 
         // 4. Ultimate Fallback (Localhost)
-        const uri = 'http://localhost:3010/api/v1/cal/callback';
+        uri = 'http://localhost:3010/api/v1/cal/callback';
         log(`Redirect URI resolved from Ultimate Fallback: ${uri}`, 'SYSTEM', null, 'DEBUG');
         return uri;
     }

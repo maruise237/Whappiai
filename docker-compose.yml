@@ -20,6 +20,8 @@ services:
       - CAL_CLIENT_ID=${CAL_CLIENT_ID}
       - CAL_CLIENT_SECRET=${CAL_CLIENT_SECRET}
       - CAL_REDIRECT_URI=${CAL_REDIRECT_URI}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - APP_URL=${APP_URL}
     volumes:
       - whappi-data:/app/data
       - whappi-sessions:/app/sessions
