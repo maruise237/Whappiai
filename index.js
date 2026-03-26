@@ -52,8 +52,11 @@ const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middlewar
 // API v1
 const { initializeApi } = require('./src/routes/api');
 
+// Helper to sanitize environment variables (removes quotes and whitespace)
+const _clean = (val) => typeof val === 'string' ? val.trim().replace(/^["']|["']$/g, '') : val;
+
 // Validate encryption key
-const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY;
+const ENCRYPTION_KEY = _clean(process.env.TOKEN_ENCRYPTION_KEY);
 if (!ENCRYPTION_KEY || !isValidKey(ENCRYPTION_KEY)) {
     log('FATAL: TOKEN_ENCRYPTION_KEY doit être au moins de 64 caractères hexadécimaux !', 'SYSTEM', { event: 'fatal-error' }, 'ERROR');
     log('Générez-en une avec: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"', 'SYSTEM', { event: 'fatal-error-hint' }, 'ERROR');
@@ -110,7 +113,7 @@ const wsClients = new Map();
 
 // Session configuration
 const isProduction = process.env.NODE_ENV === 'production';
-const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-me';
+const sessionSecret = _clean(process.env.SESSION_SECRET) || 'dev-secret-change-me';
 
 // Ensure sessions directory exists for FileStore
 const sessionsDir = path.join(__dirname, 'sessions');

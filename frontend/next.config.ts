@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
+
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: 'export',
+  images: {
+    unoptimized: true,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -8,4 +12,5 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
 };
+
 export default nextConfig;
