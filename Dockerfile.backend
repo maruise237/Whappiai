@@ -2,7 +2,7 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY frontend/ .
 # Inject build-time environment variables for static export
 ARG NEXT_PUBLIC_API_URL
@@ -18,7 +18,7 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache python3 make g++ gcc libc-dev
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # STAGE 3: Final Runner
 FROM node:20-alpine AS runner
