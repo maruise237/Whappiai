@@ -1,16 +1,14 @@
 import { MetadataRoute } from 'next'
 import { blogPosts } from '@/lib/blog-data'
 
+export const dynamic = 'force-static';
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://whappi.com'
 
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(post.date), // Note: post.date is string, might need parsing if format is strict, but sitemap accepts Date object. 
-    // Wait, post.date is "16 Février 2026", which is not standard Date string. 
-    // I should probably store ISO date in blog-data or parse it.
-    // For now, I'll use current date or fix the data structure.
-    // Let's use new Date() for simplicity as the posts are new.
+    lastModified: new Date(),
     changeFrequency: 'monthly',
     priority: 0.7,
   }))
