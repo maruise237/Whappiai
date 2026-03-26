@@ -1,12 +1,12 @@
 services:
-  whappi-backend:
+  whappi-frontend:
     build:
       context: .
       dockerfile: Dockerfile.backend
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
         - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-    container_name: whappi-backend
+    container_name: whappi-app
     restart: always
     ports:
       - "3000:3000"
@@ -30,6 +30,14 @@ services:
       - whappi-sessions:/app/sessions
       - whappi-auth:/app/auth_info_baileys
       - whappi-media:/app/media
+    networks:
+      - dokploy-network
+
+  # Dummy service to satisfy Dokploy service detection if needed
+  waha:
+    image: busybox
+    command: ["sh", "-c", "echo 'Whappi Alias Service Active' && sleep infinity"]
+    restart: always
     networks:
       - dokploy-network
 
