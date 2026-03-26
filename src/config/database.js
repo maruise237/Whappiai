@@ -56,8 +56,35 @@ function initializeSchema() {
             name TEXT,
             password TEXT NOT NULL,
             role TEXT DEFAULT 'user' CHECK(role IN ('admin', 'user')),
+            image_url TEXT,
+            created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            is_active INTEGER DEFAULT 1
+            is_active INTEGER DEFAULT 1,
+            is_verified INTEGER DEFAULT 0,
+            plan_id TEXT DEFAULT 'free',
+            plan_status TEXT DEFAULT 'active',
+            message_limit INTEGER DEFAULT 100,
+            message_used INTEGER DEFAULT 0,
+            subscription_expiry DATETIME,
+            chariow_license_key TEXT,
+            address TEXT,
+            bio TEXT,
+            location TEXT,
+            website TEXT,
+            phone TEXT,
+            whatsapp_number TEXT,
+            whatsapp_status TEXT DEFAULT 'disconnected',
+            ai_enabled INTEGER DEFAULT 0,
+            ai_prompt TEXT,
+            ai_model TEXT DEFAULT 'deepseek-chat',
+            timezone TEXT DEFAULT 'UTC',
+            organization_name TEXT,
+            sound_notifications INTEGER DEFAULT 1,
+            cal_access_token TEXT,
+            cal_refresh_token TEXT,
+            cal_token_expiry INTEGER,
+            ai_cal_enabled INTEGER DEFAULT 0,
+            ai_cal_video_allowed INTEGER DEFAULT 0
         )
     `);
 
@@ -92,6 +119,10 @@ function initializeSchema() {
             ai_deactivate_on_read INTEGER DEFAULT 0,
             ai_session_window INTEGER DEFAULT 2,
             ai_respond_to_tags INTEGER DEFAULT 1,
+            ai_reply_delay INTEGER DEFAULT 0,
+            ai_read_on_reply INTEGER DEFAULT 0,
+            ai_random_protection_enabled INTEGER DEFAULT 1,
+            ai_random_protection_rate REAL DEFAULT 0.1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -454,6 +485,54 @@ function initializeSchema() {
                 log("Migration : Échec ajout qr_code", "SYSTEM", { error: e.message }, "ERROR");
             }
         }
+    });
+
+    // Comprehensive fix for missing columns in 2026 SaaS schema
+    runner.run('users-sessions-saas-v2026-v9-fix-v2', (db) => {
+        // Fix Users table - Comprehensive list based on Model usage and SaaS goals
+        const userCols = [
+            { name: 'created_by', type: 'TEXT' },
+            { name: 'is_verified', type: 'INTEGER DEFAULT 0' },
+            { name: 'chariow_license_key', type: 'TEXT' },
+            { name: 'address', type: 'TEXT' },
+            { name: 'bio', type: 'TEXT' },
+            { name: 'location', type: 'TEXT' },
+            { name: 'website', type: 'TEXT' },
+            { name: 'phone', type: 'TEXT' },
+            { name: 'whatsapp_number', type: 'TEXT' },
+            { name: 'whatsapp_status', type: "TEXT DEFAULT 'disconnected'" },
+            { name: 'ai_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_prompt', type: 'TEXT' },
+            { name: 'ai_model', type: "TEXT DEFAULT 'deepseek-chat'" },
+            { name: 'image_url', type: 'TEXT' },
+            { name: 'plan_id', type: "TEXT DEFAULT 'free'" },
+            { name: 'plan_status', type: "TEXT DEFAULT 'active'" },
+            { name: 'message_limit', type: 'INTEGER DEFAULT 100' },
+            { name: 'message_used', type: 'INTEGER DEFAULT 0' },
+            { name: 'subscription_expiry', type: 'DATETIME' },
+            { name: 'timezone', type: "TEXT DEFAULT 'UTC'" },
+            { name: 'organization_name', type: 'TEXT' },
+            { name: 'sound_notifications', type: 'INTEGER DEFAULT 1' },
+            { name: 'cal_access_token', type: 'TEXT' },
+            { name: 'cal_refresh_token', type: 'TEXT' },
+            { name: 'cal_token_expiry', type: 'INTEGER' },
+            { name: 'ai_cal_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_cal_video_allowed', type: 'INTEGER DEFAULT 0' }
+        ];
+        userCols.forEach(col => {
+            try { db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+        });
+
+        // Fix Sessions table
+        const sessionCols = [
+            { name: 'ai_reply_delay', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_read_on_reply', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_random_protection_enabled', type: 'INTEGER DEFAULT 1' },
+            { name: 'ai_random_protection_rate', type: 'REAL DEFAULT 0.1' }
+        ];
+        sessionCols.forEach(col => {
+            try { db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+        });
     });
 
     log('Schéma de la base de données initialisé avec succès', 'SYSTEM', { event: 'db-schema-init' }, 'INFO');
