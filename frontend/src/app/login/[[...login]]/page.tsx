@@ -1,5 +1,9 @@
 "use client"
 
+export function generateStaticParams() {
+  return [{ login: [] }]
+}
+
 import { useState, useEffect } from "react"
 import { useSignIn, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
