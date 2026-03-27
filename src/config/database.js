@@ -456,6 +456,63 @@ function initializeSchema() {
         }
     });
 
+    // Add chariow_license_key to users
+    runner.run('users-add-chariow-license-key-v1', (db) => {
+        const info = db.prepare("PRAGMA table_info(users)").all();
+        if (!info.some(c => c.name === 'chariow_license_key')) {
+            try {
+                db.exec("ALTER TABLE users ADD COLUMN chariow_license_key TEXT");
+                log("Migration : Colonne chariow_license_key ajoutée avec succès", "SYSTEM");
+            } catch (e) {
+                log("Migration : Échec ajout chariow_license_key", "SYSTEM", { error: e.message }, "ERROR");
+            }
+        }
+    });
+
+    // Seed pricing plans
+    runner.run('seed-pricing-plans-v1', (db) => {
+        const count = db.prepare("SELECT COUNT(*) as count FROM pricing_plans").get().count;
+        if (count === 0) {
+            log("Migration : Initialisation des plans de tarification", "SYSTEM");
+            const plans = [
+                { id: 'starter', code: 'starter', name: 'Starter', price: 2500, message_limit: 2000, chariow_id: 'prd_jx0jkk', url: 'https://esaystor.online/prd_jx0jkk', features: '2,000 messages/mois, Support par email, Accès API standard, 1 instance WhatsApp' },
+                { id: 'pro', code: 'pro', name: 'Pro', price: 5000, message_limit: 10000, chariow_id: 'prd_l2es24', url: 'https://esaystor.online/prd_l2es24', features: '10,000 messages/mois, Support prioritaire, Accès API complet, 3 instances WhatsApp, Statistiques avancées' },
+                { id: 'business', code: 'business', name: 'Business', price: 10000, message_limit: 100000, chariow_id: 'prd_twafj6', url: 'https://esaystor.online/prd_twafj6', features: '100,000 messages/mois, Support dédié 24/7, Accès API illimité, Instances illimitées, IA personnalisée' }
+            ];
+
+            const stmt = db.prepare(`
+                INSERT INTO pricing_plans (id, code, name, price, message_limit, chariow_product_id, payment_url, features, is_active, version)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
+            `);
+
+            for (const plan of plans) {
+                stmt.run(plan.id, plan.code, plan.name, plan.price, plan.message_limit, plan.chariow_id, plan.url, plan.features);
+            }
+            log("Migration : Plans de tarification initialisés avec succès", "SYSTEM");
+        }
+    });
+
+
+    // Add missing columns required by memory and model
+    runner.run('users-fix-missing-columns-v1', (db) => {
+        const info = db.prepare("PRAGMA table_info(users)").all();
+        const columns = [
+            { name: 'created_by', type: 'TEXT' },
+            { name: 'is_verified', type: 'INTEGER DEFAULT 0' },
+            { name: 'address', type: 'TEXT' }
+        ];
+        columns.forEach(col => {
+            if (!info.some(c => c.name === col.name)) {
+                try {
+                    db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+                    log(`Migration : Colonne ${col.name} ajoutée avec succès`, "SYSTEM");
+                } catch (e) {
+                    log(`Migration : Échec ajout ${col.name}`, "SYSTEM", { error: e.message }, "ERROR");
+                }
+            }
+        });
+    });
+
     log('Schéma de la base de données initialisé avec succès', 'SYSTEM', { event: 'db-schema-init' }, 'INFO');
 }
 
