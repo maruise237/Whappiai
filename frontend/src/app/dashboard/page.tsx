@@ -58,7 +58,7 @@ import {
 } from 'recharts'
 import { useRouter } from "next/navigation"
 import { useWebSocket } from "@/providers/websocket-provider"
-import { useUser, useAuth } from "@clerk/nextjs"
+import { useUser, useAuth } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
 import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"

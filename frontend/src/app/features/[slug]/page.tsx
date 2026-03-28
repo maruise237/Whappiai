@@ -1,3 +1,4 @@
+
 import { notFound } from "next/navigation"
 import { Navbar } from "@/components/landing/navbar"
 import { Footer } from "@/components/landing/footer"

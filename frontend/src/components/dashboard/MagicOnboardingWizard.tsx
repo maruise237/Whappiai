@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 import confetti from "canvas-confetti"
 

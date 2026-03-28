@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { Home, ArrowRight, MessageSquare, FileText, LayoutDashboard } from "lucide-react"
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@clerk/clerk-react"
 
 export default function NotFound() {
   const { isSignedIn, isLoaded } = useUser()

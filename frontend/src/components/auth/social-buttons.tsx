@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useSignIn, useSignUp } from "@clerk/nextjs"
+import { useSignIn, useSignUp } from "@clerk/clerk-react"
 
 export function SocialButtons({ mode = "signin" }: { mode?: "signin" | "signup" }) {
   const { signIn, isLoaded: isSignInLoaded } = useSignIn()

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@clerk/clerk-react"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"

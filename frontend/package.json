@@ -13,6 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.4",
     "@clerk/localizations": "^3.35.3",
     "@clerk/nextjs": "^6.10.6",
     "@hookform/resolvers": "^3.10.0",

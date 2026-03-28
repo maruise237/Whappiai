@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { api, API_BASE_URL } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 
 interface WebSocketContextType {
   lastMessage: any
