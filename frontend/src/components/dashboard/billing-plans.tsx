@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { fetchApi } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 

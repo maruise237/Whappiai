@@ -13,7 +13,7 @@ import { showConfirm } from "@/lib/swal"
 import { cn, copyToClipboard as copyUtil, ensureString, safeRender, safeDate } from "@/lib/utils"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
   const { getToken } = useAuth()

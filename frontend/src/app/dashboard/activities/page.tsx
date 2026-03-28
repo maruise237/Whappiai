@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/api"
-import { useAuth, useUser } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 

@@ -40,7 +40,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
-import { useAuth, useUser } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 

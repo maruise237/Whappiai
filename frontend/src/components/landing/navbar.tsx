@@ -6,7 +6,7 @@ import { Menu, X, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@clerk/clerk-react"
 
 const navItems = [
   { label: "Fonctionnalités", href: "/#features" },

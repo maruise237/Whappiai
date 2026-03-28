@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/select"
 import { api } from "@/lib/api"
 import { MagicOnboardingWizard } from "@/components/dashboard/MagicOnboardingWizard"
-import { useAuth, useUser } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"

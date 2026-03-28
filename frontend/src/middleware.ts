@@ -30,9 +30,6 @@ const isAuthRoute = createRouteMatcher([
   "/register(.*)",
 ]);
 
-const isLandingRoute = createRouteMatcher([
-  "/"
-]);
 
 export default clerkMiddleware(async (auth, request) => {
   const { userId } = await auth();

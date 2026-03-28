@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 

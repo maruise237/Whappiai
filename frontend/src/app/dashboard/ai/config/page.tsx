@@ -34,7 +34,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
 import { api } from "@/lib/api"
-import { useAuth, useUser } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 

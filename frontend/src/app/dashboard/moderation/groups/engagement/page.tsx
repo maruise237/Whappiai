@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, copyToClipboard, ensureString, safeRender } from "@/lib/utils"
 
