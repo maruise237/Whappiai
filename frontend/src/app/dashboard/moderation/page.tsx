@@ -58,7 +58,7 @@ export default function ModerationPage() {
         const newSessions = [...prev];
         let hasChanges = false;
 
-        updates.forEach(update => {
+        updates.forEach((update: any) => {
           const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
           if (index !== -1) {
             newSessions[index] = {
