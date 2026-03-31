@@ -97,7 +97,7 @@ export function Navbar() {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hover:bg-muted" asChild>
-            <Link href="/login">Connexion</Link>
+            <Link href={isSignedIn ? "/dashboard" : "/login"}>{isSignedIn ? "Tableau de bord" : "Connexion"}</Link>
           </Button>
           <Button size="sm" className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full px-4" asChild>
             <Link href="/register">Essai Gratuit</Link>
@@ -143,7 +143,7 @@ export function Navbar() {
               ))}
               <hr className="border-border my-2" />
               <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
-                <Link href="/login">Connexion</Link>
+                <Link href={isSignedIn ? "/dashboard" : "/login"}>{isSignedIn ? "Tableau de bord" : "Connexion"}</Link>
               </Button>
               <Button className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full w-full" asChild>
                 <Link href="/register">Essai Gratuit</Link>
