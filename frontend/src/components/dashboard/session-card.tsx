@@ -172,6 +172,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 <button
                   onClick={() => copyToClipboard(session.sessionId, "ID")}
                   className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Copier l'ID de session"
+                  title="Copier l'ID de session"
                 >
                   <Copy className="h-3 w-3" />
                 </button>
@@ -192,7 +194,14 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                  </span>
               )}
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive"
+              onClick={handleDelete}
+              aria-label="Options de la session"
+              title="Options de la session"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </div>
@@ -284,10 +293,20 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   <span className="text-xs font-mono text-muted-foreground">
                     {showToken ? (typeof session.token === 'string' ? session.token : ensureString(session.token)) : "••••••••••••"}
                   </span>
-                  <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => setShowToken(!showToken)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={showToken ? "Masquer le token" : "Afficher le token"}
+                    title={showToken ? "Masquer le token" : "Afficher le token"}
+                  >
                     {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                   </button>
-                  <button onClick={() => copyToClipboard(session.token, "Token")} className="text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => copyToClipboard(session.token, "Token")}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Copier le token"
+                    title="Copier le token"
+                  >
                     <Copy className="h-3 w-3" />
                   </button>
                 </div>
