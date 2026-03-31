@@ -305,11 +305,11 @@ class AIService {
                     const botIsAdmin = modService.isGroupAdmin(groupMetadata, myJid, myLid, sessionId);
 
                     if (!botIsAdmin) {
-                        // log(`IA ignorée : Le bot n'est pas admin du groupe ${remoteJid}`, sessionId, { event: 'ai-skip-not-admin' }, 'DEBUG');
+                        log(`IA ignorée : Le bot n'est pas admin du groupe ${remoteJid}`, sessionId, { event: 'ai-skip-not-admin' }, 'DEBUG');
                         return;
                     }
                 } catch (e) {
-                    // log(`IA ignorée : Impossible de vérifier le statut admin pour ${remoteJid}`, sessionId, { event: 'ai-skip-meta-error' }, 'WARN');
+                    log(`IA ignorée : Impossible de vérifier le statut admin pour ${remoteJid} : ${e.message}`, sessionId, { event: 'ai-skip-meta-error' }, 'DEBUG');
                     return;
                 }
 
