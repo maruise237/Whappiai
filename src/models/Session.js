@@ -123,7 +123,6 @@ class Session {
         if (!existing) return null;
 
         // Partial update: only update if value is not undefined
-        // Note: qr_code field is not explicitly in this method but pairing_code is
         const newStatus = status !== undefined ? status : existing.status;
         const newDetail = detail !== undefined ? detail : existing.detail;
         const newPairingCode = pairingCode !== undefined ? pairingCode : existing.pairing_code;
