@@ -28,7 +28,7 @@ export const Logo: React.FC<LogoProps> = ({
     >
       <div className="relative shrink-0">
         <Image
-          src="/icon.png"
+          src="/icon.webp"
           alt="Whappi"
           width={size}
           height={size}

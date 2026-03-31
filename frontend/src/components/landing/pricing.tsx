@@ -102,6 +102,7 @@ export function Pricing() {
               Mensuel
             </span>
             <button
+              aria-label="Toggle annual billing"
               onClick={() => setIsAnnual(!isAnnual)}
               className={cn(
                 "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

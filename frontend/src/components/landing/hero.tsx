@@ -7,11 +7,11 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 
 const avatars = [
-  "https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png",
-  "https://i.ibb.co/hx78Kb9z/Annotation-2026-02-16-211337.png",
-  "https://i.ibb.co/zTL3Q6t9/Male-Professional-Headshot-East-African.jpg",
-  "https://i.ibb.co/kg0ppRdz/Create-your-professional-DP-and-add-it-to-your.jpg",
-  "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg",
+  "/avatars/avatar1.webp",
+  "/avatars/avatar2.webp",
+  "/avatars/avatar3.webp",
+  "/avatars/avatar4.webp",
+  "/avatars/avatar5.webp",
 ]
 
 const features = [
@@ -76,10 +76,10 @@ export function Hero() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: false, amount: 0.5 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm"
           >
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-            <span className="text-sm font-medium text-primary">Automatisation WhatsApp Intelligente</span>
+            <span className="text-sm font-semibold text-primary dark:text-emerald-400">Automatisation WhatsApp Intelligente</span>
           </motion.div>
 
           {/* Headline */}

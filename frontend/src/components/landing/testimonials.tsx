@@ -18,7 +18,7 @@ const MARIUSE = {
   role: "CEO & Founder",
   company: "Whappi",
   content: "Notre mission est de rendre l'automatisation WhatsApp accessible à toutes les entreprises africaines, sans compromis sur la qualité.",
-  avatar: "https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png",
+  avatar: "/avatars/avatar1.webp",
   rating: 5
 }
 
@@ -27,7 +27,7 @@ const CELINE = {
   role: "Responsable Service Client",
   company: "InnovCorp",
   content: "Whappi a transformé notre façon de gérer le support. Nos clients sont ravis de la réactivité, et mon équipe est moins stressée.",
-  avatar: "https://i.ibb.co/hx78Kb9z/Annotation-2026-02-16-211337.png",
+  avatar: "/avatars/avatar2.webp",
   rating: 5
 }
 
@@ -38,7 +38,7 @@ const AFRICAN_PROFILES = [
     role: "Directeur Commercial",
     company: "Dakar Immo",
     content: "L'outil idéal pour gérer nos leads immobiliers. Simple, rapide et efficace.",
-    avatar: "https://i.ibb.co/zTL3Q6t9/Male-Professional-Headshot-East-African.jpg",
+    avatar: "/avatars/avatar3.webp",
     rating: 5
   },
   {
@@ -46,7 +46,7 @@ const AFRICAN_PROFILES = [
     role: "Fondatrice",
     company: "Bamako Tech",
     content: "Le service client est impeccable. Ils comprennent vraiment les besoins des entrepreneurs.",
-    avatar: "https://i.ibb.co/kg0ppRdz/Create-your-professional-DP-and-add-it-to-your.jpg",
+    avatar: "/avatars/avatar4.webp",
     rating: 5
   },
   {
@@ -54,7 +54,7 @@ const AFRICAN_PROFILES = [
     role: "Développeur Senior",
     company: "Accra Soft",
     content: "L'API est robuste et bien documentée. Une intégration sans douleur.",
-    avatar: "https://i.ibb.co/QW6p9bH/t-l-chargement-2.jpg",
+    avatar: "/avatars/avatar5.webp",
     rating: 4
   }
 ]
