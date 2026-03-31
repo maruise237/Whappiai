@@ -19,6 +19,7 @@ if (process.env.NODE_ENV === 'production') {
 require('dotenv').config();
 
 const express = require('express');
+const compression = require('compression');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const path = require('path');
@@ -65,6 +66,10 @@ if (!ENCRYPTION_KEY || !isValidKey(ENCRYPTION_KEY)) {
 
 // Initialize Express
 const app = express();
+
+// Apply compression middleware to optimize LCP by reducing payload size (Gzip/Brotli)
+app.use(compression());
+
 app.set('trust proxy', 1);
 
 // CORS configuration
