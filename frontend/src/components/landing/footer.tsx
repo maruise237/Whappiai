@@ -44,7 +44,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <Image src="/icon.png" width={32} height={32} alt="Whappi Logo" className="object-contain" />
+              <Image src="/icon.webp" width={32} height={32} alt="Whappi Logo" className="object-contain" />
               <span className="font-semibold text-foreground">Whappi</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-4">Enterprise-grade WhatsApp automation powered by AI.</p>
@@ -58,7 +58,7 @@ export function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-sm font-semibold text-foreground mb-4">{title}</h4>
+              <h3 className="text-sm font-semibold text-foreground mb-4">{title}</h3>
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.href + link.label}>

@@ -156,7 +156,7 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
               <ArrowLeft className="text-[#00a884] w-5 h-5 cursor-pointer" />
               <div className="relative">
                 <img 
-                  src="https://i.ibb.co/1tkgLkgd/Gemini-Generated-Image-1ykssf1ykssf1dyks.png" 
+                  src="/avatars/avatar1.webp"
                   alt="Bot" 
                   className="w-9 h-9 rounded-full object-cover"
                 />
@@ -174,7 +174,7 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
           </div>
 
           {/* Chat Area */}
-          <div className="flex-1 relative bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat bg-opacity-5">
+          <div className="flex-1 relative bg-[url('/backgrounds/bg1.webp')] bg-repeat bg-opacity-5">
             
             <div 
               ref={containerRef}

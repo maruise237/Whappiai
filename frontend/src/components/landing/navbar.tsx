@@ -60,7 +60,7 @@ export function Navbar() {
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/icon.png" width={32} height={32} alt="Whappi Logo" className="object-contain" />
+          <Image src="/icon.webp" width={32} height={32} alt="Whappi Logo" className="object-contain" />
           <span className="font-semibold text-foreground hidden sm:block">Whappi</span>
         </Link>
 
