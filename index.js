@@ -587,12 +587,30 @@ if (fs.existsSync(frontendPath)) {
         index: 'index.html'
     }));
 
-    // 3. Fallback to index.html for SPA routing
+    // 3. Fallback to specific HTML files or index.html for SPA routing
     app.get('*', (req, res, next) => {
         // Skip for API routes
         if (req.path.startsWith('/api') || req.path.startsWith('/admin')) {
             return next();
         }
+
+        let reqPath = req.path;
+        if (reqPath.endsWith('/')) {
+            reqPath = reqPath.slice(0, -1);
+        }
+
+        // Check if a direct .html file exists for the path
+        const htmlPath = path.join(frontendPath, reqPath + '.html');
+        if (fs.existsSync(htmlPath)) {
+            return res.sendFile(htmlPath);
+        }
+
+        // Check if an index.html exists within a directory for the path
+        const dirIndexPath = path.join(frontendPath, reqPath, 'index.html');
+        if (fs.existsSync(dirIndexPath)) {
+            return res.sendFile(dirIndexPath);
+        }
+
         res.sendFile(path.join(frontendPath, 'index.html'));
     });
 } else {

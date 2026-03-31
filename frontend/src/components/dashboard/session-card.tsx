@@ -32,10 +32,10 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   // Automatically switch to correct tab if data arrives via WebSocket
   React.useEffect(() => {
-    if (session?.pairingCode && !session?.qr && activeTab === "qr") {
+    if ((session?.pairingCode || localPairingCode) && !session?.qr && activeTab === "qr") {
       setActiveTab("code")
     }
-  }, [session?.pairingCode, session?.qr, activeTab])
+  }, [session?.pairingCode, session?.qr, localPairingCode, activeTab])
 
   const handleRequestPairingCode = async () => {
     if (!phoneNumber) {
