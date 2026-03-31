@@ -591,7 +591,6 @@ const frontendPath = path.join(__dirname, 'frontend', 'out');
 
 if (fs.existsSync(frontendPath)) {
     // 1. Serve _next/static explicitly with long-term caching
-    // Fix: Map /_next/static to frontend/out/_next/static
     app.use('/_next/static', express.static(path.join(frontendPath, '_next', 'static'), {
         maxAge: '1y',
         immutable: true,
