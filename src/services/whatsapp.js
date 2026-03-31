@@ -483,9 +483,8 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             );
 
             if (isReadByMe) {
-                // CRITICAL BUG FIX: Ignore read events triggered by the bot itself
+                // Ignore read events triggered by the bot itself
                 if (aiService.isReadByBot(sessionId, update.key.id)) {
-                    // log(`Read event ignoré car déclenché par le bot lui-même`, sessionId, { event: 'ai-ignore-self-read' }, 'DEBUG');
                     continue;
                 }
 
@@ -539,9 +538,8 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
         // If message is FROM ME, it means the owner or the bot is chatting.
         if (msg.key.fromMe) {
-            // CRITICAL BUG FIX: Ignore messages sent by the bot itself (already tracked in QueueService)
+            // Ignore messages sent by the bot itself (already tracked in QueueService)
             if (aiService.isSentByBot(sessionId, msg.key.id)) {
-                // log(`Auto-pause ignoré car le message vient du bot lui-même`, sessionId, { event: 'ai-ignore-self-sent' }, 'DEBUG');
                 return;
             }
 
