@@ -690,9 +690,7 @@ async function disconnect(sessionId, clearRetry = true) {
 async function disconnectAll() {
     log('Déconnexion de toutes les sessions actives...', 'SYSTEM');
     const sessions = Array.from(activeSockets.keys());
-    for (const sessionId of sessions) {
-        await disconnect(sessionId);
-    }
+    await Promise.all(sessions.map(sessionId => disconnect(sessionId)));
 }
 
 /**
