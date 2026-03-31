@@ -8,7 +8,6 @@ const path = require('path');
 const fs = require('fs');
 const { log } = require('../utils/logger');
 const MigrationRunner = require('./migrations');
-const { encrypt } = require('../utils/crypto');
 
 // Database file path
 const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '../../data/whatsapp.db');
