@@ -448,7 +448,7 @@ function initializeSchema() {
     });
 
     // Robust Fix: Ensure qr_code exists (New migration name)
-    runner.run('whatsapp-sessions-repair-v2026-v8-final', (db) => {
+    runner.run('whatsapp-sessions-repair-v2026-v8-final-v2', (db) => {
         const info = db.prepare("PRAGMA table_info(whatsapp_sessions)").all();
         if (!info.some(c => c.name === 'qr_code')) {
             try {
