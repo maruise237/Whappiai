@@ -1,3 +1,3 @@
-## 2025-05-22 - [Bottleneck in ActivityLog.getAnalytics]
-**Learning:** The `ActivityLog.getAnalytics` method was using an O(n) approach where 'n' is the number of days, performing 3 queries per day inside a loop. This results in 21 database queries for a standard 7-day dashboard view, which is inefficient and doesn't scale well.
-**Action:** Refactor `getAnalytics` to use SQL aggregate functions (`COUNT`, `SUM`) combined with `GROUP BY date(created_at)`. This reduces the complexity to a constant number of queries (2 queries: one for activities, one for credits) regardless of the number of days, significantly improving performance.
+## 2024-05-18 - [Parallelize Bulk Message Sending Endpoint]
+**Learning:** Refactoring a sequential `for...of` loop to use `Promise.all` for bulk message processing must be combined with chunking (concurrency limits). Direct mapping of user input (e.g., `req.body`) to parallel tasks creates unbounded concurrency, leading to resource exhaustion, `EMFILE` errors, or triggering rate-limit bans when hitting external APIs or processing many queues simultaneously.
+**Action:** When parallelizing operations on user-provided arrays in Node.js, always implement a `CONCURRENCY_LIMIT` and process the array in smaller chunks to protect server resources and maintain system stability.
