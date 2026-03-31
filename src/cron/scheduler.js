@@ -87,12 +87,19 @@ class Scheduler {
         // message_limit is the remaining balance
         // message_used is the total used
         // Total allocation = message_limit + message_used
+        // We use NOT EXISTS to filter out users who have already been notified recently
         const users = db.prepare(`
-            SELECT * FROM users 
-            WHERE plan_status = 'active' 
-            AND role != 'admin'
-            AND message_limit > 0 
-            AND message_limit < ((message_limit + message_used) * 0.1)
+            SELECT u.* FROM users u
+            WHERE u.plan_status = 'active'
+            AND u.role != 'admin'
+            AND u.message_limit > 0
+            AND u.message_limit < ((u.message_limit + u.message_used) * 0.1)
+            AND NOT EXISTS (
+                SELECT 1 FROM user_notifications n
+                WHERE n.user_id = u.id
+                AND n.type = 'credit_low'
+                AND n.created_at > datetime('now', '-1 day')
+            )
         `).all();
 
         log(`Checking low credits. Found ${users.length} users.`, 'DEBUG');
@@ -102,25 +109,14 @@ class Scheduler {
             const total = remaining + user.message_used;
             const percentage = total > 0 ? (remaining / total) * 100 : 0;
 
-            // Check if we already notified recently? 
-            // Query user_notifications for recent 'credit_low'
-            const recentNotif = db.prepare(`
-                SELECT * FROM user_notifications 
-                WHERE user_id = ? 
-                AND type = 'credit_low' 
-                AND created_at > datetime('now', '-1 day')
-            `).get(user.id);
-
-            if (!recentNotif) {
-                NotificationService.create({
-                    userId: user.id,
-                    type: 'credit_low',
-                    title: 'Crédits faibles',
-                    message: `Il ne vous reste que ${remaining} crédits (${percentage.toFixed(1)}%). Rechargez votre compte.`,
-                    metadata: { remaining, percentage }
-                });
-                log(`Sent low credit warning to ${user.email}`, 'CRON');
-            }
+            NotificationService.create({
+                userId: user.id,
+                type: 'credit_low',
+                title: 'Crédits faibles',
+                message: `Il ne vous reste que ${remaining} crédits (${percentage.toFixed(1)}%). Rechargez votre compte.`,
+                metadata: { remaining, percentage }
+            });
+            log(`Sent low credit warning to ${user.email}`, 'CRON');
         }
     }
 
