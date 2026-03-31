@@ -483,8 +483,9 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             );
 
             if (isReadByMe) {
-                // Ignore read events triggered by the bot itself
+                // CRITICAL BUG FIX: Ignore read events triggered by the bot itself
                 if (aiService.isReadByBot(sessionId, update.key.id)) {
+                    log(`Read event ignoré car déclenché par le bot lui-même`, sessionId, { event: 'ai-ignore-self-read' }, 'DEBUG');
                     continue;
                 }
 
