@@ -90,6 +90,10 @@ function initializeSchema() {
             ai_reject_calls INTEGER DEFAULT 0,
             ai_deactivate_on_typing INTEGER DEFAULT 0,
             ai_deactivate_on_read INTEGER DEFAULT 0,
+            ai_reply_delay INTEGER DEFAULT 0,
+            ai_read_on_reply INTEGER DEFAULT 0,
+            ai_random_protection_enabled INTEGER DEFAULT 1,
+            ai_random_protection_rate REAL DEFAULT 0.1,
             ai_session_window INTEGER DEFAULT 2,
             ai_respond_to_tags INTEGER DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -505,6 +509,28 @@ function initializeSchema() {
             if (!info.some(c => c.name === col.name)) {
                 try {
                     db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+                    log(`Migration : Colonne ${col.name} ajoutée avec succès`, "SYSTEM");
+                } catch (e) {
+                    log(`Migration : Échec ajout ${col.name}`, "SYSTEM", { error: e.message }, "ERROR");
+                }
+            }
+        });
+    });
+
+
+    // Add missing AI configuration columns
+    runner.run('whatsapp-sessions-add-missing-ai-fields-v1', (db) => {
+        const info = db.prepare("PRAGMA table_info(whatsapp_sessions)").all();
+        const columns = [
+            { name: 'ai_reply_delay', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_read_on_reply', type: 'INTEGER DEFAULT 0' },
+            { name: 'ai_random_protection_enabled', type: 'INTEGER DEFAULT 1' },
+            { name: 'ai_random_protection_rate', type: 'REAL DEFAULT 0.1' }
+        ];
+        columns.forEach(col => {
+            if (!info.some(c => c.name === col.name)) {
+                try {
+                    db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN ${col.name} ${col.type}`);
                     log(`Migration : Colonne ${col.name} ajoutée avec succès`, "SYSTEM");
                 } catch (e) {
                     log(`Migration : Échec ajout ${col.name}`, "SYSTEM", { error: e.message }, "ERROR");

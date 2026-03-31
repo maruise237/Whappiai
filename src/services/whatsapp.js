@@ -218,7 +218,11 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 // Initial wait for socket stability
                 if (attempt === 1) await new Promise(resolve => setTimeout(resolve, 5000));
 
-                const code = await sock.requestPairingCode(sanitizedPhoneNumber);
+                let code = await sock.requestPairingCode(sanitizedPhoneNumber);
+                // Ensure the code is a string and handle potential Baileys object responses
+                if (typeof code === 'object' && code !== null) {
+                    code = code?.code || JSON.stringify(code);
+                }
                 log(`Code d'appairage reçu: ${code} (tentative ${attempt})`, sessionId, { event: 'pairing-code-received', code, attempt }, 'INFO');
 
                 if (onUpdate) onUpdate(sessionId, 'GENERATING_CODE', 'Pairing code generated', code);
