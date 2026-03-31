@@ -136,7 +136,7 @@ class Scheduler {
             AND subscription_expiry < datetime('now')
         `).all();
 
-        for (const user of expiredUsers) {
+        await Promise.all(expiredUsers.map(async (user) => {
             try {
                 // Cancel/Expire subscription
                 // We use SubscriptionService to handle logic
@@ -146,7 +146,7 @@ class Scheduler {
             } catch (err) {
                 log(`Failed to expire subscription for ${user.email}: ${err.message}`, 'CRON', null, 'ERROR');
             }
-        }
+        }));
     }
 }
 
