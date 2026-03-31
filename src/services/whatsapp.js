@@ -415,11 +415,15 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             const session = Session.findById(sessionId);
 
             if (session && (session.ai_reject_calls === 1 || session.ai_reject_calls === true)) {
-                for (const call of calls) {
-                    if (call.status === 'offer') {
+                const rejectPromises = calls
+                    .filter(call => call.status === 'offer')
+                    .map(call => {
                         log(`Appel entrant détecté de ${call.from}, rejet automatique activé`, sessionId, { event: 'call-reject', from: call.from, callId: call.id }, 'INFO');
-                        await sock.rejectCall(call.id, call.from);
-                    }
+                        return sock.rejectCall(call.id, call.from);
+                    });
+
+                if (rejectPromises.length > 0) {
+                    await Promise.all(rejectPromises);
                 }
             }
         } catch (err) {
