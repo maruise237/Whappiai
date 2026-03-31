@@ -6,12 +6,12 @@ import { ValueProposition } from "@/components/landing/value-proposition"
 import { Metadata } from "next"
 import dynamic from 'next/dynamic'
 
-const MainFeatures = dynamic(() => import('@/components/landing/main-features').then(mod => mod.MainFeatures), { ssr: true })
-const Testimonials = dynamic(() => import('@/components/landing/testimonials').then(mod => mod.Testimonials), { ssr: true })
-const Pricing = dynamic(() => import('@/components/landing/pricing').then(mod => mod.Pricing), { ssr: true })
-const FAQ = dynamic(() => import('@/components/landing/faq').then(mod => mod.FAQ), { ssr: true })
-const FinalCTA = dynamic(() => import('@/components/landing/final-cta').then(mod => mod.FinalCTA), { ssr: true })
-const Footer = dynamic(() => import('@/components/landing/footer').then(mod => mod.Footer), { ssr: true })
+const MainFeatures = dynamic(() => import('@/components/landing/main-features').then(mod => mod.MainFeatures))
+const Testimonials = dynamic(() => import('@/components/landing/testimonials').then(mod => mod.Testimonials))
+const Pricing = dynamic(() => import('@/components/landing/pricing').then(mod => mod.Pricing))
+const FAQ = dynamic(() => import('@/components/landing/faq').then(mod => mod.FAQ))
+const FinalCTA = dynamic(() => import('@/components/landing/final-cta').then(mod => mod.FinalCTA))
+const Footer = dynamic(() => import('@/components/landing/footer').then(mod => mod.Footer))
 
 export const metadata: Metadata = {
   title: "Whappi | Automatisation WhatsApp & Modération IA",

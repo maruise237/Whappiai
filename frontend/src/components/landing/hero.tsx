@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useState, useEffect } from "react"
+import Image from "next/image"
 
 const avatars = [
   "/avatars/avatar1.webp",
@@ -198,12 +199,14 @@ export function Hero() {
               {avatars.map((avatar, index) => (
                 <div
                   key={index}
-                  className="relative z-10 hover:z-20 transition-all duration-300 hover:scale-110"
+                  className="relative z-10 hover:z-20 transition-all duration-300 hover:scale-110 w-12 h-12 rounded-full border-4 border-background shadow-sm overflow-hidden"
                 >
-                  <img
+                  <Image
                     src={avatar || "/placeholder.svg"}
-                    alt=""
-                    className="w-12 h-12 rounded-full border-4 border-background object-cover shadow-sm"
+                    alt="Utilisateur satisfait de Whappi"
+                    fill
+                    sizes="48px"
+                    className="object-cover"
                   />
                 </div>
               ))}

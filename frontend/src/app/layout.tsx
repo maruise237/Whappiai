@@ -26,6 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://randomuser.me" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://randomuser.me" />
+      </head>
       <body className={`${GeistSans.className} antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
