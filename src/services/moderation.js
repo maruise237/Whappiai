@@ -174,6 +174,9 @@ async function getAdminGroups(sock, sessionId) {
             return [];
         }
 
+        const adminGroupIds = [];
+        const adminGroupsData = [];
+
         for (const [id, metadata] of Object.entries(groups)) {
             let currentMetadata = metadata;
             
@@ -190,24 +193,42 @@ async function getAdminGroups(sock, sessionId) {
             const isAdmin = isGroupAdmin(currentMetadata, myJid, myLid, sessionId);
             
             if (isAdmin) {
-                // Get settings if they exist
-                const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(id, sessionId);
-                
-                adminGroups.push({
-                    id,
-                    subject: currentMetadata.subject,
-                    creation: currentMetadata.creation,
-                    desc: currentMetadata.desc,
-                    participantsCount: currentMetadata.participants?.length || 0,
-                    settings: settings || {
-                        is_active: 0,
-                        anti_link: 0,
-                        bad_words: '',
-                        warning_template: 'Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
-                        max_warnings: 5
-                    }
-                });
+                adminGroupIds.push(id);
+                adminGroupsData.push({ id, currentMetadata });
             }
+        }
+
+        // Fetch settings for all admin groups in bulk to avoid N+1 queries
+        const settingsMap = new Map();
+        if (adminGroupIds.length > 0) {
+            const chunkSize = 500;
+            for (let i = 0; i < adminGroupIds.length; i += chunkSize) {
+                const chunk = adminGroupIds.slice(i, i + chunkSize);
+                const placeholders = chunk.map(() => '?').join(',');
+                const query = `SELECT * FROM group_settings WHERE session_id = ? AND group_id IN (${placeholders})`;
+                const chunkSettings = db.prepare(query).all(sessionId, ...chunk);
+                for (const setting of chunkSettings) {
+                    settingsMap.set(setting.group_id, setting);
+                }
+            }
+        }
+
+        for (const { id, currentMetadata } of adminGroupsData) {
+            const settings = settingsMap.get(id);
+            adminGroups.push({
+                id,
+                subject: currentMetadata.subject,
+                creation: currentMetadata.creation,
+                desc: currentMetadata.desc,
+                participantsCount: currentMetadata.participants?.length || 0,
+                settings: settings || {
+                    is_active: 0,
+                    anti_link: 0,
+                    bad_words: '',
+                    warning_template: 'Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
+                    max_warnings: 5
+                }
+            });
         }
         
         log(`${adminGroups.length} groupes administrés trouvés pour ${sessionId}`, sessionId, { 
