@@ -209,6 +209,11 @@ export default function DashboardPage() {
               ...update,
               isConnected: update.status === 'CONNECTED'
             };
+
+            // If the backend sent explicit nulls to clear codes, ensure they overwrite existing ones
+            if (update.qr === null) newSessions[index].qr = null;
+            if (update.pairingCode === null) newSessions[index].pairingCode = null;
+
             hasChanges = true;
           } else {
              needsRefresh = true;
