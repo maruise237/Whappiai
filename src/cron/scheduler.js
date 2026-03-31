@@ -1,7 +1,6 @@
 const { db } = require('../config/database');
 const { log } = require('../utils/logger');
 const NotificationService = require('../services/NotificationService');
-const PricingService = require('../services/PricingService');
 const SubscriptionService = require('../services/SubscriptionService');
 
 // Check interval: 1 hour
