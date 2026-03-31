@@ -397,7 +397,14 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     const isQR = status === 'GENERATING_QR';
 
     // CRITICAL: We pass undefined instead of null to prevent clearing existing code/qr when status updates
-    Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : undefined, isQR ? qrOrCode : undefined);
+    // EXCEPT when status is DISCONNECTED, in which case we clear them.
+    Session.updateStatus(
+        id,
+        status,
+        detail,
+        isPairingCode ? qrOrCode : (status === 'DISCONNECTED' ? null : undefined),
+        isQR ? qrOrCode : (status === 'DISCONNECTED' ? null : undefined)
+    );
 
     const updateData = {
         sessionId: id,
@@ -409,6 +416,11 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     // Only include QR or pairingCode if they are provided, to avoid clearing them on the frontend during status transitions
     if (isQR) updateData.qr = qrOrCode;
     if (isPairingCode) updateData.pairingCode = qrOrCode;
+
+    if (status === 'DISCONNECTED') {
+        updateData.qr = null;
+        updateData.pairingCode = null;
+    }
 
     broadcastToClients({
         type: 'session-update',
