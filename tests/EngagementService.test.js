@@ -26,7 +26,7 @@ jest.mock('../src/services/whatsapp', () => ({
 // Mock uuid to prevent ESM issues
 jest.mock('uuid', () => ({
     v4: () => 'mock-uuid'
-}));
+}), { virtual: true });
 
 // Mock bcryptjs/bcrypt to prevent exit
 jest.mock('bcryptjs', () => ({

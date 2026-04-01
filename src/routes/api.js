@@ -1398,77 +1398,79 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             });
         }
         const messages = Array.isArray(req.body) ? req.body : [req.body];
-        const results = [];
         const phoneNumbers = []; // Track all phone numbers for logging
         const messageContents = []; // Track message contents with formatting
 
-        for (const msg of messages) {
-            const { recipient_type, to, type, text } = msg;
-            const msgImage = msg.image;
-            const msgDocument = msg.document;
-            const msgAudio = msg.audio;
-            const msgVideo = msg.video;
+        const results = [];
+        const CONCURRENCY_LIMIT = 5;
 
-            // Input validation
-            if (!to || !type) {
-                results.push({ status: 'error', message: 'Recipient (to) and type are required' });
-                continue;
-            }
+        for (let i = 0; i < messages.length; i += CONCURRENCY_LIMIT) {
+            const chunk = messages.slice(i, i + CONCURRENCY_LIMIT);
+            const chunkResults = await Promise.all(chunk.map(async (msg) => {
+                const { recipient_type, to, type, text } = msg;
+                const msgImage = msg.image;
+                const msgDocument = msg.document;
+                const msgAudio = msg.audio;
+                const msgVideo = msg.video;
 
-            // Credit Check & Deduction
-            let creditDeducted = false;
-            const isAdmin = req.currentUser.role === 'admin';
+                // Input validation
+                if (!to || !type) {
+                    return { status: 'error', message: 'Recipient (to) and type are required' };
+                }
 
-            if (isAdmin) {
-                // Admin bypass - no deduction, just log
-            } else {
-                if (!req.currentUser.id) {
-                    results.push({ status: 'error', message: 'User account required for credit deduction.' });
-                    continue;
+                // Credit Check & Deduction
+                let creditDeducted = false;
+                const isAdmin = req.currentUser.role === 'admin';
+
+                if (isAdmin) {
+                    // Admin bypass - no deduction, just log
+                } else {
+                    if (!req.currentUser.id) {
+                        return { status: 'error', message: 'User account required for credit deduction.' };
+                    }
+
+                    try {
+                        const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
+
+                        if (!hasCredit) {
+                            return { status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' };
+                        }
+                        creditDeducted = true;
+                    } catch (err) {
+                        return { status: 'error', message: `Credit error: ${err.message}` };
+                    }
                 }
 
                 try {
-                    const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
-
-                    if (!hasCredit) {
-                        results.push({ status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' });
-                        continue;
+                    let result;
+                    if (type === 'text') {
+                        // ... existing logic ...
+                        result = await sendMessage(session.sock, to, { text: text }, sessionId, req);
+                    } else if (type === 'image') {
+                        result = await sendMessage(session.sock, to, { image: { url: msgImage.url }, caption: msgImage.caption }, sessionId, req);
+                    } else if (type === 'document') {
+                        result = await sendMessage(session.sock, to, { document: { url: msgDocument.url }, fileName: msgDocument.fileName, mimetype: msgDocument.mimetype }, sessionId, req);
+                    } else if (type === 'audio') {
+                        result = await sendMessage(session.sock, to, { audio: { url: msgAudio.url }, mimetype: msgAudio.mimetype, ptt: msgAudio.ptt }, sessionId, req);
+                    } else if (type === 'video') {
+                        result = await sendMessage(session.sock, to, { video: { url: msgVideo.url }, caption: msgVideo.caption }, sessionId, req);
+                    } else {
+                        result = { status: 'error', message: `Unsupported message type: ${type}` };
                     }
-                    creditDeducted = true;
-                } catch (err) {
-                    results.push({ status: 'error', message: `Credit error: ${err.message}` });
-                    continue;
-                }
-            }
 
-            try {
-                let result;
-                if (type === 'text') {
-                    // ... existing logic ...
-                    result = await sendMessage(session.sock, to, { text: text }, sessionId, req);
-                } else if (type === 'image') {
-                    result = await sendMessage(session.sock, to, { image: { url: msgImage.url }, caption: msgImage.caption }, sessionId, req);
-                } else if (type === 'document') {
-                    result = await sendMessage(session.sock, to, { document: { url: msgDocument.url }, fileName: msgDocument.fileName, mimetype: msgDocument.mimetype }, sessionId, req);
-                } else if (type === 'audio') {
-                    result = await sendMessage(session.sock, to, { audio: { url: msgAudio.url }, mimetype: msgAudio.mimetype, ptt: msgAudio.ptt }, sessionId, req);
-                } else if (type === 'video') {
-                    result = await sendMessage(session.sock, to, { video: { url: msgVideo.url }, caption: msgVideo.caption }, sessionId, req);
-                } else {
-                    result = { status: 'error', message: `Unsupported message type: ${type}` };
-                }
+                    if (result.status === 'error' && creditDeducted) {
+                        CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
+                    }
 
-                if (result.status === 'error' && creditDeducted) {
-                    CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
+                    return result;
+                } catch (error) {
+                    if (creditDeducted) {
+                        CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
+                    }
+                    return { status: 'error', message: error.message };
                 }
-
-                results.push(result);
-            } catch (error) {
-                if (creditDeducted) {
-                    CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
-                }
-                results.push({ status: 'error', message: error.message });
-            }
+            }));
+            results.push(...chunkResults);
         }
 
         res.json({ status: 'success', results });

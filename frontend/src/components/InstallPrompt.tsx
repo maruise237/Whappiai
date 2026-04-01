@@ -151,7 +151,7 @@ export function InstallPrompt({ className, variant = "floating" }: InstallPrompt
         <div className="flex flex-col items-center text-center gap-3 pt-2">
             <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-md">
                 <Image 
-                src="/icon.png" 
+                src="/icon.webp"
                 alt="Whappi Icon" 
                 fill
                 className="object-contain"

@@ -30,12 +30,22 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     setLocalPairingCode(null)
   }, [session?.sessionId])
 
+  React.useEffect(() => {
+    if (session?.status === 'DISCONNECTED') {
+      setLocalQrCode(null)
+      setLocalPairingCode(null)
+    }
+  }, [session?.status])
+
   // Automatically switch to correct tab if data arrives via WebSocket
   React.useEffect(() => {
-    if (session?.pairingCode && !session?.qr && activeTab === "qr") {
+    const hasCode = session?.pairingCode || session?.pairing_code || localPairingCode;
+    const isValidStatus = session?.status === 'GENERATING_CODE' || session?.status === 'CONNECTING';
+
+    if (hasCode && isValidStatus && !session?.qr && activeTab === "qr") {
       setActiveTab("code")
     }
-  }, [session?.pairingCode, session?.qr, activeTab])
+  }, [session?.pairingCode, session?.pairing_code, session?.status, session?.qr, localPairingCode, activeTab])
 
   const handleRequestPairingCode = async () => {
     if (!phoneNumber) {
@@ -56,7 +66,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
       } else {
         response = await api.sessions.create(session.sessionId, phoneNumber, token || undefined)
-        onRefresh()
+        // We do not call onRefresh() here to prevent race conditions with WebSocket
       }
 
       if (response && response.pairingCode) {
@@ -98,8 +108,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         setLocalQrCode(response.qr)
         toast.success("QR Code généré", { id: toastId })
       } else {
-        // Fallback to refresh if not returned directly
-        onRefresh()
+        // We do not need to refresh, the WebSocket will update the QR code
         toast.success("Demande de QR Code envoyée", { id: toastId })
       }
     } catch (error: any) {
@@ -140,7 +149,11 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
   // A session is connected if explicitly marked as isConnected and NOT currently generating/connecting
   const isConnected = session?.isConnected && !loading
   const qrCode = localQrCode || session?.qr || session?.qr_code
-  const pairingCode = localPairingCode || session?.pairingCode || session?.pairing_code
+
+  // Only show pairing code if the session is currently generating it or connecting
+  const isValidStatusForCode = session?.status === 'GENERATING_CODE' || session?.status === 'CONNECTING';
+  const rawPairingCode = localPairingCode || session?.pairingCode || session?.pairing_code;
+  const pairingCode = isValidStatusForCode ? rawPairingCode : null;
 
   if (!session) {
     return (
@@ -172,6 +185,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 <button
                   onClick={() => copyToClipboard(session.sessionId, "ID")}
                   className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Copier l'ID de session"
+                  title="Copier l'ID de session"
                 >
                   <Copy className="h-3 w-3" />
                 </button>
@@ -192,7 +207,14 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                  </span>
               )}
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive"
+              onClick={handleDelete}
+              aria-label="Options de la session"
+              title="Options de la session"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </div>
@@ -284,10 +306,20 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   <span className="text-xs font-mono text-muted-foreground">
                     {showToken ? (typeof session.token === 'string' ? session.token : ensureString(session.token)) : "••••••••••••"}
                   </span>
-                  <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => setShowToken(!showToken)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={showToken ? "Masquer le token" : "Afficher le token"}
+                    title={showToken ? "Masquer le token" : "Afficher le token"}
+                  >
                     {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                   </button>
-                  <button onClick={() => copyToClipboard(session.token, "Token")} className="text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => copyToClipboard(session.token, "Token")}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Copier le token"
+                    title="Copier le token"
+                  >
                     <Copy className="h-3 w-3" />
                   </button>
                 </div>

@@ -3,13 +3,16 @@ import { Navbar } from "@/components/landing/navbar"
 import { Hero } from "@/components/landing/hero"
 import { LogoMarquee } from "@/components/landing/logo-marquee"
 import { ValueProposition } from "@/components/landing/value-proposition"
-import { MainFeatures } from "@/components/landing/main-features"
-import { Testimonials } from "@/components/landing/testimonials"
-import { Pricing } from "@/components/landing/pricing"
-import { FAQ } from "@/components/landing/faq"
-import { FinalCTA } from "@/components/landing/final-cta"
-import { Footer } from "@/components/landing/footer"
 import { Metadata } from "next"
+import dynamic from 'next/dynamic'
+import { AuthRedirect } from "@/components/auth/auth-redirect"
+
+const MainFeatures = dynamic(() => import('@/components/landing/main-features').then(mod => mod.MainFeatures))
+const Testimonials = dynamic(() => import('@/components/landing/testimonials').then(mod => mod.Testimonials))
+const Pricing = dynamic(() => import('@/components/landing/pricing').then(mod => mod.Pricing))
+const FAQ = dynamic(() => import('@/components/landing/faq').then(mod => mod.FAQ))
+const FinalCTA = dynamic(() => import('@/components/landing/final-cta').then(mod => mod.FinalCTA))
+const Footer = dynamic(() => import('@/components/landing/footer').then(mod => mod.Footer))
 
 export const metadata: Metadata = {
   title: "Whappi | Automatisation WhatsApp & Modération IA",
@@ -26,19 +29,22 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <SmoothScroll>
-      <main className="min-h-screen bg-background">
-        <Navbar />
-        <Hero />
-        <LogoMarquee />
-        <ValueProposition />
-        <MainFeatures />
-        <Testimonials />
-        <Pricing />
-        <FAQ />
-        <FinalCTA />
-        <Footer />
-      </main>
-    </SmoothScroll>
+    <>
+      <AuthRedirect />
+      <SmoothScroll>
+        <main className="min-h-screen bg-background">
+          <Navbar />
+          <Hero />
+          <LogoMarquee />
+          <ValueProposition />
+          <MainFeatures />
+          <Testimonials />
+          <Pricing />
+          <FAQ />
+          <FinalCTA />
+          <Footer />
+        </main>
+      </SmoothScroll>
+    </>
   )
 }

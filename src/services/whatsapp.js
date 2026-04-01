@@ -218,7 +218,11 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
                 // Initial wait for socket stability
                 if (attempt === 1) await new Promise(resolve => setTimeout(resolve, 5000));
 
-                const code = await sock.requestPairingCode(sanitizedPhoneNumber);
+                let code = await sock.requestPairingCode(sanitizedPhoneNumber);
+                // Ensure the code is a string and handle potential Baileys object responses
+                if (typeof code === 'object' && code !== null) {
+                    code = code?.code || JSON.stringify(code);
+                }
                 log(`Code d'appairage reçu: ${code} (tentative ${attempt})`, sessionId, { event: 'pairing-code-received', code, attempt }, 'INFO');
 
                 if (onUpdate) onUpdate(sessionId, 'GENERATING_CODE', 'Pairing code generated', code);
@@ -411,11 +415,15 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             const session = Session.findById(sessionId);
 
             if (session && (session.ai_reject_calls === 1 || session.ai_reject_calls === true)) {
-                for (const call of calls) {
-                    if (call.status === 'offer') {
+                const rejectPromises = calls
+                    .filter(call => call.status === 'offer')
+                    .map(call => {
                         log(`Appel entrant détecté de ${call.from}, rejet automatique activé`, sessionId, { event: 'call-reject', from: call.from, callId: call.id }, 'INFO');
-                        await sock.rejectCall(call.id, call.from);
-                    }
+                        return sock.rejectCall(call.id, call.from);
+                    });
+
+                if (rejectPromises.length > 0) {
+                    await Promise.all(rejectPromises);
                 }
             }
         } catch (err) {
@@ -481,7 +489,7 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
             if (isReadByMe) {
                 // CRITICAL BUG FIX: Ignore read events triggered by the bot itself
                 if (aiService.isReadByBot(sessionId, update.key.id)) {
-                    // log(`Read event ignoré car déclenché par le bot lui-même`, sessionId, { event: 'ai-ignore-self-read' }, 'DEBUG');
+                    log(`Read event ignoré car déclenché par le bot lui-même`, sessionId, { event: 'ai-ignore-self-read' }, 'DEBUG');
                     continue;
                 }
 
@@ -535,9 +543,8 @@ async function connect(sessionId, onUpdate, onMessage, phoneNumber = null) {
 
         // If message is FROM ME, it means the owner or the bot is chatting.
         if (msg.key.fromMe) {
-            // CRITICAL BUG FIX: Ignore messages sent by the bot itself (already tracked in QueueService)
+            // Ignore messages sent by the bot itself (already tracked in QueueService)
             if (aiService.isSentByBot(sessionId, msg.key.id)) {
-                // log(`Auto-pause ignoré car le message vient du bot lui-même`, sessionId, { event: 'ai-ignore-self-sent' }, 'DEBUG');
                 return;
             }
 
@@ -686,9 +693,7 @@ async function disconnect(sessionId, clearRetry = true) {
 async function disconnectAll() {
     log('Déconnexion de toutes les sessions actives...', 'SYSTEM');
     const sessions = Array.from(activeSockets.keys());
-    for (const sessionId of sessions) {
-        await disconnect(sessionId);
-    }
+    await Promise.all(sessions.map(sessionId => disconnect(sessionId)));
 }
 
 /**

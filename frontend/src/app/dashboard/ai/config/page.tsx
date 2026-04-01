@@ -48,6 +48,7 @@ function AIConfigContent() {
   const [config, setConfig] = React.useState<any>(null)
   const [models, setModels] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [calStatus, setCalStatus] = React.useState<any>(null)
   const [isSaving, setIsSaving] = React.useState(false)
   const [activeSection, setActiveSection] = React.useState('intelligence')
 
@@ -67,6 +68,7 @@ function AIConfigContent() {
         ai_cal_video_allowed: !!calData?.ai_cal_video_allowed
       })
       setModels(Array.isArray(modelsData) ? modelsData : [])
+      setCalStatus(calData)
     } catch (e) {
       toast.error("&Eacute;chec du chargement de la configuration")
     } finally {
@@ -77,6 +79,19 @@ function AIConfigContent() {
   React.useEffect(() => {
     fetchData()
   }, [fetchData])
+
+
+  const connectCal = async () => {
+    try {
+      const token = await getToken()
+      const result = await api.cal.getAuthUrl(token || undefined)
+      if (result && result.authUrl) {
+        window.location.href = result.authUrl
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la connexion à Cal.com")
+    }
+  }
 
   const handleSave = async () => {
     if (!sessionId || !config) return
@@ -289,20 +304,30 @@ function AIConfigContent() {
             </div>
 
             <div className="border rounded-lg divide-y bg-card">
-              <div className="flex items-center justify-between p-4">
-                <div>
-                  <p className="text-sm font-medium">Activer l&apos;assistant Cal.com</p>
-                  <p className="text-xs text-muted-foreground">Permet &agrave; l&apos;IA de consulter votre agenda et prendre des RDV.</p>
+              {calStatus?.isConnected ? (
+                <div className="flex items-center justify-between p-4">
+                  <div>
+                    <p className="text-sm font-medium">Activer l&apos;assistant Cal.com</p>
+                    <p className="text-xs text-muted-foreground">Permet &agrave; l&apos;IA de consulter votre agenda et prendre des RDV.</p>
+                  </div>
+                  <Switch
+                    checked={!!config?.ai_cal_enabled}
+                    onCheckedChange={async (v) => {
+                      const token = await getToken()
+                      await api.cal.updateSettings({ ai_cal_enabled: v }, token || undefined)
+                      setConfig({...config, ai_cal_enabled: v})
+                    }}
+                  />
                 </div>
-                <Switch
-                  checked={!!config?.ai_cal_enabled}
-                  onCheckedChange={async (v) => {
-                    const token = await getToken()
-                    await api.cal.updateSettings({ ai_cal_enabled: v }, token || undefined)
-                    setConfig({...config, ai_cal_enabled: v})
-                  }}
-                />
-              </div>
+              ) : (
+                <div className="p-4 bg-amber-500/5 flex flex-col items-center justify-center space-y-3">
+                  <p className="text-sm text-amber-600 font-medium">Vous n&apos;avez pas encore connect&eacute; Cal.com</p>
+                  <p className="text-xs text-muted-foreground text-center">Connectez votre compte pour permettre &agrave; l&apos;IA de g&eacute;rer vos rendez-vous.</p>
+                  <Button size="sm" variant="outline" onClick={connectCal} className="gap-2">
+                    <Calendar className="h-4 w-4" /> Connecter Cal.com
+                  </Button>
+                </div>
+              )}
             </div>
           </section>
 

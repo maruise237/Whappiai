@@ -72,8 +72,9 @@ class EngagementService {
 
                 // Marquage immédiat en 'processing' pour éviter les doublons lors de la prochaine boucle
                 if (tasksToExecute.length > 0) {
-                    const ids = tasksToExecute.map(t => t.id).join(',');
-                    db.prepare(`UPDATE group_engagement_tasks SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id IN (${ids})`).run();
+                    const placeholders = tasksToExecute.map(() => '?').join(',');
+                    const ids = tasksToExecute.map(t => t.id);
+                    db.prepare(`UPDATE group_engagement_tasks SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids);
                 }
 
                 return tasksToExecute;
