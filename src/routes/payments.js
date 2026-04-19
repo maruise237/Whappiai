@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
 const { createCheckoutSession, handleWebhook } = require('../services/payment');
@@ -42,8 +43,21 @@ router.get('/plans', (req, res) => {
 
 // POST /api/v1/payments/webhook
 router.post('/webhook', express.json(), async (req, res) => {
-    const signature = req.headers['x-chariow-signature']; 
+    const WEBHOOK_SECRET = process.env.CHARIOW_WEBHOOK_SECRET;
+    const signature = req.headers['x-chariow-signature'];
     const payload = req.body;
+
+    if (WEBHOOK_SECRET) {
+        if (!signature) {
+            log('Webhook rejeté: signature manquante', 'PAYMENT', null, 'WARN');
+            return res.status(403).json({ error: 'Signature manquante' });
+        }
+        const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(JSON.stringify(payload)).digest('hex');
+        if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+            log('Webhook rejeté: signature invalide', 'PAYMENT', null, 'WARN');
+            return res.status(403).json({ error: 'Signature invalide' });
+        }
+    }
 
     try {
         await handleWebhook(req.headers['x-chariow-event'] || 'unknown', payload);

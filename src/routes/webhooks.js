@@ -115,10 +115,9 @@ router.post('/chariow', async (req, res) => {
         return res.status(403).json({ error: 'Forbidden: Invalid webhook secret' });
     }
 
-    // 2. Log the incoming webhook for debugging
-    log(`Chariow Webhook received`, 'SYSTEM', { 
-        headers: req.headers,
-        body: req.body 
+    log(`Chariow Webhook received`, 'SYSTEM', {
+        event: req.headers['x-chariow-event'],
+        contentType: req.headers['content-type']
     }, 'DEBUG');
 
     const { event, payload } = req.body;

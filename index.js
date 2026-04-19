@@ -64,6 +64,14 @@ if (!ENCRYPTION_KEY || !isValidKey(ENCRYPTION_KEY)) {
     process.exit(1);
 }
 
+// Validate required environment variables
+const REQUIRED_ENV_VARS = ['CLERK_SECRET_KEY', 'SESSION_SECRET'];
+const missingVars = REQUIRED_ENV_VARS.filter(key => !_clean(process.env[key]));
+if (missingVars.length > 0) {
+    log(`FATAL: Variables d'environnement manquantes: ${missingVars.join(', ')}`, 'SYSTEM', { event: 'fatal-error' }, 'ERROR');
+    process.exit(1);
+}
+
 // Initialize Express
 const app = express();
 
@@ -101,7 +109,10 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // In production or other cases, allow but warn or restrict if needed
+        if (process.env.NODE_ENV === 'production') {
+            log(`CORS blocked unknown origin: ${origin}`, 'SECURITY', null, 'WARN');
+            return callback(new Error('CORS policy: origin not allowed'));
+        }
         callback(null, true);
     },
     credentials: true,

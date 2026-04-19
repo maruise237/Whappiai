@@ -78,10 +78,9 @@ async function requireClerkAuth(req, res, next) {
         return response.unauthorized(res, 'User email not found');
     }
 
-    // Auto-promote maruise237@gmail.com to admin if it's not already
-    const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
+    const MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || '';
     let targetRole = clerkUser.publicMetadata?.role || 'user';
-    if (email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+    if (MASTER_ADMIN_EMAIL && email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
         targetRole = 'admin';
     }
 
@@ -112,7 +111,7 @@ async function requireClerkAuth(req, res, next) {
         id: localUser.id,
         clerkId: clerkUser.id,
         email: email,
-        role: (email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) ? 'admin' : (localUser.role || 'user')
+        role: (MASTER_ADMIN_EMAIL && email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) ? 'admin' : (localUser.role || 'user')
     };
 
     // Compatibility for session-based checks

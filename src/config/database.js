@@ -375,8 +375,8 @@ function initializeSchema() {
                 const sessions = db.prepare("SELECT id FROM whatsapp_sessions").all();
                 if (sessions.length === 1) {
                     const sid = sessions[0].id;
-                    db.exec(`INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at)
-                             SELECT group_id, '${sid}', is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at FROM group_settings_old`);
+                    db.prepare(`INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at)
+                             SELECT group_id, ?, is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at FROM group_settings_old`).run(sid);
                 }
                 db.exec("DROP TABLE group_settings_old");
             }
