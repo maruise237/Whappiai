@@ -71,6 +71,7 @@ class Session {
                 session.ai_key = decrypt(session.ai_key, ENCRYPTION_KEY);
             } catch (e) {
                 log(`Failed to decrypt AI key for session ${sessionId}`, 'SECURITY', { error: e.message }, 'ERROR');
+                session.ai_key = null;
             }
         }
 

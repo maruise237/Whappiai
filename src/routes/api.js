@@ -128,12 +128,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     // Middleware to check AI access (session-based OR token-based OR master key)
     const checkSessionOrTokenAuth = async (req, res, next) => {
-        // DEFINITIVE ADMIN EMAIL
-        const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
+        const MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || '';
 
-        // Helper to check if email is admin
         const isAdminEmail = (email) => {
-            return email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+            return MASTER_ADMIN_EMAIL && email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
         };
 
         // 1. Try Clerk Auth (Next.js frontend)
@@ -282,16 +280,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         next();
     };
 
-    // More lenient rate limiter for authenticated dashboard requests
     const apiLimiter = rateLimit({
         windowMs: 1 * 60 * 1000,
-        max: 100, // Increased from 30 to 100 requests per minute
+        max: 100,
         message: { status: 'error', message: 'Too many requests, please try again later.' },
-        skip: (req) => {
-            // Skip rate limiting for authenticated admin users
-            return req.session && req.session.adminAuthed;
-        },
-        // Trust proxy headers for proper IP detection
         trustProxy: true,
         standardHeaders: true,
         legacyHeaders: false
