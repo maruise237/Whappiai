@@ -351,40 +351,51 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
         }
 
-        // SECURITY: Check ownership if session already exists
+        // SECURITY & QUOTA: Check ownership and limits
         const existing = Session.findById(sanitizedSessionId);
+        const currentEmail = req.currentUser?.email;
+        const isAdmin = req.currentUser?.role === 'admin';
+        const isMasterKey = req.currentUser?.id === 'master-key-admin';
+
         if (existing) {
-            const currentEmail = req.currentUser?.email;
-            const isOwner = (existing.owner_email && existing.owner_email.toLowerCase() === currentEmail?.toLowerCase()) ||
-                            (existing.owner_email === 'admin@localhost' && req.currentUser?.role === 'admin');
-            const isAdmin = req.currentUser?.role === 'admin';
+            // Check ownership
+            const isOwner = (existing.owner_email && existing.owner_email.toLowerCase() === currentEmail?.toLowerCase());
+            const isOrphaned = !existing.owner_email || existing.owner_email === 'admin@localhost';
 
-            if (!isOwner && !isAdmin) {
+            if (!isOwner && !isOrphaned && !isAdmin) {
                 log(`Tentative de reconnexion non autorisée pour ${sanitizedSessionId} par ${currentEmail}`, 'AUTH', null, 'WARN');
-                return res.status(403).json({ status: 'error', message: 'Vous ne possédez pas cette session' });
+                return res.status(403).json({ status: 'error', message: 'Cette session appartient déjà à un autre utilisateur' });
             }
-        } else {
-            // QUOTA CHECK: Enforcement of plan-based session limits
-            const isMasterKey = req.currentUser?.id === 'master-key-admin';
-            const isAdmin = req.currentUser?.role === 'admin';
 
-            if (!isAdmin && !isMasterKey) {
-                const user = User.findByEmail(req.currentUser.email);
+            // If claiming an orphaned session, we still need to check the quota
+            if (isOrphaned && !isOwner && !isAdmin && !isMasterKey) {
+                const user = User.findByEmail(currentEmail);
                 const planId = user?.plan_id || 'free';
-
-                // Define quotas
-                const quotas = {
-                    'free': 1,
-                    'starter': 2,
-                    'pro': 3,
-                    'business': 100
-                };
-
+                const quotas = { 'free': 1, 'starter': 2, 'pro': 3, 'business': 100 };
                 const limit = quotas[planId] || 1;
-                const currentSessions = Session.getSessionIdsByOwner(req.currentUser.email);
+                const currentSessions = Session.getSessionIdsByOwner(currentEmail);
 
                 if (currentSessions.length >= limit) {
-                    log(`Quota de sessions atteint pour ${req.currentUser.email} (Limit: ${limit})`, 'AUTH', { planId, current: currentSessions.length }, 'WARN');
+                    log(`Quota de sessions atteint lors de la revendication pour ${currentEmail} (Limit: ${limit})`, 'AUTH', { planId, current: currentSessions.length }, 'WARN');
+                    return res.status(403).json({
+                        status: 'error',
+                        message: `Limite de sessions atteinte pour votre forfait ${planId}. Impossible de revendiquer cette session.`,
+                        limit: limit,
+                        current: currentSessions.length
+                    });
+                }
+            }
+        } else {
+            // New session quota
+            if (!isAdmin && !isMasterKey) {
+                const user = User.findByEmail(currentEmail);
+                const planId = user?.plan_id || 'free';
+                const quotas = { 'free': 1, 'starter': 2, 'pro': 3, 'business': 100 };
+                const limit = quotas[planId] || 1;
+                const currentSessions = Session.getSessionIdsByOwner(currentEmail);
+
+                if (currentSessions.length >= limit) {
+                    log(`Quota de sessions atteint pour ${currentEmail} (Limit: ${limit})`, 'AUTH', { planId, current: currentSessions.length }, 'WARN');
                     return res.status(403).json({
                         status: 'error',
                         message: `Limite de sessions atteinte pour votre forfait ${planId}. Veuillez passer à un forfait supérieur pour ajouter plus de sessions.`,
