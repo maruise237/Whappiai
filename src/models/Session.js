@@ -126,8 +126,14 @@ class Session {
         // Partial update: only update if value is not undefined
         const newStatus = status !== undefined ? status : existing.status;
         const newDetail = detail !== undefined ? detail : existing.detail;
-        const newPairingCode = pairingCode !== undefined ? pairingCode : existing.pairing_code;
-        const newQrCode = qrCode !== undefined ? qrCode : existing.qr_code;
+        // If status is DISCONNECTED, we explicitly clear QR and pairing code in the DB
+        let newPairingCode = pairingCode !== undefined ? pairingCode : existing.pairing_code;
+        let newQrCode = qrCode !== undefined ? qrCode : existing.qr_code;
+
+        if (newStatus === 'DISCONNECTED' && pairingCode === undefined && qrCode === undefined) {
+            newPairingCode = null;
+            newQrCode = null;
+        }
 
         const stmt = db.prepare(`
             UPDATE whatsapp_sessions

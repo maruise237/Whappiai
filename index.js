@@ -413,8 +413,8 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
         id,
         status,
         detail,
-        isPairingCode ? qrOrCode : (status === 'DISCONNECTED' ? null : undefined),
-        isQR ? qrOrCode : (status === 'DISCONNECTED' ? null : undefined)
+        isPairingCode ? qrOrCode : undefined,
+        isQR ? qrOrCode : undefined
     );
 
     const updateData = {
@@ -435,7 +435,7 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
 
     broadcastToClients({
         type: 'session-update',
-        data: [updateData]
+        data: updateData
     });
 };
 
