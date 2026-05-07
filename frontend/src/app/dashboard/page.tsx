@@ -540,8 +540,8 @@ export default function DashboardPage() {
                  setIsCreateOpen(false);
                  fetchSessions(true);
                  confetti();
-               } catch (e) {
-                 toast.error("Erreur de création", { id: t });
+               } catch (e: any) {
+                 toast.error(e.message || "Erreur de création", { id: t });
                }
             })} className="space-y-6">
               <DialogHeader>
