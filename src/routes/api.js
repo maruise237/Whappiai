@@ -255,18 +255,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             }
         }
 
-        // 5. Check if it's a specific action that should be allowed for all users (like pairing code)
-        // Note: createSession already handles its own session validation
-        const isCreateSession = req.originalUrl.includes('/sessions') && req.method === 'POST';
-        if (isCreateSession) {
-            return next();
-        }
-
-        log(`Accès refusé: Authentification échouée pour ${req.originalUrl}`, 'SYSTEM', {
-            event: 'auth-failed',
-            endpoint: req.originalUrl,
-            sessionId
-        }, 'WARN');
 
         return res.status(401).json({ status: 'error', message: 'Authentication required' });
     };
@@ -346,7 +334,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         res.json({ status: 'success', data: { message: 'Use your Clerk session token for WS' } });
     });
 
-    // Unprotected routes (actually protected by master key or session now)
+    // Create or Reconnect Session
     router.post('/sessions', checkSessionOrTokenAuth, async (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
 
@@ -361,6 +349,50 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
         if (!isValidId(sanitizedSessionId)) {
             return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
+        }
+
+        // SECURITY: Check ownership if session already exists
+        const existing = Session.findById(sanitizedSessionId);
+        if (existing) {
+            const currentEmail = req.currentUser?.email;
+            const isOwner = (existing.owner_email && existing.owner_email.toLowerCase() === currentEmail?.toLowerCase()) ||
+                            (existing.owner_email === 'admin@localhost' && req.currentUser?.role === 'admin');
+            const isAdmin = req.currentUser?.role === 'admin';
+
+            if (!isOwner && !isAdmin) {
+                log(`Tentative de reconnexion non autorisée pour ${sanitizedSessionId} par ${currentEmail}`, 'AUTH', null, 'WARN');
+                return res.status(403).json({ status: 'error', message: 'Vous ne possédez pas cette session' });
+            }
+        } else {
+            // QUOTA CHECK: Enforcement of plan-based session limits
+            const isMasterKey = req.currentUser?.id === 'master-key-admin';
+            const isAdmin = req.currentUser?.role === 'admin';
+
+            if (!isAdmin && !isMasterKey) {
+                const user = User.findByEmail(req.currentUser.email);
+                const planId = user?.plan_id || 'free';
+
+                // Define quotas
+                const quotas = {
+                    'free': 1,
+                    'starter': 2,
+                    'pro': 3,
+                    'business': 100
+                };
+
+                const limit = quotas[planId] || 1;
+                const currentSessions = Session.getSessionIdsByOwner(req.currentUser.email);
+
+                if (currentSessions.length >= limit) {
+                    log(`Quota de sessions atteint pour ${req.currentUser.email} (Limit: ${limit})`, 'AUTH', { planId, current: currentSessions.length }, 'WARN');
+                    return res.status(403).json({
+                        status: 'error',
+                        message: `Limite de sessions atteinte pour votre forfait ${planId}. Veuillez passer à un forfait supérieur pour ajouter plus de sessions.`,
+                        limit: limit,
+                        current: currentSessions.length
+                    });
+                }
+            }
         }
 
         try {

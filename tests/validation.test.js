@@ -19,10 +19,10 @@ describe('Validation Utilities', () => {
             expect(isValidId('user123')).toBe(true);
             expect(isValidId('user_123')).toBe(true);
             expect(isValidId('user-123')).toBe(true);
-            expect(isValidId('user@domain.com')).toBe(true);
-            expect(isValidId('user:123')).toBe(true);
-            expect(isValidId('user.name')).toBe(true);
-            expect(isValidId('user name')).toBe(true);
+            expect(isValidId('user@domain.com')).toBe(false);
+            expect(isValidId('user:123')).toBe(false);
+            expect(isValidId('user.name')).toBe(false);
+            expect(isValidId('user name')).toBe(false);
             expect(isValidId('A'.repeat(128))).toBe(true);
         });
 
@@ -51,7 +51,7 @@ describe('Validation Utilities', () => {
         });
 
         test('should keep safe characters', () => {
-            expect(sanitizeId('user_123-abc@domain.com:8080.test name')).toBe('user_123-abc@domain.com:8080.test name');
+            expect(sanitizeId('user_123-abc@domain.com:8080.test name')).toBe('user_123-abcdomaincom8080testname');
         });
 
         test('should handle empty or non-string inputs', () => {
