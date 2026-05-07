@@ -331,8 +331,8 @@ class AIService {
 
             // 2. Random Protection System (Protection against spam/unpredictable AI behavior)
             // If enabled, randomly ignore messages to simulate human inconsistency or prevent bot loops
-            const protectionEnabled = session.ai_random_protection_enabled ?? 1;
-            const protectionRate = session.ai_random_protection_rate ?? 0.1; // 10% chance to ignore
+            const protectionEnabled = session.ai_random_protection_enabled ?? 0; // Disabled by default for better user experience
+            const protectionRate = session.ai_random_protection_rate ?? 0.05; // 10% chance to ignore
 
             // If it's a retry, we bypass the random protection
             if (!isRetry && protectionEnabled && Math.random() < protectionRate) {

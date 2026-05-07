@@ -91,7 +91,7 @@ function initializeSchema() {
             ai_deactivate_on_read INTEGER DEFAULT 0,
             ai_reply_delay INTEGER DEFAULT 0,
             ai_read_on_reply INTEGER DEFAULT 0,
-            ai_random_protection_enabled INTEGER DEFAULT 1,
+            ai_random_protection_enabled INTEGER DEFAULT 0,
             ai_random_protection_rate REAL DEFAULT 0.1,
             ai_session_window INTEGER DEFAULT 2,
             ai_respond_to_tags INTEGER DEFAULT 1,
@@ -523,7 +523,7 @@ function initializeSchema() {
         const columns = [
             { name: 'ai_reply_delay', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_read_on_reply', type: 'INTEGER DEFAULT 0' },
-            { name: 'ai_random_protection_enabled', type: 'INTEGER DEFAULT 1' },
+            { name: 'ai_random_protection_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'ai_random_protection_rate', type: 'REAL DEFAULT 0.1' }
         ];
         columns.forEach(col => {
@@ -536,6 +536,21 @@ function initializeSchema() {
                 }
             }
         });
+    });
+
+
+    // Fix: Add missing knowledge_search virtual table for RAG
+    runner.run('add-knowledge-search-fts5-v1', (db) => {
+        const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='knowledge_search'").get();
+        if (!tableCheck) {
+            try {
+                // knowledge_search MUST be a virtual table for FTS5 search to work with MATCH
+                db.exec("CREATE VIRTUAL TABLE knowledge_search USING fts5(content, session_id UNINDEXED, chunk_id UNINDEXED)");
+                log('Migration : Table virtuelle knowledge_search (FTS5) créée avec succès', 'SYSTEM');
+            } catch (e) {
+                log('Migration : Échec création knowledge_search', 'SYSTEM', { error: e.message }, 'ERROR');
+            }
+        }
     });
 
     log('Schéma de la base de données initialisé avec succès', 'SYSTEM', { event: 'db-schema-init' }, 'INFO');

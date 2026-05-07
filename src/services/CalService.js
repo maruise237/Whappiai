@@ -97,7 +97,7 @@ class CalService {
 
         try {
             log(`Échange du code OAuth Cal.com avec Redirect URI: ${finalRedirectUri}`, 'SYSTEM', null, 'DEBUG');
-            const response = await axios.post('https://api.cal.com/v2/oauth/token', {
+            const response = await axios.post('https://api.cal.com/v2/oauth2/token', {
                 client_id: this.clientId,
                 client_secret: this.clientSecret,
                 code,
@@ -130,7 +130,7 @@ class CalService {
         if (!user || !user.cal_refresh_token) throw new Error('No refresh token found');
 
         try {
-            const response = await axios.post('https://api.cal.com/v2/oauth/token', {
+            const response = await axios.post('https://api.cal.com/v2/oauth2/token', {
                 client_id: this.clientId,
                 client_secret: this.clientSecret,
                 refresh_token: user.cal_refresh_token,
