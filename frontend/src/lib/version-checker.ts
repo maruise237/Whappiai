@@ -67,6 +67,11 @@ export class VersionChecker {
         }
       });
 
+      // Handle 401 specifically: do nothing, just ignore
+      if (response.status === 401) {
+        return { hasUpdate: false };
+      }
+
       if (!response.ok) {
         throw new Error(`Health check failed: ${response.status}`);
       }
