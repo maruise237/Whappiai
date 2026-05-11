@@ -542,6 +542,45 @@ function initializeSchema() {
 }
 
 /**
+ * Add performance indexes to database tables
+ */
+function addPerformanceIndexes() {
+    log('Ajout des index de performance...', 'SYSTEM');
+    
+    // Index for session lookups by owner and status
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_owner_status ON whatsapp_sessions(owner_email, status)`);
+    
+    // Index for session token lookups
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_token ON whatsapp_sessions(token)`);
+    
+    // Index for AI-enabled sessions
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_ai_enabled ON whatsapp_sessions(ai_enabled, status)`);
+    
+    // Index for user queries by email and role
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email_role ON users(email, role)`);
+    
+    // Index for activity logs by action type
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_activity_action ON activity_logs(action, created_at)`);
+    
+    // Index for keyword responders by session and active status
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_keywords_session_active ON keyword_responders(session_id, is_active)`);
+    
+    // Index for knowledge base by session and active status
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_knowledge_session_active ON knowledge_base(session_id, is_active)`);
+    
+    // Index for group settings by session
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_group_settings_session ON group_settings(session_id)`);
+    
+    // Index for credits by user email
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_credits_user ON credits(user_email)`);
+    
+    // Index for webhooks by session
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_webhooks_session ON webhooks(session_id, event_type)`);
+    
+    log('Index de performance ajoutés avec succès', 'SYSTEM', { event: 'db-indexes-added' }, 'INFO');
+}
+
+/**
  * Close database connection
  */
 function close() {
@@ -550,6 +589,7 @@ function close() {
 
 // Initialize schema on load
 initializeSchema();
+addPerformanceIndexes();
 
 // Handle graceful shutdown
 process.on('exit', () => db.close());
@@ -561,6 +601,7 @@ process.on('SIGINT', () => {
 module.exports = {
     db,
     initializeSchema,
+    addPerformanceIndexes,
     close,
     DB_PATH
 };
