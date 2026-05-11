@@ -630,7 +630,16 @@ if (fs.existsSync(frontendPath)) {
         fallthrough: false // Fail if not found to avoid falling back to index.html for assets
     }));
 
-    // 2. Serve other static files
+    // 2. Serve other static files with no-cache for index.html
+    app.use((req, res, next) => {
+        if (req.path === '/' || req.path === '/index.html' || req.path.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+        next();
+    });
+
     app.use(express.static(frontendPath, {
         extensions: ['html'],
         index: 'index.html'
@@ -678,11 +687,14 @@ app.get('/api/health', async (req, res) => {
         // Check database connectivity
         db.prepare('SELECT 1').get();
         
+        // Get version from package.json
+        const packageJson = require('./package.json');
+        
         const healthStatus = {
             status: 'healthy',
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
-            version: '3.2.0',
+            version: packageJson.version || '1.0.0',
             checks: {
                 database: 'ok',
                 memory: {
