@@ -1,3 +1,4 @@
+
 import { Metadata } from "next"
 import { Navbar } from "@/components/landing/navbar"
 import { Footer } from "@/components/landing/footer"
@@ -31,7 +32,7 @@ export default function BlogPage() {
         "url": "https://whappi.com/logo.png"
       }
     },
-    "blogPost": blogPosts.map(post => ({
+    "blogPost": (Array.isArray(blogPosts) ? blogPosts : []).map(post => ({
       "@type": "BlogPosting",
       "headline": post.title,
       "datePublished": post.date,
@@ -74,7 +75,7 @@ export default function BlogPage() {
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {blogPosts.map((post) => (
+          {(Array.isArray(blogPosts) ? blogPosts : []).map((post) => (
             <BlogCard key={post.slug} post={post} />
           ))}
         </div>

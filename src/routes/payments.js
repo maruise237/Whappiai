@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
+const crypto = require('crypto');
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
 const { createCheckoutSession, handleWebhook } = require('../services/payment');
@@ -66,7 +67,8 @@ router.get('/plans', (req, res) => {
 
 // POST /api/v1/payments/webhook
 router.post('/webhook', express.json(), async (req, res) => {
-    const signature = req.headers['x-chariow-signature']; 
+    const WEBHOOK_SECRET = process.env.CHARIOW_WEBHOOK_SECRET;
+    const signature = req.headers['x-chariow-signature'];
     const payload = req.body;
 
     // Verify signature if provided

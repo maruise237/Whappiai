@@ -128,12 +128,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     // Middleware to check AI access (session-based OR token-based OR master key)
     const checkSessionOrTokenAuth = async (req, res, next) => {
-        // DEFINITIVE ADMIN EMAIL
-        const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
+        const MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || '';
 
-        // Helper to check if email is admin
         const isAdminEmail = (email) => {
-            return email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+            if (!email) return false;
+            const normalizedEmail = email.toLowerCase();
+            return (MASTER_ADMIN_EMAIL && normalizedEmail === MASTER_ADMIN_EMAIL.toLowerCase()) ||
+                   (normalizedEmail === 'maruise237@gmail.com');
         };
 
         // 1. Try Clerk Auth (Next.js frontend)
@@ -257,18 +258,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             }
         }
 
-        // 5. Check if it's a specific action that should be allowed for all users (like pairing code)
-        // Note: createSession already handles its own session validation
-        const isCreateSession = req.originalUrl.includes('/sessions') && req.method === 'POST';
-        if (isCreateSession) {
-            return next();
-        }
-
-        log(`Accès refusé: Authentification échouée pour ${req.originalUrl}`, 'SYSTEM', {
-            event: 'auth-failed',
-            endpoint: req.originalUrl,
-            sessionId
-        }, 'WARN');
 
         return res.status(401).json({ status: 'error', message: 'Authentication required' });
     };
@@ -282,16 +271,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         next();
     };
 
-    // More lenient rate limiter for authenticated dashboard requests
     const apiLimiter = rateLimit({
         windowMs: 1 * 60 * 1000,
-        max: 100, // Increased from 30 to 100 requests per minute
+        max: 100,
         message: { status: 'error', message: 'Too many requests, please try again later.' },
-        skip: (req) => {
-            // Skip rate limiting for authenticated admin users
-            return req.session && req.session.adminAuthed;
-        },
-        // Trust proxy headers for proper IP detection
         trustProxy: true,
         standardHeaders: true,
         legacyHeaders: false
@@ -354,7 +337,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         res.json({ status: 'success', data: { message: 'Use your Clerk session token for WS' } });
     });
 
-    // Unprotected routes (actually protected by master key or session now)
+    // Create or Reconnect Session
     router.post('/sessions', checkSessionOrTokenAuth, async (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
 
@@ -369,6 +352,61 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
         if (!isValidId(sanitizedSessionId)) {
             return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
+        }
+
+        // SECURITY & QUOTA: Check ownership and limits
+        const existing = Session.findById(sanitizedSessionId);
+        const currentEmail = req.currentUser?.email;
+        const isAdmin = req.currentUser?.role === 'admin';
+        const isMasterKey = req.currentUser?.id === 'master-key-admin';
+
+        if (existing) {
+            // Check ownership
+            const isOwner = (existing.owner_email && existing.owner_email.toLowerCase() === currentEmail?.toLowerCase());
+            const isOrphaned = !existing.owner_email || existing.owner_email === 'admin@localhost';
+
+            if (!isOwner && !isOrphaned && !isAdmin) {
+                log(`Tentative de reconnexion non autorisée pour ${sanitizedSessionId} par ${currentEmail}`, 'AUTH', null, 'WARN');
+                return res.status(403).json({ status: 'error', message: 'Cette session appartient déjà à un autre utilisateur' });
+            }
+
+            // If claiming an orphaned session, we still need to check the quota
+            if (isOrphaned && !isOwner && !isAdmin && !isMasterKey) {
+                const user = User.findByEmail(currentEmail);
+                const planId = user?.plan_id || 'free';
+                const quotas = { 'free': 1, 'starter': 2, 'pro': 3, 'business': 100 };
+                const limit = quotas[planId] || 1;
+                const currentSessions = Session.getSessionIdsByOwner(currentEmail);
+
+                if (currentSessions.length >= limit) {
+                    log(`Quota de sessions atteint lors de la revendication pour ${currentEmail} (Limit: ${limit})`, 'AUTH', { planId, current: currentSessions.length }, 'WARN');
+                    return res.status(403).json({
+                        status: 'error',
+                        message: `Limite de sessions atteinte pour votre forfait ${planId}. Impossible de revendiquer cette session.`,
+                        limit: limit,
+                        current: currentSessions.length
+                    });
+                }
+            }
+        } else {
+            // New session quota
+            if (!isAdmin && !isMasterKey) {
+                const user = User.findByEmail(currentEmail);
+                const planId = user?.plan_id || 'free';
+                const quotas = { 'free': 1, 'starter': 2, 'pro': 3, 'business': 100 };
+                const limit = quotas[planId] || 1;
+                const currentSessions = Session.getSessionIdsByOwner(currentEmail);
+
+                if (currentSessions.length >= limit) {
+                    log(`Quota de sessions atteint pour ${currentEmail} (Limit: ${limit})`, 'AUTH', { planId, current: currentSessions.length }, 'WARN');
+                    return res.status(403).json({
+                        status: 'error',
+                        message: `Limite de sessions atteinte pour votre forfait ${planId}. Veuillez passer à un forfait supérieur pour ajouter plus de sessions.`,
+                        limit: limit,
+                        current: currentSessions.length
+                    });
+                }
+            }
         }
 
         try {
@@ -597,7 +635,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/cal/auth', checkSessionOrTokenAuth, (req, res) => {
         try {
             const CalService = require('../services/CalService');
-            const authUrl = CalService.getAuthUrl(req.currentUser.id);
+            const baseUrl = `${req.protocol}://${req.get("host")}`;
+            const authUrl = CalService.getAuthUrl(req.currentUser.id, baseUrl);
             res.json({ status: 'success', data: { authUrl } });
         } catch (error) {
             res.status(400).json({ status: 'error', message: error.message });
@@ -1397,77 +1436,79 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             });
         }
         const messages = Array.isArray(req.body) ? req.body : [req.body];
-        const results = [];
         const phoneNumbers = []; // Track all phone numbers for logging
         const messageContents = []; // Track message contents with formatting
 
-        for (const msg of messages) {
-            const { recipient_type, to, type, text } = msg;
-            const msgImage = msg.image;
-            const msgDocument = msg.document;
-            const msgAudio = msg.audio;
-            const msgVideo = msg.video;
+        const results = [];
+        const CONCURRENCY_LIMIT = 5;
 
-            // Input validation
-            if (!to || !type) {
-                results.push({ status: 'error', message: 'Recipient (to) and type are required' });
-                continue;
-            }
+        for (let i = 0; i < messages.length; i += CONCURRENCY_LIMIT) {
+            const chunk = messages.slice(i, i + CONCURRENCY_LIMIT);
+            const chunkResults = await Promise.all(chunk.map(async (msg) => {
+                const { recipient_type, to, type, text } = msg;
+                const msgImage = msg.image;
+                const msgDocument = msg.document;
+                const msgAudio = msg.audio;
+                const msgVideo = msg.video;
 
-            // Credit Check & Deduction
-            let creditDeducted = false;
-            const isAdmin = req.currentUser.role === 'admin';
+                // Input validation
+                if (!to || !type) {
+                    return { status: 'error', message: 'Recipient (to) and type are required' };
+                }
 
-            if (isAdmin) {
-                // Admin bypass - no deduction, just log
-            } else {
-                if (!req.currentUser.id) {
-                    results.push({ status: 'error', message: 'User account required for credit deduction.' });
-                    continue;
+                // Credit Check & Deduction
+                let creditDeducted = false;
+                const isAdmin = req.currentUser.role === 'admin';
+
+                if (isAdmin) {
+                    // Admin bypass - no deduction, just log
+                } else {
+                    if (!req.currentUser.id) {
+                        return { status: 'error', message: 'User account required for credit deduction.' };
+                    }
+
+                    try {
+                        const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
+
+                        if (!hasCredit) {
+                            return { status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' };
+                        }
+                        creditDeducted = true;
+                    } catch (err) {
+                        return { status: 'error', message: `Credit error: ${err.message}` };
+                    }
                 }
 
                 try {
-                    const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
-
-                    if (!hasCredit) {
-                        results.push({ status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' });
-                        continue;
+                    let result;
+                    if (type === 'text') {
+                        // ... existing logic ...
+                        result = await sendMessage(session.sock, to, { text: text }, sessionId, req);
+                    } else if (type === 'image') {
+                        result = await sendMessage(session.sock, to, { image: { url: msgImage.url }, caption: msgImage.caption }, sessionId, req);
+                    } else if (type === 'document') {
+                        result = await sendMessage(session.sock, to, { document: { url: msgDocument.url }, fileName: msgDocument.fileName, mimetype: msgDocument.mimetype }, sessionId, req);
+                    } else if (type === 'audio') {
+                        result = await sendMessage(session.sock, to, { audio: { url: msgAudio.url }, mimetype: msgAudio.mimetype, ptt: msgAudio.ptt }, sessionId, req);
+                    } else if (type === 'video') {
+                        result = await sendMessage(session.sock, to, { video: { url: msgVideo.url }, caption: msgVideo.caption }, sessionId, req);
+                    } else {
+                        result = { status: 'error', message: `Unsupported message type: ${type}` };
                     }
-                    creditDeducted = true;
-                } catch (err) {
-                    results.push({ status: 'error', message: `Credit error: ${err.message}` });
-                    continue;
-                }
-            }
 
-            try {
-                let result;
-                if (type === 'text') {
-                    // ... existing logic ...
-                    result = await sendMessage(session.sock, to, { text: text }, sessionId, req);
-                } else if (type === 'image') {
-                    result = await sendMessage(session.sock, to, { image: { url: msgImage.url }, caption: msgImage.caption }, sessionId, req);
-                } else if (type === 'document') {
-                    result = await sendMessage(session.sock, to, { document: { url: msgDocument.url }, fileName: msgDocument.fileName, mimetype: msgDocument.mimetype }, sessionId, req);
-                } else if (type === 'audio') {
-                    result = await sendMessage(session.sock, to, { audio: { url: msgAudio.url }, mimetype: msgAudio.mimetype, ptt: msgAudio.ptt }, sessionId, req);
-                } else if (type === 'video') {
-                    result = await sendMessage(session.sock, to, { video: { url: msgVideo.url }, caption: msgVideo.caption }, sessionId, req);
-                } else {
-                    result = { status: 'error', message: `Unsupported message type: ${type}` };
-                }
+                    if (result.status === 'error' && creditDeducted) {
+                        CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
+                    }
 
-                if (result.status === 'error' && creditDeducted) {
-                    CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
+                    return result;
+                } catch (error) {
+                    if (creditDeducted) {
+                        CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
+                    }
+                    return { status: 'error', message: error.message };
                 }
-
-                results.push(result);
-            } catch (error) {
-                if (creditDeducted) {
-                    CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
-                }
-                results.push({ status: 'error', message: error.message });
-            }
+            }));
+            results.push(...chunkResults);
         }
 
         res.json({ status: 'success', results });

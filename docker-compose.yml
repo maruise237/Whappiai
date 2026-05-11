@@ -1,12 +1,15 @@
 services:
-  whappi-backend:
+  whappi-frontend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: whappi-backend
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
     restart: always
-    ports:
-      - "3010:3000"
+    stop_grace_period: 30s
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -17,6 +20,11 @@ services:
       - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
       - FRONTEND_URL=${FRONTEND_URL}
       - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD}
+      - CAL_CLIENT_ID=${CAL_CLIENT_ID}
+      - CAL_CLIENT_SECRET=${CAL_CLIENT_SECRET}
+      - CAL_REDIRECT_URI=${CAL_REDIRECT_URI}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - APP_URL=${APP_URL}
     volumes:
       - whappi-data:/app/data
       - whappi-sessions:/app/sessions
@@ -25,34 +33,11 @@ services:
     networks:
       - dokploy-network
 
-  # Dummy service to satisfy Dokploy service detection without causing conflicts
+  # Dummy service to satisfy Dokploy service detection if needed
   waha:
     image: busybox
-    command: ["sh", "-c", "echo 'Whappi Alias Service Active' && tail -f /dev/null"]
+    command: ["sh", "-c", "echo 'Whappi Alias Service Active' && sleep infinity"]
     restart: always
-    networks:
-      - dokploy-network
-
-  whappi-frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-        - NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
-        - NEXT_PUBLIC_CLERK_SIGN_UP_URL=/register
-    container_name: whappi-frontend
-    restart: always
-    ports:
-      - "3011:3001"
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      - NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
-      - NEXT_PUBLIC_CLERK_SIGN_UP_URL=/register
     networks:
       - dokploy-network
 
@@ -61,7 +46,6 @@ volumes:
   whappi-sessions:
   whappi-auth:
   whappi-media:
-
 
 networks:
   dokploy-network:

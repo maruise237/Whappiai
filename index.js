@@ -19,6 +19,7 @@ if (process.env.NODE_ENV === 'production') {
 require('dotenv').config();
 
 const express = require('express');
+const compression = require('compression');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const path = require('path');
@@ -53,16 +54,31 @@ const redisService = require('./src/services/redis');
 // API v1
 const { initializeApi } = require('./src/routes/api');
 
+// Helper to sanitize environment variables (removes quotes and whitespace)
+const _clean = (val) => typeof val === 'string' ? val.trim().replace(/^["']|["']$/g, '') : val;
+
 // Validate encryption key
-const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY;
+const ENCRYPTION_KEY = _clean(process.env.TOKEN_ENCRYPTION_KEY);
 if (!ENCRYPTION_KEY || !isValidKey(ENCRYPTION_KEY)) {
     log('FATAL: TOKEN_ENCRYPTION_KEY doit être au moins de 64 caractères hexadécimaux !', 'SYSTEM', { event: 'fatal-error' }, 'ERROR');
     log('Générez-en une avec: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"', 'SYSTEM', { event: 'fatal-error-hint' }, 'ERROR');
     process.exit(1);
 }
 
+// Validate required environment variables
+const REQUIRED_ENV_VARS = ['CLERK_SECRET_KEY', 'SESSION_SECRET'];
+const missingVars = REQUIRED_ENV_VARS.filter(key => !_clean(process.env[key]));
+if (missingVars.length > 0) {
+    log(`FATAL: Variables d'environnement manquantes: ${missingVars.join(', ')}`, 'SYSTEM', { event: 'fatal-error' }, 'ERROR');
+    process.exit(1);
+}
+
 // Initialize Express
 const app = express();
+
+// Apply compression middleware to optimize LCP by reducing payload size (Gzip/Brotli)
+app.use(compression());
+
 app.set('trust proxy', 1);
 
 // CORS configuration
@@ -94,7 +110,10 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // In production or other cases, allow but warn or restrict if needed
+        if (process.env.NODE_ENV === 'production') {
+            log(`CORS blocked unknown origin: ${origin}`, 'SECURITY', null, 'WARN');
+            return callback(new Error('CORS policy: origin not allowed'));
+        }
         callback(null, true);
     },
     credentials: true,
@@ -111,7 +130,7 @@ const wsClients = new Map();
 
 // Session configuration
 const isProduction = process.env.NODE_ENV === 'production';
-const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-me';
+const sessionSecret = _clean(process.env.SESSION_SECRET) || 'dev-secret-change-me';
 
 // Ensure sessions directory exists for FileStore
 const sessionsDir = path.join(__dirname, 'sessions');
@@ -408,18 +427,37 @@ const sessionTokens = new Map();
 // Helper to broadcast session updates
 const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     const isPairingCode = status === 'GENERATING_CODE';
-    Session.updateStatus(id, status, detail, isPairingCode ? qrOrCode : null);
+    const isQR = status === 'GENERATING_QR';
+
+    // CRITICAL: We pass undefined instead of null to prevent clearing existing code/qr when status updates
+    // EXCEPT when status is DISCONNECTED, in which case we clear them.
+    Session.updateStatus(
+        id,
+        status,
+        detail,
+        isPairingCode ? qrOrCode : undefined,
+        isQR ? qrOrCode : undefined
+    );
+
+    const updateData = {
+        sessionId: id,
+        status,
+        detail,
+        token: Session.findById(id)?.token
+    };
+
+    // Only include QR or pairingCode if they are provided, to avoid clearing them on the frontend during status transitions
+    if (isQR) updateData.qr = qrOrCode;
+    if (isPairingCode) updateData.pairingCode = qrOrCode;
+
+    if (status === 'DISCONNECTED') {
+        updateData.qr = null;
+        updateData.pairingCode = null;
+    }
 
     broadcastToClients({
         type: 'session-update',
-        data: [{
-            sessionId: id,
-            status,
-            detail,
-            qr: status === 'GENERATING_QR' ? qrOrCode : null,
-            pairingCode: isPairingCode ? qrOrCode : null,
-            token: Session.findById(id)?.token
-        }]
+        data: updateData
     });
 };
 
@@ -476,7 +514,7 @@ const getSessionsDetailsWrapper = (email, isAdmin) => {
             sessionId: s.id,
             isConnected: isConnected,
             pairingCode: s.pairing_code,
-            qr: whatsappService.getLastQr(s.id)
+            qr: s.qr_code || whatsappService.getLastQr(s.id)
         };
     });
 };
@@ -586,7 +624,6 @@ const frontendPath = path.join(__dirname, 'frontend', 'out');
 
 if (fs.existsSync(frontendPath)) {
     // 1. Serve _next/static explicitly with long-term caching
-    // Fix: Map /_next/static to frontend/out/_next/static
     app.use('/_next/static', express.static(path.join(frontendPath, '_next', 'static'), {
         maxAge: '1y',
         immutable: true,
@@ -599,12 +636,30 @@ if (fs.existsSync(frontendPath)) {
         index: 'index.html'
     }));
 
-    // 3. Fallback to index.html for SPA routing
+    // 3. Fallback to specific HTML files or index.html for SPA routing
     app.get('*', (req, res, next) => {
         // Skip for API routes
         if (req.path.startsWith('/api') || req.path.startsWith('/admin')) {
             return next();
         }
+
+        let reqPath = req.path;
+        if (reqPath.endsWith('/')) {
+            reqPath = reqPath.slice(0, -1);
+        }
+
+        // Check if a direct .html file exists for the path
+        const htmlPath = path.join(frontendPath, reqPath + '.html');
+        if (fs.existsSync(htmlPath)) {
+            return res.sendFile(htmlPath);
+        }
+
+        // Check if an index.html exists within a directory for the path
+        const dirIndexPath = path.join(frontendPath, reqPath, 'index.html');
+        if (fs.existsSync(dirIndexPath)) {
+            return res.sendFile(dirIndexPath);
+        }
+
         res.sendFile(path.join(frontendPath, 'index.html'));
     });
 } else {
@@ -679,7 +734,7 @@ if (require.main === module) {
             const credsFile = path.join(sessionDir, 'creds.json');
             
             if (fs.existsSync(credsFile)) {
-                log(`Session ${session.id} trouvée avec des identifiants valides. Réinitialisation automatique...`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
+                log(`Session ${session.id} trouvée with des identifiants valides. Réinitialisation automatique...`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
 
                 // Increase delay to 3s between session initializations to prevent Dokploy CPU spikes and mass disconnects during updates
                 await new Promise(resolve => setTimeout(resolve, 3000));

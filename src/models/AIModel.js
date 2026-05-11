@@ -131,23 +131,31 @@ class AIModel {
         if (data.model_code) mappedData.model_name = data.model_code;
 
         const allowedFields = ['name', 'provider', 'endpoint', 'api_key', 'model_name', 'description', 'is_active', 'is_default', 'temperature', 'max_tokens'];
-        const fields = Object.keys(mappedData).filter(key => allowedFields.includes(key));
         
-        if (fields.length === 0) return existing;
+        const fieldsToUpdate = [];
+        const values = [];
 
-        const setClause = fields.map(field => `${field} = ?`).join(', ');
-        const values = fields.map(field => {
-            let val = mappedData[field];
-            // Normalize booleans for SQLite
-            if (field === 'is_active' || field === 'is_default') {
-                return val === true || val === 1 || val === '1' ? 1 : 0;
+        for (const field of allowedFields) {
+            if (Object.prototype.hasOwnProperty.call(mappedData, field)) {
+                fieldsToUpdate.push(field);
+
+                let val = mappedData[field];
+                // Normalize booleans for SQLite
+                if (field === 'is_active' || field === 'is_default') {
+                    val = (val === true || val === 1 || val === '1') ? 1 : 0;
+                }
+                // Secure key storage
+                else if (field === 'api_key' && val && !val.includes(':')) {
+                    val = encrypt(val, ENCRYPTION_KEY);
+                }
+
+                values.push(val);
             }
-            // Secure key storage
-            if (field === 'api_key' && val && !val.includes(':')) {
-                return encrypt(val, ENCRYPTION_KEY);
-            }
-            return val;
-        });
+        }
+
+        if (fieldsToUpdate.length === 0) return existing;
+
+        const setClause = fieldsToUpdate.map(f => `"${f}" = ?`).join(', ');
         values.push(id);
 
         const stmt = db.prepare(`

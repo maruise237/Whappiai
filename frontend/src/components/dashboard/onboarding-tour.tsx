@@ -4,9 +4,9 @@ import * as React from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { usePathname, useRouter } from "next/navigation"
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@clerk/clerk-react"
 import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 
 export function OnboardingTour() {
   const pathname = usePathname()

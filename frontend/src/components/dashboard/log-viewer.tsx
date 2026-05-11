@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useWebSocket } from "@/providers/websocket-provider"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 
 interface LogEntry {
   type: string;
@@ -51,16 +51,16 @@ export function LogViewer() {
   }, [logs, isAutoScroll])
 
   const filteredLogs = logs.filter(log => {
-    const logMsg = typeof log.message === 'string' ? log.message : JSON.stringify(log.message)
-    const matchesSearch = logMsg.toLowerCase().includes(search.toLowerCase()) ||
-      (log.sessionId && log.sessionId.toLowerCase().includes(search.toLowerCase()))
-    const matchesLevel = levelFilter === "all" || log.level.toLowerCase() === levelFilter.toLowerCase()
+    const logMsg = ensureString(log.message)
+    const matchesSearch = ensureString(logMsg).toLowerCase().includes(search.toLowerCase()) ||
+      (log.sessionId && ensureString(log.sessionId).toLowerCase().includes(search.toLowerCase()))
+    const matchesLevel = levelFilter === "all" || ensureString(log.level).toLowerCase() === ensureString(levelFilter).toLowerCase()
     return matchesSearch && matchesLevel
   })
 
   const formatMessage = (message: any, index: number) => {
     const isExpanded = expandedLogs[index]
-    const content = typeof message === 'object' ? JSON.stringify(message, null, 2) : String(message)
+    const content = ensureString(message)
     const isLong = content.length > 200
     const displayContent = isLong && !isExpanded ? content.substring(0, 200) + '...' : content
 
@@ -85,7 +85,7 @@ export function LogViewer() {
   }
 
   const logLevelColor = (level: string) => {
-    switch (level?.toLowerCase()) {
+    switch (ensureString(level).toLowerCase()) {
       case 'error': return 'text-destructive';
       case 'warn': return 'text-amber-500';
       case 'info': return 'text-blue-500';

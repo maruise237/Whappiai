@@ -1,3 +1,4 @@
+
 import { notFound } from "next/navigation"
 import { Metadata } from "next"
 import Link from "next/link"
@@ -7,6 +8,7 @@ import { blogPosts } from "@/lib/blog-data"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Calendar, Clock, User, Share2 } from "lucide-react"
+import { safeDate } from "@/lib/utils"
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -15,14 +17,14 @@ interface BlogPostPageProps {
 }
 
 export async function generateStaticParams() {
-  return blogPosts.map((post) => ({
+  return (Array.isArray(blogPosts) ? blogPosts : []).map((post) => ({
     slug: post.slug,
   }))
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params
-  const post = blogPosts.find((p) => p.slug === slug)
+  const post = (Array.isArray(blogPosts) ? blogPosts : []).find((p) => p.slug === slug)
 
   if (!post) {
     return {
@@ -51,7 +53,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params
-  const post = blogPosts.find((p) => p.slug === slug)
+  const post = (Array.isArray(blogPosts) ? blogPosts : []).find((p) => p.slug === slug)
 
   if (!post) {
     notFound()
@@ -115,7 +117,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4" />
-                {new Date(post.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {safeDate(post.date, { day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="w-4 h-4" />

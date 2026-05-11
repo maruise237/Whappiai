@@ -3,40 +3,105 @@ const { log } = require('../utils/logger');
 const User = require('../models/User');
 
 class CalService {
-    constructor() {
-        this.clientId = process.env.CAL_CLIENT_ID;
-        this.clientSecret = process.env.CAL_CLIENT_SECRET;
-        this.redirectUri = process.env.CAL_REDIRECT_URI || 'http://localhost:3010/api/v1/cal/callback';
-        this.apiUrl = 'https://api.cal.com/v2';
+    _clean(val) {
+        if (!val) return '';
+        return val.trim().replace(/^["']|["']$/g, '');
+    }
+
+    get clientId() {
+        return this._clean(process.env.CAL_CLIENT_ID);
+    }
+
+    get clientSecret() {
+        return this._clean(process.env.CAL_CLIENT_SECRET);
+    }
+
+    get redirectUri() {
+        return this._clean(process.env.CAL_REDIRECT_URI);
+    }
+
+    get apiUrl() {
+        return 'https://api.cal.com/v2';
+    }
+
+    /**
+     * Resolve the redirect URI with multiple fallbacks
+     * @param {string} fallbackBaseUrl - Base URL from request (e.g. http://host:port)
+     * @returns {string}
+     */
+    resolveRedirectUri(fallbackBaseUrl = null) {
+        let uri = this.redirectUri;
+
+        // 1. Priority: CAL_REDIRECT_URI from environment
+        if (uri) {
+            // Automatically append path if missing
+            if (!uri.includes('/api/v1/cal/callback')) {
+                uri = `${uri.replace(/\/$/, '')}/api/v1/cal/callback`;
+            }
+            log(`Redirect URI resolved from CAL_REDIRECT_URI: ${uri}`, 'SYSTEM', null, 'DEBUG');
+            return uri;
+        }
+
+        // 2. Secondary: Construct from NEXT_PUBLIC_API_URL or APP_URL
+        const apiBase = this._clean(process.env.NEXT_PUBLIC_API_URL || process.env.APP_URL);
+        if (apiBase) {
+            uri = `${apiBase.replace(/\/$/, '')}/api/v1/cal/callback`;
+            log(`Redirect URI resolved from API_URL: ${uri}`, 'SYSTEM', null, 'DEBUG');
+            return uri;
+        }
+
+        // 3. Tertiary: Construct from dynamic request host
+        if (fallbackBaseUrl) {
+            uri = `${this._clean(fallbackBaseUrl).replace(/\/$/, '')}/api/v1/cal/callback`;
+            log(`Redirect URI resolved from Dynamic Fallback: ${uri}`, 'SYSTEM', null, 'DEBUG');
+            return uri;
+        }
+
+        // 4. Ultimate Fallback (Localhost)
+        uri = 'http://localhost:3010/api/v1/cal/callback';
+        log(`Redirect URI resolved from Ultimate Fallback: ${uri}`, 'SYSTEM', null, 'DEBUG');
+        return uri;
     }
 
     /**
      * Get the OAuth authorization URL
      * @param {string} userId
+     * @param {string} fallbackBaseUrl - Optional base URL from request
      * @returns {string}
      */
-    getAuthUrl(userId) {
+    getAuthUrl(userId, fallbackBaseUrl = null) {
+        const finalRedirectUri = this.resolveRedirectUri(fallbackBaseUrl);
+
+        log(`Génération URL OAuth Cal.com. Client ID: ${this.clientId}, Redirect URI: ${finalRedirectUri}`, 'SYSTEM', { clientId: this.clientId, redirectUri: finalRedirectUri }, 'DEBUG');
+
         if (!this.clientId || this.clientId.includes('xxxx')) {
             throw new Error('Configuration Cal.com incorrecte : CAL_CLIENT_ID est manquant ou contient des caractères d\'exemple (xxxx). Veuillez vérifier vos variables d\'environnement.');
         }
-        return `https://app.cal.com/auth/oauth2/authorize?client_id=${this.clientId}&redirect_uri=${encodeURIComponent(this.redirectUri)}&state=${userId}&response_type=code`;
+
+        return `https://app.cal.com/auth/oauth2/authorize?client_id=${this.clientId}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&state=${userId}&response_type=code`;
     }
 
     /**
      * Exchange authorization code for access token
      * @param {string} code
      * @param {string} userId
+     * @param {string} fallbackBaseUrl - Optional base URL from request
      */
-    async exchangeCode(code, userId) {
-        if (!this.clientSecret) {
+    async exchangeCode(code, userId, fallbackBaseUrl = null) {
+        if (!this.clientSecret || this.clientSecret.includes('votre_secret')) {
             throw new Error('Configuration Cal.com incomplète : CAL_CLIENT_SECRET est manquant dans le .env');
         }
+
+        // In OAuth2, the redirect_uri must be EXACTLY the same during code exchange
+        const finalRedirectUri = this.resolveRedirectUri(fallbackBaseUrl);
+
         try {
+            log(`Échange du code OAuth Cal.com avec Redirect URI: ${finalRedirectUri}`, 'SYSTEM', null, 'DEBUG');
             const response = await axios.post('https://api.cal.com/v2/oauth/token', {
                 client_id: this.clientId,
                 client_secret: this.clientSecret,
                 code,
-                redirect_uri: this.redirectUri,
+                redirect_uri: finalRedirectUri,
                 grant_type: 'authorization_code'
             });
 
@@ -160,9 +225,6 @@ class CalService {
 
         try {
             const user = await User.findById(userId);
-            // location is optional, Cal.com defaults to event type location
-            // If ai_cal_video_allowed is on, and location is not specified, Cal.com usually handles it
-
             const payload = {
                 eventTypeId,
                 start,
@@ -175,9 +237,6 @@ class CalService {
 
             if (location) {
                 payload.location = location;
-            } else if (user.ai_cal_video_allowed) {
-                // If video is allowed but no specific location, we might want to suggest 'integrations:cal-video'
-                // or similar based on Cal.com API v2 specs. For now, let's leave it to the event type default.
             }
 
             const response = await axios.post(`${this.apiUrl}/bookings`, payload, {

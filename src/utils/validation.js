@@ -12,8 +12,8 @@ const validator = require('validator');
  */
 const isValidId = (id) => {
     if (!id || typeof id !== 'string') return false;
-    // Allow alphanumeric, underscores, hyphens, colons, @ symbols, and spaces
-    return /^[a-zA-Z0-9_@.: -]{1,128}$/.test(id);
+    // Allow only alphanumeric characters, underscores, and hyphens
+    return /^[a-zA-Z0-9_-]{1,128}$/.test(id);
 };
 
 /**
@@ -23,8 +23,8 @@ const isValidId = (id) => {
  */
 const sanitizeId = (text) => {
     if (!text || typeof text !== 'string') return '';
-    // Allow alphanumeric, underscores, hyphens, colons, @ symbols, and spaces
-    return text.replace(/[^a-zA-Z0-9_@.: -]/g, '');
+    // Allow only alphanumeric characters, underscores, and hyphens
+    return text.replace(/[^a-zA-Z0-9_-]/g, '');
 };
 
 /**

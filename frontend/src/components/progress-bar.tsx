@@ -13,14 +13,14 @@ export default function ProgressBar() {
     if (typeof window !== 'undefined') {
       try {
         NProgress.done();
-      } catch (e) {}
+      } catch (e) { console.error(e) }
     }
     
     return () => {
       if (typeof window !== 'undefined') {
         try {
           NProgress.start();
-        } catch (e) {}
+        } catch (e) { console.error(e) }
       }
     };
   }, [pathname, searchParams]);

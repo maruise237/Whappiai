@@ -71,6 +71,7 @@ class Session {
                 session.ai_key = decrypt(session.ai_key, ENCRYPTION_KEY);
             } catch (e) {
                 log(`Failed to decrypt AI key for session ${sessionId}`, 'SECURITY', { error: e.message }, 'ERROR');
+                session.ai_key = null;
             }
         }
 
@@ -118,13 +119,28 @@ class Session {
      * @param {string} pairingCode - Optional pairing code
      * @returns {object} Updated session
      */
-    static updateStatus(sessionId, status, detail = null, pairingCode = null) {
+    static updateStatus(sessionId, status, detail = null, pairingCode = undefined, qrCode = undefined) {
+        const existing = this.findById(sessionId);
+        if (!existing) return null;
+
+        // Partial update: only update if value is not undefined
+        const newStatus = status !== undefined ? status : existing.status;
+        const newDetail = detail !== undefined ? detail : existing.detail;
+        // If status is DISCONNECTED, we explicitly clear QR and pairing code in the DB
+        let newPairingCode = pairingCode !== undefined ? pairingCode : existing.pairing_code;
+        let newQrCode = qrCode !== undefined ? qrCode : existing.qr_code;
+
+        if (newStatus === 'DISCONNECTED' && pairingCode === undefined && qrCode === undefined) {
+            newPairingCode = null;
+            newQrCode = null;
+        }
+
         const stmt = db.prepare(`
             UPDATE whatsapp_sessions
-            SET status = ?, detail = ?, pairing_code = ?, updated_at = datetime('now')
+            SET status = ?, detail = ?, pairing_code = ?, qr_code = ?, updated_at = datetime('now')
             WHERE id = ?
         `);
-        stmt.run(status, detail, pairingCode, sessionId);
+        stmt.run(newStatus, newDetail, newPairingCode, newQrCode, sessionId);
         return this.findById(sessionId);
     }
 

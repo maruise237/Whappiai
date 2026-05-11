@@ -24,11 +24,11 @@ export default function GuidesPage() {
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Maîtrisez l'API WhatsApp avec nos guides étape par étape, des bases aux intégrations avancées.
           </p>
-          
+
           <div className="relative w-full max-w-lg mx-auto">
-            <input 
-              type="text" 
-              placeholder="Rechercher un guide (ex: chatbot, nodejs, webhooks...)" 
+            <input
+              type="text"
+              placeholder="Rechercher un guide (ex: chatbot, nodejs, webhooks...)"
               className="w-full h-12 pl-4 pr-12 rounded-lg border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <Button size="icon" className="absolute right-1 top-1 h-10 w-10 rounded-md">
@@ -53,7 +53,7 @@ export default function GuidesPage() {
                 </CardDescription>
               </CardHeader>
             </Card>
-            
+
             <Card className="hover:border-primary/50 transition-colors cursor-pointer group">
               <CardHeader>
                 <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -65,7 +65,7 @@ export default function GuidesPage() {
                 </CardDescription>
               </CardHeader>
             </Card>
-            
+
             <Card className="hover:border-primary/50 transition-colors cursor-pointer group">
               <CardHeader>
                 <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -84,7 +84,7 @@ export default function GuidesPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold mb-12 text-center">Guides par catégorie</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="space-y-4">
               <h3 className="font-semibold text-xl flex items-center gap-2">
@@ -111,7 +111,7 @@ export default function GuidesPage() {
                 </li>
               </ul>
             </div>
-            
+
             <div className="space-y-4">
               <h3 className="font-semibold text-xl flex items-center gap-2">
                 <Code className="w-5 h-5 text-primary" /> Développement
@@ -137,7 +137,7 @@ export default function GuidesPage() {
                 </li>
               </ul>
             </div>
-            
+
             <div className="space-y-4">
               <h3 className="font-semibold text-xl flex items-center gap-2">
                 <Video className="w-5 h-5 text-primary" /> Tutoriels Vidéo
@@ -160,7 +160,7 @@ export default function GuidesPage() {
           </div>
         </div>
       </section>
-      
+
       <Footer />
     </div>
   )

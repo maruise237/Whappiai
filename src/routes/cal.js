@@ -12,7 +12,10 @@ router.get('/callback', async (req, res) => {
     }
 
     try {
-        await CalService.exchangeCode(code, userId);
+        // Construct the same redirectUri used during the authorization request
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
+        await CalService.exchangeCode(code, userId, baseUrl);
+
         // Redirect back to frontend
         const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3005';
         res.redirect(`${frontendUrl}/dashboard/ai?cal=success`);

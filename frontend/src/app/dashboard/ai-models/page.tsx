@@ -40,9 +40,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
-import { useAuth, useUser } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate, ensureNumber } from "@/lib/utils"
 
 export default function AiModelsPage() {
   const { getToken } = useAuth()
@@ -81,7 +81,7 @@ export default function AiModelsPage() {
   }, [getToken])
 
   React.useEffect(() => {
-    fetchModels()
+    fetchModels().catch(console.error)
   }, [fetchModels])
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
@@ -238,14 +238,14 @@ export default function AiModelsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                models.map((m) => {
+                Array.isArray(models) ? models.map((m) => {
                   const usage = adminStats?.ai?.find((s: any) => s.model === m.id || s.model === m.model_name);
                   return (
                     <TableRow key={m.id} className="border-muted/20 group">
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold">{m.name}</span>
-                          <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[150px]">{m.endpoint || m.api_endpoint}</span>
+                          <span className="text-xs font-bold">{safeRender(m.name)}</span>
+                          <span className="text-[10px] text-muted-foreground opacity-60 truncate max-w-[150px]">{safeRender(m.endpoint || m.api_endpoint)}</span>
                         </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
@@ -254,7 +254,7 @@ export default function AiModelsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">{m.model_name}</code>
+                        <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">{safeRender(m.model_name)}</code>
                       </TableCell>
                       <TableCell className="text-center hidden md:table-cell">
                         <div className="flex flex-col items-center">
@@ -277,7 +277,7 @@ export default function AiModelsPage() {
                       </TableCell>
                     </TableRow>
                   )
-                })
+                }) : null
               )}
             </TableBody>
           </Table>
@@ -293,7 +293,7 @@ export default function AiModelsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
              <div className="space-y-1.5 col-span-2">
-                <Label className="text-[10px] font-semibold text-muted-foreground">Nom d&apos;affichage</Label>
+                <Label className="text-[10px] font-semibold text-muted-foreground">Nom d'affichage</Label>
                 <Input
                   placeholder="GPT-4o ou Claude-3"
                   className="h-9"

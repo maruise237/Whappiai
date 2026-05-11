@@ -15,11 +15,10 @@ class User {
      * @returns {object} Created/Updated user
      */
     static async create({ id, email, name = null, role = 'user', imageUrl = null, createdBy = null }) {
-        const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
+        const MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || '';
         const existingUser = this.findById(id) || this.findByEmail(email);
-        
-        // Auto-promote maruise237@gmail.com to admin
-        const targetRole = email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin' : role;
+
+        const targetRole = MASTER_ADMIN_EMAIL && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() ? 'admin' : role;
         
         if (existingUser) {
             // Update existing user if needed (e.g. name, role or image change)
@@ -186,12 +185,20 @@ class User {
             'cal_access_token', 'cal_refresh_token', 'cal_token_expiry',
             'ai_cal_enabled', 'ai_cal_video_allowed'
         ];
-        const fieldsToUpdate = Object.keys(updates).filter(k => allowedFields.includes(k));
+
+        const fieldsToUpdate = [];
+        const values = [];
+
+        for (const field of allowedFields) {
+            if (Object.prototype.hasOwnProperty.call(updates, field)) {
+                fieldsToUpdate.push(field);
+                values.push(updates[field]);
+            }
+        }
 
         if (fieldsToUpdate.length === 0) return user;
 
-        const setClause = fieldsToUpdate.map(f => `${f} = ?`).join(', ');
-        const values = fieldsToUpdate.map(f => updates[f]);
+        const setClause = fieldsToUpdate.map(f => `"${f}" = ?`).join(', ');
 
         const stmt = db.prepare(`UPDATE users SET ${setClause} WHERE id = ?`);
         stmt.run(...values, id);

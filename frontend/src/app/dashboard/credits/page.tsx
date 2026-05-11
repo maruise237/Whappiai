@@ -23,7 +23,7 @@ import {
   TableRow
 } from "@/components/ui/table"
 import { api } from "@/lib/api"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import Link from "next/link"

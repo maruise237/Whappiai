@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useUser, useSignUp, useAuth } from "@clerk/nextjs"
+import { useUser, useSignUp, useAuth } from "@clerk/clerk-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Check, Shield, Lock, ArrowRight, Loader2 } from "lucide-react"

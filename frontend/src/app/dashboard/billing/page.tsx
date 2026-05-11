@@ -1,24 +1,11 @@
 "use client"
 
 import * as React from "react"
-import {
-  CreditCard,
-  Check,
-  Zap,
-  ShieldCheck,
-  ArrowRight,
-  Loader2,
-  Sparkles,
-  Info
-} from "lucide-react"
+import { CreditCard, Zap, ShieldCheck, Sparkles, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { BillingPlans } from "@/components/dashboard/billing-plans"
-import { useAuth } from "@clerk/nextjs"
-import { api } from "@/lib/api"
-import { toast } from "sonner"
-import { cn } from "@/lib/utils"
 
 export default function BillingPage() {
   return (
@@ -38,11 +25,11 @@ export default function BillingPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
          {[
-           { label: "Sessions", val: "1/2", icon: Zap },
-           { label: "Messages IA", val: "42/100", icon: Sparkles },
-           { label: "Soutien", val: "Standard", icon: ShieldCheck }
+           { label: "Sessions actives", val: "1 / 2", icon: Zap },
+           { label: "Messages ce mois", val: "42 / 100", icon: Sparkles },
+           { label: "Niveau de support", val: "Standard", icon: ShieldCheck }
          ].map((stat, i) => (
-           <Card key={i} className="border-none bg-muted/20 shadow-none">
+           <Card key={i} className="border-none bg-muted/20 shadow-sm border-border/50">
              <CardContent className="p-4 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">{stat.label}</p>

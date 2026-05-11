@@ -9,7 +9,7 @@ export default function TermsPage() {
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-24 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8 text-foreground">Conditions Générales d'Utilisation</h1>
-        
+
         <div className="space-y-8 text-muted-foreground">
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-4">1. Acceptation des conditions</h2>

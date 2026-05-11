@@ -17,6 +17,7 @@ const integrations = [
   { name: "n8n", icon: Zap, description: "Workflow automation open-source.", category: "No-Code" },
   { name: "Supabase", icon: Database, description: "Stockez vos messages directement en DB.", category: "Database" },
   { name: "Firebase", icon: Database, description: "Déclenchez des fonctions sur messages.", category: "Database" },
+  { name: "Cal.com", icon: Globe, description: "Synchronisez vos rendez-vous avec WhatsApp.", category: "Calendrier" },
 ]
 
 export default function IntegrationsPage() {

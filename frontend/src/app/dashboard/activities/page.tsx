@@ -1,5 +1,8 @@
 "use client"
 
+const ACTIVITIES_PAGE_SIZE = 50
+const SKELETON_ROWS = 5
+
 import * as React from "react"
 import {
   Activity,
@@ -27,9 +30,9 @@ import {
 } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/api"
-import { useAuth, useUser } from "@clerk/nextjs"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 
 export default function ActivitiesPage() {
   const { getToken } = useAuth()
@@ -45,8 +48,8 @@ export default function ActivitiesPage() {
     setLoading(true)
     try {
       const token = await getToken()
-      const data = await api.activities.list(50, 0, token || undefined)
-      setActivities(data || [])
+      const data = await api.activities.list(ACTIVITIES_PAGE_SIZE, 0, token || undefined)
+      setActivities(Array.isArray(data) ? data : [])
     } catch (e) {
       toast.error("Erreur de chargement du journal")
     } finally {
@@ -58,26 +61,26 @@ export default function ActivitiesPage() {
     fetchActivities()
   }, [fetchActivities])
 
-  const filtered = activities.filter(a => {
-    const action = a.action || "";
-    const details = typeof a.details === 'string' ? a.details : (a.details ? JSON.stringify(a.details) : "");
-    const matchesSearch = action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.resource_id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.user_email || "").toLowerCase().includes(searchQuery.toLowerCase());
+  const filtered = (Array.isArray(activities) ? activities : []).filter(a => {
+    const action = ensureString(a.action);
+    const details = ensureString(a.details);
+    const matchesSearch = ensureString(action).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ensureString(details).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (ensureString(a.resource_id).toLowerCase()).includes(searchQuery.toLowerCase()) ||
+        (ensureString(a.user_email).toLowerCase()).includes(searchQuery.toLowerCase());
 
     const matchesUser = userFilter === 'all' || a.user_email === userFilter;
 
     return matchesSearch && matchesUser;
   })
 
-  const uniqueUsers = Array.from(new Set(activities.map(a => a.user_email))).filter(Boolean)
+  const uniqueUsers = Array.from(new Set((Array.isArray(activities) ? activities : []).map(a => a.user_email))).filter(Boolean)
 
   const getActionIcon = (action: string) => {
     const act = action || "";
-    if (act.includes('send')) return <MessageSquare className="h-3 w-3" />
-    if (act.includes('moderation') || act.includes('block')) return <ShieldCheck className="h-3 w-3" />
-    if (act.includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
+    if (ensureString(act).includes('send')) return <MessageSquare className="h-3 w-3" />
+    if (ensureString(act).includes('moderation') || ensureString(act).includes('block')) return <ShieldCheck className="h-3 w-3" />
+    if (ensureString(act).includes('error')) return <AlertCircle className="h-3 w-3 text-destructive" />
     return <Activity className="h-3 w-3" />
   }
 
@@ -114,9 +117,9 @@ export default function ActivitiesPage() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Tous les utilisateurs</SelectItem>
-                    {uniqueUsers.map(u => (
-                        <SelectItem key={u} value={u}>{u}</SelectItem>
-                    ))}
+                    {Array.isArray(uniqueUsers) ? uniqueUsers.map(u => (
+                        <SelectItem key={ensureString(u)} value={ensureString(u)}>{safeRender(u)}</SelectItem>
+                    )) : null}
                 </SelectContent>
             </Select>
         )}
@@ -145,34 +148,31 @@ export default function ActivitiesPage() {
             </TableHeader>
           <TableBody>
             {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i} className="animate-pulse border-muted/20">
-                  <TableCell colSpan={5} className="h-12 bg-muted/5"></TableCell>
+              Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+                <TableRow key={`skeleton-${i}`} className="animate-pulse border-muted/20">
+                  <TableCell colSpan={6} className="h-12 bg-muted/5"></TableCell>
                 </TableRow>
               ))
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground text-xs italic">
+                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs italic">
                   Aucune activité trouvée.
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((activity) => (
-                <TableRow key={activity.id} className="border-muted/20 hover:bg-muted/30 transition-colors group">
+              Array.isArray(filtered) ? filtered.map((activity) => (
+                <TableRow key={ensureString(activity.id)} className="border-muted/20 hover:bg-muted/30 transition-colors group">
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3 w-3 opacity-40" />
-                      {(() => {
-                        const date = new Date(activity.created_at || activity.timestamp);
-                        return isNaN(date.getTime()) ? 'Date invalide' : date.toLocaleString('fr-FR', {
-                          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-                        });
-                      })()}
+                      {safeDate(activity.created_at || activity.timestamp, {
+                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                      })}
                     </div>
                   </TableCell>
                   {isAdmin && (
                     <TableCell className="hidden sm:table-cell">
-                        <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[120px]">{activity.user_email || 'System'}</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground truncate max-w-[120px]">{safeRender(activity.user_email, 'System')}</p>
                     </TableCell>
                   )}
                   <TableCell>
@@ -182,9 +182,9 @@ export default function ActivitiesPage() {
                         {getActionIcon(activity.action || "")}
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 min-w-0">
-                        <span className="text-xs font-semibold capitalize truncate">{(activity.action || "action").replace(/_/g, ' ')}</span>
+                        <span className="text-xs font-semibold capitalize truncate">{ensureString(activity.action, 'action').replace(/_/g, ' ')}</span>
                         <Badge variant="outline" className="text-[8px] sm:hidden w-fit px-1 h-3.5 opacity-60">
-                           {activity.resource_id || 'sys'}
+                           {safeRender(activity.resource_id, 'sys')}
                         </Badge>
                       </div>
 
@@ -192,14 +192,14 @@ export default function ActivitiesPage() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <Badge variant="outline" className="text-[10px] font-mono border-muted/50 text-muted-foreground group-hover:border-primary/30 group-hover:text-primary transition-colors">
-                      {activity.resource_id || 'system'}
+                      {safeRender(activity.resource_id, 'system')}
                     </Badge>
                   </TableCell>
 
                   <TableCell className="max-w-[300px] hidden md:table-cell">
 
                     <p className="text-[11px] text-muted-foreground truncate">
-                        {typeof activity.details === 'string' ? activity.details : (activity.details ? JSON.stringify(activity.details) : '-')}
+                        {safeRender(activity.details)}
                     </p>
                   </TableCell>
                   <TableCell className="text-right">
@@ -213,7 +213,7 @@ export default function ActivitiesPage() {
                     </Badge>
                   </TableCell>
                 </TableRow>
-              ))
+              )) : null
             )}
           </TableBody>
         </Table>

@@ -3,6 +3,7 @@ import { BlogPost } from "@/lib/blog-data"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, Clock, User } from "lucide-react"
+import { safeDate } from "@/lib/utils"
 
 interface BlogCardProps {
   post: BlogPost
@@ -22,7 +23,7 @@ export function BlogCard({ post }: BlogCardProps) {
         </CardTitle>
         <CardDescription className="flex items-center gap-4 mt-2 text-xs">
           <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> {new Date(post.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            <Calendar className="w-3 h-3" /> {safeDate(post.date, { day: 'numeric', month: 'long', year: 'numeric' })}
           </span>
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" /> {post.readTime}

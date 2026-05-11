@@ -1,18 +1,19 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, Smartphone, QrCode, Trash2, Eye, EyeOff, Copy, Check } from "lucide-react"
+import { RefreshCw, Smartphone, QrCode, Trash2, MoreHorizontal, Eye, EyeOff, Copy, Check } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
 import { showConfirm } from "@/lib/swal"
-import { cn, copyToClipboard as copyUtil } from "@/lib/utils"
+import { cn, copyToClipboard as copyUtil, ensureString, safeRender, safeDate } from "@/lib/utils"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
-import { useAuth } from "@clerk/nextjs"
+import { useAuth } from "@clerk/clerk-react"
 
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
   const { getToken } = useAuth()
@@ -28,6 +29,23 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     setLocalQrCode(null)
     setLocalPairingCode(null)
   }, [session?.sessionId])
+
+  React.useEffect(() => {
+    if (session?.status === 'DISCONNECTED') {
+      setLocalQrCode(null)
+      setLocalPairingCode(null)
+    }
+  }, [session?.status])
+
+  // Automatically switch to correct tab if data arrives via WebSocket
+  React.useEffect(() => {
+    const hasCode = session?.pairingCode || session?.pairing_code || localPairingCode;
+    const isValidStatus = session?.status === 'GENERATING_CODE' || session?.status === 'CONNECTING';
+
+    if (hasCode && isValidStatus && !session?.qr && activeTab === "qr") {
+      setActiveTab("code")
+    }
+  }, [session?.pairingCode, session?.pairing_code, session?.status, session?.qr, localPairingCode, activeTab])
 
   const handleRequestPairingCode = async () => {
     if (!phoneNumber) {
@@ -48,7 +66,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
       } else {
         response = await api.sessions.create(session.sessionId, phoneNumber, token || undefined)
-        onRefresh()
+        // We do not call onRefresh() here to prevent race conditions with WebSocket
       }
 
       if (response && response.pairingCode) {
@@ -90,8 +108,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         setLocalQrCode(response.qr)
         toast.success("QR Code généré", { id: toastId })
       } else {
-        // Fallback to refresh if not returned directly
-        onRefresh()
+        // We do not need to refresh, the WebSocket will update the QR code
         toast.success("Demande de QR Code envoyée", { id: toastId })
       }
     } catch (error: any) {
@@ -109,7 +126,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
     const result = await showConfirm(
       "Supprimer la session ?",
-      `Voulez-vous vraiment supprimer la session "${session.sessionId}" ?`,
+      `Voulez-vous vraiment supprimer la session "${ensureString(session.sessionId)}" ?`,
       "warning"
     )
 
@@ -131,8 +148,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   // A session is connected if explicitly marked as isConnected and NOT currently generating/connecting
   const isConnected = session?.isConnected && !loading
-  const qrCode = localQrCode || session?.qr
-  const pairingCode = localPairingCode || session?.pairingCode
+  const qrCode = localQrCode || session?.qr || session?.qr_code
+
+  // Only show pairing code if the session is currently generating it or connecting
+  const isValidStatusForCode = session?.status === 'GENERATING_CODE' || session?.status === 'CONNECTING';
+  const rawPairingCode = localPairingCode || session?.pairingCode || session?.pairing_code;
+  const pairingCode = isValidStatusForCode ? rawPairingCode : null;
 
   if (!session) {
     return (
@@ -158,12 +179,14 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               <Smartphone className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium">{session.sessionId}</p>
+              <p className="text-sm font-medium">{safeRender(session.sessionId)}</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs text-muted-foreground">Session WhatsApp</p>
                 <button
                   onClick={() => copyToClipboard(session.sessionId, "ID")}
                   className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Copier l'ID de session"
+                  title="Copier l'ID de session"
                 >
                   <Copy className="h-3 w-3" />
                 </button>
@@ -180,12 +203,19 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </Badge>
               {session?.detail && !isConnected && (
                  <span className="text-[9px] text-destructive font-bold uppercase tracking-tight">
-                    {session.detail.includes('conflict') ? "Conflit (ouvert ailleurs)" : session.detail}
+                    {ensureString(session.detail).includes('conflict') ? 'Conflit (ouvert ailleurs)' : safeRender(session.detail)}
                  </span>
               )}
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive"
+              onClick={handleDelete}
+              aria-label="Options de la session"
+              title="Options de la session"
+            >
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -237,8 +267,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
                     <div className="flex flex-wrap justify-center gap-1.5">
-                      {pairingCode.split('').map((char: string, i: number) => (
-                        <div key={i} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
+                      {ensureString(pairingCode).split('').map((char: string, i: number) => (
+                        <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
                           {char}
                         </div>
                       ))}
@@ -274,12 +304,22 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-muted-foreground">
-                    {showToken ? session.token : "••••••••••••"}
+                    {showToken ? (typeof session.token === 'string' ? session.token : ensureString(session.token)) : "••••••••••••"}
                   </span>
-                  <button onClick={() => setShowToken(!showToken)} className="text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => setShowToken(!showToken)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={showToken ? "Masquer le token" : "Afficher le token"}
+                    title={showToken ? "Masquer le token" : "Afficher le token"}
+                  >
                     {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                   </button>
-                  <button onClick={() => copyToClipboard(session.token, "Token")} className="text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => copyToClipboard(session.token, "Token")}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Copier le token"
+                    title="Copier le token"
+                  >
                     <Copy className="h-3 w-3" />
                   </button>
                 </div>
