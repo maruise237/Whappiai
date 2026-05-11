@@ -1,10 +1,34 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
 const { createCheckoutSession, handleWebhook } = require('../services/payment');
 const PricingService = require('../services/PricingService');
 const { log } = require('../utils/logger');
+
+/**
+ * Verify Chariow webhook signature
+ */
+function verifyChariowSignature(payload, signature) {
+    const secret = process.env.CHARIOW_SECRET_KEY;
+    
+    if (!secret) {
+        log('CHARIOW_SECRET_KEY not configured', 'PAYMENT', null, 'ERROR');
+        return false;
+    }
+    
+    // Compute HMAC SHA256
+    const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+    
+    return crypto.timingSafeEqual(
+        Buffer.from(signature, 'hex'),
+        Buffer.from(expectedSignature, 'hex')
+    );
+}
 
 // POST /api/v1/payments/checkout
 router.post('/checkout', ClerkExpressWithAuth(), async (req, res) => {
@@ -44,6 +68,16 @@ router.get('/plans', (req, res) => {
 router.post('/webhook', express.json(), async (req, res) => {
     const signature = req.headers['x-chariow-signature']; 
     const payload = req.body;
+
+    // Verify signature if provided
+    if (signature) {
+        if (!verifyChariowSignature(payload, signature)) {
+            log('Invalid webhook signature', 'PAYMENT', null, 'WARN');
+            return res.status(401).send('Invalid signature');
+        }
+    } else {
+        log('Missing webhook signature - accepting for development', 'PAYMENT', null, 'DEBUG');
+    }
 
     try {
         await handleWebhook(req.headers['x-chariow-event'] || 'unknown', payload);

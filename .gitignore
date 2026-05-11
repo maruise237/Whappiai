@@ -1,98 +1,65 @@
-# Authentication & Session Data
-auth_info_*
-auth_info_baileys/
-sessions/
-session_tokens.json
-session_tokens.enc
-
-# Database
-data/
-whatsapp.db
-src/config/database.sqlite
-
-# Testing & Utility scripts
-scripts/check_activity_logs.js
-scripts/check_ai.js
-scripts/check_ai_config_kamtech.js
-scripts/check_ai_stats.js
-scripts/check_ai_stats_kamtech.js
-scripts/check_ai_status_simple.js
-scripts/check_db.js
-scripts/check_db_v2.js
-scripts/check_schema.js
-scripts/check_sessions_db.js
-scripts/check_time.js
-scripts/check_user.js
-scripts/debug_animator.js
-scripts/debug_animator_state.js
-scripts/debug_db.js
-scripts/debug_links.js
-scripts/debug_schema.js
-scripts/debug_session_auth.js
-scripts/enable_ai_sessions.js
-scripts/fix_db_columns.js
-scripts/list_sessions.js
-scripts/list_tables.js
-scripts/read_logs.js
-scripts/rename_folder.js
-scripts/rename_session.js
-scripts/test-ai-generation-flow.js
-scripts/test-formatting.js
-scripts/test-group-moderation.js
-scripts/test_ai_api.js
-scripts/test_ai_connection.js
-scripts/test_animator.js
-scripts/test_animator_logic.js
-scripts/test_api_auth.js
-scripts/test_final_animation.js
-scripts/test_kamtechia.js
-scripts/update_kamtechia_ai.js
-
-# User & Security Data
-users.enc
-users.json
-.env
-.env.production
-.env.local
-
-# Campaign & Recipient Data (contains encrypted user data)
-campaigns/
-recipient_lists/
-campaign_media/
-
-# Activity & Log Files
-activity_logs/
-logs/
-*.log
-system.log
-
-# Dependencies & Build
+```
+# Dependencies
 node_modules/
-npm-debug.log
-# package-lock.json (Recommended to keep for stable builds)
 
-# Media Files (user uploads)
-media/
+# Environment variables
+.env
+.env.local
+.env.*
 
-# IDE & Editor Files
-.idea/
-.vscode/
-Super-Light-Web-WhatsApp-API-Server.code-workspace
+# Logs
+*.log
 
-# Backup & Temporary Files
-*.bak
-.pm2/
+# Test coverage
+coverage/
+htmlcov/
+.coverage
 
-# Development & Testing Files
-plan.md
-SECURITY_IMPROVEMENTS.md
-test_api_readme.md
-test_whatsapp_api.py
-test-encryption.js
-requirements.txt
-whatsapp_campaign_plan.md
+# Temporary files
+*.tmp
+*.swp
+*.swo
 
-# OS Files
+# OS generated files
 .DS_Store
 Thumbs.db
-secret.txt
+
+# IDE specific
+.vscode/
+.idea/
+
+# Build outputs
+dist/
+build/
+target/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```

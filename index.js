@@ -48,6 +48,7 @@ const notificationRoutes = require('./src/routes/notifications');
 const calRoutes = require('./src/routes/cal');
 const { log, setBroadcastFn } = require('./src/utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middleware/errorHandler');
+const redisService = require('./src/services/redis');
 
 // API v1
 const { initializeApi } = require('./src/routes/api');
@@ -167,19 +168,40 @@ app.use((req, res, next) => {
     next();
 });
 
+// Security Headers with Helmet
 app.use(helmet({
     contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    },
+    noSniff: true,
+    xssFilter: true
 }));
 
-app.use(rateLimit({
+// Rate Limiting with tiered approach
+const generalLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 100,
     message: { status: 'error', message: 'Too many requests' },
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false }
-}));
+});
+
+// Stricter limiter for authentication endpoints
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { status: 'error', message: 'Too many authentication attempts' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: false }
+});
+
+app.use(generalLimiter);
 
 app.use(session({
     store: sessionStore,
@@ -548,15 +570,15 @@ const apiRouter = initializeApi(
     triggerQRWrapper
 );
 
-// Mount routes
-app.use('/webhooks', webhookRoutes);
-app.use('/admin/users', userRoutes);
-app.use('/api/v1/admin', adminRoutes);
-app.use('/api/v1/payments', paymentRoutes);
-app.use('/api/v1/subscriptions', subscriptionRoutes);
-app.use('/api/v1/credits', creditRoutes);
-app.use('/api/v1/notifications', notificationRoutes);
-app.use('/api/v1/cal', calRoutes);
+// Mount routes with specific rate limiters
+app.use('/webhooks', authLimiter, webhookRoutes);
+app.use('/admin/users', authLimiter, userRoutes);
+app.use('/api/v1/admin', authLimiter, adminRoutes);
+app.use('/api/v1/payments', authLimiter, paymentRoutes);
+app.use('/api/v1/subscriptions', authLimiter, subscriptionRoutes);
+app.use('/api/v1/credits', authLimiter, creditRoutes);
+app.use('/api/v1/notifications', authLimiter, notificationRoutes);
+app.use('/api/v1/cal', authLimiter, calRoutes);
 app.use('/api/v1', apiRouter);
 
 // Serve modern UI
@@ -594,6 +616,36 @@ if (fs.existsSync(frontendPath)) {
         });
     });
 }
+
+// Health Check Endpoint (for monitoring and load balancers)
+app.get('/api/health', async (req, res) => {
+    try {
+        // Check database connectivity
+        db.prepare('SELECT 1').get();
+        
+        const healthStatus = {
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            version: '3.2.0',
+            checks: {
+                database: 'ok',
+                memory: {
+                    used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                    total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+                }
+            }
+        };
+        
+        res.status(200).json(healthStatus);
+    } catch (error) {
+        res.status(503).json({
+            status: 'unhealthy',
+            timestamp: new Date().toISOString(),
+            error: error.message
+        });
+    }
+});
 
 // Error handlers
 app.use(notFoundHandler);
@@ -658,6 +710,13 @@ if (require.main === module) {
 // Start server
 const PORT = process.env.PORT || 3000;
 
+// Initialize Redis cache (optional, non-blocking)
+(async () => {
+    if (process.env.REDIS_URL) {
+        await redisService.connect();
+    }
+})();
+
 if (require.main === module) {
     server.listen(PORT, () => {
         log(`Serveur en cours d'exécution sur le port ${PORT}`, 'SYSTEM', { port: PORT }, 'INFO');
@@ -674,6 +733,11 @@ const gracefulShutdown = async (signal) => {
         await whatsappService.disconnectAll();
     } catch (err) {
         log(`Erreur lors de la déconnexion des sessions: ${err.message}`, 'SYSTEM', null, 'WARN');
+    }
+
+    // Close Redis connection
+    if (redisService.isConnected) {
+        await redisService.disconnect();
     }
 
     server.close(() => {
