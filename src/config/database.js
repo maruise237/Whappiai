@@ -571,9 +571,6 @@ function addPerformanceIndexes() {
     // Index for group settings by session
     db.exec(`CREATE INDEX IF NOT EXISTS idx_group_settings_session ON group_settings(session_id)`);
     
-    // Index for credits by user email
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_credits_user ON credits(user_email)`);
-    
     // Index for webhooks by session
     db.exec(`CREATE INDEX IF NOT EXISTS idx_webhooks_session ON webhooks(session_id, event_type)`);
     
