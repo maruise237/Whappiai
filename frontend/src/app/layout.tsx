@@ -9,6 +9,7 @@ import ProgressBar from "@/components/progress-bar";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { I18nProvider } from "@/i18n/i18n-provider";
+import VersionCheckProvider from "@/components/version-check-provider";
 
 export const metadata: Metadata = {
   title: "Whappi | Passerelle WhatsApp",
@@ -36,11 +37,13 @@ export default function RootLayout({
         >
           <ClerkProvider localization={frFR}>
             <I18nProvider>
-              <Suspense fallback={null}>
-                <ProgressBar />
-              </Suspense>
-              {children}
-              <Toaster />
+              <VersionCheckProvider>
+                <Suspense fallback={null}>
+                  <ProgressBar />
+                </Suspense>
+                {children}
+                <Toaster />
+              </VersionCheckProvider>
             </I18nProvider>
           </ClerkProvider>
         </ThemeProvider>
