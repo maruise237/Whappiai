@@ -571,8 +571,8 @@ function addPerformanceIndexes() {
     // Index for group settings by session
     db.exec(`CREATE INDEX IF NOT EXISTS idx_group_settings_session ON group_settings(session_id)`);
     
-    // Index for webhooks by session
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_webhooks_session ON webhooks(session_id, event_type)`);
+    // Index for webhooks by session (removed event_type column as it doesn't exist)
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_webhooks_session ON webhooks(session_id)`);
     
     log('Index de performance ajoutés avec succès', 'SYSTEM', { event: 'db-indexes-added' }, 'INFO');
 }
