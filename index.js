@@ -632,7 +632,7 @@ if (fs.existsSync(frontendPath)) {
 
     // 2. Serve other static files with no-cache for index.html
     app.use((req, res, next) => {
-        if (req.path === '/' || req.path === '/index.html' || req.path.endsWith('.html')) {
+        if (req.path === '/' || req.path === '/index.html' || req.path.endsWith('.html') || req.path.startsWith('/api/') || req.path.startsWith('/admin/')) {
             res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
             res.setHeader('Pragma', 'no-cache');
             res.setHeader('Expires', '0');

@@ -36,29 +36,19 @@ export default clerkMiddleware(async (auth, request) => {
 
   // Redirect authenticated users from auth pages to dashboard
   if (isAuthRoute(request) && userId) {
-    const { searchParams } = new URL(request.url);
-    if (searchParams.get('intent') === 'signup' || searchParams.get('conversion') === 'true') {
-      return NextResponse.next();
-    }
     const response = NextResponse.redirect(new URL('/dashboard', request.url));
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return response;
   }
 
+  // Protect non-public routes
   if (!isPublicRoute(request)) {
-    try {
-      await auth.protect();
-    } catch (error) {
-      // If protection fails, we let Clerk handle the redirect but we want to ensure no caching
-      const response = NextResponse.next();
-      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      return response;
-    }
+    await auth.protect();
   }
 
   const response = NextResponse.next();
 
-  // Add anti-cache headers to all responses
+  // Add anti-cache headers to all responses to ensure fresh content
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
