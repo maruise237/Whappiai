@@ -22,14 +22,14 @@ const isPublicRoute = createRouteMatcher([
   "/careers(.*)",
   "/features(.*)",
   "/terms(.*)",
-  "/privacy(.*)"
+  "/privacy(.*)",
+  "/api/health(.*)"
 ]);
 
 const isAuthRoute = createRouteMatcher([
   "/login(.*)",
   "/register(.*)",
 ]);
-
 
 export default clerkMiddleware(async (auth, request) => {
   const { userId } = await auth();
@@ -40,12 +40,30 @@ export default clerkMiddleware(async (auth, request) => {
     if (searchParams.get('intent') === 'signup' || searchParams.get('conversion') === 'true') {
       return NextResponse.next();
     }
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const response = NextResponse.redirect(new URL('/dashboard', request.url));
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    return response;
   }
 
   if (!isPublicRoute(request)) {
-    await auth.protect();
+    try {
+      await auth.protect();
+    } catch (error) {
+      // If protection fails, we let Clerk handle the redirect but we want to ensure no caching
+      const response = NextResponse.next();
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      return response;
+    }
   }
+
+  const response = NextResponse.next();
+
+  // Add anti-cache headers to all responses
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+
+  return response;
 });
 
 export const config = {

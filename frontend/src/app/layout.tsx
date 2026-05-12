@@ -29,9 +29,11 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>
+        <meta httpEquiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
         <link rel="preconnect" href="https://randomuser.me" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://randomuser.me" />
-
       </head>
       <body className={`${GeistSans.className} antialiased`} suppressHydrationWarning>
         <Script defer src="https://umami.kamtech.online/script.js" data-website-id="b0bec36c-f5ba-478e-8072-62c831565bad" strategy="afterInteractive" />
