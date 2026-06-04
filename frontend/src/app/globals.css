@@ -1,0 +1,195 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "nprogress/nprogress.css";
+
+/* NProgress Custom Styles */
+#nprogress .bar {
+  background: #25d366 !important; /* WhatsApp Green */
+  height: 3px !important;
+  box-shadow: 0 0 10px #25d366, 0 0 5px #25d366;
+}
+
+/* Base Styles */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: 0 0% 98%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --primary: 142 70% 29%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 142 15% 94%;
+  --secondary-foreground: 142 40% 20%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 142 15% 94%;
+  --accent-foreground: 142 40% 20%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 142 70% 29%;
+  --radius: 0.4rem;
+}
+
+.dark {
+  --background: 220 13% 7%;
+  --foreground: 0 0% 95%;
+  --card: 220 13% 9%;
+  --card-foreground: 0 0% 95%;
+  --popover: 220 13% 9%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 142 60% 40%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 220 13% 12%;
+  --secondary-foreground: 0 0% 75%;
+  --muted: 220 13% 12%;
+  --muted-foreground: 0 0% 50%;
+  --accent: 220 13% 12%;
+  --accent-foreground: 0 0% 85%;
+  --destructive: 0 62% 40%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 220 13% 14%;
+  --input: 220 13% 14%;
+  --ring: 142 60% 40%;
+}
+
+@theme inline {
+  --font-sans: "Geist Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  body {
+    @apply bg-background text-foreground overflow-x-hidden;
+    font-family: var(--font-geist-sans, var(--font-sans));
+    font-size: 14px;
+    line-height: 1.6;
+  }
+}
+
+/* ——— Custom Scrollbar ——— */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* ——— Driver.js Whappi Theme ——— */
+.whappi-tour-popover {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: 12px !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  padding: 16px !important;
+}
+
+.whappi-tour-popover .driver-popover-title {
+  color: hsl(var(--foreground)) !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  margin-bottom: 8px !important;
+}
+
+.whappi-tour-popover .driver-popover-description {
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.whappi-tour-popover .driver-popover-footer {
+  margin-top: 16px !important;
+  display: flex !important;
+  gap: 8px !important;
+  justify-content: flex-end !important;
+}
+
+.whappi-tour-popover .driver-popover-btn {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: none !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  text-shadow: none !important;
+  transition: all 0.2s !important;
+}
+
+.whappi-tour-popover .driver-popover-btn:hover {
+  background-color: hsl(var(--muted-foreground) / 0.1) !important;
+}
+
+.whappi-tour-popover .driver-popover-next-btn {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.whappi-tour-popover .driver-popover-next-btn:hover {
+  background-color: hsl(var(--primary) / 0.9) !important;
+}
+
+.whappi-tour-popover .driver-popover-progress-text {
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+.driver-active-element {
+  outline: 2px solid hsl(var(--primary)) !important;
+  outline-offset: 4px !important;
+  border-radius: 8px !important;
+}

@@ -1,0 +1,3 @@
+## 2024-05-18 - [Parallelize Bulk Message Sending Endpoint]
+**Learning:** Refactoring a sequential `for...of` loop to use `Promise.all` for bulk message processing must be combined with chunking (concurrency limits). Direct mapping of user input (e.g., `req.body`) to parallel tasks creates unbounded concurrency, leading to resource exhaustion, `EMFILE` errors, or triggering rate-limit bans when hitting external APIs or processing many queues simultaneously.
+**Action:** When parallelizing operations on user-provided arrays in Node.js, always implement a `CONCURRENCY_LIMIT` and process the array in smaller chunks to protect server resources and maintain system stability.

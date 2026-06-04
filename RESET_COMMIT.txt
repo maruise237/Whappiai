@@ -1,0 +1,3 @@
+# Reset commit
+
+This commit resets the repository to a previous state.

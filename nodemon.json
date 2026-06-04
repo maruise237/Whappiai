@@ -1,0 +1,17 @@
+{
+  "ignore": [
+    "sessions/*",
+    "auth_info_baileys/*",
+    "media/*",
+    "frontend/*",
+    "*.test.js",
+    "temp/*",
+    "*.log"
+  ],
+  "watch": [
+    "src/**/*.js",
+    "index.js",
+    ".env"
+  ],
+  "ext": "js,json"
+}
