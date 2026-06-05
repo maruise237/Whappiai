@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api } from "@/lib/api"
+import { shouldCelebrateSessionConnection } from "@/lib/session-celebration"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 import { useWebSocket } from "@/providers/websocket-provider"
 
@@ -129,6 +130,7 @@ export default function DashboardPage() {
   const lastProcessedMessageRef = React.useRef("")
 
   const [sessions, setSessions] = React.useState<SessionItem[]>([])
+  const sessionsRef = React.useRef<SessionItem[]>([])
   const [loading, setLoading] = React.useState(true)
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
@@ -149,6 +151,10 @@ export default function DashboardPage() {
 
   const userEmail = user?.primaryEmailAddress?.emailAddress || ""
   const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
+
+  React.useEffect(() => {
+    sessionsRef.current = sessions
+  }, [sessions])
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
@@ -304,6 +310,14 @@ export default function DashboardPage() {
     if (lastMessage.type === "session-update") {
       const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data]
       let needsRefresh = false
+      const previousSessions = sessionsRef.current
+      const celebratedSessions = updates
+        .filter((update: SessionItem) => {
+          if (!update?.sessionId) return false
+          const previous = previousSessions.find(s => ensureString(s.sessionId) === ensureString(update.sessionId))
+          return shouldCelebrateSessionConnection(previous, update)
+        })
+        .map((update: SessionItem) => ensureString(update.sessionId))
 
       setSessions(prev => {
         const next = [...prev]
@@ -329,12 +343,14 @@ export default function DashboardPage() {
 
       if (needsRefresh) fetchSessions(false)
 
+      celebratedSessions.forEach(sessionId => {
+        toast.success(`Session ${sessionId} connectee`)
+        confetti()
+      })
+
       updates.forEach((update: SessionItem) => {
         if (!update) return
-        if (update.status === "CONNECTED") {
-          toast.success(`Session ${update.sessionId} connectee`)
-          confetti()
-        } else if (update.status === "GENERATING_CODE" && update.pairingCode) {
+        if (update.status === "GENERATING_CODE" && update.pairingCode) {
           toast.info(`Code d'appairage recu pour ${update.sessionId}`)
         }
       })
@@ -540,7 +556,6 @@ export default function DashboardPage() {
                   toast.success("Session prete", { id: toastId })
                   setIsCreateOpen(false)
                   fetchSessions(true)
-                  confetti()
                 } catch (error) {
                   const message = error instanceof Error ? error.message : "Erreur de creation"
                   toast.error(message, { id: toastId })

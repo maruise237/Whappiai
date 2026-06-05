@@ -12,7 +12,6 @@ import { api } from "@/lib/api"
 import { showConfirm } from "@/lib/swal"
 import { cn, copyToClipboard as copyUtil, ensureString, safeRender, safeDate } from "@/lib/utils"
 import { toast } from "sonner"
-import confetti from "canvas-confetti"
 import { useAuth } from "@clerk/clerk-react"
 
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
@@ -63,7 +62,6 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
         const newSessionId = `session_${Math.random().toString(36).substring(2, 9)}`
         response = await api.sessions.create(newSessionId, phoneNumber, token || undefined)
         onRefresh()
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
       } else {
         response = await api.sessions.create(session.sessionId, phoneNumber, token || undefined)
         // We do not call onRefresh() here to prevent race conditions with WebSocket
