@@ -195,6 +195,9 @@ export const api = {
     getEngagementTasks: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/engagement`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    getWarnings: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/warnings`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
     addEngagementTask: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/engagement`, {
       method: "POST",
       body: JSON.stringify(data),

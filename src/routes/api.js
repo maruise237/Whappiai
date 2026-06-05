@@ -870,6 +870,18 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Group Engagement Endpoints
+    router.get('/sessions/:sessionId/moderation/groups/:groupId/warnings', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        const { sessionId, groupId } = req.params;
+        try {
+            const warningService = require('../services/warnings');
+            const warnedMembers = warningService.listByGroup(sessionId, groupId);
+            res.json({ status: 'success', data: warnedMembers });
+        } catch (err) {
+            log(`Erreur lors de la recuperation des membres avertis pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
     router.get('/sessions/:sessionId/moderation/groups/:groupId/engagement', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {

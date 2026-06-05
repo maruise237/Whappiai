@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import {
   AlertTriangle,
+  CalendarDays,
   Clock3,
   CheckCircle2,
   Info,
@@ -13,6 +14,8 @@ import {
   Search,
   Shield,
   Smartphone,
+  Trash2,
+  UserRound,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -53,6 +56,25 @@ type GroupItem = {
   name?: string
   participantCount?: number
   settings?: GroupSettings
+  [key: string]: unknown
+}
+
+type WarnedMember = {
+  userId?: string
+  phone?: string
+  count?: number
+  lastWarningAt?: string
+  risk?: "low" | "medium" | "high"
+  [key: string]: unknown
+}
+
+type EngagementTask = {
+  id?: number
+  message_content?: string
+  scheduled_at?: string
+  recurrence?: "none" | "daily" | "weekly"
+  status?: "pending" | "processing" | "completed" | "failed"
+  last_run_at?: string
   [key: string]: unknown
 }
 
@@ -129,6 +151,8 @@ export default function ModerationPage() {
   const [savingGroupId, setSavingGroupId] = React.useState<string | null>(null)
   const [schedulingGroupId, setSchedulingGroupId] = React.useState<string | null>(null)
   const [scheduledDrafts, setScheduledDrafts] = React.useState<Record<string, { message: string; scheduledAt: string; recurrence: string }>>({})
+  const [warnedMembersByGroup, setWarnedMembersByGroup] = React.useState<Record<string, WarnedMember[]>>({})
+  const [tasksByGroup, setTasksByGroup] = React.useState<Record<string, EngagementTask[]>>({})
   const [searchQuery, setSearchQuery] = React.useState("")
 
   const connectedSessions = sessions.filter(session => session.isConnected || session.status === "CONNECTED")
@@ -150,9 +174,43 @@ export default function ModerationPage() {
     }
   }, [getToken])
 
+  const fetchGroupOperations = React.useCallback(async (sourceGroups: GroupItem[], token?: string) => {
+    if (!selectedSessionId) return
+
+    const pairs = await Promise.all(
+      sourceGroups.map(async group => {
+        const groupId = ensureString(group.id || group.jid)
+        if (!groupId) return null
+
+        const [warningsResult, tasksResult] = await Promise.allSettled([
+          api.sessions.getWarnings(selectedSessionId, groupId, token),
+          api.sessions.getEngagementTasks(selectedSessionId, groupId, token),
+        ])
+
+        return {
+          groupId,
+          warnings: warningsResult.status === "fulfilled" && Array.isArray(warningsResult.value) ? warningsResult.value as WarnedMember[] : [],
+          tasks: tasksResult.status === "fulfilled" && Array.isArray(tasksResult.value) ? tasksResult.value as EngagementTask[] : [],
+        }
+      })
+    )
+
+    const warningsMap: Record<string, WarnedMember[]> = {}
+    const tasksMap: Record<string, EngagementTask[]> = {}
+    pairs.forEach(pair => {
+      if (!pair) return
+      warningsMap[pair.groupId] = pair.warnings
+      tasksMap[pair.groupId] = sortTasks(pair.tasks)
+    })
+    setWarnedMembersByGroup(warningsMap)
+    setTasksByGroup(tasksMap)
+  }, [selectedSessionId])
+
   const fetchGroups = React.useCallback(async () => {
     if (!selectedSessionId) {
       setGroups([])
+      setWarnedMembersByGroup({})
+      setTasksByGroup({})
       return
     }
 
@@ -174,13 +232,14 @@ export default function ModerationPage() {
         })
       )
       setGroups(enriched)
+      await fetchGroupOperations(rawGroups, token || undefined)
     } catch (error) {
       console.error(error)
       toast.error("Erreur de chargement des groupes")
     } finally {
       setLoadingGroups(false)
     }
-  }, [getToken, selectedSessionId])
+  }, [fetchGroupOperations, getToken, selectedSessionId])
 
   React.useEffect(() => {
     fetchSessions()
@@ -246,6 +305,7 @@ export default function ModerationPage() {
         scheduled_at: nextDailyIso(settings.welcomeDigestTime),
         type: "text"
       }, token || undefined)
+      await refreshGroupOperations(groupId, token || undefined)
       updateLocalGroup(groupId, { welcomeEnabled: true })
       toast.success("Bienvenue quotidienne programmee")
     } catch (error) {
@@ -285,6 +345,7 @@ export default function ModerationPage() {
         scheduled_at: new Date(draft.scheduledAt).toISOString(),
         type: "text"
       }, token || undefined)
+      await refreshGroupOperations(groupId, token || undefined)
       setScheduledDrafts(prev => ({
         ...prev,
         [groupId]: { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: draft.recurrence },
@@ -293,6 +354,39 @@ export default function ModerationPage() {
     } catch (error) {
       console.error(error)
       toast.error("Impossible de programmer ce message")
+    } finally {
+      setSchedulingGroupId(null)
+    }
+  }
+
+  const refreshGroupOperations = async (groupId: string, token?: string) => {
+    if (!selectedSessionId || !groupId) return
+    const [warningsResult, tasksResult] = await Promise.allSettled([
+      api.sessions.getWarnings(selectedSessionId, groupId, token),
+      api.sessions.getEngagementTasks(selectedSessionId, groupId, token),
+    ])
+    if (warningsResult.status === "fulfilled" && Array.isArray(warningsResult.value)) {
+      setWarnedMembersByGroup(prev => ({ ...prev, [groupId]: warningsResult.value as WarnedMember[] }))
+    }
+    if (tasksResult.status === "fulfilled" && Array.isArray(tasksResult.value)) {
+      setTasksByGroup(prev => ({ ...prev, [groupId]: sortTasks(tasksResult.value as EngagementTask[]) }))
+    }
+  }
+
+  const deleteScheduledTask = async (groupId: string, taskId?: number) => {
+    if (!taskId) return
+    setSchedulingGroupId(groupId)
+    try {
+      const token = await getToken()
+      await api.sessions.deleteEngagementTask(taskId, token || undefined)
+      setTasksByGroup(prev => ({
+        ...prev,
+        [groupId]: (prev[groupId] || []).filter(task => task.id !== taskId),
+      }))
+      toast.success("Message programme supprime")
+    } catch (error) {
+      console.error(error)
+      toast.error("Impossible de supprimer ce message programme")
     } finally {
       setSchedulingGroupId(null)
     }
@@ -402,6 +496,8 @@ export default function ModerationPage() {
             const groupId = ensureString(group.id || group.jid)
             const settings = normalizeSettings(group.settings)
             const activeCount = [settings.antiLinksEnabled, settings.welcomeEnabled, settings.warningsEnabled].filter(Boolean).length
+            const warnedMembers = warnedMembersByGroup[groupId] || []
+            const scheduledTasks = tasksByGroup[groupId] || []
 
             return (
               <Card key={groupId} className="overflow-hidden bg-card shadow-none">
@@ -495,6 +591,94 @@ export default function ModerationPage() {
                       </div>
                     )
                   })()}
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-2xl border bg-background/60 p-4">
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                            <UserRound className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">Membres avertis</p>
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">Compteur actif avant exclusion.</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="rounded-full px-2.5 text-[10px]">
+                          {warnedMembers.length}
+                        </Badge>
+                      </div>
+                      {warnedMembers.length === 0 ? (
+                        <p className="rounded-xl border border-dashed p-3 text-xs leading-5 text-muted-foreground">
+                          Aucun membre averti pour ce groupe.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {warnedMembers.slice(0, 5).map(member => (
+                            <div key={ensureString(member.userId)} className="flex items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2">
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-semibold">{safeRender(member.phone || member.userId)}</p>
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">{formatScheduleDate(member.lastWarningAt)}</p>
+                              </div>
+                              <Badge className={cn("shrink-0 border-none text-[10px]", riskClass(member.risk))}>
+                                {member.count || 0} avert.
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-2xl border bg-background/60 p-4">
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <CalendarDays className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">Calendrier programmes</p>
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">Messages en attente et recurrents.</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="rounded-full px-2.5 text-[10px]">
+                          {scheduledTasks.filter(task => task.status === "pending").length}
+                        </Badge>
+                      </div>
+                      {scheduledTasks.length === 0 ? (
+                        <p className="rounded-xl border border-dashed p-3 text-xs leading-5 text-muted-foreground">
+                          Aucun message programme pour ce groupe.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {scheduledTasks.slice(0, 5).map(task => (
+                            <div key={safeRender(task.id)} className="rounded-xl border bg-card p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold">{formatScheduleDate(task.scheduled_at)}</p>
+                                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                                    {safeRender(task.message_content, "Message sans contenu")}
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                  onClick={() => deleteScheduledTask(groupId, task.id)}
+                                  disabled={schedulingGroupId === groupId}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                              <div className="mt-2 flex items-center gap-2">
+                                <Badge variant="secondary" className="text-[10px]">{recurrenceLabel(task.recurrence)}</Badge>
+                                <span className="text-[10px] text-muted-foreground">{safeRender(task.status, "pending")}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <RuleSwitch
                     icon={<Link2 className="h-4 w-4" />}
                     title="Anti-liens"
@@ -643,6 +827,38 @@ function defaultScheduleDateTime() {
   date.setHours(date.getHours() + 1, 0, 0, 0)
   const pad = (value: number) => String(value).padStart(2, "0")
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function sortTasks(tasks: EngagementTask[]) {
+  return [...tasks].sort((a, b) => {
+    const aTime = new Date(ensureString(a.scheduled_at)).getTime() || 0
+    const bTime = new Date(ensureString(b.scheduled_at)).getTime() || 0
+    return aTime - bTime
+  })
+}
+
+function formatScheduleDate(value?: string) {
+  if (!value) return "Date inconnue"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "Date inconnue"
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date)
+}
+
+function recurrenceLabel(value?: string) {
+  if (value === "daily") return "Chaque jour"
+  if (value === "weekly") return "Chaque semaine"
+  return "Une fois"
+}
+
+function riskClass(value?: string) {
+  if (value === "high") return "bg-destructive/10 text-destructive hover:bg-destructive/10"
+  if (value === "medium") return "bg-amber-500/10 text-amber-600 hover:bg-amber-500/10"
+  return "bg-primary/10 text-primary hover:bg-primary/10"
 }
 
 function RuleSwitch({
