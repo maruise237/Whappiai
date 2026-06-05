@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import type { Dispatch, FormEvent, SetStateAction } from "react"
 import { useSignUp, useUser } from "@clerk/clerk-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { SocialButtons } from "@/components/auth/social-buttons"
 import { InstallPrompt } from "@/components/InstallPrompt"
@@ -15,9 +15,53 @@ import { Eye, EyeOff, Loader2, ArrowLeft, Mail } from "lucide-react"
 
 import { ConversionModal } from "@/components/auth/conversion-modal"
 
-function VerificationForm({ email, code, setCode, error, loading, onBack, onVerify }: any) {
+type AuthErrorLike = {
+  errors?: Array<{
+    longMessage?: string
+    message?: string
+  }>
+}
+
+type VerificationFormProps = {
+  email: string
+  code: string
+  setCode: (value: string) => void
+  error: string
+  loading: boolean
+  onBack: () => void
+  onVerify: (event: FormEvent<HTMLFormElement>) => void
+}
+
+type SignUpFormProps = {
+  firstName: string
+  setFirstName: Dispatch<SetStateAction<string>>
+  lastName: string
+  setLastName: Dispatch<SetStateAction<string>>
+  email: string
+  setEmail: Dispatch<SetStateAction<string>>
+  password: string
+  setPassword: Dispatch<SetStateAction<string>>
+  showPassword: boolean
+  setShowPassword: Dispatch<SetStateAction<boolean>>
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  loading: boolean
+  error: string
+}
+
+const getAuthErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === "object" && error !== null && "errors" in error) {
+    const authError = error as AuthErrorLike
+    const message = authError.errors?.[0]?.longMessage || authError.errors?.[0]?.message
+
+    if (message) return message
+  }
+
+  return fallback
+}
+
+function VerificationForm({ email, code, setCode, error, loading, onBack, onVerify }: VerificationFormProps) {
   return (
-    <AuthLayout title="Vérification" subtitle="Entrez le code reçu par email">
+    <AuthLayout title="Vérification" subtitle="Entrez le code reçu par email pour activer votre espace Whappi">
       <form onSubmit={onVerify} className="space-y-6 flex flex-col items-center">
         <div className="text-center text-sm text-muted-foreground mb-2">
           Un code a été envoyé à <span className="text-foreground font-medium">{email}</span>
@@ -71,9 +115,9 @@ function SignUpForm({
   password, setPassword,
   showPassword, setShowPassword,
   onSubmit, loading, error
-}: any) {
+}: SignUpFormProps) {
   return (
-    <AuthLayout title="Créer un compte" subtitle="Commencez votre essai gratuit">
+    <AuthLayout title="Créer un compte" subtitle="Testez Whappi sur un vrai groupe pendant 7 jours">
       <ConversionModal />
 
       <form onSubmit={onSubmit} className="space-y-4">
@@ -85,7 +129,7 @@ function SignUpForm({
           <div className="absolute left-4">
             <Mail className="w-5 h-5" />
           </div>
-          {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Continuer avec Email"}
+          {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Créer mon espace Whappi"}
         </Button>
 
         <div className="space-y-3 pt-2">
@@ -146,7 +190,7 @@ function SignUpForm({
           <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase tracking-widest font-medium">
-          <span className="bg-background px-3 text-muted-foreground">ou s'inscrire avec</span>
+          <span className="bg-background px-3 text-muted-foreground">ou créer avec</span>
         </div>
       </div>
 
@@ -188,7 +232,7 @@ export default function RegisterPage() {
     }
   }, [isSignedIn, user, router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!isLoaded) return
     setLoading(true)
@@ -204,15 +248,15 @@ export default function RegisterPage() {
 
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" })
       setVerifying(true)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Register error:", err)
-      setError(err.errors?.[0]?.longMessage || "Une erreur est survenue lors de l'inscription.")
+      setError(getAuthErrorMessage(err, "Une erreur est survenue lors de l'inscription."))
     } finally {
       setLoading(false)
     }
   }
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleVerify = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!isLoaded) return
     setLoading(true)
@@ -232,9 +276,9 @@ export default function RegisterPage() {
         setError("Code de vérification invalide.")
         setLoading(false)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Verification error:", err)
-      setError(err.errors?.[0]?.longMessage || "Code invalide.")
+      setError(getAuthErrorMessage(err, "Code invalide."))
       setLoading(false)
     }
   }

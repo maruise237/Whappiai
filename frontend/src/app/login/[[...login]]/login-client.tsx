@@ -5,12 +5,27 @@ import { useSignIn, useUser } from "@clerk/clerk-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { SocialButtons } from "@/components/auth/social-buttons"
-import { InstallPrompt } from "@/components/InstallPrompt"
-import Link from "next/link"
 import { Eye, EyeOff, Loader2, Mail, Sparkles, ArrowRight } from "lucide-react"
+
+type AuthErrorLike = {
+  errors?: Array<{
+    longMessage?: string
+    message?: string
+  }>
+}
+
+const getAuthErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === "object" && error !== null && "errors" in error) {
+    const authError = error as AuthErrorLike
+    const message = authError.errors?.[0]?.longMessage || authError.errors?.[0]?.message
+
+    if (message) return message
+  }
+
+  return fallback
+}
 
 export default function LoginPage() {
   const { isLoaded, signIn, setActive } = useSignIn()
@@ -50,16 +65,16 @@ export default function LoginPage() {
         setError("Une erreur est survenue. Veuillez vérifier vos identifiants.")
         setLoading(false)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err)
-      setError(err.errors?.[0]?.longMessage || "Identifiants invalides.")
+      setError(getAuthErrorMessage(err, "Identifiants invalides."))
       setLoading(false)
     }
   }
 
   return (
     <>
-      <AuthLayout title="Bon retour parmi nous" subtitle="Accédez à votre espace de travail">
+      <AuthLayout title="Bon retour" subtitle="Accédez à vos groupes, règles et sessions WhatsApp">
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Button
@@ -134,7 +149,7 @@ export default function LoginPage() {
               <div className="space-y-1">
                 <h3 className="font-semibold text-sm text-foreground">Pas encore de compte ?</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Rejoignez les entreprises qui automatisent leur support client. Essai gratuit sans carte bancaire.
+                  Testez Whappi sur un groupe réel. Essai gratuit, sans carte bancaire.
                 </p>
               </div>
             </div>
@@ -144,7 +159,7 @@ export default function LoginPage() {
               className="w-full mt-4 h-10 border border-green-500/20 hover:border-green-500/40 hover:bg-green-500/10 text-green-700 dark:text-green-300 transition-all text-xs uppercase tracking-wide font-bold flex items-center justify-between px-4 group/btn"
               onClick={() => router.push('/register')}
             >
-              <span>Commencer l'inscription</span>
+              <span>Tester mon groupe</span>
               <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
             </Button>
           </div>
