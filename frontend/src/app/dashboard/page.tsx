@@ -6,10 +6,13 @@ import { useAuth, useUser } from "@clerk/clerk-react"
 import confetti from "canvas-confetti"
 import {
   ArrowRight,
+  CheckCircle2,
+  Circle,
   History,
   Link2,
   MessageCircle,
   Plus,
+  Radio,
   ShieldCheck,
   Smartphone,
   TriangleAlert,
@@ -100,6 +103,17 @@ type AnalyticsPoint = {
   messages?: number
 }
 
+type ActivationState = {
+  hasGroup: boolean
+  hasActiveRule: boolean
+}
+
+type ActivationGroupPair = {
+  sessionId: string
+  groupId: string
+  settings?: unknown
+}
+
 const sessionSchema = z.object({
   sessionId: z
     .string()
@@ -128,6 +142,10 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = React.useState<ActivityItem[]>([])
   const [analyticsData, setAnalyticsData] = React.useState<AnalyticsPoint[]>([])
   const [showCenterBadge, setShowCenterBadge] = React.useState(false)
+  const [activationState, setActivationState] = React.useState<ActivationState>({
+    hasGroup: false,
+    hasActiveRule: false,
+  })
 
   const userEmail = user?.primaryEmailAddress?.emailAddress || ""
   const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
@@ -189,6 +207,59 @@ export default function DashboardPage() {
     }
   }, [fetchAdminSummary, fetchUserSummary, getToken, isAdmin])
 
+  const fetchActivationState = React.useCallback(async (token: string, currentSessions: SessionItem[]) => {
+    const connected = currentSessions.filter(session => session.isConnected || session.status === "CONNECTED")
+    if (connected.length === 0) {
+      setActivationState({ hasGroup: false, hasActiveRule: false })
+      return
+    }
+
+    try {
+      const groupResults = await Promise.allSettled(
+        connected.map(async session => {
+          const sessionId = ensureString(session.sessionId)
+          const groups = await api.sessions.getGroups(sessionId, token)
+          return {
+            sessionId,
+            groups: Array.isArray(groups) ? groups : [],
+          }
+        })
+      )
+
+      const groupPairs: ActivationGroupPair[] = groupResults.flatMap(result => {
+        if (result.status !== "fulfilled") return []
+        return result.value.groups.map((group: { id?: unknown; jid?: unknown; settings?: unknown }) => ({
+          sessionId: result.value.sessionId,
+          groupId: ensureString(group.id || group.jid),
+          settings: group.settings,
+        })).filter((item: ActivationGroupPair) => item.groupId)
+      })
+
+      if (groupPairs.length === 0) {
+        setActivationState({ hasGroup: false, hasActiveRule: false })
+        return
+      }
+
+      const settingsResults = await Promise.allSettled(
+        groupPairs.slice(0, 20).map(async pair => {
+          try {
+            return await api.sessions.getGroupSettings(pair.sessionId, pair.groupId, token)
+          } catch {
+            return pair.settings || null
+          }
+        })
+      )
+
+      setActivationState({
+        hasGroup: true,
+        hasActiveRule: settingsResults.some(result => result.status === "fulfilled" && hasActiveModerationRule(result.value)),
+      })
+    } catch (error) {
+      console.error(error)
+      setActivationState(prev => ({ ...prev, hasGroup: false, hasActiveRule: false }))
+    }
+  }, [])
+
   const fetchSessions = React.useCallback(async (autoSelect = false) => {
     try {
       const token = await getToken()
@@ -201,12 +272,13 @@ export default function DashboardPage() {
       }
 
       fetchSummaryData(sessionsList)
+      if (token) fetchActivationState(token, sessionsList)
     } catch (error) {
       console.error(error)
     } finally {
       setLoading(false)
     }
-  }, [fetchSummaryData, getToken])
+  }, [fetchActivationState, fetchSummaryData, getToken])
 
   React.useEffect(() => {
     if (isLoaded && user) {
@@ -281,6 +353,14 @@ export default function DashboardPage() {
   }, [fetchSessions, lastMessage, selectedSessionId])
 
   const selectedSession = sessions.find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
+  const onboarding = React.useMemo(() => onboardingSteps({
+    sessionCount: sessions.length,
+    activeSessions: summary.activeSessions,
+    hasGroup: activationState.hasGroup,
+    hasActiveRule: activationState.hasActiveRule,
+    activityCount: Math.max(summary.totalActivities, recentActivities.length),
+  }), [activationState.hasActiveRule, activationState.hasGroup, recentActivities.length, sessions.length, summary.activeSessions, summary.totalActivities])
+  const onboardingDone = onboarding.filter(step => step.state === "done").length
 
   if (!isLoaded || loading) {
     return (
@@ -343,11 +423,11 @@ export default function DashboardPage() {
                 <p className="text-sm font-semibold">Parcours de prise en main</p>
                 <p className="mt-1 text-xs text-muted-foreground">Aucun vieux panneau technique ici.</p>
               </div>
-              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{onboardingProgress(sessions.length, summary.activeSessions)}/4 etapes</Badge>
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{onboardingDone}/4 etapes</Badge>
             </div>
-            <Progress value={(onboardingProgress(sessions.length, summary.activeSessions) / 4) * 100} className="mt-4 h-1.5" />
+            <Progress value={(onboardingDone / 4) * 100} className="mt-4 h-1.5" />
             <div className="mt-5 space-y-3">
-              {onboardingSteps(sessions.length, summary.activeSessions).map(step => (
+              {onboarding.map(step => (
                 <div key={step.title} className={cn(
                   "flex gap-3 rounded-2xl border bg-background/60 p-3 transition-colors",
                   step.state === "done" && "opacity-60",
@@ -359,7 +439,13 @@ export default function DashboardPage() {
                     step.state === "current" && "animate-pulse bg-state-warning text-white",
                     step.state === "upcoming" && "bg-muted text-muted-foreground"
                   )}>
-                    {step.state === "done" ? "ok" : step.state === "current" ? "on" : "--"}
+                    {step.state === "done" ? (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    ) : step.state === "current" ? (
+                      <Radio className="h-3.5 w-3.5" />
+                    ) : (
+                      <Circle className="h-3.5 w-3.5" />
+                    )}
                   </span>
                   <div>
                     <p className={cn("text-sm font-medium", step.state === "done" && "line-through")}>{step.title}</p>
@@ -434,7 +520,12 @@ export default function DashboardPage() {
         ) : (
           <UserActivityPanel recentActivities={recentActivities} />
         )}
-        <NextBestActionPanel sessionCount={sessions.length} activeSessions={summary.activeSessions} />
+        <NextBestActionPanel
+          sessionCount={sessions.length}
+          activeSessions={summary.activeSessions}
+          hasGroup={activationState.hasGroup}
+          hasActiveRule={activationState.hasActiveRule}
+        />
       </section>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -619,12 +710,22 @@ function AdminPanel({
   )
 }
 
-function NextBestActionPanel({ sessionCount, activeSessions }: { sessionCount: number; activeSessions: number }) {
+function NextBestActionPanel({
+  sessionCount,
+  activeSessions,
+  hasGroup,
+  hasActiveRule,
+}: {
+  sessionCount: number
+  activeSessions: number
+  hasGroup: boolean
+  hasActiveRule: boolean
+}) {
   const steps = [
     { label: "Session", done: sessionCount > 0 },
     { label: "Connexion", done: activeSessions > 0 },
-    { label: "Groupe", done: false },
-    { label: "Regle", done: false },
+    { label: "Groupe", done: activeSessions > 0 && hasGroup },
+    { label: "Regle", done: hasActiveRule },
   ]
 
   const hasTodo = steps.some(step => !step.done)
@@ -726,22 +827,46 @@ function successMetricSub(totalMessages: number, successRate: number) {
   return `${successCount} / ${totalMessages} reussis (7j)`
 }
 
-function onboardingProgress(sessionCount: number, activeSessions: number) {
-  return onboardingSteps(sessionCount, activeSessions).filter(step => step.state === "done").length
-}
-
-function onboardingSteps(sessionCount: number, activeSessions: number) {
+function onboardingSteps({
+  sessionCount,
+  activeSessions,
+  hasGroup,
+  hasActiveRule,
+  activityCount,
+}: {
+  sessionCount: number
+  activeSessions: number
+  hasGroup: boolean
+  hasActiveRule: boolean
+  activityCount: number
+}) {
   const base = [
     { title: "Connecter une session", text: "QR code ou code d'appairage", done: sessionCount > 0 },
-    { title: "Ajouter au groupe", text: "Le numero doit etre admin", done: activeSessions > 0 },
-    { title: "Activer une regle", text: "Anti-liens ou bienvenue", done: false },
-    { title: "Verifier les actions", text: "Voir ce qui a ete applique", done: false },
+    { title: "Ajouter au groupe", text: "Le numero doit etre admin", done: activeSessions > 0 && hasGroup },
+    { title: "Activer une regle", text: "Anti-liens ou bienvenue", done: hasActiveRule },
+    { title: "Verifier les actions", text: "Voir ce qui a ete applique", done: activityCount > 0 },
   ]
   const currentIndex = base.findIndex(step => !step.done)
   return base.map((step, index) => ({
     ...step,
     state: step.done ? "done" : index === currentIndex ? "current" : "upcoming",
   }))
+}
+
+function hasActiveModerationRule(settings: unknown) {
+  if (!settings || typeof settings !== "object") return false
+  const item = settings as Record<string, unknown>
+  return Boolean(
+    item.is_active ||
+    item.anti_link ||
+    item.antiLinksEnabled ||
+    item.welcome_digest_enabled ||
+    item.welcome_enabled ||
+    item.welcomeEnabled ||
+    item.warnings_enabled ||
+    item.warningsEnabled ||
+    ensureString(item.bad_words || item.banned_words || item.forbiddenWords).trim()
+  )
 }
 
 function activityTime(activity: ActivityItem) {
