@@ -555,8 +555,14 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         warnings: currentCount
                     }, 'ERROR');
                     await sock.groupParticipantsUpdate(groupId, [senderJid], 'remove');
+                    const exclusionMsg = WarningService.composeExclusionMessage({
+                        senderJid,
+                        currentCount,
+                        maxWarnings,
+                        reason: violation
+                    });
                     await QueueService.enqueue(sessionId, sock, groupId, {
-                        text: `@${senderJid.split('@')[0]} a été exclu après ${currentCount} avertissements.`,
+                        text: exclusionMsg,
                         mentions: [senderJid]
                     }, { priority: 'high' });
 

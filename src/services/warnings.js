@@ -21,12 +21,31 @@ function composeWarningMessage({ template, senderJid, currentCount, maxWarnings,
     const remaining = Math.max(0, max - count);
     const base = template || '@{{name}} votre message a ete supprime: {{reason}}. Avertissement {{count}}/{{max}}. Il reste {{remaining}} avertissement(s) avant exclusion.';
 
-    return base
+    let message = base
         .replace(/{{name}}/g, phone)
         .replace(/{{count}}/g, String(count))
         .replace(/{{max}}/g, String(max))
         .replace(/{{remaining}}/g, String(remaining))
         .replace(/{{reason}}/g, reason || 'Regle du groupe');
+
+    if (!message.includes(`${count}/${max}`)) {
+        message = `${message} Avertissement ${count}/${max}.`;
+    }
+
+    if (!/avant exclusion/i.test(message)) {
+        message = `${message} Il reste ${remaining} avertissement(s) avant exclusion.`;
+    }
+
+    return message;
+}
+
+function composeExclusionMessage({ senderJid, currentCount, maxWarnings, reason }) {
+    const phone = formatPhone(senderJid);
+    const count = Number(currentCount) || 0;
+    const max = Math.max(1, Number(maxWarnings) || 1);
+    const motif = reason || 'Regle du groupe';
+
+    return `@${phone} a ete exclu du groupe. Motif: ${motif}. Total: ${count}/${max} avertissements recus.`;
 }
 
 function listByGroup(sessionId, groupId) {
@@ -56,5 +75,6 @@ function resetMember(sessionId, groupId, userId) {
 module.exports = {
     listByGroup,
     resetMember,
-    composeWarningMessage
+    composeWarningMessage,
+    composeExclusionMessage
 };
