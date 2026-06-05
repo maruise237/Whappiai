@@ -10,6 +10,8 @@ import { useAuth } from "@clerk/clerk-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { getPlanCode, PlanBadge } from "@/components/dashboard/plan-badge"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 
 const plans = [
   {
@@ -63,6 +65,8 @@ export function BillingPlans() {
   const [loading, setLoading] = useState<string | null>(null)
   const [showComparison, setShowComparison] = useState(false)
   const [activePlan, setActivePlan] = useState("trial")
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
+  const [paymentPhone, setPaymentPhone] = useState("")
   const { getToken } = useAuth()
 
   useEffect(() => {
@@ -98,22 +102,36 @@ export function BillingPlans() {
   }, [getToken])
 
   const handleSubscribe = async (planId: string) => {
+    setSelectedPlanId(planId)
+  }
+
+  const startMoneyFusionCheckout = async () => {
+    if (!selectedPlanId) return
+    if (!paymentPhone.trim()) {
+      toast.error("Ajoutez le numero qui va payer")
+      return
+    }
+
     try {
-      setLoading(planId)
+      setLoading(selectedPlanId)
       const token = await getToken()
       const response = await fetchApi('/api/v1/payments/checkout', {
         method: 'POST',
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({
+          planId: selectedPlanId,
+          provider: "moneyfusion",
+          phoneNumber: paymentPhone.trim(),
+        }),
         headers: { Authorization: `Bearer ${token}` }
       })
       if (response.url) {
         window.location.href = response.url
       } else {
-        toast.error("Impossible d'initialiser le paiement")
+        toast.error("Impossible d'initialiser le paiement MoneyFusion")
       }
     } catch (error) {
       console.error(error)
-      toast.error("Une erreur inattendue est survenue")
+      toast.error(error instanceof Error ? error.message : "Une erreur inattendue est survenue")
     } finally {
       setLoading(null)
     }
@@ -214,6 +232,37 @@ export function BillingPlans() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={Boolean(selectedPlanId)} onOpenChange={(open) => !open && setSelectedPlanId(null)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Paiement MoneyFusion</DialogTitle>
+            <DialogDescription>
+              Entrez le numero Mobile Money qui va recevoir la demande de paiement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground">Numero de paiement</label>
+            <Input
+              value={paymentPhone}
+              onChange={(event) => setPaymentPhone(event.target.value)}
+              placeholder="Ex: 237699000000"
+              inputMode="tel"
+            />
+            <p className="text-xs text-muted-foreground">
+              MoneyFusion ouvrira une page securisee pour valider le paiement du forfait.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedPlanId(null)} disabled={Boolean(loading)}>
+              Annuler
+            </Button>
+            <Button onClick={startMoneyFusionCheckout} disabled={Boolean(loading)}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continuer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

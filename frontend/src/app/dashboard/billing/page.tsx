@@ -17,43 +17,66 @@ export default function BillingPage() {
   const [accessState, setAccessState] = React.useState({ allowed: true, status: "active", message: "" })
   const [isPlanLoading, setIsPlanLoading] = React.useState(true)
 
+  const refreshPlan = React.useCallback(async () => {
+    setIsPlanLoading(true)
+    try {
+      const token = await getToken()
+      const [profileResult, subscriptionResult] = await Promise.allSettled([
+        api.auth.check(token || undefined),
+        api.subscriptions.current(token || undefined),
+      ])
+      const profile = profileResult.status === "fulfilled" ? profileResult.value : null
+      const subscription = subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null
+      const userProfile = profile?.user || profile
+      setActivePlan(resolveActivePlan(userProfile, subscription))
+      setExpiresAt(resolveExpiration(userProfile, subscription))
+      setAccessState({
+        allowed: subscription?.access_allowed !== false,
+        status: ensureText(subscription?.status || userProfile?.plan_status || "active"),
+        message: ensureText(subscription?.access_message || ""),
+      })
+    } catch {
+      setActivePlan("trial")
+      setExpiresAt(null)
+      setAccessState({ allowed: false, status: "unknown", message: "Impossible de verifier le forfait." })
+    } finally {
+      setIsPlanLoading(false)
+    }
+  }, [getToken])
+
   React.useEffect(() => {
     let mounted = true
     async function fetchPlan() {
-      setIsPlanLoading(true)
       try {
-        const token = await getToken()
-        const [profileResult, subscriptionResult] = await Promise.allSettled([
-          api.auth.check(token || undefined),
-          api.subscriptions.current(token || undefined),
-        ])
-        const profile = profileResult.status === "fulfilled" ? profileResult.value : null
-        const subscription = subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null
-        const userProfile = profile?.user || profile
-        if (mounted) {
-          setActivePlan(resolveActivePlan(userProfile, subscription))
-          setExpiresAt(resolveExpiration(userProfile, subscription))
-          setAccessState({
-            allowed: subscription?.access_allowed !== false,
-            status: ensureText(subscription?.status || userProfile?.plan_status || "active"),
-            message: ensureText(subscription?.access_message || ""),
-          })
-        }
+        if (mounted) await refreshPlan()
       } catch {
-        if (mounted) {
-          setActivePlan("trial")
-          setExpiresAt(null)
-          setAccessState({ allowed: false, status: "unknown", message: "Impossible de verifier le forfait." })
-        }
-      } finally {
-        if (mounted) setIsPlanLoading(false)
+        // refreshPlan already sets the fallback state.
       }
     }
     fetchPlan()
     return () => {
       mounted = false
     }
-  }, [getToken])
+  }, [refreshPlan])
+
+  React.useEffect(() => {
+    async function syncMoneyFusionReturn() {
+      if (typeof window === "undefined") return
+      const params = new URLSearchParams(window.location.search)
+      const tokenPay = params.get("tokenPay") || params.get("token")
+      if (!tokenPay) return
+
+      try {
+        const token = await getToken()
+        await api.payments.moneyFusionStatus(tokenPay, token || undefined)
+        await refreshPlan()
+      } catch {
+        // The webhook can still complete the activation if the direct status check fails.
+      }
+    }
+
+    syncMoneyFusionReturn()
+  }, [getToken, refreshPlan])
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-20">

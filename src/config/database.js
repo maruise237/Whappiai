@@ -335,6 +335,25 @@ function initializeSchema() {
     `);
 
     db.exec(`
+        CREATE TABLE IF NOT EXISTS payment_transactions (
+            id TEXT PRIMARY KEY,
+            provider TEXT NOT NULL,
+            provider_token TEXT UNIQUE,
+            user_id TEXT REFERENCES users(id),
+            plan_id TEXT REFERENCES pricing_plans(id),
+            amount INTEGER DEFAULT 0,
+            currency TEXT DEFAULT 'XAF',
+            status TEXT DEFAULT 'created',
+            checkout_url TEXT,
+            provider_payload TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_payment_transactions_user ON payment_transactions(user_id, created_at)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_payment_transactions_status ON payment_transactions(status)`);
+
+    db.exec(`
         CREATE TABLE IF NOT EXISTS user_notifications (
             id TEXT PRIMARY KEY,
             user_id TEXT REFERENCES users(id),
