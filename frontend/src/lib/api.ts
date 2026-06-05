@@ -86,6 +86,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     const res = await fetch(url, {
       ...options,
       credentials: "include",
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
         "ngrok-skip-browser-warning": "true",
@@ -324,6 +325,11 @@ export const api = {
     checkout: (planId: string, token?: string) => fetchApi("/api/v1/payments/checkout", {
       method: "POST",
       body: JSON.stringify({ planId }),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+  },
+  subscriptions: {
+    current: (token?: string) => fetchApi("/api/v1/subscriptions/current", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
   },

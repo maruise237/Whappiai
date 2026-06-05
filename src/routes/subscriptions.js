@@ -3,6 +3,7 @@ const router = express.Router();
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const SubscriptionService = require('../services/SubscriptionService');
 const PricingService = require('../services/PricingService');
+const User = require('../models/User');
 const { log } = require('../utils/logger');
 
 // GET /api/v1/subscriptions/plans
@@ -22,8 +23,22 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
         const userId = req.auth.userId;
         if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
 
-        const subscription = SubscriptionService.getCurrentSubscription(userId);
-        res.json({ status: 'success', data: subscription });
+        const email = req.auth.sessionClaims?.email || req.auth.sessionClaims?.primary_email_address;
+        const user = User.findById(userId) || User.findByEmail(email);
+        const subscription = SubscriptionService.getCurrentSubscription(user?.id || userId);
+
+        res.json({
+            status: 'success',
+            data: {
+                ...(subscription || {}),
+                plan_id: subscription?.plan_id || user?.plan_id || 'trial',
+                plan_code: subscription?.plan_code || user?.plan_id || 'trial',
+                status: subscription?.status || user?.plan_status || 'active',
+                current_period_end: subscription?.current_period_end || user?.subscription_expiry || null,
+                message_limit: subscription?.message_limit || user?.message_limit || 0,
+                message_used: user?.message_used || 0,
+            }
+        });
     } catch (error) {
         log('Error fetching subscription', 'SUBSCRIPTION', { error: error.message }, 'ERROR');
         res.status(500).json({ status: 'error', message: error.message });

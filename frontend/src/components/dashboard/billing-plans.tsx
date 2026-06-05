@@ -70,10 +70,22 @@ export function BillingPlans() {
     async function fetchPlan() {
       try {
         const token = await getToken()
-        const profile = await api.auth.check(token || undefined)
+        const [profileResult, subscriptionResult] = await Promise.allSettled([
+          api.auth.check(token || undefined),
+          api.subscriptions.current(token || undefined),
+        ])
+        const profile = profileResult.status === "fulfilled" ? profileResult.value : null
+        const subscription = subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null
         const userProfile = profile?.user || profile
         if (mounted) {
-          setActivePlan(getPlanCode(userProfile?.plan_id || userProfile?.plan || userProfile?.subscription_plan || "trial"))
+          setActivePlan(getPlanCode(
+            subscription?.plan_code ||
+            subscription?.plan_id ||
+            userProfile?.plan_id ||
+            userProfile?.plan ||
+            userProfile?.subscription_plan ||
+            "trial"
+          ))
         }
       } catch {
         if (mounted) setActivePlan("trial")

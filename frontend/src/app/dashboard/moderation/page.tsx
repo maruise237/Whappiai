@@ -181,14 +181,22 @@ export default function ModerationPage() {
     setLoadingSessions(true)
     try {
       const token = await getToken()
-      const [data, profile] = await Promise.all([
+      const [data, profileResult, subscriptionResult] = await Promise.all([
         api.sessions.list(token || undefined),
         api.auth.check(token || undefined).catch(() => null),
+        api.subscriptions.current(token || undefined).catch(() => null),
       ])
       const list = Array.isArray(data) ? (data as SessionItem[]) : []
       setSessions(list)
-      const userProfile = profile?.user || profile
-      setActivePlan(getPlanCode(userProfile?.plan_id || userProfile?.plan || userProfile?.subscription_plan || "trial"))
+      const userProfile = profileResult?.user || profileResult
+      setActivePlan(getPlanCode(
+        subscriptionResult?.plan_code ||
+        subscriptionResult?.plan_id ||
+        userProfile?.plan_id ||
+        userProfile?.plan ||
+        userProfile?.subscription_plan ||
+        "trial"
+      ))
       const firstConnected = list.find(session => session.isConnected || session.status === "CONNECTED")
       setSelectedSessionId(prev => prev || ensureString(firstConnected?.sessionId || list[0]?.sessionId || ""))
     } catch (error) {

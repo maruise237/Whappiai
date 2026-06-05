@@ -12,19 +12,28 @@ import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/pla
 export default function BillingPage() {
   const { getToken } = useAuth()
   const [activePlan, setActivePlan] = React.useState("trial")
+  const [isPlanLoading, setIsPlanLoading] = React.useState(true)
 
   React.useEffect(() => {
     let mounted = true
     async function fetchPlan() {
+      setIsPlanLoading(true)
       try {
         const token = await getToken()
-        const profile = await api.auth.check(token || undefined)
+        const [profileResult, subscriptionResult] = await Promise.allSettled([
+          api.auth.check(token || undefined),
+          api.subscriptions.current(token || undefined),
+        ])
+        const profile = profileResult.status === "fulfilled" ? profileResult.value : null
+        const subscription = subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null
         const userProfile = profile?.user || profile
         if (mounted) {
-          setActivePlan(getPlanCode(userProfile?.plan_id || userProfile?.plan || userProfile?.subscription_plan || "trial"))
+          setActivePlan(resolveActivePlan(userProfile, subscription))
         }
       } catch {
         if (mounted) setActivePlan("trial")
+      } finally {
+        if (mounted) setIsPlanLoading(false)
       }
     }
     fetchPlan()
@@ -43,7 +52,13 @@ export default function BillingPage() {
           <p className="text-sm text-muted-foreground">Choisissez l&apos;offre adaptee au nombre de groupes WhatsApp a gerer.</p>
         </div>
 
-        <PlanBadge plan={activePlan} active className="h-auto rounded-full px-4 py-1.5" />
+        {isPlanLoading ? (
+          <span className="h-auto rounded-full border px-4 py-1.5 text-[10px] font-semibold text-muted-foreground">
+            Synchronisation forfait...
+          </span>
+        ) : (
+          <PlanBadge plan={activePlan} active className="h-auto rounded-full px-4 py-1.5" />
+        )}
       </div>
 
       <Card className="border-primary/25 bg-primary/5 shadow-none">
@@ -53,15 +68,15 @@ export default function BillingPage() {
               <Gift className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold text-primary">{billingBannerTitle(activePlan)}</p>
+              <p className="font-semibold text-primary">{isPlanLoading ? "Synchronisation du forfait" : billingBannerTitle(activePlan)}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {billingBannerText(activePlan)}
+                {isPlanLoading ? "Whappi verifie le forfait actif de ce compte." : billingBannerText(activePlan)}
               </p>
             </div>
           </div>
           <div className="rounded-2xl border bg-card px-4 py-3 text-left sm:text-right">
-            <p className="text-xs text-muted-foreground">{activePlan === "trial" ? "Expire dans" : "Forfait actif"}</p>
-            <p className="text-lg font-bold text-primary">{activePlan === "trial" ? "7 jours" : getPlanLabel(activePlan)}</p>
+            <p className="text-xs text-muted-foreground">{isPlanLoading ? "Statut" : activePlan === "trial" ? "Expire dans" : "Forfait actif"}</p>
+            <p className="text-lg font-bold text-primary">{isPlanLoading ? "..." : activePlan === "trial" ? "7 jours" : getPlanLabel(activePlan)}</p>
           </div>
         </CardContent>
       </Card>
@@ -105,4 +120,22 @@ function billingBannerText(plan: string) {
   if (plan === "pro") return "Inclus : 5 groupes - messages programmes illimites - moderation complete."
   if (plan === "business") return "Inclus : 20 groupes - support prioritaire - configuration avancee."
   return "Inclus : 1 groupe - 3 messages programmes - toutes les regles de base."
+}
+
+type PlanSource = {
+  plan_id?: unknown
+  plan?: unknown
+  subscription_plan?: unknown
+  plan_code?: unknown
+}
+
+function resolveActivePlan(userProfile: PlanSource | null, subscription: PlanSource | null) {
+  return getPlanCode(
+    subscription?.plan_code ||
+    subscription?.plan_id ||
+    userProfile?.plan_id ||
+    userProfile?.plan ||
+    userProfile?.subscription_plan ||
+    "trial"
+  )
 }
