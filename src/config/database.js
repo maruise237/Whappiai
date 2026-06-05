@@ -394,10 +394,22 @@ function initializeSchema() {
     runner.run('group-settings-welcome-digest-v1', (db) => {
         const tableInfo = db.prepare("PRAGMA table_info(group_settings)").all();
         const columns = [
-            { name: 'warnings_enabled', type: 'INTEGER DEFAULT 1' },
-            { name: 'auto_kick_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'welcome_digest_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'welcome_digest_time', type: "TEXT DEFAULT '18:00'" }
+        ];
+
+        for (const col of columns) {
+            if (!tableInfo.some(info => info.name === col.name)) {
+                try { db.exec(`ALTER TABLE group_settings ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
+            }
+        }
+    });
+
+    runner.run('group-settings-warning-controls-v1', (db) => {
+        const tableInfo = db.prepare("PRAGMA table_info(group_settings)").all();
+        const columns = [
+            { name: 'warnings_enabled', type: 'INTEGER DEFAULT 1' },
+            { name: 'auto_kick_enabled', type: 'INTEGER DEFAULT 0' }
         ];
 
         for (const col of columns) {
