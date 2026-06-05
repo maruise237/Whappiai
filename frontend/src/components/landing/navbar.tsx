@@ -15,7 +15,7 @@ const navItems = [
   { label: "Documentation", href: "/docs" },
 ]
 
-const getInitialDarkMode = () => {
+const getStoredDarkMode = () => {
   if (typeof window === "undefined") return true
 
   const savedTheme = localStorage.getItem("theme")
@@ -28,8 +28,16 @@ export function Navbar() {
   const { isSignedIn } = useUser()
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [isDark, setIsDark] = useState(getInitialDarkMode)
+  const [isDark, setIsDark] = useState(true)
   const navRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setIsDark(getStoredDarkMode())
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [])
 
   useEffect(() => {
     if (isDark) {
