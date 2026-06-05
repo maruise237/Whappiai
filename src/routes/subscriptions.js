@@ -3,6 +3,7 @@ const router = express.Router();
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const SubscriptionService = require('../services/SubscriptionService');
 const PricingService = require('../services/PricingService');
+const AccountAccessService = require('../services/AccountAccessService');
 const User = require('../models/User');
 const { log } = require('../utils/logger');
 
@@ -26,6 +27,7 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
         const email = req.auth.sessionClaims?.email || req.auth.sessionClaims?.primary_email_address;
         const user = User.findById(userId) || User.findByEmail(email);
         const subscription = SubscriptionService.getCurrentSubscription(user?.id || userId);
+        const access = AccountAccessService.getStatus(user);
 
         res.json({
             status: 'success',
@@ -33,7 +35,11 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
                 ...(subscription || {}),
                 plan_id: subscription?.plan_id || user?.plan_id || 'trial',
                 plan_code: subscription?.plan_code || user?.plan_id || 'trial',
-                status: subscription?.status || user?.plan_status || 'active',
+                status: access.status || subscription?.status || user?.plan_status || 'active',
+                access_allowed: access.allowed,
+                access_code: access.code,
+                access_message: access.message,
+                entitlements: access.entitlements,
                 current_period_end: subscription?.current_period_end || user?.subscription_expiry || null,
                 subscription_expiry: subscription?.current_period_end || user?.subscription_expiry || null,
                 renewal_reminders: [7, 3, 1, 0],

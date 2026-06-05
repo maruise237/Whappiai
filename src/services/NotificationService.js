@@ -24,6 +24,25 @@ class NotificationService {
     }
 
     /**
+     * Create at most one matching notification per day.
+     */
+    static createOncePerDay({ userId, type, title, message, metadata = {} }) {
+        const dedupeKey = metadata.dedupe_key || metadata.reason || '';
+        const existing = db.prepare(`
+            SELECT id FROM user_notifications
+            WHERE user_id = ?
+            AND type = ?
+            AND date(created_at) = date('now')
+            AND (? = '' OR metadata LIKE ?)
+            LIMIT 1
+        `).get(userId, type, dedupeKey, `%${dedupeKey}%`);
+
+        if (existing) return existing.id;
+
+        return this.create({ userId, type, title, message, metadata });
+    }
+
+    /**
      * Send a notification (wrapper for create with different argument format)
      * Used by CreditService.js
      */

@@ -3,6 +3,7 @@ const { log } = require('../utils/logger');
 const crypto = require('crypto');
 const User = require('../models/User');
 const NotificationService = require('./NotificationService');
+const AccountAccessService = require('./AccountAccessService');
 
 class CreditService {
     /**
@@ -35,10 +36,10 @@ class CreditService {
             return true;
         }
 
-        // 2. Check Balance
-        const balance = this.getBalance(userId);
-        if (balance < amount) {
-            log(`Insufficient credits for ${user.email}: need ${amount}, have ${balance}`, 'CREDITS', null, 'WARN');
+        // 2. Check SaaS access and action balance
+        const access = AccountAccessService.canConsumeAction(userId, amount);
+        if (!access.allowed) {
+            log(`Blocked action for ${user.email}: ${access.code}`, 'CREDITS', { reason: access.message }, 'WARN');
             return false;
         }
 
@@ -63,6 +64,7 @@ class CreditService {
             deductTransaction();
 
             log(`Deducted ${amount} credits from ${user.email}: ${reason}`, 'CREDITS');
+            this.checkAndNotifyLowCredits(userId);
             return true;
         } catch (error) {
             log(`Transaction failed for credit deduction: ${error.message}`, 'CREDITS', { userId, error: error.message }, 'ERROR');
@@ -207,7 +209,8 @@ class CreditService {
         if (!user || user.role === 'admin') return;
 
         const balance = this.getBalance(userId);
-        const threshold = Math.max(5, Math.floor(user.message_limit * 0.1)); // 10% or min 5
+        const totalAllocation = Number(user.message_limit || 0) + Number(user.message_used || 0);
+        const threshold = Math.max(5, Math.floor(totalAllocation * 0.1)); // 10% or min 5
 
         if (balance > 0 && balance <= threshold) {
             NotificationService.send(userId, 'CREDITS_LOW', {

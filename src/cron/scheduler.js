@@ -138,9 +138,8 @@ class Scheduler {
 
         await Promise.all(expiredUsers.map(async (user) => {
             try {
-                // Cancel/Expire subscription
-                // We use SubscriptionService to handle logic
-                await SubscriptionService.cancel(user.id);
+                // Expire paid subscriptions and trials without granting fallback access.
+                await SubscriptionService.expire(user.id);
                 
                 log(`Expired subscription for ${user.email}`, 'CRON');
             } catch (err) {

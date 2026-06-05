@@ -41,7 +41,7 @@ class User {
                 plan_id, plan_status, message_limit, message_used, subscription_expiry
             )
             VALUES (?, ?, ?, 'CLERK_EXTERNAL_AUTH', ?, ?, ?, datetime('now'), 1, 1,
-                'trial', 'active', 60, 0, datetime('now', '+15 days')
+                'trial', 'active', 60, 0, datetime('now', '+7 days')
             )
         `);
 

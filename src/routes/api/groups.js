@@ -5,6 +5,7 @@
 
 const { db } = require('../../config/database');
 const CreditService = require('../../services/CreditService');
+const AccountAccessService = require('../../services/AccountAccessService');
 
 /**
  * Initialize group and moderation routes with dependencies
@@ -167,6 +168,21 @@ function initializeGroupRoutes(routerInstance, dependencies) {
     routerInstance.post('/sessions/:sessionId/moderation/groups/:groupId/engagement', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
+            if (!req.currentUser?.id) {
+                return res.status(401).json({ status: 'error', message: 'Compte utilisateur requis pour programmer un message.' });
+            }
+
+            const access = AccountAccessService.canCreateScheduledTask(req.currentUser.id);
+            if (!access.allowed) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: access.message,
+                    code: access.code,
+                    limit: access.limit,
+                    current: access.current
+                });
+            }
+
             const engagementService = require('../../services/engagement');
             const taskId = engagementService.addTask({
                 ...req.body,

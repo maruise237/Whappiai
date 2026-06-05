@@ -13,6 +13,7 @@ export default function BillingPage() {
   const { getToken } = useAuth()
   const [activePlan, setActivePlan] = React.useState("trial")
   const [expiresAt, setExpiresAt] = React.useState<string | null>(null)
+  const [accessState, setAccessState] = React.useState({ allowed: true, status: "active", message: "" })
   const [isPlanLoading, setIsPlanLoading] = React.useState(true)
 
   React.useEffect(() => {
@@ -31,11 +32,17 @@ export default function BillingPage() {
         if (mounted) {
           setActivePlan(resolveActivePlan(userProfile, subscription))
           setExpiresAt(resolveExpiration(userProfile, subscription))
+          setAccessState({
+            allowed: subscription?.access_allowed !== false,
+            status: ensureText(subscription?.status || userProfile?.plan_status || "active"),
+            message: ensureText(subscription?.access_message || ""),
+          })
         }
       } catch {
         if (mounted) {
           setActivePlan("trial")
           setExpiresAt(null)
+          setAccessState({ allowed: false, status: "unknown", message: "Impossible de verifier le forfait." })
         }
       } finally {
         if (mounted) setIsPlanLoading(false)
@@ -73,9 +80,9 @@ export default function BillingPage() {
               <Gift className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold text-primary">{isPlanLoading ? "Synchronisation du forfait" : billingBannerTitle(activePlan)}</p>
+              <p className="font-semibold text-primary">{isPlanLoading ? "Synchronisation du forfait" : billingBannerTitle(activePlan, accessState)}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {isPlanLoading ? "Whappi verifie le forfait actif de ce compte." : billingBannerText(activePlan)}
+                {isPlanLoading ? "Whappi verifie le forfait actif de ce compte." : billingBannerText(activePlan, accessState)}
               </p>
               {!isPlanLoading && expiresAt && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -96,7 +103,7 @@ export default function BillingPage() {
             <p className="text-lg font-bold text-primary">{isPlanLoading ? "..." : getExpirationSummary(expiresAt, activePlan)}</p>
             {!isPlanLoading && expiresAt && (
               <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                {getPlanLabel(activePlan)}
+                {accessState.allowed ? getPlanLabel(activePlan) : accessState.status}
               </p>
             )}
           </div>
@@ -132,12 +139,14 @@ export default function BillingPage() {
   )
 }
 
-function billingBannerTitle(plan: string) {
+function billingBannerTitle(plan: string, accessState: { allowed: boolean }) {
+  if (!accessState.allowed) return `Forfait ${getPlanLabel(plan)} interrompu`
   if (plan === "trial") return "Essai gratuit en cours"
   return `Forfait ${getPlanLabel(plan)} actif`
 }
 
-function billingBannerText(plan: string) {
+function billingBannerText(plan: string, accessState: { allowed: boolean; message: string }) {
+  if (!accessState.allowed) return accessState.message || "Renouvelez le forfait pour relancer les automatisations Whappi."
   if (plan === "starter") return "Inclus : 1 groupe - 3 messages programmes - 20 mots interdits."
   if (plan === "pro") return "Inclus : 5 groupes - messages programmes illimites - moderation complete."
   if (plan === "business") return "Inclus : 20 groupes - support prioritaire - configuration avancee."
@@ -151,6 +160,10 @@ type PlanSource = {
   plan_code?: unknown
   current_period_end?: unknown
   subscription_expiry?: unknown
+  status?: unknown
+  plan_status?: unknown
+  access_allowed?: unknown
+  access_message?: unknown
 }
 
 function resolveActivePlan(userProfile: PlanSource | null, subscription: PlanSource | null) {
@@ -194,4 +207,8 @@ function getDaysRemaining(value: string | null) {
   const expiryDay = new Date(expiry.getFullYear(), expiry.getMonth(), expiry.getDate())
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   return Math.ceil((expiryDay.getTime() - today.getTime()) / 86_400_000)
+}
+
+function ensureText(value: unknown) {
+  return typeof value === "string" ? value : ""
 }

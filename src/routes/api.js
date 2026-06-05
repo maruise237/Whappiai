@@ -17,6 +17,7 @@ const AIModel = require('../models/AIModel');
 const KeywordResponder = require('../models/KeywordResponder');
 const ActivityLog = require('../models/ActivityLog');
 const CreditService = require('../services/CreditService');
+const AccountAccessService = require('../services/AccountAccessService');
 const QueueService = require('../services/QueueService');
 const { db } = require('../config/database');
 // Security: csurf removed (deprecated) - use modern CSRF protection if needed
@@ -373,9 +374,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // If claiming an orphaned session, we still need to check the quota
             if (isOrphaned && !isOwner && !isAdmin && !isMasterKey) {
                 const user = User.findByEmail(currentEmail);
-                const planId = user?.plan_id || 'free';
-                const quotas = { 'free': 1, 'starter': 2, 'pro': 3, 'business': 100 };
-                const limit = quotas[planId] || 1;
+                const access = AccountAccessService.getStatus(user);
+                const planId = access.plan || user?.plan_id || 'trial';
+                const quotas = { trial: 1, free: 0, starter: 1, pro: 5, business: 20 };
+                const limit = access.allowed ? (quotas[planId] ?? 1) : 0;
                 const currentSessions = Session.getSessionIdsByOwner(currentEmail);
 
                 if (currentSessions.length >= limit) {
@@ -392,9 +394,10 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // New session quota
             if (!isAdmin && !isMasterKey) {
                 const user = User.findByEmail(currentEmail);
-                const planId = user?.plan_id || 'free';
-                const quotas = { 'free': 1, 'starter': 2, 'pro': 3, 'business': 100 };
-                const limit = quotas[planId] || 1;
+                const access = AccountAccessService.getStatus(user);
+                const planId = access.plan || user?.plan_id || 'trial';
+                const quotas = { trial: 1, free: 0, starter: 1, pro: 5, business: 20 };
+                const limit = access.allowed ? (quotas[planId] ?? 1) : 0;
                 const currentSessions = Session.getSessionIdsByOwner(currentEmail);
 
                 if (currentSessions.length >= limit) {
@@ -913,6 +916,21 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.post('/sessions/:sessionId/moderation/groups/:groupId/engagement', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
+            if (!req.currentUser?.id) {
+                return res.status(401).json({ status: 'error', message: 'Compte utilisateur requis pour programmer un message.' });
+            }
+
+            const access = AccountAccessService.canCreateScheduledTask(req.currentUser.id);
+            if (!access.allowed) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: access.message,
+                    code: access.code,
+                    limit: access.limit,
+                    current: access.current
+                });
+            }
+
             const engagementService = require('../services/engagement');
             const taskId = engagementService.addTask({
                 ...req.body,
