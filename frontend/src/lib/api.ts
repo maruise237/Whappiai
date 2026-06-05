@@ -395,5 +395,10 @@ export const api = {
       body: JSON.stringify({ amount, type, description }),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    updateSubscription: (userId: string, data: any, token?: string) => fetchApi(`/api/v1/admin/users/${userId}/subscription`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   }
 };

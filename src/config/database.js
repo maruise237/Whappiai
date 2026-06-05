@@ -155,6 +155,8 @@ function initializeSchema() {
             warning_reset_days INTEGER DEFAULT 0,
             welcome_enabled INTEGER DEFAULT 0,
             welcome_template TEXT,
+            welcome_digest_enabled INTEGER DEFAULT 0,
+            welcome_digest_time TEXT DEFAULT '18:00',
             ai_assistant_enabled INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -366,6 +368,8 @@ function initializeSchema() {
                         warning_reset_days INTEGER DEFAULT 0,
                         welcome_enabled INTEGER DEFAULT 0,
                         welcome_template TEXT,
+                        welcome_digest_enabled INTEGER DEFAULT 0,
+                        welcome_digest_time TEXT DEFAULT '18:00',
                         ai_assistant_enabled INTEGER DEFAULT 0,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -379,6 +383,20 @@ function initializeSchema() {
                              SELECT group_id, ?, is_active, anti_link, bad_words, warning_template, max_warnings, created_at, updated_at FROM group_settings_old`).run(sid);
                 }
                 db.exec("DROP TABLE group_settings_old");
+            }
+        }
+    });
+
+    runner.run('group-settings-welcome-digest-v1', (db) => {
+        const tableInfo = db.prepare("PRAGMA table_info(group_settings)").all();
+        const columns = [
+            { name: 'welcome_digest_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'welcome_digest_time', type: "TEXT DEFAULT '18:00'" }
+        ];
+
+        for (const col of columns) {
+            if (!tableInfo.some(info => info.name === col.name)) {
+                try { db.exec(`ALTER TABLE group_settings ADD COLUMN ${col.name} ${col.type}`); } catch (e) {}
             }
         }
     });
@@ -478,9 +496,9 @@ function initializeSchema() {
         if (count === 0) {
             log("Migration : Initialisation des plans de tarification", "SYSTEM");
             const plans = [
-                { id: 'starter', code: 'starter', name: 'Starter', price: 2500, message_limit: 2000, chariow_id: 'prd_jx0jkk', url: 'https://esaystor.online/prd_jx0jkk', features: '2,000 messages/mois, Support par email, Accès API standard, 1 instance WhatsApp' },
-                { id: 'pro', code: 'pro', name: 'Pro', price: 5000, message_limit: 10000, chariow_id: 'prd_l2es24', url: 'https://esaystor.online/prd_l2es24', features: '10,000 messages/mois, Support prioritaire, Accès API complet, 3 instances WhatsApp, Statistiques avancées' },
-                { id: 'business', code: 'business', name: 'Business', price: 10000, message_limit: 100000, chariow_id: 'prd_twafj6', url: 'https://esaystor.online/prd_twafj6', features: '100,000 messages/mois, Support dédié 24/7, Accès API illimité, Instances illimitées, IA personnalisée' }
+                { id: 'starter', code: 'starter', name: 'Essentiel', price: 2500, message_limit: 1000, chariow_id: 'prd_jx0jkk', url: 'https://esaystor.online/prd_jx0jkk', features: '1 session WhatsApp, 5 groupes pilotes, anti-liens, mots interdits, bienvenue quotidienne, 1 000 actions/mois' },
+                { id: 'pro', code: 'pro', name: 'Croissance', price: 5000, message_limit: 5000, chariow_id: 'prd_l2es24', url: 'https://esaystor.online/prd_l2es24', features: '3 sessions WhatsApp, groupes illimites, avertissements, messages programmes, 5 000 actions/mois' },
+                { id: 'business', code: 'business', name: 'Equipe', price: 10000, message_limit: 25000, chariow_id: 'prd_twafj6', url: 'https://esaystor.online/prd_twafj6', features: '10 sessions WhatsApp, regles avancees par groupe, journal audit, support prioritaire, 25 000 actions/mois' }
             ];
 
             const stmt = db.prepare(`

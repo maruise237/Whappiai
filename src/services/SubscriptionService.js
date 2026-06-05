@@ -41,8 +41,8 @@ class SubscriptionService {
         stmt.run(subId, userId, plan.id, now.toISOString(), periodEnd.toISOString());
 
         // 4. Update User Profile
-        db.prepare('UPDATE users SET plan_id = ?, plan_status = ? WHERE id = ?')
-          .run(plan.id, 'active', userId);
+        db.prepare('UPDATE users SET plan_id = ?, plan_status = ?, subscription_expiry = ? WHERE id = ?')
+          .run(plan.id, 'active', periodEnd.toISOString(), userId);
 
         // 5. Grant Credits
         CreditService.resetMonthlyCredits(userId, plan.message_limit);

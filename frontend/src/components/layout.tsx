@@ -60,7 +60,7 @@ const userNavigation: NavItemConfig[] = [
     icon: ShieldCheck,
   },
   {
-    label: "Credits",
+    label: "Usage",
     detail: "Usage du forfait",
     href: "/dashboard/credits",
     icon: WalletCards,

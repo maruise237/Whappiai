@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { User, Session, ActivityLog, AIModel } = require('../models');
 const CreditService = require('../services/CreditService');
+const SubscriptionService = require('../services/SubscriptionService');
 const { requireAdmin } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const response = require('../utils/response');
@@ -101,6 +102,72 @@ router.post('/users/:userId/credits', requireAdmin, asyncHandler(async (req, res
         return response.success(res, { balance: newBalance });
     } catch (err) {
         return response.error(res, `Échec de l'ajustement: ${err.message}`, 500);
+    }
+}));
+
+/**
+ * POST /api/v1/admin/users/:userId/subscription
+ * Manually activate or update a user subscription
+ */
+router.post('/users/:userId/subscription', requireAdmin, asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const { planCode, action, messageLimit, durationDays } = req.body;
+
+    const user = User.findById(userId);
+    if (!user) {
+        return response.error(res, 'Utilisateur non trouvÃ©', 404);
+    }
+
+    try {
+        if (action === 'expire') {
+            await SubscriptionService.expire(userId);
+            await ActivityLog.log({
+                userEmail: req.currentUser.email,
+                action: 'ADMIN_SUBSCRIPTION_EXPIRE',
+                resource: 'user',
+                resourceId: userId,
+                details: { targetEmail: user.email },
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            });
+            return response.success(res, { status: 'expired' });
+        }
+
+        const finalPlanCode = planCode || 'starter';
+        await SubscriptionService.subscribe(userId, finalPlanCode);
+
+        const limit = parseInt(messageLimit);
+        const days = parseInt(durationDays) || 30;
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + days);
+
+        if (!Number.isNaN(limit) && limit > 0) {
+            db.prepare(`
+                UPDATE users
+                SET message_limit = ?, message_used = 0, subscription_expiry = ?, plan_status = 'active'
+                WHERE id = ?
+            `).run(limit, expiry.toISOString(), userId);
+        } else {
+            db.prepare(`
+                UPDATE users
+                SET subscription_expiry = ?, plan_status = 'active'
+                WHERE id = ?
+            `).run(expiry.toISOString(), userId);
+        }
+
+        await ActivityLog.log({
+            userEmail: req.currentUser.email,
+            action: 'ADMIN_SUBSCRIPTION_ACTIVATE',
+            resource: 'user',
+            resourceId: userId,
+            details: { targetEmail: user.email, planCode: finalPlanCode, messageLimit: limit, durationDays: days },
+            ip: req.ip,
+            userAgent: req.headers['user-agent']
+        });
+
+        return response.success(res, User.findById(userId));
+    } catch (err) {
+        return response.error(res, `Ã‰chec abonnement manuel: ${err.message}`, 500);
     }
 }));
 

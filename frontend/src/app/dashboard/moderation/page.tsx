@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import {
   AlertTriangle,
+  Clock3,
   CheckCircle2,
   Info,
   Link2,
@@ -39,6 +40,8 @@ type GroupSettings = {
   warningsEnabled?: boolean
   welcomeMessage?: string
   warningMessage?: string
+  forbiddenWords?: string
+  welcomeDigestTime?: string
   maxWarnings?: number
   [key: string]: unknown
 }
@@ -53,7 +56,7 @@ type GroupItem = {
   [key: string]: unknown
 }
 
-const defaultWelcomeMessage = "Bienvenue dans le groupe. Merci de respecter le sujet, d'eviter les liens hors contexte et de garder les echanges utiles."
+const defaultWelcomeMessage = "Bienvenue aux nouveaux membres arrives aujourd'hui. Merci de respecter le sujet, d'eviter les liens hors contexte et de garder les echanges utiles."
 const defaultWarningMessage = "Attention : ce message ne respecte pas les regles du groupe. Merci de corriger avant une action admin."
 
 const ruleSummary = [
@@ -64,8 +67,8 @@ const ruleSummary = [
   },
   {
     icon: MessageSquareText,
-    title: "Accueil",
-    text: "Pose les regles au moment ou un nouveau membre arrive.",
+    title: "Accueil quotidien",
+    text: "Envoie un message de bienvenue une fois par jour en fin de journee.",
   },
   {
     icon: AlertTriangle,
@@ -83,6 +86,8 @@ export default function ModerationPage() {
   const [loadingSessions, setLoadingSessions] = React.useState(true)
   const [loadingGroups, setLoadingGroups] = React.useState(false)
   const [savingGroupId, setSavingGroupId] = React.useState<string | null>(null)
+  const [schedulingGroupId, setSchedulingGroupId] = React.useState<string | null>(null)
+  const [scheduledDrafts, setScheduledDrafts] = React.useState<Record<string, { message: string; scheduledAt: string; recurrence: string }>>({})
   const [searchQuery, setSearchQuery] = React.useState("")
 
   const connectedSessions = sessions.filter(session => session.isConnected || session.status === "CONNECTED")
@@ -172,13 +177,79 @@ export default function ModerationPage() {
     setSavingGroupId(groupId)
     try {
       const token = await getToken()
-      await api.sessions.updateGroupSettings(selectedSessionId, groupId, normalizeSettings(group.settings), token || undefined)
+      await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload(group.settings), token || undefined)
       toast.success("Configuration du groupe enregistree")
     } catch (error) {
       console.error(error)
       toast.error("Impossible d'enregistrer cette configuration")
     } finally {
       setSavingGroupId(null)
+    }
+  }
+
+  const scheduleDailyWelcome = async (group: GroupItem) => {
+    const groupId = ensureString(group.id || group.jid)
+    if (!selectedSessionId || !groupId) return
+
+    const settings = normalizeSettings(group.settings)
+    setSchedulingGroupId(groupId)
+    try {
+      const token = await getToken()
+      await api.sessions.addEngagementTask(selectedSessionId, groupId, {
+        message_content: settings.welcomeMessage,
+        recurrence: "daily",
+        scheduled_at: nextDailyIso(settings.welcomeDigestTime),
+        type: "text"
+      }, token || undefined)
+      updateLocalGroup(groupId, { welcomeEnabled: true })
+      toast.success("Bienvenue quotidienne programmee")
+    } catch (error) {
+      console.error(error)
+      toast.error("Impossible de programmer le message quotidien")
+    } finally {
+      setSchedulingGroupId(null)
+    }
+  }
+
+  const updateScheduledDraft = (groupId: string, patch: Partial<{ message: string; scheduledAt: string; recurrence: string }>) => {
+    setScheduledDrafts(prev => ({
+      ...prev,
+      [groupId]: {
+        message: "",
+        scheduledAt: defaultScheduleDateTime(),
+        recurrence: "none",
+        ...prev[groupId],
+        ...patch,
+      },
+    }))
+  }
+
+  const scheduleCustomMessage = async (group: GroupItem) => {
+    const groupId = ensureString(group.id || group.jid)
+    if (!selectedSessionId || !groupId) return
+    const draft = scheduledDrafts[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
+    if (!draft.message.trim()) return toast.error("Ecrivez le message a programmer")
+    if (!draft.scheduledAt) return toast.error("Choisissez une date et une heure")
+
+    setSchedulingGroupId(groupId)
+    try {
+      const token = await getToken()
+      await api.sessions.addEngagementTask(selectedSessionId, groupId, {
+        message_content: draft.message,
+        recurrence: draft.recurrence,
+        scheduled_at: new Date(draft.scheduledAt).toISOString(),
+        type: "text"
+      }, token || undefined)
+      setScheduledDrafts(prev => ({
+        ...prev,
+        [groupId]: { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: draft.recurrence },
+      }))
+      toast.success("Message programme")
+    } catch (error) {
+      console.error(error)
+      toast.error("Impossible de programmer ce message")
+    } finally {
+      setSchedulingGroupId(null)
     }
   }
 
@@ -306,6 +377,59 @@ export default function ModerationPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 p-5">
+                  {(() => {
+                    const scheduledDraft = scheduledDrafts[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
+                    return (
+                      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <div className="mb-3 flex items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <Clock3 className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">Message programme</p>
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                              Planifiez une annonce, un rappel de paiement, une relance ou un message recurrent.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <Textarea
+                            value={scheduledDraft.message}
+                            onChange={event => updateScheduledDraft(groupId, { message: event.target.value })}
+                            className="min-h-20 resize-none text-xs"
+                            placeholder="ex: Rappel : pensez a confirmer votre presence avant 18h."
+                          />
+                          <div className="grid gap-3 sm:grid-cols-[1fr_140px_120px]">
+                            <Input
+                              type="datetime-local"
+                              value={scheduledDraft.scheduledAt}
+                              onChange={event => updateScheduledDraft(groupId, { scheduledAt: event.target.value })}
+                              className="h-9 text-xs"
+                            />
+                            <Select
+                              value={scheduledDraft.recurrence}
+                              onValueChange={value => updateScheduledDraft(groupId, { recurrence: value })}
+                            >
+                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Une fois</SelectItem>
+                                <SelectItem value="daily">Chaque jour</SelectItem>
+                                <SelectItem value="weekly">Chaque semaine</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              className="h-9 text-xs"
+                              onClick={() => scheduleCustomMessage(group)}
+                              disabled={schedulingGroupId === groupId}
+                            >
+                              {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Programmer"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
                   <RuleSwitch
                     icon={<Link2 className="h-4 w-4" />}
                     title="Anti-liens"
@@ -313,20 +437,64 @@ export default function ModerationPage() {
                     checked={settings.antiLinksEnabled}
                     onCheckedChange={checked => updateLocalGroup(groupId, { antiLinksEnabled: checked })}
                   />
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <div className="mb-3 flex items-start gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Shield className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Mots interdits</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          Ajoutez les mots ou expressions a bloquer, separes par des virgules.
+                        </p>
+                      </div>
+                    </div>
+                    <Textarea
+                      value={settings.forbiddenWords}
+                      onChange={event => updateLocalGroup(groupId, { forbiddenWords: event.target.value })}
+                      className="min-h-20 resize-none text-xs"
+                      placeholder="ex: arnaque, pari, crypto rapide, lien telegram"
+                    />
+                  </div>
                   <RuleSwitch
                     icon={<MessageSquareText className="h-4 w-4" />}
-                    title="Message de bienvenue"
-                    text="Afficher les regles des qu'un membre arrive."
+                    title="Bienvenue quotidienne"
+                    text="Envoyer un recap clair une fois par jour, en fin de journee."
                     checked={settings.welcomeEnabled}
                     onCheckedChange={checked => updateLocalGroup(groupId, { welcomeEnabled: checked })}
                   />
                   {settings.welcomeEnabled && (
-                    <Textarea
-                      value={settings.welcomeMessage}
-                      onChange={event => updateLocalGroup(groupId, { welcomeMessage: event.target.value })}
-                      className="min-h-24 resize-none text-xs"
-                      placeholder="Message de bienvenue"
-                    />
+                    <div className="space-y-3 rounded-2xl border bg-background/60 p-4">
+                      <div className="grid gap-3 sm:grid-cols-[1fr_140px]">
+                        <Textarea
+                          value={settings.welcomeMessage}
+                          onChange={event => updateLocalGroup(groupId, { welcomeMessage: event.target.value })}
+                          className="min-h-24 resize-none text-xs"
+                          placeholder="Message de bienvenue"
+                        />
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            Heure d&apos;envoi
+                          </label>
+                          <Input
+                            type="time"
+                            value={settings.welcomeDigestTime}
+                            onChange={event => updateLocalGroup(groupId, { welcomeDigestTime: event.target.value })}
+                            className="h-10 text-xs"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 w-full text-xs"
+                            onClick={() => scheduleDailyWelcome(group)}
+                            disabled={schedulingGroupId === groupId}
+                          >
+                            {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="mr-2 h-3.5 w-3.5" />}
+                            Programmer
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   )}
                   <RuleSwitch
                     icon={<AlertTriangle className="h-4 w-4" />}
@@ -368,14 +536,48 @@ export default function ModerationPage() {
   )
 }
 
-function normalizeSettings(settings?: GroupSettings | null): Required<Pick<GroupSettings, "antiLinksEnabled" | "welcomeEnabled" | "warningsEnabled" | "welcomeMessage" | "warningMessage">> {
+function normalizeSettings(settings?: GroupSettings | null): Required<Pick<GroupSettings, "antiLinksEnabled" | "welcomeEnabled" | "warningsEnabled" | "welcomeMessage" | "warningMessage" | "forbiddenWords" | "welcomeDigestTime">> {
   return {
     antiLinksEnabled: Boolean(settings?.antiLinksEnabled ?? settings?.anti_links_enabled ?? settings?.antiLinkEnabled),
-    welcomeEnabled: Boolean(settings?.welcomeEnabled ?? settings?.welcome_enabled),
+    welcomeEnabled: Boolean(settings?.welcomeEnabled ?? settings?.welcome_digest_enabled ?? settings?.welcome_enabled),
     warningsEnabled: Boolean(settings?.warningsEnabled ?? settings?.warnings_enabled),
     welcomeMessage: ensureString(settings?.welcomeMessage ?? settings?.welcome_message, defaultWelcomeMessage),
     warningMessage: ensureString(settings?.warningMessage ?? settings?.warning_message, defaultWarningMessage),
+    forbiddenWords: ensureString(settings?.forbiddenWords ?? settings?.bad_words ?? settings?.banned_words, ""),
+    welcomeDigestTime: ensureString(settings?.welcomeDigestTime ?? settings?.welcome_digest_time, "18:00"),
   }
+}
+
+function toModerationPayload(settings?: GroupSettings | null) {
+  const normalized = normalizeSettings(settings)
+  return {
+    is_active: normalized.antiLinksEnabled || normalized.welcomeEnabled || normalized.warningsEnabled || Boolean(normalized.forbiddenWords.trim()),
+    anti_link: normalized.antiLinksEnabled,
+    bad_words: normalized.forbiddenWords,
+    warning_template: normalized.warningMessage,
+    max_warnings: 3,
+    welcome_enabled: false,
+    welcome_template: normalized.welcomeMessage,
+    welcome_digest_enabled: normalized.welcomeEnabled,
+    welcome_digest_time: normalized.welcomeDigestTime,
+  }
+}
+
+function nextDailyIso(time: string) {
+  const [hourRaw, minuteRaw] = time.split(":")
+  const date = new Date()
+  date.setHours(Number(hourRaw) || 18, Number(minuteRaw) || 0, 0, 0)
+  if (date.getTime() <= Date.now()) {
+    date.setDate(date.getDate() + 1)
+  }
+  return date.toISOString()
+}
+
+function defaultScheduleDateTime() {
+  const date = new Date()
+  date.setHours(date.getHours() + 1, 0, 0, 0)
+  const pad = (value: number) => String(value).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 function RuleSwitch({

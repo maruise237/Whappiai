@@ -263,16 +263,18 @@ function updateGroupSettings(sessionId, groupId, settings) {
     const warning_reset_days = settings.warning_reset_days || 0;
     const welcome_enabled = settings.welcome_enabled ? 1 : 0;
     const welcome_template = settings.welcome_template || settings.welcome_message || "";
+    const welcome_digest_enabled = settings.welcome_digest_enabled ? 1 : 0;
+    const welcome_digest_time = settings.welcome_digest_time || "18:00";
     const ai_assistant_enabled = settings.ai_assistant_enabled ? 1 : 0;
     
     log(`Mise à jour des paramètres de modération pour le groupe ${groupId}`, sessionId, { 
         event: 'moderation-config-update',
-        settings: { is_active, anti_link, bad_words, max_warnings, welcome_enabled, ai_assistant_enabled, warning_reset_days }
+        settings: { is_active, anti_link, bad_words, max_warnings, welcome_enabled, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days }
     }, 'INFO');
 
     const stmt = db.prepare(`
-        INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, ai_assistant_enabled, warning_reset_days, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(group_id, session_id) DO UPDATE SET
         is_active = excluded.is_active,
         anti_link = excluded.anti_link,
@@ -281,12 +283,14 @@ function updateGroupSettings(sessionId, groupId, settings) {
         max_warnings = excluded.max_warnings,
         welcome_enabled = excluded.welcome_enabled,
         welcome_template = excluded.welcome_template,
+        welcome_digest_enabled = excluded.welcome_digest_enabled,
+        welcome_digest_time = excluded.welcome_digest_time,
         ai_assistant_enabled = excluded.ai_assistant_enabled,
         warning_reset_days = excluded.warning_reset_days,
         updated_at = CURRENT_TIMESTAMP
     `);
     
-    stmt.run(groupId, sessionId, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, ai_assistant_enabled, warning_reset_days);
+    stmt.run(groupId, sessionId, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days);
 }
 
 /**

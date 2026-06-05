@@ -29,7 +29,6 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { toast } from "sonner"
 
-import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -93,13 +92,6 @@ type AdminStats = {
   credits?: { deducted?: number }
 }
 
-type CreditsData = {
-  balance: number
-  used: number
-  plan: string
-  history: Array<{ type?: string; description?: unknown; amount?: number | string }>
-}
-
 type AnalyticsPoint = {
   date?: string
   messages?: number
@@ -131,7 +123,6 @@ export default function DashboardPage() {
     messagesSent: 0,
   })
   const [adminStats, setAdminStats] = React.useState<AdminStats | null>(null)
-  const [credits, setCredits] = React.useState<CreditsData | null>(null)
   const [recentActivities, setRecentActivities] = React.useState<ActivityItem[]>([])
   const [analyticsData, setAnalyticsData] = React.useState<AnalyticsPoint[]>([])
 
@@ -142,16 +133,6 @@ export default function DashboardPage() {
     resolver: zodResolver(sessionSchema),
     defaultValues: { sessionId: "", phoneNumber: "" },
   })
-
-  const fetchCreditsData = React.useCallback(async () => {
-    try {
-      const token = await getToken()
-      const data = await api.credits.get(token || undefined)
-      setCredits((data?.data || data) as CreditsData)
-    } catch (error) {
-      console.error(error)
-    }
-  }, [getToken])
 
   const fetchAdminSummary = React.useCallback(async (token: string) => {
     try {
@@ -227,9 +208,8 @@ export default function DashboardPage() {
   React.useEffect(() => {
     if (isLoaded && user) {
       fetchSessions(true)
-      fetchCreditsData()
     }
-  }, [fetchCreditsData, fetchSessions, isLoaded, user])
+  }, [fetchSessions, isLoaded, user])
 
   React.useEffect(() => {
     if (!lastMessage) return
@@ -275,7 +255,6 @@ export default function DashboardPage() {
         }
       })
 
-      fetchCreditsData()
     }
 
     if (lastMessage.type === "session-deleted") {
@@ -287,7 +266,7 @@ export default function DashboardPage() {
         }
       }
     }
-  }, [fetchCreditsData, fetchSessions, lastMessage, selectedSessionId])
+  }, [fetchSessions, lastMessage, selectedSessionId])
 
   const selectedSession = sessions.find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
 
@@ -422,7 +401,7 @@ export default function DashboardPage() {
         ) : (
           <UserActivityPanel recentActivities={recentActivities} />
         )}
-        <CreditCardUI credits={credits} userRole={isAdmin ? "admin" : "user"} />
+        <NextBestActionPanel sessionCount={sessions.length} activeSessions={summary.activeSessions} />
       </section>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -601,7 +580,7 @@ function AdminPanel({
         <div className="grid gap-3 md:grid-cols-3">
           <MiniAdminStat icon={<Users className="h-4 w-4" />} label="Utilisateurs" value={adminStats?.users?.total || 0} />
           <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label="Sessions" value={adminStats?.sessions?.total || 0} />
-          <MiniAdminStat icon={<WalletCards className="h-4 w-4" />} label="Credits" value={adminStats?.credits?.deducted || 0} />
+          <MiniAdminStat icon={<WalletCards className="h-4 w-4" />} label="Actions" value={adminStats?.credits?.deducted || 0} />
         </div>
 
         <div className="mt-5 h-[190px]">
@@ -630,6 +609,39 @@ function AdminPanel({
             </div>
           ))}
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function NextBestActionPanel({ sessionCount, activeSessions }: { sessionCount: number; activeSessions: number }) {
+  const steps = [
+    { label: "Session", done: sessionCount > 0 },
+    { label: "Connexion", done: activeSessions > 0 },
+    { label: "Groupe", done: false },
+    { label: "Regle", done: false },
+  ]
+
+  return (
+    <Card className="bg-card shadow-none">
+      <CardContent className="p-5 sm:p-6">
+        <div className="mb-5">
+          <p className="text-sm font-semibold">Prochaine action utile</p>
+          <p className="mt-1 text-xs text-muted-foreground">Le centre garde le cap sur l&apos;activation, pas sur une ancienne logique de solde.</p>
+        </div>
+        <div className="space-y-3">
+          {steps.map(step => (
+            <div key={step.label} className="flex items-center justify-between rounded-2xl border bg-background/60 p-3">
+              <span className="text-sm font-medium">{step.label}</span>
+              <Badge className={step.done ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-muted text-muted-foreground"}>
+                {step.done ? "OK" : "A faire"}
+              </Badge>
+            </div>
+          ))}
+        </div>
+        <Button asChild className="mt-5 w-full" size="sm">
+          <Link href="/dashboard/moderation">Configurer les groupes</Link>
+        </Button>
       </CardContent>
     </Card>
   )

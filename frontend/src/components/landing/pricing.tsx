@@ -9,63 +9,47 @@ import { cn } from "@/lib/utils"
 
 const plans = [
   {
-    name: "Starter",
-    description: "Pour un admin qui veut remettre de l'ordre dans un premier groupe sans complexité.",
-    price: { 
-      monthly: "3 500 FCFA", 
-      yearly: "33 600 FCFA",
-      monthlyValue: 3500,
-      yearlyValue: 33600
-    },
+    name: "Essentiel",
+    description: "Pour lancer un premier numero co-admin sans complexite.",
+    price: { monthly: "2 500 FCFA", yearly: "24 000 FCFA", monthlyValue: 2500, yearlyValue: 24000 },
     features: [
-      "1 groupe WhatsApp actif",
-      "Message de bienvenue personnalisé",
+      "1 session WhatsApp active",
+      "Jusqu'a 5 groupes pilotes",
       "Anti-liens et mots interdits",
-      "Avertissements automatiques",
-      "Support WhatsApp standard"
+      "Bienvenue quotidienne en fin de journee",
+      "1 000 actions de moderation / mois",
     ],
-    cta: "Essayer Starter",
+    cta: "Choisir Essentiel",
     highlighted: false,
   },
   {
-    name: "Pro",
-    description: "Le meilleur choix pour les admins qui gèrent plusieurs groupes ou une communauté qui grandit.",
-    price: { 
-      monthly: "8 000 FCFA", 
-      yearly: "76 800 FCFA",
-      monthlyValue: 8000,
-      yearlyValue: 76800
-    },
+    name: "Croissance",
+    description: "Pour les admins qui gerent plusieurs groupes ou une communaute qui grandit.",
+    price: { monthly: "5 000 FCFA", yearly: "48 000 FCFA", monthlyValue: 5000, yearlyValue: 48000 },
     features: [
-      "Jusqu'à 5 groupes actifs",
-      "Tout en Starter",
-      "Ban automatique après seuil",
-      "Messages programmés",
-      "Dashboard multi-groupes",
+      "3 sessions WhatsApp actives",
+      "Groupes WhatsApp illimites",
+      "Anti-liens, mots interdits et avertissements",
+      "Messages programmes quotidiens",
+      "5 000 actions de moderation / mois",
       "Support prioritaire",
     ],
-    cta: "Choisir le plan Pro",
+    cta: "Choisir Croissance",
     highlighted: true,
-    popular: true,
   },
   {
-    name: "Organisation",
-    description: "Pour les écoles, églises, médias et associations qui ont besoin d'un cadre plus solide.",
-    price: { 
-      monthly: "18 000 FCFA", 
-      yearly: "172 800 FCFA",
-      monthlyValue: 18000,
-      yearlyValue: 172800
-    },
+    name: "Equipe",
+    description: "Pour agences, reseaux de vente et operations multi-groupes.",
+    price: { monthly: "10 000 FCFA", yearly: "96 000 FCFA", monthlyValue: 10000, yearlyValue: 96000 },
     features: [
-      "Groupes actifs étendus",
-      "Tout en Pro",
-      "Presets par type de communauté",
-      "Logs avancés de modération",
+      "10 sessions WhatsApp actives",
+      "Regles avancees par groupe",
+      "Journal d'audit pour equipe",
+      "25 000 actions de moderation / mois",
       "Accompagnement configuration",
-      "Option numéro dédié Whappi"
+      "Support prioritaire",
     ],
-    cta: "Parler à Whappi",
+    cta: "Choisir Equipe",
     highlighted: false,
   },
 ]
@@ -74,30 +58,28 @@ export function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false)
 
   return (
-    <section id="pricing" className="py-24 px-4 bg-background overflow-hidden relative">
-      {/* Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[20%] right-[-10%] w-[420px] h-[420px] bg-primary/5 blur-[110px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[420px] h-[420px] bg-primary/5 blur-[110px] rounded-full" />
+    <section id="pricing" className="relative overflow-hidden bg-background px-4 py-24">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute right-[-10%] top-[20%] h-[420px] w-[420px] rounded-full bg-primary/5 blur-[110px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] h-[420px] w-[420px] rounded-full bg-primary/5 blur-[110px]" />
       </div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="relative z-10 mx-auto max-w-7xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="mb-16 text-center"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 tracking-tight">
-            Des prix pensés pour le terrain
+          <h2 className="mb-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            Des prix penses pour le terrain
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto mb-10 text-lg">
-            Payable en FCFA, adapté aux admins de groupes WhatsApp, avec 7 jours d&apos;essai pour voir la différence avant de payer.
+          <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground">
+            Payable en FCFA, adapte aux admins de groupes WhatsApp, avec 7 jours d&apos;essai pour voir la difference avant de payer.
           </p>
 
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-12">
+          <div className="mb-12 flex items-center justify-center gap-4">
             <span className={cn("text-sm font-medium transition-colors", !isAnnual ? "text-foreground" : "text-muted-foreground")}>
               Mensuel
             </span>
@@ -109,14 +91,9 @@ export function Pricing() {
                 isAnnual ? "bg-primary" : "bg-input"
               )}
             >
-              <span
-                className={cn(
-                  "pointer-events-none block h-6 w-6 rounded-full bg-background shadow-lg ring-0 transition-transform",
-                  isAnnual ? "translate-x-5" : "translate-x-0"
-                )}
-              />
+              <span className={cn("pointer-events-none block h-6 w-6 rounded-full bg-background shadow-lg ring-0 transition-transform", isAnnual ? "translate-x-5" : "translate-x-0")} />
             </button>
-            <span className={cn("text-sm font-medium transition-colors flex items-center gap-2", isAnnual ? "text-foreground" : "text-muted-foreground")}>
+            <span className={cn("flex items-center gap-2 text-sm font-medium transition-colors", isAnnual ? "text-foreground" : "text-muted-foreground")}>
               Annuel
               <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                 -20%
@@ -125,7 +102,7 @@ export function Pricing() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start max-w-6xl mx-auto">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-8 md:grid-cols-3">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -135,72 +112,55 @@ export function Pricing() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className={cn(
                 "relative rounded-2xl p-8 transition-all duration-300",
-                plan.highlighted 
-                  ? "bg-card border-2 border-primary shadow-lg scale-[1.02] z-10" 
-                  : "bg-card/70 border border-border/70 hover:border-primary/50 hover:bg-card z-0 mt-4"
+                plan.highlighted
+                  ? "z-10 scale-[1.02] border-2 border-primary bg-card shadow-lg"
+                  : "z-0 mt-4 border border-border/70 bg-card/70 hover:border-primary/50 hover:bg-card"
               )}
             >
               {plan.highlighted && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-1 whitespace-nowrap">
-                  <span className="text-yellow-300">★</span> 82% Choisissent ce plan
+                <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground shadow-lg">
+                  <span>★</span> 82% choisissent ce plan
                 </div>
               )}
 
               <div className="mb-8">
-                <h3 className={cn("text-xl font-semibold mb-2", plan.highlighted ? "text-primary" : "text-foreground")}>
+                <h3 className={cn("mb-2 text-xl font-semibold", plan.highlighted ? "text-primary" : "text-foreground")}>
                   {plan.name}
                 </h3>
-                <div className="flex items-baseline gap-1 mb-2">
+                <div className="mb-2 flex items-baseline gap-1">
                   {isAnnual && (
-                    <span className="text-lg text-muted-foreground line-through decoration-destructive/50 mr-2">
+                    <span className="mr-2 text-lg text-muted-foreground line-through decoration-destructive/50">
                       {Math.round(plan.price.monthlyValue * 12).toLocaleString()} FCFA
                     </span>
                   )}
                   <span className="text-4xl font-bold text-foreground">
                     {isAnnual ? plan.price.yearly : plan.price.monthly}
                   </span>
-                  <span className="text-muted-foreground text-sm">
-                    /{isAnnual ? "an" : "mois"}
-                  </span>
+                  <span className="text-sm text-muted-foreground">/{isAnnual ? "an" : "mois"}</span>
                 </div>
-                <p className="text-muted-foreground text-sm">
-                  {isAnnual ? "Facturé annuellement" : "Facturé mensuellement"}
-                </p>
+                <p className="text-sm text-muted-foreground">{isAnnual ? "Facture annuellement" : "Facture mensuellement"}</p>
               </div>
 
-              <div className="space-y-4 mb-8">
-                {plan.features.map((feature) => (
+              <div className="mb-8 space-y-4">
+                {plan.features.map(feature => (
                   <div key={feature} className="flex items-start gap-3">
-                    <div className={cn(
-                      "mt-1 p-0.5 rounded-full shrink-0", 
-                      plan.highlighted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                    )}>
-                      <Check className="w-3 h-3" strokeWidth={3} />
+                    <div className={cn("mt-1 shrink-0 rounded-full p-0.5", plan.highlighted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                      <Check className="h-3 w-3" strokeWidth={3} />
                     </div>
-                    <span className="text-sm text-foreground/90 leading-tight">{feature}</span>
+                    <span className="text-sm leading-tight text-foreground/90">{feature}</span>
                   </div>
                 ))}
               </div>
 
               <Button
-                className={cn(
-                  "w-full h-12 rounded-xl text-base font-semibold transition-all duration-200",
-                  plan.highlighted
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02]"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                )}
+                className={cn("h-12 w-full rounded-xl text-base font-semibold transition-all duration-200", plan.highlighted ? "shadow-md shadow-primary/20 hover:scale-[1.02]" : "")}
+                variant={plan.highlighted ? "default" : "secondary"}
                 asChild
               >
-                <Link href="/register">
-                  {plan.cta}
-                </Link>
+                <Link href="/register">{plan.cta}</Link>
               </Button>
 
-              {!plan.highlighted && (
-                <p className="text-center text-xs text-muted-foreground mt-4">
-                  Parfait pour démarrer
-                </p>
-              )}
+              {!plan.highlighted && <p className="mt-4 text-center text-xs text-muted-foreground">Parfait pour demarrer</p>}
             </motion.div>
           ))}
         </div>
