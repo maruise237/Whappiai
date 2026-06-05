@@ -21,15 +21,6 @@ const features = [
   "Dashboard multi-groupes"
 ]
 
-const adminLoop = [
-  "Spams supprimés",
-  "Nouveaux membres accueillis",
-  "Règles appliquées",
-  "Rappels envoyés",
-  "Admins moins sollicités",
-  "Groupes plus calmes"
-]
-
 const textRevealVariants = {
   hidden: { y: "100%" },
   visible: (i: number) => ({
@@ -106,29 +97,6 @@ export function Hero() {
           >
             Whappi automatise l&apos;accueil, la modération et les rappels dans vos groupes WhatsApp. Fait pour les admins africains qui gèrent des communautés actives.
           </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            className="relative w-full max-w-3xl overflow-hidden rounded-xl border border-border/70 bg-card/50 py-3 shadow-sm"
-            aria-label="Actions automatisées par Whappi"
-          >
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent" />
-            <div className="whappi-flow-track flex w-max items-center gap-3 text-sm font-medium text-muted-foreground">
-              {[...adminLoop, ...adminLoop].map((item, index) => (
-                <span
-                  key={`${item}-${index}`}
-                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-md border border-primary/15 bg-primary/5 px-3 py-1.5 text-foreground/80"
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  {item}
-                </span>
-              ))}
-            </div>
-          </motion.div>
 
           {/* Feature List (Desktop Only) */}
           <motion.div 

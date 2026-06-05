@@ -193,27 +193,3 @@
   outline-offset: 4px !important;
   border-radius: 8px !important;
 }
-
-/* ——— Landing Motion ——— */
-@keyframes whappi-flow {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.whappi-flow-track {
-  animation: whappi-flow 24s linear infinite;
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
-  will-change: transform;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .whappi-flow-track {
-    animation: none;
-    transform: none;
-  }
-}
