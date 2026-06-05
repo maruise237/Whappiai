@@ -43,6 +43,21 @@ const router = express.Router();
 // Webhook URLs map (legacy support)
 const webhookUrls = new Map();
 
+function buildCurrentUser(localUser, fallback) {
+    return {
+        ...localUser,
+        ...fallback,
+        id: localUser?.id || fallback.id,
+        email: (localUser?.email || fallback.email || '').toLowerCase(),
+        role: fallback.role || localUser?.role || 'user',
+        plan_id: localUser?.plan_id || 'trial',
+        plan_status: localUser?.plan_status || 'active',
+        message_limit: localUser?.message_limit || 0,
+        message_used: localUser?.message_used || 0,
+        subscription_expiry: localUser?.subscription_expiry || null,
+    };
+}
+
 // Multer setup for file uploads
 const mediaDir = path.join(__dirname, '../../media');
 if (!fs.existsSync(mediaDir)) {
@@ -127,12 +142,6 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     role = 'admin';
                 }
 
-                req.currentUser = {
-                    email: finalEmail,
-                    role,
-                    id: user?.id || req.auth.userId
-                };
-
                 if (!user) {
                     log(`Creating user ${finalEmail} from Clerk sync...`, 'AUTH');
                     user = await User.create({
@@ -146,6 +155,12 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     log(`Updating role for ${finalEmail}: ${user.role} -> ${role}`, 'AUTH');
                     user = await User.create({ id: req.auth.userId, email: finalEmail, role });
                 }
+
+                req.currentUser = buildCurrentUser(user, {
+                    email: finalEmail,
+                    role,
+                    id: user?.id || req.auth.userId
+                });
 
                 if (req.session) {
                     req.session.adminAuthed = role === 'admin';
@@ -165,11 +180,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             const sessionRole = isAdminEmail(sessionEmail) ? 'admin' : (req.session.userRole || 'user');
             const user = User.findByEmail(sessionEmail);
 
-            req.currentUser = {
+            req.currentUser = buildCurrentUser(user, {
                 email: sessionEmail,
                 role: sessionRole,
                 id: user?.id
-            };
+            });
             return next();
         }
 
@@ -200,11 +215,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     }
                 }
 
-                req.currentUser = {
+                req.currentUser = buildCurrentUser(user, {
                     email: `api-${sessionId}`,
                     role: userRole,
                     id: userId
-                };
+                });
                 return next();
             }
         }

@@ -10,6 +10,22 @@ const User = require('../models/User');
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
+function buildCurrentUser(localUser, fallback) {
+    return {
+        ...localUser,
+        ...fallback,
+        id: localUser?.id || fallback.id,
+        clerkId: fallback.clerkId,
+        email: (localUser?.email || fallback.email || '').toLowerCase(),
+        role: fallback.role || localUser?.role || 'user',
+        plan_id: localUser?.plan_id || 'trial',
+        plan_status: localUser?.plan_status || 'active',
+        message_limit: localUser?.message_limit || 0,
+        message_used: localUser?.message_used || 0,
+        subscription_expiry: localUser?.subscription_expiry || null,
+    };
+}
+
 /**
  * Helper to get Clerk User from request
  */
@@ -110,12 +126,12 @@ async function requireClerkAuth(req, res, next) {
     }
 
     // Attach user info to request
-    req.currentUser = {
+    req.currentUser = buildCurrentUser(localUser, {
         id: localUser.id,
         clerkId: clerkUser.id,
-        email: email,
+        email,
         role: targetRole // Use the calculated targetRole for immediate consistency
-    };
+    });
 
     // Compatibility for session-based checks
     if (req.session) {
