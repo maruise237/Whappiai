@@ -12,7 +12,9 @@ import {
   Plus,
   ShieldCheck,
   Smartphone,
+  TriangleAlert,
   Users,
+  X,
 } from "lucide-react"
 import {
   Area,
@@ -49,6 +51,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
 import {
   Select,
   SelectContent,
@@ -56,8 +59,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api } from "@/lib/api"
-import { cn, ensureString, safeDate, safeRender } from "@/lib/utils"
+import { cn, ensureString, safeRender } from "@/lib/utils"
 import { useWebSocket } from "@/providers/websocket-provider"
 
 const DEFAULT_STATS_DAYS = 7
@@ -123,6 +127,7 @@ export default function DashboardPage() {
   const [adminStats, setAdminStats] = React.useState<AdminStats | null>(null)
   const [recentActivities, setRecentActivities] = React.useState<ActivityItem[]>([])
   const [analyticsData, setAnalyticsData] = React.useState<AnalyticsPoint[]>([])
+  const [showCenterBadge, setShowCenterBadge] = React.useState(false)
 
   const userEmail = user?.primaryEmailAddress?.emailAddress || ""
   const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
@@ -210,6 +215,15 @@ export default function DashboardPage() {
   }, [fetchSessions, isLoaded, user])
 
   React.useEffect(() => {
+    setShowCenterBadge(localStorage.getItem("whappi-center-badge-dismissed") !== "1")
+  }, [])
+
+  const dismissCenterBadge = () => {
+    localStorage.setItem("whappi-center-badge-dismissed", "1")
+    setShowCenterBadge(false)
+  }
+
+  React.useEffect(() => {
     if (!lastMessage) return
     const messageStr = JSON.stringify(lastMessage)
     if (messageStr === lastProcessedMessageRef.current) return
@@ -283,9 +297,19 @@ export default function DashboardPage() {
           <div className="border-b p-5 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">
-                  Nouveau centre de controle
-                </Badge>
+                {showCenterBadge && (
+                  <Badge className="gap-2 border-primary/15 bg-primary/10 pr-1 text-primary hover:bg-primary/10">
+                    Nouveau centre de controle
+                    <button
+                      type="button"
+                      onClick={dismissCenterBadge}
+                      className="rounded-full p-0.5 text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary"
+                      aria-label="Masquer l'annonce"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
                 <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                   Pilotez vos groupes sans rester colle a WhatsApp.
                 </h1>
@@ -303,7 +327,11 @@ export default function DashboardPage() {
           <div className="grid gap-px bg-border md:grid-cols-4">
             <MetricTile label="Sessions" value={sessions.length} sub={`${summary.activeSessions} connectee(s)`} />
             <MetricTile label="Messages" value={summary.messagesSent} sub="Volume suivi" />
-            <MetricTile label="Reussite" value={`${summary.successRate}%`} sub="Derniers 7 jours" />
+            <MetricTile
+              label="Reussite"
+              value={successMetricValue(summary.messagesSent, summary.successRate)}
+              sub={successMetricSub(summary.messagesSent, summary.successRate)}
+            />
             <MetricTile label="Actions" value={summary.totalActivities} sub="Activite recente" />
           </div>
         </div>
@@ -315,20 +343,27 @@ export default function DashboardPage() {
                 <p className="text-sm font-semibold">Parcours de prise en main</p>
                 <p className="mt-1 text-xs text-muted-foreground">Aucun vieux panneau technique ici.</p>
               </div>
-              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">4 etapes</Badge>
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{onboardingProgress(sessions.length, summary.activeSessions)}/4 etapes</Badge>
             </div>
+            <Progress value={(onboardingProgress(sessions.length, summary.activeSessions) / 4) * 100} className="mt-4 h-1.5" />
             <div className="mt-5 space-y-3">
-              {[
-                ["01", "Connecter une session", "QR code ou code d'appairage"],
-                ["02", "Ajouter au groupe", "Le numero doit etre admin"],
-                ["03", "Activer une regle", "Anti-liens ou bienvenue"],
-                ["04", "Verifier les actions", "Voir ce qui a ete applique"],
-              ].map(([step, title, text]) => (
-                <div key={step} className="flex gap-3 rounded-2xl border bg-background/60 p-3">
-                  <span className="font-mono text-[11px] text-primary">{step}</span>
+              {onboardingSteps(sessions.length, summary.activeSessions).map(step => (
+                <div key={step.title} className={cn(
+                  "flex gap-3 rounded-2xl border bg-background/60 p-3 transition-colors",
+                  step.state === "done" && "opacity-60",
+                  step.state === "current" && "border-state-warning bg-state-warning-light/40"
+                )}>
+                  <span className={cn(
+                    "mt-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px]",
+                    step.state === "done" && "bg-primary/10 text-primary",
+                    step.state === "current" && "animate-pulse bg-state-warning text-white",
+                    step.state === "upcoming" && "bg-muted text-muted-foreground"
+                  )}>
+                    {step.state === "done" ? "ok" : step.state === "current" ? "on" : "--"}
+                  </span>
                   <div>
-                    <p className="text-sm font-medium">{title}</p>
-                    <p className="text-xs text-muted-foreground">{text}</p>
+                    <p className={cn("text-sm font-medium", step.state === "done" && "line-through")}>{step.title}</p>
+                    <p className={cn("text-xs text-muted-foreground", step.state === "upcoming" && "text-muted-foreground/60")}>{step.text}</p>
                   </div>
                 </div>
               ))}
@@ -406,7 +441,7 @@ export default function DashboardPage() {
         <DialogContent className="sm:max-w-[440px]">
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(async value => {
+              onSubmit={form.handleSubmit(async (value: z.infer<typeof sessionSchema>) => {
                 const toastId = toast.loading("Creation de la session...")
                 try {
                   const token = await getToken()
@@ -515,39 +550,16 @@ function FirstRunPanel({ onCreate }: { onCreate: () => void }) {
 
 function UserActivityPanel({ recentActivities }: { recentActivities: ActivityItem[] }) {
   return (
-    <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+    <Card className="rounded-[28px] bg-card shadow-none">
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold">Dernieres actions</p>
-            <p className="mt-1 text-xs text-zinc-500">Vue limitee aux actions de vos sessions.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Vue limitee aux actions de vos sessions.</p>
           </div>
-          <History className="h-4 w-4 text-zinc-500" />
+          <History className="h-4 w-4 text-muted-foreground" />
         </div>
-        <div className="space-y-3">
-          {recentActivities.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-white/10 p-5 text-sm text-zinc-500">
-              Aucune action recente. Activez une regle pour voir Whappi travailler.
-            </p>
-          ) : (
-            recentActivities.slice(0, 5).map(activity => (
-              <div key={ensureString(activity.id || activity.timestamp)} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-zinc-200">{ensureString(activity.action, "Action").replace(/_/g, " ")}</p>
-                  <p className="mt-1 truncate text-[11px] text-zinc-500">{safeRender(activity.resource_id || activity.details || "Session")}</p>
-                </div>
-                <Badge className={cn(
-                  "border-none text-[10px]",
-                  activity.success === 1 || activity.success === true
-                    ? "bg-emerald-500/10 text-emerald-300"
-                    : "bg-red-500/10 text-red-300"
-                )}>
-                  {activity.success === 1 || activity.success === true ? "OK" : "Erreur"}
-                </Badge>
-              </div>
-            ))
-          )}
-        </div>
+        <ActivityTable recentActivities={recentActivities} emptyText="Aucune action recente. Activez une regle pour voir Whappi travailler." />
       </CardContent>
     </Card>
   )
@@ -563,14 +575,14 @@ function AdminPanel({
   recentActivities: ActivityItem[]
 }) {
   return (
-    <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+    <Card className="rounded-[28px] bg-card shadow-none">
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold">Admin plateforme</p>
-            <p className="mt-1 text-xs text-zinc-500">Visible uniquement pour les comptes admin.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Visible uniquement pour les comptes admin.</p>
           </div>
-          <Button asChild variant="outline" className="h-9 border-white/10 bg-white/[0.03] text-xs text-zinc-100 hover:bg-white/[0.07]">
+          <Button asChild variant="outline" className="h-9 text-xs">
             <Link href="/dashboard/users">Utilisateurs</Link>
           </Button>
         </div>
@@ -590,22 +602,17 @@ function AdminPanel({
                   <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} />
-              <Tooltip contentStyle={{ background: "#18181b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, color: "#fff" }} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--foreground))" }} />
               <Area type="monotone" dataKey="messages" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#adminMessages)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
         <div className="mt-5 grid gap-2">
-          {recentActivities.slice(0, 3).map(activity => (
-            <div key={ensureString(activity.id || activity.timestamp)} className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2">
-              <span className="truncate text-xs text-zinc-400">{safeRender(activity.action, "Action")}</span>
-              <span className="font-mono text-[10px] text-zinc-600">{safeDate(activity.created_at || activity.timestamp)}</span>
-            </div>
-          ))}
+          <ActivityTable recentActivities={recentActivities.slice(0, 3)} emptyText="Aucune action plateforme recente." />
         </div>
       </CardContent>
     </Card>
@@ -620,6 +627,8 @@ function NextBestActionPanel({ sessionCount, activeSessions }: { sessionCount: n
     { label: "Regle", done: false },
   ]
 
+  const hasTodo = steps.some(step => !step.done)
+
   return (
     <Card className="bg-card shadow-none">
       <CardContent className="p-5 sm:p-6">
@@ -630,14 +639,17 @@ function NextBestActionPanel({ sessionCount, activeSessions }: { sessionCount: n
         <div className="space-y-3">
           {steps.map(step => (
             <div key={step.label} className="flex items-center justify-between rounded-2xl border bg-background/60 p-3">
-              <span className="text-sm font-medium">{step.label}</span>
-              <Badge className={step.done ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-muted text-muted-foreground"}>
+              <span className="flex items-center gap-2 text-sm font-medium">
+                {!step.done && <TriangleAlert className="h-3.5 w-3.5 text-state-warning" />}
+                {step.label}
+              </span>
+              <Badge className={step.done ? "bg-primary/10 text-primary hover:bg-primary/10" : "border border-state-warning/30 bg-state-warning-light text-state-warning hover:bg-state-warning-light"}>
                 {step.done ? "OK" : "A faire"}
               </Badge>
             </div>
           ))}
         </div>
-        <Button asChild className="mt-5 w-full" size="sm">
+        <Button asChild className={cn("mt-5 w-full", hasTodo && "bg-state-warning text-white hover:bg-state-warning/90")} size="sm">
           <Link href="/dashboard/moderation">Configurer les groupes</Link>
         </Button>
       </CardContent>
@@ -647,10 +659,108 @@ function NextBestActionPanel({ sessionCount, activeSessions }: { sessionCount: n
 
 function MiniAdminStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-2xl border bg-background/60 p-4">
       <div className="mb-3 text-primary">{icon}</div>
       <p className="text-2xl font-semibold">{value}</p>
-      <p className="text-xs text-zinc-500">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   )
+}
+
+function ActivityTable({ recentActivities, emptyText }: { recentActivities: ActivityItem[]; emptyText: string }) {
+  if (recentActivities.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">
+        {emptyText}
+      </p>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-[10px]">Heure</TableHead>
+            <TableHead className="text-[10px]">Type</TableHead>
+            <TableHead className="text-[10px]">Groupe</TableHead>
+            <TableHead className="text-[10px]">Apercu</TableHead>
+            <TableHead className="text-[10px]">Statut</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {recentActivities.slice(0, 6).map(activity => (
+            <TableRow key={ensureString(activity.id || activity.timestamp || activity.created_at)} className="hover:bg-surface-neutral">
+              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{activityTime(activity)}</TableCell>
+              <TableCell><Badge variant="outline" className="text-[10px]">{activityType(activity)}</Badge></TableCell>
+              <TableCell className="max-w-28 truncate text-xs">{safeRender(activity.resource_id || "Session")}</TableCell>
+              <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground" title={activityPreview(activity)}>
+                {activityPreview(activity)}
+              </TableCell>
+              <TableCell>
+                <Badge className={cn(
+                  "border-none text-[10px]",
+                  activity.success === 1 || activity.success === true || activity.status === "success"
+                    ? "bg-primary/10 text-primary hover:bg-primary/10"
+                    : "bg-destructive/10 text-destructive hover:bg-destructive/10"
+                )}>
+                  {activity.success === 1 || activity.success === true || activity.status === "success" ? "OK" : "Erreur"}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function successMetricValue(totalMessages: number, successRate: number) {
+  if (totalMessages < 5) return `${totalMessages} envoi${totalMessages > 1 ? "s" : ""} reussi${totalMessages > 1 ? "s" : ""}`
+  return `${Math.round(successRate)}%`
+}
+
+function successMetricSub(totalMessages: number, successRate: number) {
+  if (totalMessages < 5) return `${totalMessages} / ${totalMessages} message${totalMessages > 1 ? "s" : ""} (7 derniers jours)`
+  const successCount = Math.round((totalMessages * successRate) / 100)
+  return `${successCount} / ${totalMessages} reussis (7j)`
+}
+
+function onboardingProgress(sessionCount: number, activeSessions: number) {
+  return onboardingSteps(sessionCount, activeSessions).filter(step => step.state === "done").length
+}
+
+function onboardingSteps(sessionCount: number, activeSessions: number) {
+  const base = [
+    { title: "Connecter une session", text: "QR code ou code d'appairage", done: sessionCount > 0 },
+    { title: "Ajouter au groupe", text: "Le numero doit etre admin", done: activeSessions > 0 },
+    { title: "Activer une regle", text: "Anti-liens ou bienvenue", done: false },
+    { title: "Verifier les actions", text: "Voir ce qui a ete applique", done: false },
+  ]
+  const currentIndex = base.findIndex(step => !step.done)
+  return base.map((step, index) => ({
+    ...step,
+    state: step.done ? "done" : index === currentIndex ? "current" : "upcoming",
+  }))
+}
+
+function activityTime(activity: ActivityItem) {
+  const raw = activity.created_at || activity.timestamp
+  if (!raw) return "--:--"
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return "--:--"
+  return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(date)
+}
+
+function activityType(activity: ActivityItem) {
+  const action = ensureString(activity.action, "Action").replace(/_/g, " ")
+  if (action.toLowerCase().includes("welcome")) return "Bienvenue"
+  if (action.toLowerCase().includes("schedule")) return "Programme"
+  if (action.toLowerCase().includes("message")) return "Message"
+  return action
+}
+
+function activityPreview(activity: ActivityItem) {
+  const details = typeof activity.details === "string" ? activity.details : JSON.stringify(activity.details || "")
+  return ensureString(details || activity.action || "Action executee").replace(/_/g, " ")
 }

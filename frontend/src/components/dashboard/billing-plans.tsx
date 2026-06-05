@@ -1,14 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { Check, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Check, ChevronDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { fetchApi } from "@/lib/api"
+import { api, fetchApi } from "@/lib/api"
 import { useAuth } from "@clerk/clerk-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { getPlanCode, PlanBadge } from "@/components/dashboard/plan-badge"
 
 const plans = [
   {
@@ -60,7 +61,29 @@ const plans = [
 
 export function BillingPlans() {
   const [loading, setLoading] = useState<string | null>(null)
+  const [showComparison, setShowComparison] = useState(false)
+  const [activePlan, setActivePlan] = useState("trial")
   const { getToken } = useAuth()
+
+  useEffect(() => {
+    let mounted = true
+    async function fetchPlan() {
+      try {
+        const token = await getToken()
+        const profile = await api.auth.check(token || undefined)
+        const userProfile = profile?.user || profile
+        if (mounted) {
+          setActivePlan(getPlanCode(userProfile?.plan_id || userProfile?.plan || userProfile?.subscription_plan || "trial"))
+        }
+      } catch {
+        if (mounted) setActivePlan("trial")
+      }
+    }
+    fetchPlan()
+    return () => {
+      mounted = false
+    }
+  }, [getToken])
 
   const handleSubscribe = async (planId: string) => {
     try {
@@ -85,24 +108,26 @@ export function BillingPlans() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      {plans.map((plan) => (
-        <Card key={plan.id} className={cn(
-          "relative flex h-full flex-col overflow-hidden bg-card",
-          plan.highlighted && "border-primary shadow-[0_24px_70px_-50px_hsl(var(--primary))]"
-        )}>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {plans.map((plan) => (
+          <Card key={plan.id} className={cn(
+            "relative flex h-full flex-col overflow-visible transition-transform",
+            plan.highlighted
+              ? "scale-[1.02] border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10"
+              : "border border-border bg-card",
+            getPlanCode(plan.id) === activePlan && "ring-2 ring-primary/15"
+          )}>
           {plan.highlighted && (
-            <div className="h-1 bg-primary" />
+            <Badge className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-sm font-semibold text-primary-foreground shadow hover:bg-primary">
+              Recommande
+            </Badge>
           )}
 
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between gap-3">
               <CardTitle className="text-base font-semibold tracking-tight">{plan.name}</CardTitle>
-              {plan.highlighted && (
-                <Badge className="border-primary/20 bg-primary/10 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10">
-                  Recommande
-                </Badge>
-              )}
+              {getPlanCode(plan.id) === activePlan && <PlanBadge plan={activePlan} active />}
             </div>
             <p className="mt-2 min-h-10 text-xs leading-5 text-muted-foreground">{plan.description}</p>
             <div className="mt-4 flex items-baseline gap-1">
@@ -132,8 +157,61 @@ export function BillingPlans() {
               {loading === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : plan.cta}
             </Button>
           </CardFooter>
+          </Card>
+        ))}
+      </div>
+
+      <div className="text-center">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="gap-2 text-xs"
+          onClick={() => setShowComparison(prev => !prev)}
+        >
+          Comparer tous les plans
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showComparison && "rotate-180")} />
+        </Button>
+      </div>
+
+      {showComparison && (
+        <Card className="overflow-hidden shadow-none">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] text-sm">
+                <thead className="bg-surface-neutral">
+                  <tr className="border-b">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Feature</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Starter</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Pro</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Organisation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparisonRows.map(row => (
+                    <tr key={row.feature} className="border-b last:border-b-0">
+                      <td className="px-4 py-3 text-xs font-medium">{row.feature}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{row.starter}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{row.pro}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{row.business}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
         </Card>
-      ))}
+      )}
     </div>
   )
 }
+
+const comparisonRows = [
+  { feature: "Groupes connectes", starter: "1", pro: "5", business: "20" },
+  { feature: "Messages programmes", starter: "3", pro: "Illimite", business: "Illimite" },
+  { feature: "Filtre mots interdits", starter: "20 mots", pro: "Illimite", business: "Illimite" },
+  { feature: "Anti-liens", starter: "Inclus", pro: "Inclus", business: "Inclus" },
+  { feature: "Avertissements + exclusion", starter: "Inclus", pro: "Inclus", business: "Inclus" },
+  { feature: "Dashboard + suivi", starter: "Basique", pro: "Complet", business: "Complet" },
+  { feature: "Support prioritaire", starter: "-", pro: "-", business: "Inclus" },
+]

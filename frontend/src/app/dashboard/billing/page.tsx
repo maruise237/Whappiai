@@ -1,13 +1,38 @@
 "use client"
 
 import * as React from "react"
-import { CreditCard, Info, ShieldCheck, Users, Zap } from "lucide-react"
+import { CreditCard, Gift, Info } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { BillingPlans } from "@/components/dashboard/billing-plans"
+import { api } from "@/lib/api"
+import { useAuth } from "@clerk/clerk-react"
+import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/plan-badge"
 
 export default function BillingPage() {
+  const { getToken } = useAuth()
+  const [activePlan, setActivePlan] = React.useState("trial")
+
+  React.useEffect(() => {
+    let mounted = true
+    async function fetchPlan() {
+      try {
+        const token = await getToken()
+        const profile = await api.auth.check(token || undefined)
+        const userProfile = profile?.user || profile
+        if (mounted) {
+          setActivePlan(getPlanCode(userProfile?.plan_id || userProfile?.plan || userProfile?.subscription_plan || "trial"))
+        }
+      } catch {
+        if (mounted) setActivePlan("trial")
+      }
+    }
+    fetchPlan()
+    return () => {
+      mounted = false
+    }
+  }, [getToken])
+
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-20">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -18,28 +43,28 @@ export default function BillingPage() {
           <p className="text-sm text-muted-foreground">Choisissez l&apos;offre adaptee au nombre de groupes WhatsApp a gerer.</p>
         </div>
 
-        <Badge variant="secondary" className="h-auto rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
-          Plan actuel : essai gratuit
-        </Badge>
+        <PlanBadge plan={activePlan} active className="h-auto rounded-full px-4 py-1.5" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {[
-          { label: "Groupes inclus", val: "1 a 20", icon: Users },
-          { label: "Messages programmes", val: "3 a illimite", icon: Zap },
-          { label: "Regles actives", val: "0", icon: ShieldCheck }
-        ].map((stat) => (
-          <Card key={stat.label} className="bg-card shadow-sm">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <p className="mb-0.5 text-[10px] font-semibold text-muted-foreground">{stat.label}</p>
-                <p className="text-lg font-bold">{stat.val}</p>
-              </div>
-              <stat.icon className="h-5 w-5 text-primary/45" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card className="border-primary/25 bg-primary/5 shadow-none">
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Gift className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold text-primary">{billingBannerTitle(activePlan)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {billingBannerText(activePlan)}
+              </p>
+            </div>
+          </div>
+          <div className="rounded-2xl border bg-card px-4 py-3 text-left sm:text-right">
+            <p className="text-xs text-muted-foreground">{activePlan === "trial" ? "Expire dans" : "Forfait actif"}</p>
+            <p className="text-lg font-bold text-primary">{activePlan === "trial" ? "7 jours" : getPlanLabel(activePlan)}</p>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="space-y-6">
         <div className="mb-10 space-y-2 text-center">
@@ -68,4 +93,16 @@ export default function BillingPage() {
       </Card>
     </div>
   )
+}
+
+function billingBannerTitle(plan: string) {
+  if (plan === "trial") return "Essai gratuit en cours"
+  return `Forfait ${getPlanLabel(plan)} actif`
+}
+
+function billingBannerText(plan: string) {
+  if (plan === "starter") return "Inclus : 1 groupe - 3 messages programmes - 20 mots interdits."
+  if (plan === "pro") return "Inclus : 5 groupes - messages programmes illimites - moderation complete."
+  if (plan === "business") return "Inclus : 20 groupes - support prioritaire - configuration avancee."
+  return "Inclus : 1 groupe - 3 messages programmes - toutes les regles de base."
 }

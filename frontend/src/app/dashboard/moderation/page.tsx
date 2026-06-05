@@ -17,11 +17,13 @@ import {
   Smartphone,
   Trash2,
   UserRound,
+  X,
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
@@ -30,6 +32,7 @@ import { useAuth } from "@clerk/clerk-react"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"
+import { getPlanCode, PlanBadge } from "@/components/dashboard/plan-badge"
 
 type SessionItem = {
   sessionId?: string
@@ -168,6 +171,8 @@ export default function ModerationPage() {
   const [scheduledDrafts, setScheduledDrafts] = React.useState<Record<string, { message: string; scheduledAt: string; recurrence: string }>>({})
   const [warnedMembersByGroup, setWarnedMembersByGroup] = React.useState<Record<string, WarnedMember[]>>({})
   const [tasksByGroup, setTasksByGroup] = React.useState<Record<string, EngagementTask[]>>({})
+  const [presetByGroup, setPresetByGroup] = React.useState<Record<string, string>>({})
+  const [activePlan, setActivePlan] = React.useState("trial")
   const [searchQuery, setSearchQuery] = React.useState("")
 
   const connectedSessions = sessions.filter(session => session.isConnected || session.status === "CONNECTED")
@@ -176,9 +181,14 @@ export default function ModerationPage() {
     setLoadingSessions(true)
     try {
       const token = await getToken()
-      const data = await api.sessions.list(token || undefined)
+      const [data, profile] = await Promise.all([
+        api.sessions.list(token || undefined),
+        api.auth.check(token || undefined).catch(() => null),
+      ])
       const list = Array.isArray(data) ? (data as SessionItem[]) : []
       setSessions(list)
+      const userProfile = profile?.user || profile
+      setActivePlan(getPlanCode(userProfile?.plan_id || userProfile?.plan || userProfile?.subscription_plan || "trial"))
       const firstConnected = list.find(session => session.isConnected || session.status === "CONNECTED")
       setSelectedSessionId(prev => prev || ensureString(firstConnected?.sessionId || list[0]?.sessionId || ""))
     } catch (error) {
@@ -285,6 +295,11 @@ export default function ModerationPage() {
     }))
   }
 
+  const applyPreset = (groupId: string, preset: { name: string; patch: Partial<GroupSettings> }) => {
+    updateLocalGroup(groupId, preset.patch)
+    setPresetByGroup(prev => ({ ...prev, [groupId]: preset.name }))
+  }
+
   const saveGroup = async (group: GroupItem) => {
     const groupId = ensureString(group.id || group.jid)
     if (!selectedSessionId || !groupId) return
@@ -293,7 +308,7 @@ export default function ModerationPage() {
     try {
       const token = await getToken()
       await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload(group.settings), token || undefined)
-      toast.success("Configuration du groupe enregistree")
+      toast.success(`${ensureString(group.subject || group.name, "Groupe")} mis a jour`)
     } catch (error) {
       console.error(error)
       toast.error("Impossible d'enregistrer cette configuration")
@@ -332,16 +347,16 @@ export default function ModerationPage() {
   }
 
   const updateScheduledDraft = (groupId: string, patch: Partial<{ message: string; scheduledAt: string; recurrence: string }>) => {
-    setScheduledDrafts(prev => ({
-      ...prev,
-      [groupId]: {
-        message: "",
-        scheduledAt: defaultScheduleDateTime(),
-        recurrence: "none",
-        ...prev[groupId],
-        ...patch,
-      },
-    }))
+    setScheduledDrafts(prev => {
+      const current = prev[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
+      return {
+        ...prev,
+        [groupId]: {
+          ...current,
+          ...patch,
+        },
+      }
+    })
   }
 
   const scheduleCustomMessage = async (group: GroupItem) => {
@@ -528,33 +543,58 @@ export default function ModerationPage() {
           onClick={fetchGroups}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <Accordion type="single" collapsible className="gap-3">
           {filteredGroups.map(group => {
             const groupId = ensureString(group.id || group.jid)
             const settings = normalizeSettings(group.settings)
             const activeCount = [settings.antiLinksEnabled, settings.welcomeEnabled, settings.warningsEnabled].filter(Boolean).length
             const warnedMembers = warnedMembersByGroup[groupId] || []
             const scheduledTasks = tasksByGroup[groupId] || []
+            const groupName = ensureString(group.subject || group.name, "Groupe sans nom")
+            const activePreset = presetByGroup[groupId] || detectPresetName(settings)
 
             return (
-              <Card key={groupId} className="overflow-hidden bg-card shadow-none">
-                <CardHeader className="border-b p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <CardTitle className="truncate text-base">{safeRender(group.subject || group.name, "Groupe sans nom")}</CardTitle>
+              <AccordionItem key={groupId} value={groupId} className="overflow-hidden rounded-2xl border bg-card">
+                <AccordionTrigger className="rounded-none px-4 py-4 hover:no-underline sm:px-5">
+                  <div className="flex min-w-0 flex-1 items-center gap-3 pr-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Shield className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <p className="truncate text-sm font-semibold" title={groupName}>{truncateGroupName(groupName)}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {activeCount}/3 regles actives {group.participantCount ? `- ${safeRender(group.participantCount)} membres` : ""}
+                        {group.participantCount ? `${safeRender(group.participantCount)} membres - ` : ""}{activeCount}/3 regles actives
                       </p>
                     </div>
+                  </div>
+                  <div className="hidden shrink-0 items-center gap-2 sm:flex">
+                    <PlanBadge plan={activePlan} active />
                     <Badge className={cn(
-                      "shrink-0 border-none text-[10px]",
+                      "border-none text-[10px]",
                       activeCount > 0 ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-muted text-muted-foreground"
                     )}>
-                      {activeCount > 0 ? "Configure" : "A preparer"}
+                      {activeCount > 0 ? "Actif" : "Inactif"}
                     </Badge>
+                    <Badge variant="outline" className="text-[10px]">{activeCount} regle{activeCount > 1 ? "s" : ""}</Badge>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4 p-5">
+                </AccordionTrigger>
+                <AccordionContent className="pb-0">
+                  <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-y bg-card/95 px-4 py-3 backdrop-blur sm:px-5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{groupName}</p>
+                      <p className="text-xs text-muted-foreground">Preset actif : {activePreset || "Aucun preset selectionne"}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="h-9 shrink-0"
+                      onClick={() => saveGroup(group)}
+                      disabled={savingGroupId === groupId}
+                    >
+                      {savingGroupId === groupId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {savingGroupId === groupId ? "Enregistrement..." : "Enregistrer"}
+                    </Button>
+                  </div>
+                  <div className="space-y-4 p-4 sm:p-5">
                   <div className="rounded-2xl border bg-background/60 p-4">
                     <p className="text-sm font-semibold">Presets rapides</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -567,13 +607,19 @@ export default function ModerationPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-8 text-[11px]"
-                          onClick={() => updateLocalGroup(groupId, preset.patch)}
+                          className={cn(
+                            "h-8 border text-[11px]",
+                            activePreset === preset.name
+                              ? "border-primary bg-primary text-primary-foreground hover:bg-primary"
+                              : "border-border text-muted-foreground hover:border-primary/50"
+                          )}
+                          onClick={() => applyPreset(groupId, preset)}
                         >
                           {preset.name}
                         </Button>
                       ))}
                     </div>
+                    <p className="mt-2 text-xs text-muted-foreground">Preset actif : {activePreset || "Aucun preset selectionne"}</p>
                   </div>
                   {(() => {
                     const scheduledDraft = scheduledDrafts[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
@@ -740,25 +786,13 @@ export default function ModerationPage() {
                     checked={settings.antiLinksEnabled}
                     onCheckedChange={checked => updateLocalGroup(groupId, { antiLinksEnabled: checked })}
                   />
-                  <div className="rounded-2xl border bg-background/60 p-4">
-                    <div className="mb-3 flex items-start gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <Shield className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">Mots interdits</p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                          Ajoutez les mots ou expressions a bloquer, separes par des virgules.
-                        </p>
-                      </div>
-                    </div>
-                    <Textarea
+                  <SectionPanel enabled={Boolean(settings.forbiddenWords.trim())} icon={<Shield className="h-4 w-4" />} title="Mots interdits" text="Ajoutez les mots ou expressions a bloquer. Entree ou virgule valide chaque mot.">
+                    <ForbiddenWordsInput
                       value={settings.forbiddenWords}
-                      onChange={event => updateLocalGroup(groupId, { forbiddenWords: event.target.value })}
-                      className="min-h-20 resize-none text-xs"
-                      placeholder="ex: arnaque, pari, crypto rapide, lien telegram"
+                      planLimit={forbiddenWordsLimit(activePlan)}
+                      onChange={value => updateLocalGroup(groupId, { forbiddenWords: value })}
                     />
-                  </div>
+                  </SectionPanel>
                   <RuleSwitch
                     icon={<MessageSquareText className="h-4 w-4" />}
                     title="Bienvenue quotidienne"
@@ -850,10 +884,10 @@ export default function ModerationPage() {
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 border-t bg-card/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <CheckCircle2 className="h-4 w-4 text-primary" />
-                      Configuration visible sur une seule page
+                      {activeRuleLabel(activeCount)}
                     </div>
                     <Button
                       size="sm"
@@ -861,14 +895,16 @@ export default function ModerationPage() {
                       onClick={() => saveGroup(group)}
                       disabled={savingGroupId === groupId}
                     >
-                      {savingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enregistrer"}
+                      {savingGroupId === groupId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {savingGroupId === groupId ? "Enregistrement..." : "Enregistrer"}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             )
           })}
-        </div>
+        </Accordion>
       )}
     </div>
   )
@@ -960,6 +996,156 @@ function clampWarningLimit(value: unknown) {
   return Math.min(10, Math.max(1, Math.round(parsed)))
 }
 
+function splitForbiddenWords(value?: string) {
+  return ensureString(value)
+    .split(",")
+    .map(item => item.trim().toLowerCase())
+    .filter(Boolean)
+}
+
+function joinForbiddenWords(tags: string[]) {
+  return Array.from(new Set(tags.map(tag => tag.trim().toLowerCase()).filter(Boolean))).join(", ")
+}
+
+function truncateGroupName(value: string) {
+  return value.length > 30 ? `${value.slice(0, 30)}...` : value
+}
+
+function activeRuleLabel(count: number) {
+  if (count === 0) return "Aucune regle active pour ce groupe"
+  if (count === 1) return "1 regle active pour ce groupe"
+  return `${count} regles actives pour ce groupe`
+}
+
+function forbiddenWordsLimit(plan: string) {
+  return getPlanCode(plan) === "starter" || getPlanCode(plan) === "trial" ? 20 : 999
+}
+
+function detectPresetName(settings: ReturnType<typeof normalizeSettings>) {
+  const currentWords = splitForbiddenWords(settings.forbiddenWords).sort().join("|")
+  const match = presets.find(preset => {
+    const patch = normalizeSettings(preset.patch)
+    const presetWords = splitForbiddenWords(patch.forbiddenWords).sort().join("|")
+    return (
+      patch.antiLinksEnabled === settings.antiLinksEnabled &&
+      patch.warningsEnabled === settings.warningsEnabled &&
+      patch.exclusionEnabled === settings.exclusionEnabled &&
+      patch.maxWarnings === settings.maxWarnings &&
+      presetWords === currentWords
+    )
+  })
+  return match?.name || ""
+}
+
+function SectionPanel({
+  enabled,
+  icon,
+  title,
+  text,
+  children,
+}: {
+  enabled: boolean
+  icon: React.ReactNode
+  title: string
+  text: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className={cn(
+      "rounded-2xl border p-4 transition-all",
+      enabled
+        ? "border-primary/20 bg-primary/5"
+        : "border-border bg-surface-neutral opacity-70"
+    )}>
+      <div className="mb-3 flex items-start gap-3">
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
+          {icon}
+        </div>
+        <div>
+          <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+            {title}
+            {!enabled && <span className="text-xs font-medium text-muted-foreground">Desactive</span>}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function ForbiddenWordsInput({
+  value,
+  planLimit,
+  onChange,
+}: {
+  value: string
+  planLimit: number
+  onChange: (value: string) => void
+}) {
+  const [draft, setDraft] = React.useState("")
+  const tags = splitForbiddenWords(value)
+  const isUnlimited = planLimit >= 999
+  const isLimitReached = !isUnlimited && tags.length >= planLimit
+
+  const commitTag = (raw: string) => {
+    const next = raw.trim().toLowerCase()
+    if (!next || tags.includes(next) || isLimitReached) return
+    onChange(joinForbiddenWords([...tags, next]))
+    setDraft("")
+  }
+
+  const removeTag = (tag: string) => {
+    onChange(joinForbiddenWords(tags.filter(item => item !== tag)))
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-xl border bg-card px-3 py-2">
+        {tags.map(tag => (
+          <Badge key={tag} variant="secondary" className="gap-1 rounded-full pr-1 text-xs">
+            {tag}
+            <button type="button" onClick={() => removeTag(tag)} className="rounded-full p-0.5 hover:bg-background" aria-label={`Supprimer ${tag}`}>
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+        <input
+          value={draft}
+          disabled={isLimitReached}
+          onChange={event => {
+            const next = event.target.value
+            if (next.includes(",")) {
+              commitTag(next.replace(",", ""))
+            } else {
+              setDraft(next)
+            }
+          }}
+          onKeyDown={event => {
+            if (event.key === "Enter" || event.key === ",") {
+              event.preventDefault()
+              commitTag(draft)
+            }
+            if (event.key === "Backspace" && !draft && tags.length > 0) {
+              removeTag(tags[tags.length - 1])
+            }
+          }}
+          className="min-w-32 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+          placeholder={isLimitReached ? "Limite atteinte" : "Ajouter un mot..."}
+        />
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <span className={cn("text-xs text-muted-foreground", isLimitReached && "text-state-warning")}>
+          {tags.length} / {isUnlimited ? "illimite" : planLimit} mots
+        </span>
+        {isLimitReached && (
+          <span className="text-xs text-state-warning">Limite atteinte - passez au plan Pro</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function RuleSwitch({
   icon,
   title,
@@ -974,13 +1160,21 @@ function RuleSwitch({
   onCheckedChange: (checked: boolean) => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border bg-background/60 p-4">
+    <div className={cn(
+      "flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all",
+      checked
+        ? "border-primary/20 bg-primary/5"
+        : "border-border bg-surface-neutral opacity-60"
+    )}>
       <div className="flex min-w-0 items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", checked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
           {icon}
         </div>
         <div>
-          <p className="text-sm font-semibold">{title}</p>
+          <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+            {title}
+            {!checked && <span className="text-xs font-medium text-muted-foreground">Desactive</span>}
+          </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
         </div>
       </div>
