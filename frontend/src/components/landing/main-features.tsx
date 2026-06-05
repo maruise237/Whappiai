@@ -214,7 +214,7 @@ export function MainFeatures() {
             asChild
           >
             <Link href="/register">
-              Commencer gratuitement
+              Tester sur mon groupe
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>

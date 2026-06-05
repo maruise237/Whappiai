@@ -91,7 +91,7 @@ export function ValueProposition() {
             className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-8 py-6 text-lg shadow-md shadow-primary/20 transition-all duration-300"
           >
             <Link href="/register">
-              Découvrir Whappi
+              Tester sur mon groupe
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
