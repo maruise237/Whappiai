@@ -7,22 +7,19 @@ import { useUser, UserButton, useClerk, useAuth } from "@clerk/clerk-react"
 import { useTheme } from "next-themes"
 import {
   LayoutDashboard,
-  MessageCircle,
   History,
-  Bot,
   Shield,
-  Zap,
   Users,
-  Settings2,
   CreditCard,
   Settings,
   Menu,
-  Bell,
   UserCircle,
   LogOut,
   ChevronDown,
   Sun,
   Moon,
+  ClipboardList,
+  WalletCards,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { api } from "@/lib/api"
-import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { Logo } from "@/components/ui/logo"
 import { ErrorBoundary } from "@/components/error-boundary"
@@ -46,40 +43,54 @@ import { NotificationDropdown } from "@/components/dashboard/notification-dropdo
 import { OnboardingTour } from "@/components/dashboard/onboarding-tour"
 import { useI18n } from "@/i18n/i18n-provider"
 
-const getNavGroups = (t: any) => [
+type NavEntry = {
+  name: string
+  eyebrow?: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+type NavGroup = {
+  title: string
+  adminOnly?: boolean
+  items: NavEntry[]
+}
+
+type Translator = (key: string) => string
+
+const getNavGroups = (t: Translator): NavGroup[] => [
   {
-    title: t("nav.hubs.pilotage") || "Pilotage",
+    title: "Centre de controle",
     items: [
-      { name: t("nav.overview"), href: "/dashboard", icon: LayoutDashboard },
+      { name: t("nav.overview") || "Vue d'ensemble", eyebrow: "Sessions, priorites, etat live", href: "/dashboard", icon: LayoutDashboard },
     ]
   },
   {
-    title: t("nav.hubs.config") || "Configuration",
+    title: "Travail des groupes",
     items: [
-      { name: t("nav.ai_assistant"), href: "/dashboard/ai", icon: Bot },
-      { name: t("nav.group_management"), href: "/dashboard/moderation", icon: Shield },
+      { name: "Groupes & regles", eyebrow: "Anti-liens, bienvenue, avertissements", href: "/dashboard/moderation", icon: Shield },
+      { name: "Journal d'actions", eyebrow: "Messages, erreurs, activite recente", href: "/dashboard/activities", icon: ClipboardList },
     ]
   },
   {
-    title: t("nav.hubs.client") || "Espace Client",
+    title: "Compte",
     items: [
-      { name: t("nav.credits"), href: "/dashboard/credits", icon: Zap },
-      { name: t("nav.billing"), href: "/dashboard/billing", icon: CreditCard },
-      { name: t("nav.settings"), href: "/dashboard/profile", icon: Settings },
+      { name: t("nav.credits") || "Credits", eyebrow: "Consommation WhatsApp", href: "/dashboard/credits", icon: WalletCards },
+      { name: t("nav.billing") || "Forfaits", eyebrow: "Sessions et volume mensuel", href: "/dashboard/billing", icon: CreditCard },
+      { name: t("nav.settings") || "Reglages", eyebrow: "Profil, securite, preferences", href: "/dashboard/profile", icon: Settings },
     ]
   },
   {
     title: t("nav.hubs.admin") || "Administration",
     adminOnly: true,
     items: [
-      { name: t("nav.activities"), href: "/dashboard/activities", icon: History },
       { name: t("nav.users"), href: "/dashboard/users", icon: Users },
-      { name: t("nav.ai_models"), href: "/dashboard/ai-models", icon: Settings2 },
+      { name: "Activite globale", eyebrow: "Logs plateforme", href: "/dashboard/activities", icon: History },
     ]
   }
 ]
 
-function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, onClick?: () => void }) {
+function NavItem({ item, isActive, onClick }: { item: NavEntry, isActive: boolean, onClick?: () => void }) {
   const Icon = item?.icon
   if (!item || !Icon) return null
 
@@ -91,14 +102,21 @@ function NavItem({ item, isActive, onClick }: { item: any, isActive: boolean, on
       id={id}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+        "group flex items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200 active:scale-[0.99]",
         isActive
-          ? "bg-muted text-foreground"
-          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          ? "bg-primary/10 text-foreground ring-1 ring-primary/15"
+          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
       )}
     >
-      <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
-      {item.name}
+      <Icon className={cn("mt-0.5 h-4 w-4 shrink-0 transition-colors", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold leading-5">{item.name}</span>
+        {item.eyebrow && (
+          <span className="mt-0.5 block truncate text-[10px] leading-4 text-muted-foreground/75">
+            {item.eyebrow}
+          </span>
+        )}
+      </span>
     </Link>
   )
 }
@@ -117,18 +135,24 @@ function LiveIndicator() {
   )
 }
 
-function SidebarContent({ isAdmin, pathname, onItemClick, t }: { isAdmin: boolean, pathname: string, onItemClick?: () => void, t: any }) {
+function SidebarContent({ isAdmin, pathname, onItemClick, t }: { isAdmin: boolean, pathname: string, onItemClick?: () => void, t: Translator }) {
   const groups = getNavGroups(t)
   const filteredGroups = groups.filter(group => !group.adminOnly || isAdmin)
 
   return (
-    <div className="flex flex-col h-full bg-card">
-      <div className="p-6"><Logo orientation="horizontal" size={24} showText /></div>
+    <div className="flex h-full flex-col bg-card">
+      <div className="space-y-3 p-5">
+        <Logo orientation="horizontal" size={24} showText />
+        <div className="rounded-xl border border-primary/10 bg-primary/[0.04] p-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Plan de travail</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">Pilotez les sessions, puis activez les regles sur vos groupes.</p>
+        </div>
+      </div>
       <ScrollArea className="flex-1 px-3">
         <div className="space-y-4 pb-4">
           {filteredGroups.map((group, i) => (
             <div key={i} className="space-y-1">
-              <h3 className="px-3 text-[10px] font-bold tracking-tight text-muted-foreground/50">
+              <h3 className="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
                 {group.title}
               </h3>
               <nav className="space-y-1">
@@ -150,19 +174,24 @@ function SidebarContent({ isAdmin, pathname, onItemClick, t }: { isAdmin: boolea
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { t, locale, setLocale } = useI18n()
+  const { t } = useI18n()
   const pathname = usePathname()
   const router = useRouter()
   const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
   const { getToken } = useAuth()
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   const userEmail = user?.primaryEmailAddress?.emailAddress
   const userName = user?.firstName || userEmail?.split("@")[0] || "User"
   const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
+  const navGroups = getNavGroups(t).filter(group => !group.adminOnly || isAdmin)
+  const currentNavItem = navGroups
+    .flatMap(group => group.items)
+    .sort((a, b) => b.href.length - a.href.length)
+    .find(item => pathname === item.href || pathname.startsWith(`${item.href}/`))
 
   React.useEffect(() => {
     setMounted(true)
@@ -171,8 +200,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       try {
         const token = await getToken()
         await api.auth.check(token || undefined)
-      } catch (error: any) {
-        if (error.message?.includes("404") || error.message?.includes("not found")) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : ""
+        if (message.includes("404") || message.includes("not found")) {
           router.push("/register?conversion=true")
         }
       }
@@ -192,7 +222,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <WebSocketProvider>
       <OnboardingTour />
       <div className="flex h-screen bg-background overflow-hidden">
-        <aside className="hidden md:flex w-64 flex-col border-r border-border">
+        <aside className="hidden w-72 flex-col border-r border-border md:flex">
           <SidebarContent isAdmin={isAdmin} pathname={pathname} t={t} />
           <div className="p-3 border-t border-border bg-muted/20">
             <DropdownMenu>
@@ -242,7 +272,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </Sheet>
               </div>
               <h2 className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
-                {getNavGroups(t).flatMap(g => g.items).find(n => n.href === pathname)?.name || "Tableau de bord"}
+                {currentNavItem?.name || "Tableau de bord"}
               </h2>
             </div>
             <div className="flex items-center gap-2">
