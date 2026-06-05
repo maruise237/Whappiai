@@ -1,22 +1,25 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import {
-  Shield,
-  Search,
-  Smartphone,
+  AlertTriangle,
+  CheckCircle2,
   Info,
-  Loader2,
-  ShieldCheck,
-  ShieldAlert,
   Link2,
-  MessageSquareText
+  Loader2,
+  MessageSquareText,
+  Search,
+  Shield,
+  Smartphone,
 } from "lucide-react"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/clerk-react"
 import { useWebSocket } from "@/providers/websocket-provider"
@@ -30,195 +33,409 @@ type SessionItem = {
   [key: string]: unknown
 }
 
-const quickRules = [
+type GroupSettings = {
+  antiLinksEnabled?: boolean
+  welcomeEnabled?: boolean
+  warningsEnabled?: boolean
+  welcomeMessage?: string
+  warningMessage?: string
+  maxWarnings?: number
+  [key: string]: unknown
+}
+
+type GroupItem = {
+  id?: string
+  jid?: string
+  subject?: string
+  name?: string
+  participantCount?: number
+  settings?: GroupSettings
+  [key: string]: unknown
+}
+
+const defaultWelcomeMessage = "Bienvenue dans le groupe. Merci de respecter le sujet, d'eviter les liens hors contexte et de garder les echanges utiles."
+const defaultWarningMessage = "Attention : ce message ne respecte pas les regles du groupe. Merci de corriger avant une action admin."
+
+const ruleSummary = [
   {
     icon: Link2,
     title: "Anti-liens",
-    text: "Bloquer pubs, arnaques et liens hors sujet."
+    text: "Bloque les liens hors sujet avant qu'ils polluent la discussion.",
   },
   {
     icon: MessageSquareText,
-    title: "Bienvenue",
-    text: "Envoyer les regles des qu'un membre arrive."
+    title: "Accueil",
+    text: "Pose les regles au moment ou un nouveau membre arrive.",
   },
   {
-    icon: ShieldAlert,
+    icon: AlertTriangle,
     title: "Avertissements",
-    text: "Prevenir avant exclusion pour garder le groupe calme."
-  }
+    text: "Previent avant sanction pour garder une moderation lisible.",
+  },
 ]
 
 export default function ModerationPage() {
-  const router = useRouter()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
   const [sessions, setSessions] = React.useState<SessionItem[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const [selectedSessionId, setSelectedSessionId] = React.useState("")
+  const [groups, setGroups] = React.useState<GroupItem[]>([])
+  const [loadingSessions, setLoadingSessions] = React.useState(true)
+  const [loadingGroups, setLoadingGroups] = React.useState(false)
+  const [savingGroupId, setSavingGroupId] = React.useState<string | null>(null)
   const [searchQuery, setSearchQuery] = React.useState("")
 
+  const connectedSessions = sessions.filter(session => session.isConnected || session.status === "CONNECTED")
+
   const fetchSessions = React.useCallback(async () => {
-    setLoading(true)
+    setLoadingSessions(true)
     try {
       const token = await getToken()
       const data = await api.sessions.list(token || undefined)
-      setSessions(Array.isArray(data) ? data : [])
+      const list = Array.isArray(data) ? (data as SessionItem[]) : []
+      setSessions(list)
+      const firstConnected = list.find(session => session.isConnected || session.status === "CONNECTED")
+      setSelectedSessionId(prev => prev || ensureString(firstConnected?.sessionId || list[0]?.sessionId || ""))
     } catch (error) {
       console.error(error)
       toast.error("Erreur de chargement des sessions")
     } finally {
-      setLoading(false)
+      setLoadingSessions(false)
     }
   }, [getToken])
+
+  const fetchGroups = React.useCallback(async () => {
+    if (!selectedSessionId) {
+      setGroups([])
+      return
+    }
+
+    setLoadingGroups(true)
+    try {
+      const token = await getToken()
+      const data = await api.sessions.getGroups(selectedSessionId, token || undefined)
+      const rawGroups = Array.isArray(data) ? (data as GroupItem[]) : []
+      const enriched = await Promise.all(
+        rawGroups.map(async group => {
+          const groupId = ensureString(group.id || group.jid)
+          if (!groupId) return group
+          try {
+            const settings = await api.sessions.getGroupSettings(selectedSessionId, groupId, token || undefined)
+            return { ...group, settings: normalizeSettings(settings) }
+          } catch {
+            return { ...group, settings: normalizeSettings(group.settings) }
+          }
+        })
+      )
+      setGroups(enriched)
+    } catch (error) {
+      console.error(error)
+      toast.error("Erreur de chargement des groupes")
+    } finally {
+      setLoadingGroups(false)
+    }
+  }, [getToken, selectedSessionId])
 
   React.useEffect(() => {
     fetchSessions()
   }, [fetchSessions])
 
-  // Real-time updates via WebSocket
   React.useEffect(() => {
-    if (!lastMessage) return;
+    fetchGroups()
+  }, [fetchGroups])
 
-    if (lastMessage.type === 'session-update') {
-      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
-
-      setSessions(prev => {
-        const newSessions = [...prev];
-        let hasChanges = false;
-
-        updates.forEach((update: SessionItem) => {
-          if (!update.sessionId) return
-          const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
-          if (index !== -1) {
-            newSessions[index] = {
-              ...newSessions[index],
-              ...update,
-              isConnected: update.status === 'CONNECTED'
-            };
-            hasChanges = true;
-          }
-        });
-
-        return hasChanges ? newSessions : prev;
-      });
+  React.useEffect(() => {
+    if (!lastMessage) return
+    if (lastMessage.type === "session-update" || lastMessage.type === "session-deleted") {
+      fetchSessions()
     }
+  }, [fetchSessions, lastMessage])
 
-    if (lastMessage.type === 'session-deleted') {
-      const { sessionId } = lastMessage.data;
-      setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
+  const updateLocalGroup = (groupId: string, patch: Partial<GroupSettings>) => {
+    setGroups(prev => prev.map(group => {
+      const currentId = ensureString(group.id || group.jid)
+      if (currentId !== groupId) return group
+      return {
+        ...group,
+        settings: {
+          ...normalizeSettings(group.settings),
+          ...patch,
+        },
+      }
+    }))
+  }
+
+  const saveGroup = async (group: GroupItem) => {
+    const groupId = ensureString(group.id || group.jid)
+    if (!selectedSessionId || !groupId) return
+
+    setSavingGroupId(groupId)
+    try {
+      const token = await getToken()
+      await api.sessions.updateGroupSettings(selectedSessionId, groupId, normalizeSettings(group.settings), token || undefined)
+      toast.success("Configuration du groupe enregistree")
+    } catch (error) {
+      console.error(error)
+      toast.error("Impossible d'enregistrer cette configuration")
+    } finally {
+      setSavingGroupId(null)
     }
-  }, [lastMessage]);
+  }
 
-  const filtered = (Array.isArray(sessions) ? sessions : []).filter(s =>
-    ensureString(s.sessionId).toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredGroups = groups.filter(group =>
+    ensureString(group.subject || group.name).toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  if (loadingSessions) {
+    return (
+      <div className="grid min-h-[60dvh] place-items-center text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin opacity-40" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" /> R&egrave;gles des groupes
+      <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
+        <div className="space-y-2">
+          <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">Centre de moderation</Badge>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <Shield className="h-6 w-6 text-primary" /> Groupes WhatsApp
           </h1>
-          <p className="text-sm text-muted-foreground">Choisissez une session connect&eacute;e, puis activez une premi&egrave;re r&egrave;gle utile.</p>
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+            Une session, des groupes, des regles visibles. Configurez anti-liens, accueil et avertissements sans quitter la page.
+          </p>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher une session..."
-            className="pl-8 h-9 text-xs bg-muted/20 border-none"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/10 rounded-lg">
-        <Info className="h-4 w-4 text-primary shrink-0" />
-        <p className="text-xs text-muted-foreground">La mod&eacute;ration ne s&apos;applique qu&apos;aux groupes o&ugrave; le compte WhatsApp est Administrateur.</p>
-      </div>
-
-      <Card className="border-primary/10 bg-primary/[0.03] shadow-none">
-        <CardContent className="p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold">Premi&egrave;re activation recommand&eacute;e</p>
-              <p className="text-xs text-muted-foreground">Commencez par une protection simple, visible et facile &agrave; comprendre.</p>
-            </div>
-            <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] uppercase tracking-wider">
-              3 minutes
-            </Badge>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+            <SelectTrigger className="h-10 w-full sm:w-[260px]">
+              <SelectValue placeholder="Choisir une session" />
+            </SelectTrigger>
+            <SelectContent>
+              {sessions.map(session => (
+                <SelectItem key={ensureString(session.sessionId)} value={ensureString(session.sessionId)}>
+                  {safeRender(session.sessionId)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un groupe..."
+              className="h-10 pl-9"
+              value={searchQuery}
+              onChange={event => setSearchQuery(event.target.value)}
+            />
           </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {quickRules.map(rule => (
-              <div key={rule.title} className="rounded-lg border bg-background/70 p-3">
-                <rule.icon className="mb-2 h-4 w-4 text-primary" />
-                <p className="text-xs font-semibold">{rule.title}</p>
-                <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{rule.text}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        {ruleSummary.map(rule => (
+          <Card key={rule.title} className="bg-card shadow-none">
+            <CardContent className="flex gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <rule.icon className="h-4 w-4" />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <div>
+                <p className="text-sm font-semibold">{rule.title}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{rule.text}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/20" />
+      <div className="flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 p-3">
+        <Info className="h-4 w-4 shrink-0 text-primary" />
+        <p className="text-xs text-muted-foreground">
+          Whappi applique les regles uniquement dans les groupes ou la session WhatsApp est administrateur.
+        </p>
+      </div>
+
+      {sessions.length === 0 ? (
+        <EmptyState
+          title="Aucune session creee"
+          text="Commencez par creer une session WhatsApp avant de configurer vos groupes."
+          actionLabel="Aller au centre"
+          href="/dashboard"
+        />
+      ) : connectedSessions.length === 0 ? (
+        <EmptyState
+          title="Aucune session connectee"
+          text="Reconnectez une session pour lire les groupes et appliquer les regles."
+          actionLabel="Voir les sessions"
+          href="/dashboard"
+        />
+      ) : loadingGroups ? (
+        <div className="grid min-h-[320px] place-items-center rounded-2xl border bg-card text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin opacity-40" />
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl border-muted/20 bg-muted/5">
-           <ShieldAlert className="h-10 w-10 text-muted-foreground/30 mb-3" />
-           <p className="text-sm font-medium">Aucune session pr&ecirc;te pour les r&egrave;gles</p>
-           <p className="text-xs text-muted-foreground max-w-xs">Cr&eacute;ez une session WhatsApp, ajoutez-la dans vos groupes, puis revenez activer la premi&egrave;re protection.</p>
-           <Button variant="outline" size="sm" className="mt-4 rounded-full" onClick={() => router.push('/dashboard')}>
-              Cr&eacute;er une session
-           </Button>
-        </div>
+      ) : filteredGroups.length === 0 ? (
+        <EmptyState
+          title="Aucun groupe trouve"
+          text="Ajoutez la session dans un groupe WhatsApp, donnez-lui le role admin, puis revenez ici."
+          actionLabel="Actualiser"
+          onClick={fetchGroups}
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(session => (
-            <Card key={ensureString(session.sessionId)} className="group hover:border-primary/30 transition-all shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <Smartphone className="h-5 w-5" />
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          {filteredGroups.map(group => {
+            const groupId = ensureString(group.id || group.jid)
+            const settings = normalizeSettings(group.settings)
+            const activeCount = [settings.antiLinksEnabled, settings.welcomeEnabled, settings.warningsEnabled].filter(Boolean).length
+
+            return (
+              <Card key={groupId} className="overflow-hidden bg-card shadow-none">
+                <CardHeader className="border-b p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <CardTitle className="truncate text-base">{safeRender(group.subject || group.name, "Groupe sans nom")}</CardTitle>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {activeCount}/3 regles actives {group.participantCount ? `- ${safeRender(group.participantCount)} membres` : ""}
+                      </p>
+                    </div>
+                    <Badge className={cn(
+                      "shrink-0 border-none text-[10px]",
+                      activeCount > 0 ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-muted text-muted-foreground"
+                    )}>
+                      {activeCount > 0 ? "Configure" : "A preparer"}
+                    </Badge>
                   </div>
-                  <Badge className={cn(
-                    "text-[9px] font-semibold border-none",
-                    session.isConnected
-                      ? "bg-green-500/10 text-green-700 dark:text-green-400"
-                      : "bg-muted text-muted-foreground"
-                  )}>
-                    {session.isConnected ? "Connect&eacute;" : "Hors-ligne"}
-                  </Badge>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-bold truncate">{safeRender(session.sessionId)}</p>
-                  <p className="text-xs text-muted-foreground">Session WhatsApp active</p>
-                </div>
-              </CardContent>
-              <CardFooter className="p-4 pt-0 grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-[10px] font-semibold tracking-wider"
-                  onClick={() => router.push(`/dashboard/moderation/groups/moderation?sessionId=${safeRender(session.sessionId)}`)}
-                >
-                  <ShieldCheck className="h-3 w-3 mr-1.5" /> Anti-spam
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="h-8 text-[10px] font-semibold tracking-wider"
-                  onClick={() => router.push(`/dashboard/moderation/groups/engagement?sessionId=${safeRender(session.sessionId)}`)}
-                >
-                  <MessageSquareText className="h-3 w-3 mr-1.5" /> Bienvenue
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent className="space-y-4 p-5">
+                  <RuleSwitch
+                    icon={<Link2 className="h-4 w-4" />}
+                    title="Anti-liens"
+                    text="Bloquer les liens suspects ou hors sujet."
+                    checked={settings.antiLinksEnabled}
+                    onCheckedChange={checked => updateLocalGroup(groupId, { antiLinksEnabled: checked })}
+                  />
+                  <RuleSwitch
+                    icon={<MessageSquareText className="h-4 w-4" />}
+                    title="Message de bienvenue"
+                    text="Afficher les regles des qu'un membre arrive."
+                    checked={settings.welcomeEnabled}
+                    onCheckedChange={checked => updateLocalGroup(groupId, { welcomeEnabled: checked })}
+                  />
+                  {settings.welcomeEnabled && (
+                    <Textarea
+                      value={settings.welcomeMessage}
+                      onChange={event => updateLocalGroup(groupId, { welcomeMessage: event.target.value })}
+                      className="min-h-24 resize-none text-xs"
+                      placeholder="Message de bienvenue"
+                    />
+                  )}
+                  <RuleSwitch
+                    icon={<AlertTriangle className="h-4 w-4" />}
+                    title="Avertissement avant sanction"
+                    text="Garder une moderation transparente avant exclusion."
+                    checked={settings.warningsEnabled}
+                    onCheckedChange={checked => updateLocalGroup(groupId, { warningsEnabled: checked })}
+                  />
+                  {settings.warningsEnabled && (
+                    <Textarea
+                      value={settings.warningMessage}
+                      onChange={event => updateLocalGroup(groupId, { warningMessage: event.target.value })}
+                      className="min-h-20 resize-none text-xs"
+                      placeholder="Message d'avertissement"
+                    />
+                  )}
+
+                  <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                      Configuration visible sur une seule page
+                    </div>
+                    <Button
+                      size="sm"
+                      className="h-9"
+                      onClick={() => saveGroup(group)}
+                      disabled={savingGroupId === groupId}
+                    >
+                      {savingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enregistrer"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
+    </div>
+  )
+}
+
+function normalizeSettings(settings?: GroupSettings | null): Required<Pick<GroupSettings, "antiLinksEnabled" | "welcomeEnabled" | "warningsEnabled" | "welcomeMessage" | "warningMessage">> {
+  return {
+    antiLinksEnabled: Boolean(settings?.antiLinksEnabled ?? settings?.anti_links_enabled ?? settings?.antiLinkEnabled),
+    welcomeEnabled: Boolean(settings?.welcomeEnabled ?? settings?.welcome_enabled),
+    warningsEnabled: Boolean(settings?.warningsEnabled ?? settings?.warnings_enabled),
+    welcomeMessage: ensureString(settings?.welcomeMessage ?? settings?.welcome_message, defaultWelcomeMessage),
+    warningMessage: ensureString(settings?.warningMessage ?? settings?.warning_message, defaultWarningMessage),
+  }
+}
+
+function RuleSwitch({
+  icon,
+  title,
+  text,
+  checked,
+  onCheckedChange,
+}: {
+  icon: React.ReactNode
+  title: string
+  text: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border bg-background/60 p-4">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          {icon}
+        </div>
+        <div>
+          <p className="text-sm font-semibold">{title}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
+        </div>
+      </div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label={title} />
+    </div>
+  )
+}
+
+function EmptyState({
+  title,
+  text,
+  actionLabel,
+  href,
+  onClick,
+}: {
+  title: string
+  text: string
+  actionLabel: string
+  href?: string
+  onClick?: () => void
+}) {
+  const content = (
+    <Button size="sm" variant="outline" onClick={onClick}>
+      {actionLabel}
+    </Button>
+  )
+
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-card py-16 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <Smartphone className="h-6 w-6" />
+      </div>
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-2 max-w-sm text-xs leading-5 text-muted-foreground">{text}</p>
+      <div className="mt-5">
+        {href ? <Link href={href}>{content}</Link> : content}
+      </div>
     </div>
   )
 }

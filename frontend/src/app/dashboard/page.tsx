@@ -302,28 +302,28 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 pb-10">
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#151514] shadow-[0_30px_80px_-55px_rgba(255,106,0,0.65)]">
-          <div className="border-b border-white/10 p-5 sm:p-6">
+        <div className="overflow-hidden rounded-[28px] border bg-card shadow-[0_30px_80px_-55px_hsl(var(--primary))]">
+          <div className="border-b p-5 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <Badge className="border-white/10 bg-white/[0.04] text-[#ff8a33] hover:bg-white/[0.04]">
+                <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">
                   Nouveau centre de controle
                 </Badge>
-                <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
+                <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                   Pilotez vos groupes sans rester colle a WhatsApp.
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                   Whappi fonctionne comme un co-admin : une session connectee, un groupe administre, une regle activee, puis une verification claire.
                 </p>
               </div>
-              <Button onClick={() => setIsCreateOpen(true)} className="h-10 rounded-xl bg-[#ff6a00] text-white hover:bg-[#ff7a1a]">
+              <Button onClick={() => setIsCreateOpen(true)} className="h-10 rounded-xl">
                 <Plus className="mr-2 h-4 w-4" />
                 Nouvelle session
               </Button>
             </div>
           </div>
 
-          <div className="grid gap-px bg-white/10 md:grid-cols-4">
+          <div className="grid gap-px bg-border md:grid-cols-4">
             <MetricTile label="Sessions" value={sessions.length} sub={`${summary.activeSessions} connectee(s)`} />
             <MetricTile label="Messages" value={summary.messagesSent} sub="Volume suivi" />
             <MetricTile label="Reussite" value={`${summary.successRate}%`} sub="Derniers 7 jours" />
@@ -331,14 +331,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+        <Card className="rounded-[28px] bg-card shadow-none">
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold">Parcours de prise en main</p>
-                <p className="mt-1 text-xs text-zinc-500">Aucun vieux panneau technique ici.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Aucun vieux panneau technique ici.</p>
               </div>
-              <Badge className="bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/10">4 etapes</Badge>
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">4 etapes</Badge>
             </div>
             <div className="mt-5 space-y-3">
               {[
@@ -347,11 +347,11 @@ export default function DashboardPage() {
                 ["03", "Activer une regle", "Anti-liens ou bienvenue"],
                 ["04", "Verifier les actions", "Voir ce qui a ete applique"],
               ].map(([step, title, text]) => (
-                <div key={step} className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                  <span className="font-mono text-[11px] text-[#ff8a33]">{step}</span>
+                <div key={step} className="flex gap-3 rounded-2xl border bg-background/60 p-3">
+                  <span className="font-mono text-[11px] text-primary">{step}</span>
                   <div>
                     <p className="text-sm font-medium">{title}</p>
-                    <p className="text-xs text-zinc-500">{text}</p>
+                    <p className="text-xs text-muted-foreground">{text}</p>
                   </div>
                 </div>
               ))}
@@ -365,15 +365,15 @@ export default function DashboardPage() {
       )}
 
       <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
-        <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+        <Card className="rounded-[28px] bg-card shadow-none">
           <CardContent className="p-5 sm:p-6">
-            <div className="flex flex-col gap-3 border-b border-white/10 pb-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 border-b pb-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-semibold">Session de travail</p>
-                <p className="mt-1 text-xs text-zinc-500">Selectionnez le numero qui va administrer vos groupes.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Selectionnez le numero qui va administrer vos groupes.</p>
               </div>
               <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
-                <SelectTrigger className="h-10 border-white/10 bg-white/[0.04] text-xs text-zinc-100 md:w-[220px]">
+                <SelectTrigger className="h-10 text-xs md:w-[220px]">
                   <SelectValue placeholder="Choisir une session" />
                 </SelectTrigger>
                 <SelectContent>
@@ -392,14 +392,14 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+        <Card className="rounded-[28px] bg-card shadow-none">
           <CardContent className="p-5 sm:p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold">Regles rapides</p>
-                <p className="mt-1 text-xs text-zinc-500">Les vraies actions a configurer en premier.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Les vraies actions a configurer en premier.</p>
               </div>
-              <Button asChild variant="outline" className="h-9 border-white/10 bg-white/[0.03] text-xs text-zinc-100 hover:bg-white/[0.07]">
+              <Button asChild variant="outline" className="h-9 text-xs">
                 <Link href="/dashboard/moderation">
                   Ouvrir
                   <ArrowRight className="ml-2 h-3.5 w-3.5" />
@@ -480,7 +480,7 @@ export default function DashboardPage() {
                 />
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full bg-[#ff6a00] text-white hover:bg-[#ff7a1a]">
+                <Button type="submit" className="w-full">
                   Creer la session
                 </Button>
               </DialogFooter>
@@ -494,23 +494,23 @@ export default function DashboardPage() {
 
 function MetricTile({ label, value, sub }: { label: string; value: string | number; sub: string }) {
   return (
-    <div className="bg-[#151514] p-5">
-      <p className="text-[11px] font-medium text-zinc-500">{label}</p>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-zinc-50">{safeRender(value)}</p>
-      <p className="mt-1 text-xs text-zinc-500">{sub}</p>
+    <div className="bg-card p-5">
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{safeRender(value)}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
     </div>
   )
 }
 
 function RuleRow({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ff6a00]/15 text-[#ff8a33]">
+    <div className="flex items-center gap-3 rounded-2xl border bg-background/60 p-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
         {icon}
       </div>
       <div>
         <p className="text-sm font-semibold">{title}</p>
-        <p className="text-xs text-zinc-500">{text}</p>
+        <p className="text-xs text-muted-foreground">{text}</p>
       </div>
     </div>
   )
@@ -518,16 +518,16 @@ function RuleRow({ icon, title, text }: { icon: React.ReactNode; title: string; 
 
 function FirstRunPanel({ onCreate }: { onCreate: () => void }) {
   return (
-    <Card className="rounded-[28px] border-[#ff6a00]/30 bg-[#ff6a00]/10 text-zinc-100 shadow-none">
+    <Card className="rounded-[28px] border-primary/30 bg-primary/10 shadow-none">
       <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center">
         <div>
-          <p className="text-sm font-semibold text-[#ffb37a]">Premiere activation</p>
+          <p className="text-sm font-semibold text-primary">Premiere activation</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">Creez une session, puis testez dans un groupe reel.</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Le but n&apos;est pas de remplir des formulaires. Le but est de connecter un numero, le promouvoir admin, puis activer une premiere regle.
           </p>
         </div>
-        <Button onClick={onCreate} className="h-11 rounded-xl bg-[#ff6a00] text-white hover:bg-[#ff7a1a]">
+        <Button onClick={onCreate} className="h-11 rounded-xl">
           <Plus className="mr-2 h-4 w-4" />
           Demarrer
         </Button>
@@ -609,15 +609,15 @@ function AdminPanel({
             <AreaChart data={analyticsData}>
               <defs>
                 <linearGradient id="adminMessages" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ff6a00" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#ff6a00" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} />
               <Tooltip contentStyle={{ background: "#18181b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, color: "#fff" }} />
-              <Area type="monotone" dataKey="messages" stroke="#ff6a00" strokeWidth={2} fill="url(#adminMessages)" />
+              <Area type="monotone" dataKey="messages" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#adminMessages)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -638,7 +638,7 @@ function AdminPanel({
 function MiniAdminStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="mb-3 text-[#ff8a33]">{icon}</div>
+      <div className="mb-3 text-primary">{icon}</div>
       <p className="text-2xl font-semibold">{value}</p>
       <p className="text-xs text-zinc-500">{label}</p>
     </div>

@@ -1,37 +1,25 @@
 "use client"
 
 import * as React from "react"
-import {
-  Zap,
-  History,
-  TrendingUp,
-  CreditCard,
-  ArrowUpRight,
-  ShieldCheck,
-  ChevronRight,
-  Plus
-} from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import Link from "next/link"
+import { ChevronRight, Gauge, History, ShieldCheck, TrendingUp, Zap } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table"
+import { Progress } from "@/components/ui/progress"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/clerk-react"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+
+type UsageData = {
+  balance?: number
+  used?: number
+  plan?: string
+}
 
 export default function CreditsPage() {
   const { getToken } = useAuth()
-  const [credits, setCredits] = React.useState<any>(null)
-  const [history, setHistory] = React.useState<any[]>([])
+  const [usage, setUsage] = React.useState<UsageData | null>(null)
   const [loading, setLoading] = React.useState(true)
 
   const fetchData = React.useCallback(async () => {
@@ -39,11 +27,10 @@ export default function CreditsPage() {
     try {
       const token = await getToken()
       const data = await api.credits.get(token || undefined)
-      setCredits(data?.data || data)
-      // Note: History would come from another endpoint usually
-      setHistory([])
-    } catch (e) {
-      toast.error("Erreur de chargement des crédits")
+      setUsage((data?.data || data) as UsageData)
+    } catch (error) {
+      console.error(error)
+      toast.error("Erreur de chargement de l'usage")
     } finally {
       setLoading(false)
     }
@@ -53,111 +40,108 @@ export default function CreditsPage() {
     fetchData()
   }, [fetchData])
 
+  const used = usage?.used || 0
+  const remaining = usage?.balance || 0
+  const total = used + remaining
+  const percentage = total > 0 ? Math.round((used / total) * 100) : 0
+
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-20">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-         <Link href="/dashboard" className="hover:text-foreground transition-colors">Tableau de Bord</Link>
-         <ChevronRight className="h-3 w-3" />
-         <span className="text-foreground font-medium">Consommation & Crédits</span>
+    <div className="mx-auto max-w-6xl space-y-8 pb-20">
+      <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+        <Link href="/dashboard" className="transition-colors hover:text-foreground">Centre</Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="font-medium text-foreground">Usage du forfait</span>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
-          <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" /> Vos Crédits Whappi
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+            <Gauge className="h-5 w-5 text-primary" /> Usage du forfait
           </h1>
-          <p className="text-sm text-muted-foreground">Suivi de votre consommation d&apos;intelligence artificielle.</p>
+          <p className="text-sm text-muted-foreground">Suivez les actions Whappi consommees par vos sessions et groupes.</p>
         </div>
 
-        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-4 py-1.5 h-auto text-[10px] font-semibold tracking-widest rounded-full">
-           Plan : Free Trial
+        <Badge variant="outline" className="h-auto rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
+          Plan : {usage?.plan || "Essai gratuit"}
         </Badge>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-         {[
-           { label: "Balance Actuelle", val: credits?.balance || 0, sub: "crédits dispos", icon: Zap },
-           { label: "Utilisé (30j)", val: "42", sub: "messages IA", icon: TrendingUp },
-           { label: "Économisé", val: "12€", sub: "vs assistant humain", icon: ShieldCheck },
-           { label: "Validité", val: "Illimitée", sub: "pas d'expiration", icon: History }
-         ].map((stat, i) => (
-           <Card key={i} className="border-none shadow-none bg-muted/20">
-             <CardContent className="p-4">
-                <p className="text-[10px] font-semibold text-muted-foreground tracking-widest mb-2">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.val}</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-1">{stat.sub}</p>
-             </CardContent>
-           </Card>
-         ))}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        {[
+          { label: "Actions restantes", val: loading ? "..." : remaining, sub: "ce mois", icon: Zap },
+          { label: "Actions utilisees", val: loading ? "..." : used, sub: "sessions et groupes", icon: TrendingUp },
+          { label: "Protection active", val: "A configurer", sub: "anti-liens, accueil", icon: ShieldCheck },
+          { label: "Cycle", val: "Mensuel", sub: "remise a zero automatique", icon: History }
+        ].map((stat) => (
+          <Card key={stat.label} className="bg-card shadow-none">
+            <CardContent className="p-4">
+              <stat.icon className="mb-3 h-4 w-4 text-primary" />
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{stat.label}</p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight">{stat.val}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{stat.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
-         <div className="space-y-6">
-            <Card className="border-none bg-muted/10 shadow-none">
-               <CardHeader className="pb-0">
-                  <CardTitle className="text-sm font-semibold tracking-tight">Historique de Consommation</CardTitle>
-               </CardHeader>
-               <CardContent className="pt-6">
-                  <div className="h-[300px] flex items-center justify-center border border-dashed rounded-lg bg-background/50 text-muted-foreground text-xs italic">
-                     Graphique de consommation (Bientôt disponible)
-                  </div>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+        <Card className="bg-card shadow-none">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold tracking-tight">Consommation mensuelle</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="rounded-2xl border bg-background/60 p-5">
+              <div className="flex items-center justify-between text-xs font-medium">
+                <span className="text-muted-foreground">Actions consommees</span>
+                <span className={percentage > 80 ? "text-destructive" : "text-primary"}>{percentage}%</span>
+              </div>
+              <Progress value={percentage} className="mt-3 h-2" />
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                Une action correspond a une intervention Whappi utile : moderation, avertissement, message d&apos;accueil ou verification appliquee par une session.
+              </p>
+            </div>
 
-                  <div className="overflow-x-auto">
-                  <Table className="mt-8">
-                     <TableHeader>
-                        <TableRow className="border-muted/30">
-                           <TableHead className="text-[10px] font-semibold">Date</TableHead>
-                           <TableHead className="text-[10px] font-semibold">Action</TableHead>
-                           <TableHead className="text-[10px] font-semibold text-right">Crédits</TableHead>
-                        </TableRow>
-                     </TableHeader>
-                     <TableBody>
-                        <TableRow className="border-muted/20">
-                           <TableCell colSpan={3} className="text-center py-10 text-xs text-muted-foreground opacity-40">
-                              Aucune transaction récente.
-                           </TableCell>
-                        </TableRow>
-                     </TableBody>
-                  </Table>
-                  </div>
-               </CardContent>
-            </Card>
-         </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                ["Moderation", "Blocages et avertissements"],
+                ["Accueil", "Messages aux nouveaux membres"],
+                ["Verification", "Suivi des groupes administres"],
+              ].map(([title, text]) => (
+                <div key={title} className="rounded-2xl border bg-background/60 p-4">
+                  <p className="text-sm font-semibold">{title}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-         <div className="space-y-6">
-            <Card className="border-primary/20 bg-primary/5 shadow-sm">
-               <CardHeader>
-                  <CardTitle className="text-sm font-bold flex items-center gap-2">
-                     <Plus className="h-4 w-4 text-primary" /> Recharger
-                  </CardTitle>
-                  <CardDescription className="text-xs">Ajoutez des crédits à votre compte instantanément.</CardDescription>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                  <div className="p-4 bg-background rounded border text-center space-y-2">
-                     <p className="text-2xl font-bold">9.99€</p>
-                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Pack 500 Crédits</p>
-                     <Button size="sm" className="w-full h-8 rounded-full text-xs" asChild>
-                        <Link href="/dashboard/billing">Acheter</Link>
-                     </Button>
-                  </div>
-                  <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
-                     Les crédits sont consommés uniquement lors de l&apos;utilisation des modèles LLM (IA).
-                  </p>
-               </CardContent>
-            </Card>
+        <div className="space-y-6">
+          <Card className="border-primary/20 bg-primary/5 shadow-sm">
+            <CardContent className="space-y-4 p-5">
+              <div>
+                <p className="text-sm font-semibold">Besoin de plus de volume ?</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Passez sur un forfait avec plus de sessions et d&apos;actions mensuelles au lieu d&apos;acheter des packs compliques.
+                </p>
+              </div>
+              <Button size="sm" className="w-full" asChild>
+                <Link href="/dashboard/billing">Voir les forfaits</Link>
+              </Button>
+            </CardContent>
+          </Card>
 
-            <Card className="border-none bg-muted/20 shadow-none">
-               <CardHeader>
-                  <CardTitle className="text-sm font-bold">Comment ça marche ?</CardTitle>
-               </CardHeader>
-               <CardContent className="text-[11px] text-muted-foreground leading-relaxed space-y-3">
-                  <p>• 1 message généré par l&apos;IA = 1 crédit.</p>
-                  <p>• Les réponses par mots-clés sont gratuites.</p>
-                  <p>• La modération de groupe est gratuite.</p>
-                  <Button variant="link" className="p-0 h-auto text-[11px] font-bold text-primary">En savoir plus →</Button>
-               </CardContent>
-            </Card>
-         </div>
+          <Card className="bg-card shadow-none">
+            <CardHeader>
+              <CardTitle className="text-sm font-bold">Principe simple</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-xs leading-5 text-muted-foreground">
+              <p>1. Connectez une session WhatsApp.</p>
+              <p>2. Choisissez les groupes ou elle est admin.</p>
+              <p>3. Activez les regles utiles et suivez les actions.</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

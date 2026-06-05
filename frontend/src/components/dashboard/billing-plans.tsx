@@ -13,46 +13,47 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 const plans = [
   {
     id: "starter",
-    name: "Starter",
+    name: "Essentiel",
     price: "2,500 FCFA",
+    description: "Pour lancer un premier numero co-admin sans complexite.",
     features: [
-      "500 actions WhatsApp / mois",
-      "1 session WhatsApp",
-      "Réponses auto 24/7",
-      "Support technique par email",
-      "Accès API standard"
+      "1 session WhatsApp active",
+      "Jusqu'a 5 groupes pilotes",
+      "Regles anti-liens et bienvenue",
+      "1,000 actions de moderation / mois",
+      "Historique essentiel des actions"
     ],
-    cta: "Choisir Starter",
+    cta: "Choisir Essentiel",
     highlighted: false,
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "Croissance",
     price: "5,000 FCFA",
+    description: "Le bon plan pour admins de communautes et vendeurs WhatsApp.",
     features: [
-      "2,000 actions WhatsApp / mois",
-      "Groupes WhatsApp illimités",
-      "Analyses avancées",
-      "Anti-spam intelligent",
-      "Assistance prioritaire",
-      "Export de données (CSV/JSON)"
+      "3 sessions WhatsApp actives",
+      "Groupes WhatsApp illimites",
+      "Anti-liens, bienvenue et avertissements",
+      "5,000 actions de moderation / mois",
+      "Suivi prioritaire des incidents"
     ],
-    cta: "Choisir Pro",
+    cta: "Choisir Croissance",
     highlighted: true,
   },
   {
     id: "business",
-    name: "Business",
+    name: "Equipe",
     price: "10,000 FCFA",
+    description: "Pour agences, reseaux de vente et operations multi-groupes.",
     features: [
-      "10,000 actions WhatsApp / mois",
-      "Tout ce qui est dans Pro",
-      "Gestionnaire de compte dédié",
-      "Intégrations API personnalisées",
-      "Logs d'audit & Sécurité",
-      "Sessions de formation d'équipe"
+      "10 sessions WhatsApp actives",
+      "Regles avancees par groupe",
+      "Journal d'audit pour equipe",
+      "25,000 actions de moderation / mois",
+      "Accompagnement prioritaire"
     ],
-    cta: "Choisir Business",
+    cta: "Choisir Equipe",
     highlighted: false,
   },
 ]
@@ -84,36 +85,46 @@ export function BillingPlans() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {plans.map((plan) => (
         <Card key={plan.id} className={cn(
-          "relative flex flex-col h-full border-border bg-card",
-          plan.highlighted && "border-primary ring-1 ring-primary"
+          "relative flex h-full flex-col overflow-hidden bg-card",
+          plan.highlighted && "border-primary shadow-[0_24px_70px_-50px_hsl(var(--primary))]"
         )}>
+          {plan.highlighted && (
+            <div className="h-1 bg-primary" />
+          )}
 
-          <CardHeader className="p-6 pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold tracking-tight">{plan.name}</CardTitle>
-              {plan.highlighted && <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-bold uppercase">Recommandé</Badge>}
+          <CardHeader className="p-5 pb-2">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-base font-semibold tracking-tight">{plan.name}</CardTitle>
+              {plan.highlighted && (
+                <Badge className="border-primary/20 bg-primary/10 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10">
+                  Recommande
+                </Badge>
+              )}
             </div>
+            <p className="mt-2 min-h-10 text-xs leading-5 text-muted-foreground">{plan.description}</p>
             <div className="mt-4 flex items-baseline gap-1">
-              <span className="text-4xl font-black tracking-tighter">{plan.price}</span>
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">/ mois</span>
+              <span className="text-3xl font-semibold tracking-tight">{plan.price}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">/ mois</span>
             </div>
           </CardHeader>
-          <CardContent className="p-6 flex-1">
+          <CardContent className="flex-1 p-5">
             <ul className="space-y-3">
-              {plan.features.map((feature, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <Check className="h-3.5 w-3.5 text-primary mt-0.5" />
-                  <span className="text-xs text-muted-foreground">{feature}</span>
+              {plan.features.map((feature) => (
+                <li key={feature} className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Check className="h-3 w-3" />
+                  </span>
+                  <span className="text-xs leading-5 text-muted-foreground">{feature}</span>
                 </li>
               ))}
             </ul>
           </CardContent>
-          <CardFooter className="p-6 pt-0">
+          <CardFooter className="p-5 pt-0">
             <Button
-              className="w-full"
+              className="h-10 w-full"
               variant={plan.highlighted ? "default" : "outline"}
               onClick={() => handleSubscribe(plan.id)}
               disabled={loading === plan.id}

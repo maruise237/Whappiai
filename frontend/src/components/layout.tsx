@@ -3,9 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useAuth, useClerk, UserButton, useUser } from "@clerk/clerk-react"
+import { useAuth, useClerk, useUser } from "@clerk/clerk-react"
 import {
-  Bell,
   ChevronRight,
   CreditCard,
   LayoutDashboard,
@@ -13,7 +12,6 @@ import {
   Menu,
   Moon,
   ShieldCheck,
-  Smartphone,
   Sun,
   UserCircle,
   Users,
@@ -63,13 +61,13 @@ const userNavigation: NavItemConfig[] = [
   },
   {
     label: "Credits",
-    detail: "Solde et consommation",
+    detail: "Usage du forfait",
     href: "/dashboard/credits",
     icon: WalletCards,
   },
   {
     label: "Forfaits",
-    detail: "Volume mensuel et paiement",
+    detail: "Sessions, groupes et paiement",
     href: "/dashboard/billing",
     icon: CreditCard,
   },
@@ -78,7 +76,7 @@ const userNavigation: NavItemConfig[] = [
 const adminNavigation: NavItemConfig[] = [
   {
     label: "Utilisateurs",
-    detail: "Comptes et credits",
+    detail: "Comptes et forfaits",
     href: "/dashboard/users",
     icon: Users,
     adminOnly: true,
@@ -89,8 +87,8 @@ function LiveIndicator() {
   const { isConnected } = useWebSocket()
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-zinc-300">
-      <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-400" : "bg-zinc-600")} />
+    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground">
+      <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-primary" : "bg-muted-foreground/50")} />
       {isConnected ? "Temps reel" : "Connexion en attente"}
     </div>
   )
@@ -116,25 +114,25 @@ function NavigationItem({
       className={cn(
         "group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 active:scale-[0.99]",
         active
-          ? "bg-[#ff6a00] text-white shadow-[0_18px_40px_-24px_rgba(255,106,0,0.9)]"
-          : "text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-100"
+          ? "bg-primary text-primary-foreground shadow-[0_18px_40px_-24px_hsl(var(--primary))]"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
       )}
     >
       <span
         className={cn(
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors",
-          active ? "border-white/15 bg-white/15" : "border-white/10 bg-white/[0.03]"
+          active ? "border-primary-foreground/20 bg-primary-foreground/15" : "border-border bg-background"
         )}
       >
         <Icon className="h-4 w-4" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold leading-4">{item.label}</span>
-        <span className={cn("mt-1 block truncate text-[11px]", active ? "text-white/75" : "text-zinc-500")}>
+        <span className={cn("mt-1 block truncate text-[11px]", active ? "text-primary-foreground/75" : "text-muted-foreground")}>
           {item.detail}
         </span>
       </span>
-      {active && <ChevronRight className="h-4 w-4 text-white/70" />}
+      {active && <ChevronRight className="h-4 w-4 text-primary-foreground/70" />}
     </Link>
   )
 }
@@ -149,12 +147,12 @@ function DashboardSidebar({
   onItemClick?: () => void
 }) {
   return (
-    <div className="flex h-full flex-col bg-[#10100f] text-zinc-100">
-      <div className="border-b border-white/10 p-5">
+    <div className="flex h-full flex-col bg-card text-card-foreground">
+      <div className="border-b border-border p-5">
         <Logo orientation="horizontal" size={25} showText />
-        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff8a33]">Mode co-admin</p>
-          <p className="mt-2 text-xs leading-5 text-zinc-400">
+        <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Mode co-admin</p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
             Whappi suit une logique simple : session, groupe, regle, verification.
           </p>
         </div>
@@ -163,7 +161,7 @@ function DashboardSidebar({
       <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-6">
           <section className="space-y-2">
-            <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Principal</p>
+            <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Principal</p>
             {userNavigation.map(item => (
               <NavigationItem
                 key={item.href}
@@ -175,8 +173,8 @@ function DashboardSidebar({
           </section>
 
           {isAdmin && (
-            <section className="space-y-2 border-t border-white/10 pt-5">
-              <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Admin</p>
+            <section className="space-y-2 border-t border-border pt-5">
+              <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Admin</p>
               {adminNavigation.map(item => (
                 <NavigationItem
                   key={item.href}
@@ -239,22 +237,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <WebSocketProvider>
-      <div className="flex h-[100dvh] overflow-hidden bg-[#0d0d0c] text-zinc-100">
-        <aside className="hidden w-[280px] shrink-0 border-r border-white/10 lg:flex">
+      <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
+        <aside className="hidden w-[280px] shrink-0 border-r border-border lg:flex">
           <DashboardSidebar isAdmin={isAdmin} pathname={pathname} />
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-16 items-center justify-between border-b border-white/10 bg-[#0d0d0c]/90 px-4 backdrop-blur-xl sm:px-6">
+          <header className="flex h-16 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-xl sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <div className="lg:hidden">
                 <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-zinc-200 hover:bg-white/10">
+                    <Button variant="ghost" size="icon">
                       <Menu className="h-5 w-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-[290px] border-white/10 bg-[#10100f] p-0">
+                  <SheetContent side="left" className="w-[290px] border-border bg-card p-0">
                     <DashboardSidebar
                       isAdmin={isAdmin}
                       pathname={pathname}
@@ -265,8 +263,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-zinc-100">{currentItem?.label || "Centre"}</p>
-                <p className="hidden text-[11px] text-zinc-500 sm:block">{currentItem?.detail || "Dashboard Whappi"}</p>
+                <p className="truncate text-sm font-semibold text-foreground">{currentItem?.label || "Centre"}</p>
+                <p className="hidden text-[11px] text-muted-foreground sm:block">{currentItem?.detail || "Dashboard Whappi"}</p>
               </div>
             </div>
 
@@ -277,7 +275,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-zinc-400 hover:bg-white/10 hover:text-zinc-100"
+                className="text-muted-foreground hover:bg-muted hover:text-foreground"
                 onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
               >
                 {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -285,14 +283,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <NotificationDropdown />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="ml-1 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] p-1 pr-2 text-left transition hover:bg-white/[0.07]">
+                  <button className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card p-1 pr-2 text-left transition hover:bg-muted">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user?.imageUrl} />
-                      <AvatarFallback className="bg-[#ff6a00]/20 text-xs text-[#ff8a33]">
+                      <AvatarFallback className="bg-primary/15 text-xs text-primary">
                         {userName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden max-w-[110px] truncate text-xs font-medium text-zinc-200 sm:block">{userName}</span>
+                    <span className="hidden max-w-[110px] truncate text-xs font-medium text-foreground sm:block">{userName}</span>
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -310,15 +308,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <div className="hidden">
-                <Bell className="h-4 w-4" />
-                <Smartphone className="h-4 w-4" />
-                <UserButton afterSignOutUrl="/login" />
-              </div>
             </div>
           </header>
 
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top_right,rgba(255,106,0,0.16),transparent_32%),#0d0d0c]">
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_32%),hsl(var(--background))]">
             <div className="mx-auto max-w-[1480px] p-4 sm:p-6 lg:p-8">
               <ErrorBoundary>{children}</ErrorBoundary>
             </div>
