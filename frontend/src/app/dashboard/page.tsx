@@ -1,37 +1,56 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { useAuth, useUser } from "@clerk/clerk-react"
+import confetti from "canvas-confetti"
 import {
-  Plus,
-  Zap,
-  Activity,
-  MessageCircle,
-  Smartphone,
-  ShieldCheck,
-  ListChecks,
-  TrendingUp,
+  ArrowRight,
   History,
-  Settings2,
-  LogOut,
-  CreditCard,
-  User,
-  MoreVertical,
-  PlusCircle
+  Link2,
+  MessageCircle,
+  Plus,
+  ShieldCheck,
+  Smartphone,
+  Users,
+  WalletCards,
 } from "lucide-react"
-import { SessionCard } from "@/components/dashboard/session-card"
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { toast } from "sonner"
+
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
-import { api } from "@/lib/api"
+import { SessionCard } from "@/components/dashboard/session-card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter
 } from "@/components/ui/dialog"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -39,108 +58,136 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis
-} from 'recharts'
-import { useRouter } from "next/navigation"
+import { api } from "@/lib/api"
+import { cn, ensureString, safeDate, safeRender } from "@/lib/utils"
 import { useWebSocket } from "@/providers/websocket-provider"
-import { useUser, useAuth } from "@clerk/clerk-react"
-import { toast } from "sonner"
-import confetti from "canvas-confetti"
-import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
-import Link from "next/link"
-
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const DEFAULT_STATS_DAYS = 7
-const RECENT_LOGS_COUNT = 5
+const RECENT_LOGS_COUNT = 6
+
+type SessionItem = {
+  sessionId?: string
+  isConnected?: boolean
+  status?: string
+  qr?: string | null
+  pairingCode?: string | null
+  [key: string]: unknown
+}
+
+type ActivityItem = {
+  id?: string | number
+  action?: string
+  resource_id?: string
+  success?: boolean | number
+  status?: string
+  details?: unknown
+  timestamp?: string
+  created_at?: string
+  [key: string]: unknown
+}
+
+type AdminStats = {
+  users?: { total?: number; active?: number }
+  sessions?: { total?: number; connected?: number }
+  overview?: { activities?: number; successRate?: number; messagesSent?: number }
+  credits?: { deducted?: number }
+}
+
+type CreditsData = {
+  balance: number
+  used: number
+  plan: string
+  history: Array<{ type?: string; description?: unknown; amount?: number | string }>
+}
+
+type AnalyticsPoint = {
+  date?: string
+  messages?: number
+  credits?: number
+}
 
 const sessionSchema = z.object({
-  sessionId: z.string().min(3, "L'ID de session doit comporter au moins 3 caractères").regex(/^[a-z0-9-]+$/, "Seuls les minuscules, les chiffres et les traits d-union sont autorisés"),
+  sessionId: z
+    .string()
+    .min(3, "L'ID de session doit comporter au moins 3 caracteres")
+    .regex(/^[a-z0-9-]+$/, "Minuscules, chiffres et traits d'union uniquement"),
   phoneNumber: z.string().optional(),
 })
 
 export default function DashboardPage() {
-  const router = useRouter()
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
-  const lastProcessedMessageRef = React.useRef<string>("")
+  const lastProcessedMessageRef = React.useRef("")
 
-  const [sessions, setSessions] = React.useState<any[]>([])
+  const [sessions, setSessions] = React.useState<SessionItem[]>([])
   const [loading, setLoading] = React.useState(true)
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
-  const [summary, setSummary] = React.useState({ totalActivities: 0, successRate: 0, activeSessions: 0, messagesSent: 0 })
-  const [adminStats, setAdminStats] = React.useState<any>(null)
-  const [credits, setCredits] = React.useState<any>(null)
-  const [recentActivities, setRecentActivities] = React.useState<any[]>([])
-  const [analyticsData, setAnalyticsData] = React.useState<any[]>([])
+  const [summary, setSummary] = React.useState({
+    totalActivities: 0,
+    successRate: 0,
+    activeSessions: 0,
+    messagesSent: 0,
+  })
+  const [adminStats, setAdminStats] = React.useState<AdminStats | null>(null)
+  const [credits, setCredits] = React.useState<CreditsData | null>(null)
+  const [recentActivities, setRecentActivities] = React.useState<ActivityItem[]>([])
+  const [analyticsData, setAnalyticsData] = React.useState<AnalyticsPoint[]>([])
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
+  const userEmail = user?.primaryEmailAddress?.emailAddress || ""
+  const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const form = useForm<z.infer<typeof sessionSchema>>({
     resolver: zodResolver(sessionSchema),
-    defaultValues: { sessionId: "", phoneNumber: "" }
+    defaultValues: { sessionId: "", phoneNumber: "" },
   })
 
   const fetchCreditsData = React.useCallback(async () => {
     try {
       const token = await getToken()
       const data = await api.credits.get(token || undefined)
-      setCredits(data?.data || data)
-    } catch (e) { console.error(e) }
+      setCredits((data?.data || data) as CreditsData)
+    } catch (error) {
+      console.error(error)
+    }
   }, [getToken])
 
   const fetchAdminSummary = React.useCallback(async (token: string) => {
     try {
       const [stats, analytics] = await Promise.all([
         api.admin.getStats(DEFAULT_STATS_DAYS, token),
-        api.activities.analytics(DEFAULT_STATS_DAYS, token)
+        api.activities.analytics(DEFAULT_STATS_DAYS, token),
       ])
-      setAdminStats(stats)
-      setAnalyticsData(Array.isArray(analytics) ? analytics : [])
+      const safeStats = stats as AdminStats
+      setAdminStats(safeStats)
+      setAnalyticsData(Array.isArray(analytics) ? (analytics as AnalyticsPoint[]) : [])
       setSummary({
-        totalActivities: stats?.overview?.activities || 0,
-        successRate: stats?.overview?.successRate || 0,
-        messagesSent: stats?.overview?.messagesSent || 0,
-        activeSessions: stats?.sessions?.connected || 0
+        totalActivities: safeStats?.overview?.activities || 0,
+        successRate: safeStats?.overview?.successRate || 0,
+        messagesSent: safeStats?.overview?.messagesSent || 0,
+        activeSessions: safeStats?.sessions?.connected || 0,
       })
-    } catch (e) { console.error(e) }
+    } catch (error) {
+      console.error(error)
+    }
   }, [])
 
-  const fetchUserSummary = React.useCallback(async (token: string, currentSessions: any[]) => {
+  const fetchUserSummary = React.useCallback(async (token: string, currentSessions: SessionItem[]) => {
     try {
       const summ = await api.activities.summary(DEFAULT_STATS_DAYS, token)
       setSummary({
         totalActivities: summ?.totalActivities || 0,
         successRate: summ?.successRate || 0,
         messagesSent: summ?.byAction?.send_message || 0,
-        activeSessions: Array.isArray(currentSessions) ? currentSessions.filter(s => s.isConnected).length : 0
+        activeSessions: currentSessions.filter(s => s.isConnected).length,
       })
-    } catch (e) { console.error(e) }
+    } catch (error) {
+      console.error(error)
+    }
   }, [])
 
-  const fetchSummaryData = React.useCallback(async (currentSessions: any[]) => {
+  const fetchSummaryData = React.useCallback(async (currentSessions: SessionItem[]) => {
     try {
       const token = await getToken()
       if (!token) return
@@ -151,18 +198,18 @@ export default function DashboardPage() {
         await fetchUserSummary(token, currentSessions)
       }
 
-      const logs = await api.activities.list(RECENT_LOGS_COUNT, 0, token)
-      setRecentActivities(Array.isArray(logs) ? logs : [])
-    } catch (e) {
-      console.error("Error fetching summary:", e)
+      const activityList = await api.activities.list(RECENT_LOGS_COUNT, 0, token)
+      setRecentActivities(Array.isArray(activityList) ? (activityList as ActivityItem[]) : [])
+    } catch (error) {
+      console.error(error)
     }
-  }, [getToken, isAdmin, fetchAdminSummary, fetchUserSummary])
+  }, [fetchAdminSummary, fetchUserSummary, getToken, isAdmin])
 
   const fetchSessions = React.useCallback(async (autoSelect = false) => {
     try {
       const token = await getToken()
       const data = await api.sessions.list(token || undefined)
-      const sessionsList = Array.isArray(data) ? data : []
+      const sessionsList = Array.isArray(data) ? (data as SessionItem[]) : []
       setSessions(sessionsList)
 
       if (autoSelect && sessionsList.length > 0) {
@@ -170,421 +217,273 @@ export default function DashboardPage() {
       }
 
       fetchSummaryData(sessionsList)
-    } catch (e) {
-      console.error(e)
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
-  }, [getToken, fetchSummaryData])
+  }, [fetchSummaryData, getToken])
 
-  // Initial load effect
   React.useEffect(() => {
     if (isLoaded && user) {
       fetchSessions(true)
       fetchCreditsData()
     }
-  }, [isLoaded, user?.id])
+  }, [fetchCreditsData, fetchSessions, isLoaded, user])
 
-  // Consolidated WebSocket update handling
   React.useEffect(() => {
-    if (!lastMessage) return;
+    if (!lastMessage) return
+    const messageStr = JSON.stringify(lastMessage)
+    if (messageStr === lastProcessedMessageRef.current) return
+    lastProcessedMessageRef.current = messageStr
 
-    // Stringified comparison for deduplication
-    const messageStr = JSON.stringify(lastMessage);
-    if (messageStr === lastProcessedMessageRef.current) return;
-    lastProcessedMessageRef.current = messageStr;
-
-    if (lastMessage.type === 'session-update') {
-      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data];
-      let needsRefresh = false;
+    if (lastMessage.type === "session-update") {
+      const updates = Array.isArray(lastMessage.data) ? lastMessage.data : [lastMessage.data]
+      let needsRefresh = false
 
       setSessions(prev => {
-        const newSessions = [...prev];
-        let hasChanges = false;
+        const next = [...prev]
+        let hasChanges = false
 
-        updates.forEach(update => {
-          if (!update || !update.sessionId) return;
-          const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
+        updates.forEach((update: SessionItem) => {
+          if (!update?.sessionId) return
+          const index = next.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId))
           if (index !== -1) {
-            newSessions[index] = {
-              ...newSessions[index],
+            next[index] = {
+              ...next[index],
               ...update,
-              isConnected: update.status === 'CONNECTED'
-            };
-
-            // If the backend sent explicit nulls to clear codes, ensure they overwrite existing ones
-            if (update.qr === null) newSessions[index].qr = null;
-            if (update.pairingCode === null) newSessions[index].pairingCode = null;
-
-            hasChanges = true;
+              isConnected: update.status === "CONNECTED",
+            }
+            hasChanges = true
           } else {
-             needsRefresh = true;
+            needsRefresh = true
           }
-        });
+        })
 
-        return hasChanges ? newSessions : prev;
-      });
+        return hasChanges ? next : prev
+      })
 
-      if (needsRefresh) {
-        fetchSessions(false);
-      }
+      if (needsRefresh) fetchSessions(false)
 
-      // UI Notifications
-      updates.forEach(update => {
-        if (!update) return;
-        if (update.status === 'CONNECTED') {
-          toast.success(`Session ${update.sessionId} connectée !`);
-          confetti();
-        } else if (update.status === 'GENERATING_CODE' && update.pairingCode) {
-          toast.info(`Code d'appairage reçu pour ${update.sessionId}`);
+      updates.forEach((update: SessionItem) => {
+        if (!update) return
+        if (update.status === "CONNECTED") {
+          toast.success(`Session ${update.sessionId} connectee`)
+          confetti()
+        } else if (update.status === "GENERATING_CODE" && update.pairingCode) {
+          toast.info(`Code d'appairage recu pour ${update.sessionId}`)
         }
-      });
+      })
 
-      fetchCreditsData();
+      fetchCreditsData()
     }
 
-    if (lastMessage.type === 'session-deleted') {
-      const { sessionId } = lastMessage.data || {};
+    if (lastMessage.type === "session-deleted") {
+      const sessionId = lastMessage.data?.sessionId
       if (sessionId) {
-        setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)));
+        setSessions(prev => prev.filter(s => ensureString(s.sessionId) !== ensureString(sessionId)))
         if (ensureString(selectedSessionId) === ensureString(sessionId)) {
-          setSelectedSessionId(null);
+          setSelectedSessionId(null)
         }
       }
     }
-  }, [lastMessage, selectedSessionId, fetchSessions, fetchCreditsData]);
+  }, [fetchCreditsData, fetchSessions, lastMessage, selectedSessionId])
 
   const selectedSession = sessions.find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
 
-  if (!isLoaded || loading) return <div className="p-12 text-center text-muted-foreground">Chargement...</div>
+  if (!isLoaded || loading) {
+    return (
+      <div className="grid min-h-[70dvh] place-items-center text-zinc-500">
+        Chargement du centre Whappi...
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-8 pb-20">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Tableau de bord</h1>
-          <p className="text-sm text-muted-foreground">Connectez WhatsApp, activez vos règles et suivez les actions de vos groupes.</p>
-        </div>
-      </div>
+    <div className="space-y-6 pb-10">
+      <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+        <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#151514] shadow-[0_30px_80px_-55px_rgba(255,106,0,0.65)]">
+          <div className="border-b border-white/10 p-5 sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <Badge className="border-white/10 bg-white/[0.04] text-[#ff8a33] hover:bg-white/[0.04]">
+                  Nouveau centre de controle
+                </Badge>
+                <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
+                  Pilotez vos groupes sans rester colle a WhatsApp.
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+                  Whappi fonctionne comme un co-admin : une session connectee, un groupe administre, une regle activee, puis une verification claire.
+                </p>
+              </div>
+              <Button onClick={() => setIsCreateOpen(true)} className="h-10 rounded-xl bg-[#ff6a00] text-white hover:bg-[#ff7a1a]">
+                <Plus className="mr-2 h-4 w-4" />
+                Nouvelle session
+              </Button>
+            </div>
+          </div>
 
-      {!isAdmin && sessions.length === 0 && (
-        <EmptyActivationCard onCreate={() => setIsCreateOpen(true)} />
+          <div className="grid gap-px bg-white/10 md:grid-cols-4">
+            <MetricTile label="Sessions" value={sessions.length} sub={`${summary.activeSessions} connectee(s)`} />
+            <MetricTile label="Messages" value={summary.messagesSent} sub="Volume suivi" />
+            <MetricTile label="Reussite" value={`${summary.successRate}%`} sub="Derniers 7 jours" />
+            <MetricTile label="Actions" value={summary.totalActivities} sub="Activite recente" />
+          </div>
+        </div>
+
+        <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+          <CardContent className="p-5 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">Parcours de prise en main</p>
+                <p className="mt-1 text-xs text-zinc-500">Aucun vieux panneau technique ici.</p>
+              </div>
+              <Badge className="bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/10">4 etapes</Badge>
+            </div>
+            <div className="mt-5 space-y-3">
+              {[
+                ["01", "Connecter une session", "QR code ou code d'appairage"],
+                ["02", "Ajouter au groupe", "Le numero doit etre admin"],
+                ["03", "Activer une regle", "Anti-liens ou bienvenue"],
+                ["04", "Verifier les actions", "Voir ce qui a ete applique"],
+              ].map(([step, title, text]) => (
+                <div key={step} className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <span className="font-mono text-[11px] text-[#ff8a33]">{step}</span>
+                  <div>
+                    <p className="text-sm font-medium">{title}</p>
+                    <p className="text-xs text-zinc-500">{text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {sessions.length === 0 && (
+        <FirstRunPanel onCreate={() => setIsCreateOpen(true)} />
       )}
 
-      {/* Grid 4 cols Stats */}
-      <div id="performance-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {isAdmin ? (
-            <>
-                <StatCard
-                  label="Utilisateurs"
-                  value={adminStats?.users?.total || 0}
-                  subtext={`${adminStats?.users?.active || 0} actifs`}
-                  icon={<User className="h-4 w-4 text-blue-500" />}
-                />
-                <StatCard
-                  label="Sessions Globales"
-                  value={adminStats?.sessions?.total || 0}
-                  subtext={`${adminStats?.sessions?.connected || 0} connectées`}
-                  icon={<Smartphone className="h-4 w-4 text-green-500" />}
-                />
-                <StatCard
-                  label="Messages Plateforme"
-                  value={adminStats?.overview?.messagesSent || 0}
-                  subtext="Total envoyé"
-                  icon={<MessageCircle className="h-4 w-4 text-purple-500" />}
-                />
-                <StatCard
-                  label="Consommation Crédits"
-                  value={adminStats?.credits?.deducted || 0}
-                  subtext="Volume global"
-                  icon={<CreditCard className="h-4 w-4 text-orange-500" />}
-                />
-            </>
-        ) : (
-            <>
-                <StatCard
-                  label="Sessions"
-                  value={sessions.length}
-                  subtext={`${summary.activeSessions} actives`}
-                  icon={<Smartphone className="h-4 w-4 text-blue-500" />}
-                />
-                <StatCard
-                  label="Taux de Succès"
-                  value={`${summary.successRate}%`}
-                  subtext="Derniers 7 jours"
-                  icon={<TrendingUp className="h-4 w-4 text-green-500" />}
-                />
-                <StatCard
-                  label="Messages Envoyés"
-                  value={summary.messagesSent}
-                  subtext="Total cumulé"
-                  icon={<MessageCircle className="h-4 w-4 text-purple-500" />}
-                />
-                <StatCard
-                  label="Activités"
-                  value={summary.totalActivities}
-                  subtext="Dernières 24h"
-                  icon={<Activity className="h-4 w-4 text-orange-500" />}
-                />
-            </>
-        )}
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg bg-card shadow-sm">
-         <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
-            <Select value={selectedSessionId || ""} onValueChange={(v) => setSelectedSessionId(ensureString(v))}>
-               <SelectTrigger className="w-full sm:w-[180px] h-9 text-xs bg-muted/50 border-none">
+      <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+        <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+          <CardContent className="p-5 sm:p-6">
+            <div className="flex flex-col gap-3 border-b border-white/10 pb-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Session de travail</p>
+                <p className="mt-1 text-xs text-zinc-500">Selectionnez le numero qui va administrer vos groupes.</p>
+              </div>
+              <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
+                <SelectTrigger className="h-10 border-white/10 bg-white/[0.04] text-xs text-zinc-100 md:w-[220px]">
                   <SelectValue placeholder="Choisir une session" />
-               </SelectTrigger>
-               <SelectContent>
-                  {sessions.map(s => <SelectItem key={String(s.sessionId)} value={String(s.sessionId)} className="text-xs">{safeRender(s.sessionId)}</SelectItem>)}
-               </SelectContent>
-            </Select>
-            {selectedSession && (
-               <Badge className={cn(
-                  "text-[9px] font-semibold border-none px-2 h-5",
-                  selectedSession.isConnected
-                    ? "bg-green-500/10 text-green-700 dark:text-green-400"
-                    : "bg-muted text-muted-foreground"
-               )}>
-                  {selectedSession.isConnected ? "Online" : "Offline"}
-               </Badge>
-            )}
-         </div>
-         <Button id="new-session-btn" size="sm" onClick={() => setIsCreateOpen(true)} className="rounded-full h-9 w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" /> Créer une session
-         </Button>
-      </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {sessions.map(session => (
+                    <SelectItem key={ensureString(session.sessionId)} value={ensureString(session.sessionId)} className="text-xs">
+                      {safeRender(session.sessionId)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      {/* Grid 12 cols Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-         <div className="lg:col-span-8 space-y-8">
-            {isAdmin && (
-                <Card className="border-none shadow-none bg-muted/10">
-                    <CardHeader className="p-4 pb-2">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                    <TrendingUp className="h-4 w-4 text-primary" /> Performance Plateforme
-                                </CardTitle>
-                                <CardDescription className="text-[10px]">Volume de messages et activité IA des 7 derniers jours.</CardDescription>
-                            </div>
-                            <Badge variant="secondary" className="text-[9px] font-bold bg-background">7 JOURS</Badge>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <div className="h-[200px] w-full mt-4">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={analyticsData}>
-                                    <defs>
-                                        <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#25D366" stopOpacity={0.1}/>
-                                            <stop offset="95%" stopColor="#25D366" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888888" strokeOpacity={0.1} />
-                                    <XAxis
-                                        dataKey="date"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{fontSize: 9, fill: '#888888'}}
-                                        dy={10}
-                                        tickFormatter={(str) => {
-                                            const date = new Date(str);
-                                            if (isNaN(date.getTime())) return '-';
-                                            return safeDate(date, { weekday: 'short' });
-                                        }}
-                                    />
-                                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fill: '#888888'}} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }}
-                                    />
-                                    <Area type="monotone" dataKey="messages" name="Messages" stroke="#25D366" strokeWidth={2} fillOpacity={1} fill="url(#colorMessages)" />
-                                    <Area type="monotone" dataKey="credits" name="Crédits" stroke="#f59e0b" strokeWidth={2} fillOpacity={0} />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+            <div className="mt-5">
+              <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card id="active-session-card" className="border-none shadow-none bg-muted/10">
-               <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                     <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Smartphone className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{safeRender(selectedSessionId, "Aucune session")}</p>
-                          <p className="text-xs text-muted-foreground">WhatsApp Session</p>
-                        </div>
-                     </div>
-                     <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/ai/config?sessionId=${selectedSessionId}`)}>
-                        <Settings2 className="h-4 w-4 text-muted-foreground" />
-                     </Button>
-                  </div>
-                  <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
-               </CardContent>
-            </Card>
+        <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+          <CardContent className="p-5 sm:p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">Regles rapides</p>
+                <p className="mt-1 text-xs text-zinc-500">Les vraies actions a configurer en premier.</p>
+              </div>
+              <Button asChild variant="outline" className="h-9 border-white/10 bg-white/[0.03] text-xs text-zinc-100 hover:bg-white/[0.07]">
+                <Link href="/dashboard/moderation">
+                  Ouvrir
+                  <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </div>
 
+            <div className="grid gap-3">
+              <RuleRow icon={<Link2 className="h-4 w-4" />} title="Anti-liens" text="Bloquer pubs, arnaques et liens hors sujet." />
+              <RuleRow icon={<MessageCircle className="h-4 w-4" />} title="Bienvenue" text="Envoyer les regles quand un membre arrive." />
+              <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title="Avertissements" text="Prevenir avant exclusion pour garder le groupe calme." />
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
-            <Tabs defaultValue="direct" className="space-y-4">
-               <TabsList className="bg-muted/50 p-1 rounded-lg h-auto sm:h-9 flex flex-wrap sm:flex-nowrap gap-1 w-full sm:w-auto">
-                  <TabsTrigger value="direct" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">Direct Message</TabsTrigger>
-                  <TabsTrigger value="history" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">History</TabsTrigger>
-                  {isAdmin && <TabsTrigger value="logs" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">System Logs</TabsTrigger>}
+      <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
+        {isAdmin ? (
+          <AdminPanel adminStats={adminStats} analyticsData={analyticsData} recentActivities={recentActivities} />
+        ) : (
+          <UserActivityPanel recentActivities={recentActivities} />
+        )}
+        <CreditCardUI credits={credits} userRole={isAdmin ? "admin" : "user"} />
+      </section>
 
-               </TabsList>
-
-               <TabsContent value="history" className="space-y-4">
-                  <Card className="overflow-hidden">
-                    <div className="overflow-x-auto">
-                     <Table>
-                        <TableHeader>
-                           <TableRow className="hover:bg-transparent border-muted/30">
-                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Destination</TableHead>
-                              <TableHead className="text-[10px] font-semibold text-muted-foreground">Status</TableHead>
-                              <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Time</TableHead>
-                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').map((msg) => (
-                              <TableRow key={ensureString(msg.id || msg.timestamp)} className="hover:bg-muted/50">
-                                 <TableCell className="text-sm truncate max-w-[150px]">{safeRender(msg.resource_id)}</TableCell>
-                                 <TableCell>
-                                    <Badge className={cn(
-                                       "border-none text-[9px] font-semibold",
-                                       (msg.success === 1 || msg.success === true)
-                                         ? "bg-green-500/10 text-green-700 dark:text-green-400"
-                                         : "bg-red-500/10 text-red-700 dark:text-red-400"
-                                    )}>
-                                       {(msg.success === 1 || msg.success === true) ? 'Sent' : 'Failed'}
-                                    </Badge>
-                                 </TableCell>
-                                 <TableCell className="text-right text-[10px] text-muted-foreground">
-                                    {safeDate(msg.created_at || msg.timestamp)}
-                                 </TableCell>
-                              </TableRow>
-                           ))}
-                           {recentActivities.filter(a => a.action === 'MESSAGE_SEND' || a.action === 'send_message').length === 0 && (
-                              <TableRow><TableCell colSpan={3} className="text-center py-10 text-xs text-muted-foreground italic">Aucun message récent</TableCell></TableRow>
-                           )}
-                        </TableBody>
-                     </Table>
-                    </div>
-                  </Card>
-               </TabsContent>
-
-               {isAdmin && (
-                  <TabsContent value="logs" className="space-y-4">
-                     <Card className="bg-zinc-950 text-zinc-400 font-mono text-[10px] p-4 overflow-x-auto min-h-[200px] border-none shadow-inner">
-                        <div className="space-y-1">
-                           {recentActivities.map((log) => (
-                              <div key={ensureString(log.id || log.timestamp)} className="flex gap-4">
-                                 <span className="text-zinc-600">
-                                    [{safeDate(log.timestamp || log.created_at)}]
-                                 </span>
-                                 <span className={cn(log.status === 'success' ? "text-green-500" : "text-red-500")}>{ensureString(log.action, 'ACTION').toUpperCase()}</span>
-                                 <span className="truncate max-w-[400px]">
-                                    {safeRender(log.details)}
-                                 </span>
-                              </div>
-                           ))}
-                        </div>
-                     </Card>
-                  </TabsContent>
-               )}
-            </Tabs>
-         </div>
-
-         <div className="lg:col-span-4 space-y-8">
-            {isAdmin && (
-               <Card className="border-none bg-muted/10 shadow-none">
-                  <CardHeader className="p-4 pb-0">
-                     <CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
-                        <Activity className="h-3 w-3" /> System Activities
-                     </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-4">
-                     {recentActivities.slice(0, 4).map((activity, i) => (
-                        <div key={i} className="flex items-start gap-3 border-b border-border/40 last:border-0 pb-3 last:pb-0">
-                           <div className="h-6 w-6 rounded bg-background border flex items-center justify-center shrink-0">
-                              <Zap className="h-3 w-3 text-muted-foreground" />
-                           </div>
-                           <div className="min-w-0">
-                              <p className="text-xs font-semibold truncate">{safeRender(activity.action, 'Action')}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">
-                                 {safeRender(activity.details)}
-                              </p>
-                           </div>
-                        </div>
-                     ))}
-                     <Button variant="link" size="sm" className="p-0 h-auto text-[10px] font-semibold" asChild>
-                        <Link href="/dashboard/activities">View All Activities →</Link>
-                     </Button>
-                  </CardContent>
-               </Card>
-            )}
-
-            <CreditCardUI credits={credits} userRole={isAdmin ? 'admin' : 'user'} />
-         </div>
-      </div>
-
-      {/* New Session Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[440px]">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(async (val) => {
-               const t = toast.loading("Création...");
-               try {
-                 const token = await getToken();
-                 await api.sessions.create(val.sessionId, val.phoneNumber, token || undefined);
-                 toast.success("Session prête", { id: t });
-                 setIsCreateOpen(false);
-                 fetchSessions(true);
-                 confetti();
-               } catch (e: any) {
-                 toast.error(e.message || "Erreur de création", { id: t });
-               }
-            })} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(async value => {
+                const toastId = toast.loading("Creation de la session...")
+                try {
+                  const token = await getToken()
+                  await api.sessions.create(value.sessionId, value.phoneNumber, token || undefined)
+                  toast.success("Session prete", { id: toastId })
+                  setIsCreateOpen(false)
+                  fetchSessions(true)
+                  confetti()
+                } catch (error) {
+                  const message = error instanceof Error ? error.message : "Erreur de creation"
+                  toast.error(message, { id: toastId })
+                }
+              })}
+              className="space-y-6"
+            >
               <DialogHeader>
-                <DialogTitle>Créer une session WhatsApp</DialogTitle>
-                <DialogDescription className="text-xs">Choisissez un nom simple pour le numéro que Whappi utilisera comme co-admin.</DialogDescription>
+                <DialogTitle>Nouvelle session WhatsApp</DialogTitle>
+                <DialogDescription>
+                  Choisissez un nom simple pour le numero qui servira de co-admin.
+                </DialogDescription>
               </DialogHeader>
-              <div className="space-y-6 py-4">
-                <FormField control={form.control} name="sessionId" render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel className="text-[10px] font-semibold text-muted-foreground">Nom de session</FormLabel>
-                      <FormControl><Input placeholder="ex: groupe-eglise" {...field} className="h-9 text-sm" /></FormControl>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {['eglise', 'ecole', 'tontine', 'business'].map(tag => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="text-[10px] cursor-pointer hover:bg-primary/10"
-                              onClick={() => form.setValue('sessionId', tag)}
-                            >
-                              {tag}
-                            </Badge>
-                        ))}
-                      </div>
-                      <FormMessage className="text-[10px]" />
+              <div className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="sessionId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom de session</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ex: tontine-douala" {...field} />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                    <FormItem className="space-y-2">
-                      <FormLabel className="text-[10px] font-semibold text-muted-foreground">Numéro dédié (optionnel)</FormLabel>
-                      <FormControl><Input placeholder="ex: 2376..." {...field} className="h-9 text-sm" /></FormControl>
-                      <FormMessage className="text-[10px]" />
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Numero dedie (optionnel)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ex: 2376..." {...field} />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <DialogFooter><Button type="submit" className="w-full">Créer ma session</Button></DialogFooter>
+              <DialogFooter>
+                <Button type="submit" className="w-full bg-[#ff6a00] text-white hover:bg-[#ff7a1a]">
+                  Creer la session
+                </Button>
+              </DialogFooter>
             </form>
           </Form>
         </DialogContent>
@@ -593,84 +492,155 @@ export default function DashboardPage() {
   )
 }
 
-function StatCard({ label, value, subtext, icon }: { label: string; value: string | number; subtext: string; icon: React.ReactNode }) {
+function MetricTile({ label, value, sub }: { label: string; value: string | number; sub: string }) {
   return (
-    <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] sm:text-xs text-muted-foreground font-bold tracking-tight">{label}</p>
-          <div className="p-1.5 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
-            {icon}
-          </div>
-        </div>
-        <div className="space-y-1">
-          <p className="text-xl sm:text-2xl font-bold tracking-tight">{safeRender(value)}</p>
-          <p className="text-[10px] text-muted-foreground/60 font-medium">
-            {safeRender(subtext)}
+    <div className="bg-[#151514] p-5">
+      <p className="text-[11px] font-medium text-zinc-500">{label}</p>
+      <p className="mt-3 text-2xl font-semibold tracking-tight text-zinc-50">{safeRender(value)}</p>
+      <p className="mt-1 text-xs text-zinc-500">{sub}</p>
+    </div>
+  )
+}
+
+function RuleRow({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ff6a00]/15 text-[#ff8a33]">
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="text-xs text-zinc-500">{text}</p>
+      </div>
+    </div>
+  )
+}
+
+function FirstRunPanel({ onCreate }: { onCreate: () => void }) {
+  return (
+    <Card className="rounded-[28px] border-[#ff6a00]/30 bg-[#ff6a00]/10 text-zinc-100 shadow-none">
+      <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div>
+          <p className="text-sm font-semibold text-[#ffb37a]">Premiere activation</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">Creez une session, puis testez dans un groupe reel.</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+            Le but n&apos;est pas de remplir des formulaires. Le but est de connecter un numero, le promouvoir admin, puis activer une premiere regle.
           </p>
+        </div>
+        <Button onClick={onCreate} className="h-11 rounded-xl bg-[#ff6a00] text-white hover:bg-[#ff7a1a]">
+          <Plus className="mr-2 h-4 w-4" />
+          Demarrer
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function UserActivityPanel({ recentActivities }: { recentActivities: ActivityItem[] }) {
+  return (
+    <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+      <CardContent className="p-5 sm:p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold">Dernieres actions</p>
+            <p className="mt-1 text-xs text-zinc-500">Vue limitee aux actions de vos sessions.</p>
+          </div>
+          <History className="h-4 w-4 text-zinc-500" />
+        </div>
+        <div className="space-y-3">
+          {recentActivities.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-white/10 p-5 text-sm text-zinc-500">
+              Aucune action recente. Activez une regle pour voir Whappi travailler.
+            </p>
+          ) : (
+            recentActivities.slice(0, 5).map(activity => (
+              <div key={ensureString(activity.id || activity.timestamp)} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold text-zinc-200">{ensureString(activity.action, "Action").replace(/_/g, " ")}</p>
+                  <p className="mt-1 truncate text-[11px] text-zinc-500">{safeRender(activity.resource_id || activity.details || "Session")}</p>
+                </div>
+                <Badge className={cn(
+                  "border-none text-[10px]",
+                  activity.success === 1 || activity.success === true
+                    ? "bg-emerald-500/10 text-emerald-300"
+                    : "bg-red-500/10 text-red-300"
+                )}>
+                  {activity.success === 1 || activity.success === true ? "OK" : "Erreur"}
+                </Badge>
+              </div>
+            ))
+          )}
         </div>
       </CardContent>
     </Card>
   )
 }
 
-function EmptyActivationCard({ onCreate }: { onCreate: () => void }) {
-  const steps = [
-    {
-      icon: Smartphone,
-      title: "Connectez un numéro dédié",
-      text: "Créez une session et liez WhatsApp par QR code ou code d'appairage.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Ajoutez Whappi au groupe",
-      text: "Promouvez le numéro comme admin pour appliquer les règles automatiquement.",
-    },
-    {
-      icon: ListChecks,
-      title: "Activez une première règle",
-      text: "Commencez par l'accueil, l'anti-liens ou les avertissements.",
-    },
-  ]
-
+function AdminPanel({
+  adminStats,
+  analyticsData,
+  recentActivities,
+}: {
+  adminStats: AdminStats | null
+  analyticsData: AnalyticsPoint[]
+  recentActivities: ActivityItem[]
+}) {
   return (
-    <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm">
-      <CardContent className="p-6 sm:p-8">
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_1.4fr] lg:items-center">
-          <div className="space-y-4">
-            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-              Premier groupe
-            </Badge>
-            <div className="space-y-3">
-              <h2 className="text-2xl font-bold tracking-tight">Créez votre première session WhatsApp</h2>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                L&apos;objectif de la première session est simple : connecter un numéro, l&apos;ajouter à un groupe test, puis vérifier que Whappi applique une règle.
-              </p>
-            </div>
-            <Button onClick={onCreate} className="rounded-full px-6">
-              <Plus className="mr-2 h-4 w-4" />
-              Créer ma première session
-            </Button>
+    <Card className="rounded-[28px] border-white/10 bg-[#151514] text-zinc-100 shadow-none">
+      <CardContent className="p-5 sm:p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold">Admin plateforme</p>
+            <p className="mt-1 text-xs text-zinc-500">Visible uniquement pour les comptes admin.</p>
           </div>
+          <Button asChild variant="outline" className="h-9 border-white/10 bg-white/[0.03] text-xs text-zinc-100 hover:bg-white/[0.07]">
+            <Link href="/dashboard/users">Utilisateurs</Link>
+          </Button>
+        </div>
 
-          <div className="grid gap-3">
-            {steps.map((step, index) => (
-              <div key={step.title} className="flex gap-4 rounded-xl border border-border/70 bg-background/70 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <step.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Étape {index + 1}</span>
-                  </div>
-                  <h3 className="mt-1 text-sm font-semibold">{step.title}</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <MiniAdminStat icon={<Users className="h-4 w-4" />} label="Utilisateurs" value={adminStats?.users?.total || 0} />
+          <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label="Sessions" value={adminStats?.sessions?.total || 0} />
+          <MiniAdminStat icon={<WalletCards className="h-4 w-4" />} label="Credits" value={adminStats?.credits?.deducted || 0} />
+        </div>
+
+        <div className="mt-5 h-[190px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={analyticsData}>
+              <defs>
+                <linearGradient id="adminMessages" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ff6a00" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#ff6a00" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} />
+              <Tooltip contentStyle={{ background: "#18181b", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, color: "#fff" }} />
+              <Area type="monotone" dataKey="messages" stroke="#ff6a00" strokeWidth={2} fill="url(#adminMessages)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="mt-5 grid gap-2">
+          {recentActivities.slice(0, 3).map(activity => (
+            <div key={ensureString(activity.id || activity.timestamp)} className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2">
+              <span className="truncate text-xs text-zinc-400">{safeRender(activity.action, "Action")}</span>
+              <span className="font-mono text-[10px] text-zinc-600">{safeDate(activity.created_at || activity.timestamp)}</span>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function MiniAdminStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="mb-3 text-[#ff8a33]">{icon}</div>
+      <p className="text-2xl font-semibold">{value}</p>
+      <p className="text-xs text-zinc-500">{label}</p>
+    </div>
   )
 }

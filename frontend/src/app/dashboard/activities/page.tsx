@@ -10,13 +10,11 @@ import {
   Search,
   History,
   Clock,
-  User,
-  Tag,
   MessageSquare,
   ShieldCheck,
   AlertCircle
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -34,10 +32,21 @@ import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
 
+type ActivityItem = {
+  id?: string | number
+  action?: string
+  details?: unknown
+  resource_id?: string
+  user_email?: string
+  success?: boolean | number
+  timestamp?: string
+  created_at?: string
+}
+
 export default function ActivitiesPage() {
   const { getToken } = useAuth()
   const { user } = useUser()
-  const [activities, setActivities] = React.useState<any[]>([])
+  const [activities, setActivities] = React.useState<ActivityItem[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [userFilter, setUserFilter] = React.useState("all")
@@ -45,17 +54,21 @@ export default function ActivitiesPage() {
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const fetchActivities = React.useCallback(async () => {
+    if (!isAdmin) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const token = await getToken()
       const data = await api.activities.list(ACTIVITIES_PAGE_SIZE, 0, token || undefined)
-      setActivities(Array.isArray(data) ? data : [])
-    } catch (e) {
+      setActivities(Array.isArray(data) ? (data as ActivityItem[]) : [])
+    } catch {
       toast.error("Erreur de chargement du journal")
     } finally {
       setLoading(false)
     }
-  }, [getToken])
+  }, [getToken, isAdmin])
 
   React.useEffect(() => {
     fetchActivities()
@@ -75,6 +88,20 @@ export default function ActivitiesPage() {
   })
 
   const uniqueUsers = Array.from(new Set((Array.isArray(activities) ? activities : []).map(a => a.user_email))).filter(Boolean)
+
+  if (!isAdmin) {
+    return (
+      <div className="mx-auto flex min-h-[60dvh] max-w-xl flex-col items-center justify-center text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-muted-foreground">
+          <History className="h-5 w-5" />
+        </div>
+        <h1 className="mt-5 text-xl font-semibold">Acces reserve</h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Le journal plateforme est reserve aux administrateurs. Vos actions importantes restent visibles depuis le centre de controle.
+        </p>
+      </div>
+    )
+  }
 
   const getActionIcon = (action: string) => {
     const act = action || "";
