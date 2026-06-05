@@ -7,6 +7,8 @@ import {
   Activity,
   MessageCircle,
   Smartphone,
+  ShieldCheck,
+  ListChecks,
   TrendingUp,
   History,
   Settings2,
@@ -261,10 +263,14 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl font-semibold">Overview</h1>
-          <p className="text-sm text-muted-foreground">Gérez vos automatisations et surveillez les performances.</p>
+          <h1 className="text-xl font-semibold">Tableau de bord</h1>
+          <p className="text-sm text-muted-foreground">Connectez WhatsApp, activez vos règles et suivez les actions de vos groupes.</p>
         </div>
       </div>
+
+      {!isAdmin && sessions.length === 0 && (
+        <EmptyActivationCard onCreate={() => setIsCreateOpen(true)} />
+      )}
 
       {/* Grid 4 cols Stats */}
       <div id="performance-charts" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -348,7 +354,7 @@ export default function DashboardPage() {
             )}
          </div>
          <Button id="new-session-btn" size="sm" onClick={() => setIsCreateOpen(true)} className="rounded-full h-9 w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" /> New Session
+            <Plus className="h-4 w-4 mr-2" /> Créer une session
          </Button>
       </div>
 
@@ -545,16 +551,16 @@ export default function DashboardPage() {
                }
             })} className="space-y-6">
               <DialogHeader>
-                <DialogTitle>New WhatsApp Session</DialogTitle>
-                <DialogDescription className="text-xs">Initialisez un nouveau compte pour l&apos;automatisation.</DialogDescription>
+                <DialogTitle>Créer une session WhatsApp</DialogTitle>
+                <DialogDescription className="text-xs">Choisissez un nom simple pour le numéro que Whappi utilisera comme co-admin.</DialogDescription>
               </DialogHeader>
               <div className="space-y-6 py-4">
                 <FormField control={form.control} name="sessionId" render={({ field }) => (
                     <FormItem className="space-y-2">
-                      <FormLabel className="text-[10px] font-semibold text-muted-foreground">Session Name</FormLabel>
-                      <FormControl><Input placeholder="ex: support-client" {...field} className="h-9 text-sm" /></FormControl>
+                      <FormLabel className="text-[10px] font-semibold text-muted-foreground">Nom de session</FormLabel>
+                      <FormControl><Input placeholder="ex: groupe-eglise" {...field} className="h-9 text-sm" /></FormControl>
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {['support', 'ventes', 'marketing', 'bot'].map(tag => (
+                        {['eglise', 'ecole', 'tontine', 'business'].map(tag => (
                             <Badge
                               key={tag}
                               variant="secondary"
@@ -571,14 +577,14 @@ export default function DashboardPage() {
                 />
                 <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                     <FormItem className="space-y-2">
-                      <FormLabel className="text-[10px] font-semibold text-muted-foreground">Phone Number (Optional)</FormLabel>
+                      <FormLabel className="text-[10px] font-semibold text-muted-foreground">Numéro dédié (optionnel)</FormLabel>
                       <FormControl><Input placeholder="ex: 2376..." {...field} className="h-9 text-sm" /></FormControl>
                       <FormMessage className="text-[10px]" />
                     </FormItem>
                   )}
                 />
               </div>
-              <DialogFooter><Button type="submit" className="w-full">Create Session</Button></DialogFooter>
+              <DialogFooter><Button type="submit" className="w-full">Créer ma session</Button></DialogFooter>
             </form>
           </Form>
         </DialogContent>
@@ -602,6 +608,67 @@ function StatCard({ label, value, subtext, icon }: { label: string; value: strin
           <p className="text-[10px] text-muted-foreground/60 font-medium">
             {safeRender(subtext)}
           </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function EmptyActivationCard({ onCreate }: { onCreate: () => void }) {
+  const steps = [
+    {
+      icon: Smartphone,
+      title: "Connectez un numéro dédié",
+      text: "Créez une session et liez WhatsApp par QR code ou code d'appairage.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Ajoutez Whappi au groupe",
+      text: "Promouvez le numéro comme admin pour appliquer les règles automatiquement.",
+    },
+    {
+      icon: ListChecks,
+      title: "Activez une première règle",
+      text: "Commencez par l'accueil, l'anti-liens ou les avertissements.",
+    },
+  ]
+
+  return (
+    <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm">
+      <CardContent className="p-6 sm:p-8">
+        <div className="grid gap-8 lg:grid-cols-[1.1fr_1.4fr] lg:items-center">
+          <div className="space-y-4">
+            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
+              Premier groupe
+            </Badge>
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold tracking-tight">Créez votre première session WhatsApp</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                L&apos;objectif de la première session est simple : connecter un numéro, l&apos;ajouter à un groupe test, puis vérifier que Whappi applique une règle.
+              </p>
+            </div>
+            <Button onClick={onCreate} className="rounded-full px-6">
+              <Plus className="mr-2 h-4 w-4" />
+              Créer ma première session
+            </Button>
+          </div>
+
+          <div className="grid gap-3">
+            {steps.map((step, index) => (
+              <div key={step.title} className="flex gap-4 rounded-xl border border-border/70 bg-background/70 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <step.icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Étape {index + 1}</span>
+                  </div>
+                  <h3 className="mt-1 text-sm font-semibold">{step.title}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>
