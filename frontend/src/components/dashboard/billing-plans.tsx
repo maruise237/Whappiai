@@ -16,7 +16,7 @@ const plans = [
     name: "Starter",
     price: "2,500 FCFA",
     features: [
-      "500 messages IA / mois",
+      "500 actions WhatsApp / mois",
       "1 session WhatsApp",
       "Réponses auto 24/7",
       "Support technique par email",
@@ -30,11 +30,11 @@ const plans = [
     name: "Pro",
     price: "5,000 FCFA",
     features: [
-      "2,000 messages IA / mois",
+      "2,000 actions WhatsApp / mois",
       "Groupes WhatsApp illimités",
       "Analyses avancées",
       "Anti-spam intelligent",
-      "Support client prioritaire",
+      "Assistance prioritaire",
       "Export de données (CSV/JSON)"
     ],
     cta: "Choisir Pro",
@@ -45,7 +45,7 @@ const plans = [
     name: "Business",
     price: "10,000 FCFA",
     features: [
-      "10,000 messages IA / mois",
+      "10,000 actions WhatsApp / mois",
       "Tout ce qui est dans Pro",
       "Gestionnaire de compte dédié",
       "Intégrations API personnalisées",
@@ -76,6 +76,7 @@ export function BillingPlans() {
         toast.error("Impossible d'initialiser le paiement")
       }
     } catch (error) {
+      console.error(error)
       toast.error("Une erreur inattendue est survenue")
     } finally {
       setLoading(null)

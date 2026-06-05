@@ -4,18 +4,11 @@ import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Users,
-  MessageSquare,
-  Calendar,
   Sparkles,
-  Zap,
-  Plus,
-  Trash2,
   Loader2,
   Save,
   ArrowLeft,
-  Search,
-  Clock,
-  History
+  Search
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -24,17 +17,33 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, copyToClipboard, ensureString, safeRender } from "@/lib/utils"
+
+type GroupItem = {
+  id: string
+  subject?: string
+  name?: string
+  [key: string]: unknown
+}
+
+type GroupProfile = {
+  mission: string
+  objectives: string
+  rules: string
+  theme: string
+}
+
+type GroupLink = {
+  title: string
+  url: string
+  [key: string]: unknown
+}
+
+type Recurrence = "none" | "daily" | "weekly"
 
 function GroupEngagementContent() {
   const router = useRouter()
@@ -42,7 +51,7 @@ function GroupEngagementContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('sessionId')
 
-  const [groups, setGroups] = React.useState<any[]>([])
+  const [groups, setGroups] = React.useState<GroupItem[]>([])
   const [selectedGroupId, setSelectedGroupId] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
@@ -50,17 +59,17 @@ function GroupEngagementContent() {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [generationGoal, setGenerationGoal] = React.useState("")
   const [scheduledAt, setScheduledAt] = React.useState("")
-  const [recurrence, setRecurrence] = React.useState<"none" | "daily" | "weekly">("none")
+  const [recurrence, setRecurrence] = React.useState<Recurrence>("none")
   const [directMessage, setDirectMessage] = React.useState("")
 
-  const [profile, setProfile] = React.useState<any>({
+  const [profile, setProfile] = React.useState<GroupProfile>({
     mission: "",
     objectives: "",
     rules: "",
     theme: ""
   })
-  const [links, setLinks] = React.useState<any[]>([])
-  const [tasks, setTasks] = React.useState<any[]>([])
+  const [links, setLinks] = React.useState<GroupLink[]>([])
+  const [, setTasks] = React.useState<unknown[]>([])
 
   const fetchGroups = React.useCallback(async () => {
     if (!sessionId) return
@@ -73,7 +82,8 @@ function GroupEngagementContent() {
       if (gData.length > 0 && !selectedGroupId) {
         setSelectedGroupId(gData[0].id)
       }
-    } catch (e: any) {
+    } catch (error) {
+      console.error(error)
       toast.error("Erreur de chargement des groupes")
     } finally {
       setLoading(false)
@@ -109,8 +119,9 @@ function GroupEngagementContent() {
     try {
       const token = await getToken()
       await api.sessions.updateGroupProfile(sessionId, selectedGroupId, profile, token || undefined)
-      toast.success("Profil du groupe mis &agrave; jour")
-    } catch (e: any) {
+      toast.success("Profil du groupe mis a jour")
+    } catch (error) {
+      console.error(error)
       toast.error("Erreur de sauvegarde")
     } finally {
       setIsSaving(false)
@@ -123,8 +134,9 @@ function GroupEngagementContent() {
     try {
       const token = await getToken()
       await api.sessions.updateGroupLinks(sessionId, selectedGroupId, links, token || undefined)
-      toast.success("Liens enregistr&eacute;s")
-    } catch (e: any) {
+      toast.success("Liens enregistres")
+    } catch (error) {
+      console.error(error)
       toast.error("Erreur de sauvegarde des liens")
     } finally {
       setIsSaving(false)
@@ -146,12 +158,13 @@ function GroupEngagementContent() {
         type: 'text'
       }, token || undefined)
 
-      toast.success("Message programm&eacute;")
+      toast.success("Message programme")
       setDirectMessage("")
       setScheduledAt("")
       setRecurrence("none")
       fetchGroupDetails()
-    } catch (e: any) {
+    } catch (error) {
+      console.error(error)
       toast.error("Erreur de programmation")
     } finally {
       setIsSaving(false)
@@ -160,25 +173,26 @@ function GroupEngagementContent() {
 
   const handleGenerate = async () => {
     if (!sessionId || !selectedGroupId || !generationGoal.trim()) {
-       return toast.error("Veuillez d&eacute;crire un objectif de campagne")
+       return toast.error("Veuillez decrire l'objectif du message")
     }
 
     setIsGenerating(true)
-    const toastId = toast.loading("L&apos;IA g&eacute;n&egrave;re votre campagne...")
+    const toastId = toast.loading("Preparation du message...")
 
     try {
        const token = await getToken()
        const response = await api.sessions.generateGroupMessage(sessionId, selectedGroupId, { objective: generationGoal, includeLinks: true }, token || undefined)
 
-       toast.success("Message g&eacute;n&eacute;r&eacute; avec succ&egrave;s", { id: toastId })
+       toast.success("Message prepare avec succes", { id: toastId })
 
        if (response && response.message) {
           setDirectMessage(response.message)
           await copyToClipboard(response.message);
        }
        setGenerationGoal("")
-    } catch (e: any) {
-       toast.error("&Eacute;chec de la g&eacute;n&eacute;ration", { id: toastId })
+    } catch (error) {
+       console.error(error)
+       toast.error("Echec de la preparation", { id: toastId })
     } finally {
        setIsGenerating(false)
     }
@@ -199,7 +213,7 @@ function GroupEngagementContent() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-0.5">
-            <h1 className="text-xl font-semibold">Engagement &amp; Strat&eacute;gie</h1>
+            <h1 className="text-xl font-semibold">Bienvenue &amp; rappels</h1>
             <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase font-bold tracking-widest px-2 h-5">
               {safeRender(sessionId)}
             </Badge>
@@ -221,20 +235,26 @@ function GroupEngagementContent() {
             </div>
           </div>
           <div className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-y-auto p-2 gap-1 no-scrollbar">
-              {filteredGroups.map(group => (
-                <button
-                  key={group.id}
-                  onClick={() => setSelectedGroupId(group.id)}
-                  className={cn(
-                    "flex-none lg:w-full text-left p-2.5 rounded-md text-xs transition-colors flex items-center justify-between group whitespace-nowrap lg:whitespace-normal",
-                    selectedGroupId === group.id
-                      ? "bg-primary/10 text-primary font-bold shadow-sm"
-                      : "hover:bg-muted text-muted-foreground"
-                  )}
-                >
-                  <span className="truncate flex-1 pr-2">{safeRender(group.subject || group.name, 'Groupe sans nom')}</span>
-                </button>
-              ))}
+              {filteredGroups.length === 0 ? (
+                <div className="p-4 text-xs leading-5 text-muted-foreground">
+                  Aucun groupe trouv&eacute;. Ajoutez Whappi au groupe WhatsApp puis donnez-lui le r&ocirc;le admin.
+                </div>
+              ) : (
+                filteredGroups.map(group => (
+                  <button
+                    key={group.id}
+                    onClick={() => setSelectedGroupId(group.id)}
+                    className={cn(
+                      "flex-none lg:w-full text-left p-2.5 rounded-md text-xs transition-colors flex items-center justify-between group whitespace-nowrap lg:whitespace-normal",
+                      selectedGroupId === group.id
+                        ? "bg-primary/10 text-primary font-bold shadow-sm"
+                        : "hover:bg-muted text-muted-foreground"
+                    )}
+                  >
+                    <span className="truncate flex-1 pr-2">{safeRender(group.subject || group.name, 'Groupe sans nom')}</span>
+                  </button>
+                ))
+              )}
           </div>
         </Card>
 
@@ -249,20 +269,20 @@ function GroupEngagementContent() {
                 <TabsList className="bg-muted/50 p-1 rounded-lg h-10 w-full sm:w-fit gap-1">
                    <TabsTrigger value="profil" className="text-[11px] uppercase font-bold tracking-wider px-6">Profil</TabsTrigger>
                    <TabsTrigger value="liens" className="text-[11px] uppercase font-bold tracking-wider px-6">Liens</TabsTrigger>
-                   <TabsTrigger value="engagement" className="text-[11px] uppercase font-bold tracking-wider px-6">Engagement</TabsTrigger>
+                   <TabsTrigger value="engagement" className="text-[11px] uppercase font-bold tracking-wider px-6">Rappels</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="profil" className="space-y-6">
                    <Card className="border-none shadow-none bg-muted/20">
                       <CardHeader className="pb-4">
-                         <CardTitle className="text-sm">Identit&eacute; du Groupe</CardTitle>
-                         <CardDescription className="text-xs">D&eacute;finissez l&apos;ADN du groupe pour orienter l&apos;IA.</CardDescription>
+                         <CardTitle className="text-sm">Contexte du groupe</CardTitle>
+                         <CardDescription className="text-xs">Gardez les r&egrave;gles, le ton et les habitudes du groupe au m&ecirc;me endroit.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4 pt-0">
                          <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Mission du groupe</Label>
+                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">R&ocirc;le du groupe</Label>
                             <Textarea
-                               placeholder="D&eacute;crivez la raison d&apos;&ecirc;tre du groupe..."
+                               placeholder="Ex: entraide des parents, tontine du quartier, annonces internes..."
                                className="min-h-[80px] text-xs bg-card"
                                value={profile.mission || ""}
                                onChange={e => setProfile({...profile, mission: e.target.value})}
@@ -303,14 +323,14 @@ function GroupEngagementContent() {
                             <div className="flex items-start gap-4">
                                <Sparkles className="h-5 w-5 text-primary" />
                                <div className="space-y-3 flex-1">
-                                  <h4 className="text-sm font-bold">G&eacute;n&eacute;rateur de Campagne IA</h4>
+                                  <h4 className="text-sm font-bold">Pr&eacute;parer un message de groupe</h4>
                                   <Textarea
-                                    placeholder="Objectif de la campagne..."
+                                    placeholder="Ex: rappeler la cotisation vendredi &agrave; 18h, accueillir les nouveaux, relancer une annonce importante..."
                                     className="min-h-[80px] bg-background text-xs"
                                     value={generationGoal}
                                     onChange={(e) => setGenerationGoal(e.target.value)}
                                   />
-                                  <Button size="sm" className="w-full" onClick={handleGenerate} disabled={isGenerating}>G&eacute;n&eacute;rer</Button>
+                                  <Button size="sm" className="w-full" onClick={handleGenerate} disabled={isGenerating}>Pr&eacute;parer</Button>
                                </div>
                             </div>
                          </CardContent>
@@ -331,7 +351,7 @@ function GroupEngagementContent() {
                               </div>
                               <div className="space-y-1">
                                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">R&eacute;p&eacute;tition</Label>
-                                 <Select value={recurrence} onValueChange={(v: any) => setRecurrence(v)}>
+                                 <Select value={recurrence} onValueChange={(value: Recurrence) => setRecurrence(value)}>
                                     <SelectTrigger className="h-9 text-xs">
                                        <SelectValue placeholder="R&eacute;p&eacute;tition" />
                                     </SelectTrigger>

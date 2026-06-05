@@ -1,20 +1,26 @@
 "use client"
 
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Coins, History, ArrowUpRight, ArrowDownLeft, Zap } from "lucide-react"
 import Link from "next/link"
-import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
+import { cn, ensureString } from "@/lib/utils"
+
+type CreditHistoryItem = {
+  type?: string
+  description?: unknown
+  amount?: number | string
+}
 
 interface CreditCardUIProps {
   credits: {
     balance: number
     used: number
     plan: string
-    history: any[]
+    history: CreditHistoryItem[]
   } | null
   userRole: string | null
 }
@@ -36,7 +42,7 @@ export function CreditCardUI({ credits, userRole }: CreditCardUIProps) {
             </div>
             <div>
               <p className="text-sm font-medium">Portefeuille</p>
-              <p className="text-xs text-muted-foreground">Crédits IA</p>
+              <p className="text-xs text-muted-foreground">Cr&eacute;dits WhatsApp</p>
             </div>
           </div>
           <Badge variant="secondary" className="text-xs uppercase">

@@ -9,7 +9,9 @@ import {
   Info,
   Loader2,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Link2,
+  MessageSquareText
 } from "lucide-react"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,11 +23,36 @@ import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 
+type SessionItem = {
+  sessionId?: string
+  isConnected?: boolean
+  status?: string
+  [key: string]: unknown
+}
+
+const quickRules = [
+  {
+    icon: Link2,
+    title: "Anti-liens",
+    text: "Bloquer pubs, arnaques et liens hors sujet."
+  },
+  {
+    icon: MessageSquareText,
+    title: "Bienvenue",
+    text: "Envoyer les regles des qu'un membre arrive."
+  },
+  {
+    icon: ShieldAlert,
+    title: "Avertissements",
+    text: "Prevenir avant exclusion pour garder le groupe calme."
+  }
+]
+
 export default function ModerationPage() {
   const router = useRouter()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
-  const [sessions, setSessions] = React.useState<any[]>([])
+  const [sessions, setSessions] = React.useState<SessionItem[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
 
@@ -58,7 +85,8 @@ export default function ModerationPage() {
         const newSessions = [...prev];
         let hasChanges = false;
 
-        updates.forEach((update: any) => {
+        updates.forEach((update: SessionItem) => {
+          if (!update.sessionId) return
           const index = newSessions.findIndex(s => ensureString(s.sessionId) === ensureString(update.sessionId));
           if (index !== -1) {
             newSessions[index] = {
@@ -89,9 +117,9 @@ export default function ModerationPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" /> Gestion des Groupes
+            <Shield className="h-5 w-5 text-primary" /> R&egrave;gles des groupes
           </h1>
-          <p className="text-sm text-muted-foreground">Sélectionnez une session pour administrer ses groupes.</p>
+          <p className="text-sm text-muted-foreground">Choisissez une session connect&eacute;e, puis activez une premi&egrave;re r&egrave;gle utile.</p>
         </div>
 
         <div className="relative w-full sm:w-64">
@@ -110,6 +138,29 @@ export default function ModerationPage() {
         <p className="text-xs text-muted-foreground">La mod&eacute;ration ne s&apos;applique qu&apos;aux groupes o&ugrave; le compte WhatsApp est Administrateur.</p>
       </div>
 
+      <Card className="border-primary/10 bg-primary/[0.03] shadow-none">
+        <CardContent className="p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">Premi&egrave;re activation recommand&eacute;e</p>
+              <p className="text-xs text-muted-foreground">Commencez par une protection simple, visible et facile &agrave; comprendre.</p>
+            </div>
+            <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] uppercase tracking-wider">
+              3 minutes
+            </Badge>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {quickRules.map(rule => (
+              <div key={rule.title} className="rounded-lg border bg-background/70 p-3">
+                <rule.icon className="mb-2 h-4 w-4 text-primary" />
+                <p className="text-xs font-semibold">{rule.title}</p>
+                <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{rule.text}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {loading ? (
         <div className="flex items-center justify-center h-64">
            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/20" />
@@ -117,10 +168,10 @@ export default function ModerationPage() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl border-muted/20 bg-muted/5">
            <ShieldAlert className="h-10 w-10 text-muted-foreground/30 mb-3" />
-           <p className="text-sm font-medium">Aucune session active</p>
-           <p className="text-xs text-muted-foreground max-w-xs">Connectez un compte WhatsApp pour commencer la mod&eacute;ration.</p>
+           <p className="text-sm font-medium">Aucune session pr&ecirc;te pour les r&egrave;gles</p>
+           <p className="text-xs text-muted-foreground max-w-xs">Cr&eacute;ez une session WhatsApp, ajoutez-la dans vos groupes, puis revenez activer la premi&egrave;re protection.</p>
            <Button variant="outline" size="sm" className="mt-4 rounded-full" onClick={() => router.push('/dashboard')}>
-              Tableau de bord
+              Cr&eacute;er une session
            </Button>
         </div>
       ) : (
@@ -153,7 +204,7 @@ export default function ModerationPage() {
                   className="h-8 text-[10px] font-semibold tracking-wider"
                   onClick={() => router.push(`/dashboard/moderation/groups/moderation?sessionId=${safeRender(session.sessionId)}`)}
                 >
-                  <ShieldCheck className="h-3 w-3 mr-1.5" /> S&eacute;curit&eacute;
+                  <ShieldCheck className="h-3 w-3 mr-1.5" /> Anti-spam
                 </Button>
                 <Button
                   variant="secondary"
@@ -161,7 +212,7 @@ export default function ModerationPage() {
                   className="h-8 text-[10px] font-semibold tracking-wider"
                   onClick={() => router.push(`/dashboard/moderation/groups/engagement?sessionId=${safeRender(session.sessionId)}`)}
                 >
-                  <ShieldCheck className="h-3 w-3 mr-1.5" /> Engagement
+                  <MessageSquareText className="h-3 w-3 mr-1.5" /> Bienvenue
                 </Button>
               </CardFooter>
             </Card>

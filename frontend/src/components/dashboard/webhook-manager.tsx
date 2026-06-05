@@ -5,13 +5,11 @@ import {
   Webhook,
   Plus,
   Trash2,
-  Shield,
-  Zap,
   Loader2,
   ExternalLink,
   CheckCircle2
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,13 +29,19 @@ import { toast } from "sonner"
 
 const AVAILABLE_EVENTS = [
   { id: 'message_received', label: 'Message Reçu' },
-  { id: 'ai_response', label: 'Réponse IA' },
+  { id: 'ai_response', label: 'Reponse automatique' },
   { id: 'human_takeover', label: 'Reprise Humaine' },
 ]
 
+type WebhookItem = {
+  id: string
+  url?: string
+  events?: string[] | string
+}
+
 export function WebhookManager({ sessionId }: { sessionId: string }) {
   const { getToken } = useAuth()
-  const [webhooks, setWebhooks] = React.useState<any[]>([])
+  const [webhooks, setWebhooks] = React.useState<WebhookItem[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isAdding, setIsAdding] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
@@ -73,7 +77,8 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
       setIsAdding(false)
       setFormData({ url: "", events: ['message_received', 'ai_response'], secret: "" })
       fetchWebhooks()
-    } catch (error: any) {
+    } catch (error) {
+      console.error(error)
       toast.error("Erreur lors de l'ajout")
     } finally {
       setIsSubmitting(false)
@@ -86,7 +91,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
       await api.sessions.deleteWebhook(sessionId, id, token || undefined)
       toast.success("Webhook supprimé")
       fetchWebhooks()
-    } catch (error) {
+    } catch {
       toast.error("Erreur lors de la suppression")
     }
   }
@@ -98,7 +103,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Webhook className="h-5 w-5 text-primary" /> Webhooks
           </h2>
-          <p className="text-sm text-muted-foreground">Connectez Whappi à vos outils (Zapier, Make, CRM) en temps réel.</p>
+          <p className="text-sm text-muted-foreground">Connectez Whappi &agrave; vos outils de suivi (Zapier, Make, tableurs) en temps r&eacute;el.</p>
         </div>
         <Button size="sm" onClick={() => setIsAdding(true)}>
           <Plus className="h-4 w-4 mr-2" /> Nouveau
@@ -131,7 +136,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
                           return events.map((ev: string) => (
                             <Badge key={ev} variant="secondary" className="text-[9px] uppercase">{String(ev).replace('_', ' ')}</Badge>
                           ));
-                        } catch (e) {
+                        } catch {
                           return <Badge variant="destructive" className="text-[9px]">ERR_PARSE</Badge>;
                         }
                       })()}
