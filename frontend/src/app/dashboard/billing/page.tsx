@@ -8,6 +8,7 @@ import { BillingPlans } from "@/components/dashboard/billing-plans"
 import { api } from "@/lib/api"
 import { useAuth } from "@clerk/clerk-react"
 import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/plan-badge"
+import { cn } from "@/lib/utils"
 
 export default function BillingPage() {
   const { getToken } = useAuth()
@@ -73,7 +74,12 @@ export default function BillingPage() {
         )}
       </div>
 
-      <Card className="border-primary/25 bg-primary/5 shadow-none">
+      <Card className={cn(
+        "shadow-none",
+        !isPlanLoading && isExpiredDate(expiresAt)
+          ? "border-destructive/25 bg-destructive/5"
+          : "border-primary/25 bg-primary/5"
+      )}>
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -87,8 +93,8 @@ export default function BillingPage() {
               {!isPlanLoading && expiresAt && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 font-medium">
-                    <CalendarClock className="h-3.5 w-3.5 text-primary" />
-                    Expire le {formatExpirationDate(expiresAt)}
+                    <CalendarClock className={cn("h-3.5 w-3.5", isExpiredDate(expiresAt) ? "text-destructive" : "text-primary")} />
+                    {expirationDateLabel(expiresAt)}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 font-medium">
                     <BellRing className="h-3.5 w-3.5 text-amber-500" />
@@ -140,7 +146,7 @@ export default function BillingPage() {
 }
 
 function billingBannerTitle(plan: string, accessState: { allowed: boolean }) {
-  if (!accessState.allowed) return `Forfait ${getPlanLabel(plan)} interrompu`
+  if (!accessState.allowed) return `Forfait ${getPlanLabel(plan)} expire`
   if (plan === "trial") return "Essai gratuit en cours"
   return `Forfait ${getPlanLabel(plan)} actif`
 }
@@ -207,6 +213,16 @@ function getDaysRemaining(value: string | null) {
   const expiryDay = new Date(expiry.getFullYear(), expiry.getMonth(), expiry.getDate())
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   return Math.ceil((expiryDay.getTime() - today.getTime()) / 86_400_000)
+}
+
+function expirationDateLabel(value: string) {
+  return `${isExpiredDate(value) ? "Expire depuis le" : "Expire le"} ${formatExpirationDate(value)}`
+}
+
+function isExpiredDate(value: string | null) {
+  if (!value) return false
+  const date = new Date(value)
+  return !Number.isNaN(date.getTime()) && date.getTime() < Date.now()
 }
 
 function ensureText(value: unknown) {

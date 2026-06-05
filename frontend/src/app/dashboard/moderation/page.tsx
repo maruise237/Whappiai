@@ -32,7 +32,7 @@ import { useAuth } from "@clerk/clerk-react"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"
-import { getPlanCode, PlanBadge } from "@/components/dashboard/plan-badge"
+import { getPlanCode } from "@/components/dashboard/plan-badge"
 
 type SessionItem = {
   sessionId?: string
@@ -551,6 +551,19 @@ export default function ModerationPage() {
           onClick={fetchGroups}
         />
       ) : (
+        <div className="space-y-4">
+          {getPlanCode(activePlan) === "trial" && (
+            <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <span className="flex items-center gap-2 text-amber-700">
+                <Info className="h-4 w-4 shrink-0" />
+                Plan actuel : <strong>Essai gratuit</strong>
+              </span>
+              <Link href="/dashboard/billing" className="font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800">
+                Passer au plan Pro
+              </Link>
+            </div>
+          )}
+
         <Accordion type="single" collapsible className="gap-3">
           {filteredGroups.map(group => {
             const groupId = ensureString(group.id || group.jid)
@@ -565,8 +578,11 @@ export default function ModerationPage() {
               <AccordionItem key={groupId} value={groupId} className="overflow-hidden rounded-2xl border bg-card">
                 <AccordionTrigger className="rounded-none px-4 py-4 hover:no-underline sm:px-5">
                   <div className="flex min-w-0 flex-1 items-center gap-3 pr-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <Shield className="h-4 w-4" />
+                    <div className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white",
+                      getGroupColor(groupId)
+                    )}>
+                      {groupName.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 text-left">
                       <p className="truncate text-sm font-semibold" title={groupName}>{truncateGroupName(groupName)}</p>
@@ -576,7 +592,6 @@ export default function ModerationPage() {
                     </div>
                   </div>
                   <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                    <PlanBadge plan={activePlan} active />
                     <Badge className={cn(
                       "border-none text-[10px]",
                       activeCount > 0 ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-muted text-muted-foreground"
@@ -913,6 +928,7 @@ export default function ModerationPage() {
             )
           })}
         </Accordion>
+        </div>
       )}
     </div>
   )
@@ -1017,6 +1033,22 @@ function joinForbiddenWords(tags: string[]) {
 
 function truncateGroupName(value: string) {
   return value.length > 30 ? `${value.slice(0, 30)}...` : value
+}
+
+const GROUP_COLORS = [
+  "bg-green-500",
+  "bg-blue-500",
+  "bg-purple-500",
+  "bg-orange-500",
+  "bg-pink-500",
+  "bg-teal-500",
+  "bg-indigo-500",
+  "bg-rose-500",
+]
+
+function getGroupColor(groupId: string) {
+  const hash = groupId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  return GROUP_COLORS[hash % GROUP_COLORS.length]
 }
 
 function activeRuleLabel(count: number) {

@@ -641,7 +641,7 @@ function FirstRunPanel({ onCreate }: { onCreate: () => void }) {
 
 function UserActivityPanel({ recentActivities }: { recentActivities: ActivityItem[] }) {
   return (
-    <Card className="rounded-[28px] bg-card shadow-none">
+    <Card className="rounded-xl border bg-card shadow-sm">
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
@@ -795,8 +795,10 @@ function ActivityTable({ recentActivities, emptyText }: { recentActivities: Acti
               <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{activityTime(activity)}</TableCell>
               <TableCell><Badge variant="outline" className="text-[10px]">{activityType(activity)}</Badge></TableCell>
               <TableCell className="max-w-28 truncate text-xs">{safeRender(activity.resource_id || "Session")}</TableCell>
-              <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground" title={activityPreview(activity)}>
-                {activityPreview(activity)}
+              <TableCell className="max-w-[200px] text-xs text-muted-foreground">
+                <span className="block truncate" title={activityPreview(activity)}>
+                  {activityPreview(activity)}
+                </span>
               </TableCell>
               <TableCell>
                 <Badge className={cn(
@@ -887,5 +889,28 @@ function activityType(activity: ActivityItem) {
 
 function activityPreview(activity: ActivityItem) {
   const details = typeof activity.details === "string" ? activity.details : JSON.stringify(activity.details || "")
-  return ensureString(details || activity.action || "Action executee").replace(/_/g, " ")
+  return formatApercu(details || activity.action || "Action executee")
+}
+
+function formatApercu(raw: string) {
+  if (!raw) return "-"
+  const readable = raw.replace(/_/g, " ")
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed.message?.conversation) return parsed.message.conversation
+    if (parsed.message?.extendedTextMessage?.text) return parsed.message.extendedTextMessage.text
+    if (parsed.message?.imageMessage?.caption) return `Image - ${parsed.message.imageMessage.caption || "Image"}`
+    if (parsed.message?.videoMessage?.caption) return `Video - ${parsed.message.videoMessage.caption || "Video"}`
+    if (parsed.body) return ensureString(parsed.body)
+    if (parsed.text) return ensureString(parsed.text)
+    if (parsed.preview) return ensureString(parsed.preview)
+
+    const type = Object.keys(parsed.message || {})[0]
+    if (type) return `[${type}]`
+    if (parsed.recipient) return "Message WhatsApp"
+    return "Action executee"
+  } catch {
+    return readable
+  }
 }

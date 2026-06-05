@@ -33,6 +33,7 @@ import {
 import { Logo } from "@/components/ui/logo"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
@@ -79,10 +80,31 @@ const adminNavigation: NavItemConfig[] = [
 function LiveIndicator() {
   const { isConnected } = useWebSocket()
 
+  if (!isConnected) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="inline-flex cursor-help items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+              Connexion en attente
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[240px] text-center">
+            <p>Si votre forfait a expire, renouvelez pour retablir la connexion WhatsApp.</p>
+            <Link href="/dashboard/billing" className="mt-1 block text-xs font-medium text-primary underline underline-offset-2">
+              Voir les forfaits
+            </Link>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
+
   return (
     <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground">
-      <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-primary" : "bg-muted-foreground/50")} />
-      {isConnected ? "Temps reel" : "Connexion en attente"}
+      <span className="h-2 w-2 rounded-full bg-primary" />
+      Temps reel
     </div>
   )
 }
