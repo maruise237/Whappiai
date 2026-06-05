@@ -13,9 +13,9 @@ const plans = [
     description: "Pour un admin qui veut remettre de l'ordre dans un premier groupe sans complexité.",
     price: { 
       monthly: "3 500 FCFA", 
-      yearly: "35 000 FCFA",
+      yearly: "33 600 FCFA",
       monthlyValue: 3500,
-      yearlyValue: 35000
+      yearlyValue: 33600
     },
     features: [
       "1 groupe WhatsApp actif",
@@ -32,9 +32,9 @@ const plans = [
     description: "Le meilleur choix pour les admins qui gèrent plusieurs groupes ou une communauté qui grandit.",
     price: { 
       monthly: "8 000 FCFA", 
-      yearly: "80 000 FCFA",
+      yearly: "76 800 FCFA",
       monthlyValue: 8000,
-      yearlyValue: 80000
+      yearlyValue: 76800
     },
     features: [
       "Jusqu'à 5 groupes actifs",
@@ -53,9 +53,9 @@ const plans = [
     description: "Pour les écoles, églises, médias et associations qui ont besoin d'un cadre plus solide.",
     price: { 
       monthly: "18 000 FCFA", 
-      yearly: "180 000 FCFA",
+      yearly: "172 800 FCFA",
       monthlyValue: 18000,
-      yearlyValue: 180000
+      yearlyValue: 172800
     },
     features: [
       "Groupes actifs étendus",
@@ -77,8 +77,8 @@ export function Pricing() {
     <section id="pricing" className="py-24 px-4 bg-background overflow-hidden relative">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full" />
+        <div className="absolute top-[20%] right-[-10%] w-[420px] h-[420px] bg-primary/5 blur-[110px] rounded-full" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[420px] h-[420px] bg-primary/5 blur-[110px] rounded-full" />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
@@ -93,7 +93,7 @@ export function Pricing() {
             Des prix pensés pour le terrain
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-10 text-lg">
-            Payable en FCFA, adapté aux admins de groupes WhatsApp, avec 7 jours d'essai pour voir la différence avant de payer.
+            Payable en FCFA, adapté aux admins de groupes WhatsApp, avec 7 jours d&apos;essai pour voir la différence avant de payer.
           </p>
 
           {/* Billing Toggle */}
@@ -134,10 +134,10 @@ export function Pricing() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className={cn(
-                "relative rounded-3xl p-8 transition-all duration-300",
+                "relative rounded-2xl p-8 transition-all duration-300",
                 plan.highlighted 
-                  ? "bg-card border-2 border-primary shadow-2xl scale-105 z-10" 
-                  : "bg-card/50 border border-border/50 hover:border-primary/50 hover:bg-card z-0 mt-4"
+                  ? "bg-card border-2 border-primary shadow-lg scale-[1.02] z-10" 
+                  : "bg-card/70 border border-border/70 hover:border-primary/50 hover:bg-card z-0 mt-4"
               )}
             >
               {plan.highlighted && (
@@ -186,7 +186,7 @@ export function Pricing() {
                 className={cn(
                   "w-full h-12 rounded-xl text-base font-semibold transition-all duration-200",
                   plan.highlighted
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.02]"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02]"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 )}
                 asChild

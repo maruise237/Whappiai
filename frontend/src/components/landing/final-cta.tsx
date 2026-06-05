@@ -32,11 +32,11 @@ export function FinalCTA() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button
             size="lg"
-            className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full px-8 h-14 text-base font-medium shadow-lg shadow-primary/20"
+            className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full px-8 h-14 text-base font-medium shadow-md shadow-primary/20"
             asChild
           >
             <Link href="/register">
-              Démarrer l'essai gratuit
+              Tester sur mon groupe
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>

@@ -33,8 +33,8 @@ export function ValueProposition() {
     <section className="py-24 px-4 bg-background relative overflow-hidden transition-colors duration-300">
       {/* Background Gradients */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full mix-blend-multiply dark:mix-blend-normal" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/5 blur-[100px] rounded-full mix-blend-multiply dark:mix-blend-normal" />
+        <div className="absolute top-[-10%] left-[-10%] w-[420px] h-[420px] bg-primary/5 blur-[110px] rounded-full mix-blend-multiply dark:mix-blend-normal" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[420px] h-[420px] bg-primary/5 blur-[110px] rounded-full mix-blend-multiply dark:mix-blend-normal" />
       </div>
 
       <div className="container mx-auto max-w-6xl relative z-10">
@@ -58,7 +58,7 @@ export function ValueProposition() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-card border border-border p-8 rounded-2xl hover:bg-accent/50 hover:border-primary/30 transition-all duration-300 group shadow-sm hover:shadow-md"
+              className="bg-card border border-border/80 p-8 rounded-xl hover:bg-accent/40 hover:border-primary/30 transition-all duration-300 group shadow-sm"
             >
               <div className="flex flex-col items-center text-center">
                 <div className="w-12 h-12 mb-6 text-primary group-hover:scale-110 transition-transform duration-300 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -83,12 +83,12 @@ export function ValueProposition() {
           className="text-center mt-16"
         >
           <p className="text-primary font-medium mb-8 text-lg">
-            Whappi fait le travail répétitif. Vous restez l'admin, avec plus de temps et moins de chaos.
+            Whappi fait le travail répétitif. Vous restez l&apos;admin, avec plus de temps et moins de chaos.
           </p>
           <Button 
             asChild
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-8 py-6 text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all duration-300"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-8 py-6 text-lg shadow-md shadow-primary/20 transition-all duration-300"
           >
             <Link href="/register">
               Découvrir Whappi

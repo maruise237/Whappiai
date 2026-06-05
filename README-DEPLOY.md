@@ -32,6 +32,8 @@ Assurez-vous que le réseau `dokploy-network` existe. Dokploy le crée général
 | `SESSION_SECRET` | Secret pour les sessions Express |
 | `CLERK_WEBHOOK_SECRET` | Secret pour synchroniser les utilisateurs |
 
+> Production : utilisez les cles Clerk live (`pk_live_...` et `sk_live_...`) sur le domaine public. Les cles `pk_test_...` affichent un avertissement navigateur et ne doivent pas servir pour une landing en production.
+
 ## 📦 Persistance des Données (Volumes)
 Le `docker-compose.yml` définit 3 volumes nommés pour garantir que vos sessions WhatsApp et votre base de données ne soient pas perdues lors des mises à jour :
 -   `whappi-data` : Base de données SQLite.

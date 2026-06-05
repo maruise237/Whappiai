@@ -55,7 +55,7 @@ export default function NotFound() {
           <Button asChild variant="outline" size="lg" className="w-full gap-2">
             <Link href="/register">
               <ArrowRight size={18} />
-              Essai Gratuit
+              Tester mon groupe
             </Link>
           </Button>
         </motion.div>

@@ -100,7 +100,7 @@ export function MainFeatures() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className={`relative group rounded-2xl p-6 transition-all duration-300 cursor-pointer border ${
                   activeFeature === index 
-                    ? "bg-primary/5 border-primary/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]" 
+                    ? "bg-primary/5 border-primary/50 shadow-sm" 
                     : "bg-card/50 border-transparent hover:bg-card hover:border-border/50"
                 }`}
                 onClick={() => setActiveFeature(index)}
@@ -121,10 +121,6 @@ export function MainFeatures() {
                     }`}>
                       <feature.icon className="w-6 h-6" />
                     </div>
-                    {/* Icon Glow */}
-                    {activeFeature === index && (
-                      <div className="absolute inset-0 bg-primary/40 blur-xl rounded-full -z-10 animate-pulse" />
-                    )}
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
@@ -163,7 +159,7 @@ export function MainFeatures() {
                         
                         <div className="grid gap-3 py-4">
                            <h4 className="font-semibold text-foreground mb-2">Ce que vous pouvez faire :</h4>
-                           {feature.details?.map((detail, i) => (
+                           {feature.details?.map((detail) => (
                              <div key={detail} className="flex items-start gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                                 <span className="text-muted-foreground">{detail}</span>
@@ -195,8 +191,7 @@ export function MainFeatures() {
             transition={{ duration: 0.8 }}
             className="relative mx-auto lg:mr-0 lg:ml-auto w-full flex justify-center lg:justify-end"
           >
-            {/* Background Glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-primary/20 rounded-full blur-[80px] -z-10" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] bg-primary/10 rounded-full blur-[90px] -z-10" />
             
             <ChatPreview 
               onScenarioChange={setActiveFeature} 
@@ -215,7 +210,7 @@ export function MainFeatures() {
         >
           <Button
             size="lg"
-            className="rounded-full px-8 h-14 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all hover:scale-105"
+            className="rounded-full px-8 h-14 text-base font-semibold shadow-md shadow-primary/20 transition-all hover:scale-105"
             asChild
           >
             <Link href="/register">

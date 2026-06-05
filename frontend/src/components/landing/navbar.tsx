@@ -15,34 +15,36 @@ const navItems = [
   { label: "Documentation", href: "/docs" },
 ]
 
+const getInitialDarkMode = () => {
+  if (typeof window === "undefined") return true
+
+  const savedTheme = localStorage.getItem("theme")
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+
+  return savedTheme === "dark" || (!savedTheme && prefersDark)
+}
+
 export function Navbar() {
   const { isSignedIn } = useUser()
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [isDark, setIsDark] = useState(true)
+  const [isDark, setIsDark] = useState(getInitialDarkMode)
   const navRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme")
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    const isDarkTheme = savedTheme === "dark" || (!savedTheme && prefersDark)
-    
-    setIsDark(isDarkTheme)
-    if (isDarkTheme) {
+    if (isDark) {
       document.documentElement.classList.add("dark")
     } else {
       document.documentElement.classList.remove("dark")
     }
-  }, [])
+  }, [isDark])
 
   const toggleDarkMode = () => {
     const newIsDark = !isDark
     setIsDark(newIsDark)
     if (newIsDark) {
-      document.documentElement.classList.add("dark")
       localStorage.setItem("theme", "dark")
     } else {
-      document.documentElement.classList.remove("dark")
       localStorage.setItem("theme", "light")
     }
   }
@@ -100,7 +102,7 @@ export function Navbar() {
             <Link href={isSignedIn ? "/dashboard" : "/login"}>{isSignedIn ? "Tableau de bord" : "Connexion"}</Link>
           </Button>
           <Button size="sm" className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full px-4" asChild>
-            <Link href="/register">Essai Gratuit</Link>
+            <Link href="/register">Tester mon groupe</Link>
           </Button>
         </div>
 
@@ -146,7 +148,7 @@ export function Navbar() {
                 <Link href={isSignedIn ? "/dashboard" : "/login"}>{isSignedIn ? "Tableau de bord" : "Connexion"}</Link>
               </Button>
               <Button className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full w-full" asChild>
-                <Link href="/register">Essai Gratuit</Link>
+                <Link href="/register">Tester mon groupe</Link>
               </Button>
             </div>
           </motion.div>

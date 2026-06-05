@@ -55,8 +55,8 @@ export function FAQ() {
     <section ref={ref} className="py-24 relative overflow-hidden bg-gradient-to-b from-background to-secondary/20">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-0 w-72 h-72 bg-primary/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-[100px]" />
+        <div className="absolute top-1/4 left-0 w-72 h-72 bg-primary/5 rounded-full blur-[110px]" />
+        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[110px]" />
       </div>
 
       <div className="container px-4 mx-auto relative z-10">
@@ -77,7 +77,7 @@ export function FAQ() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground"
           >
-            Les questions que les admins posent avant d'essayer
+            Les questions que les admins posent avant d&apos;essayer
           </motion.h2>
           
           <motion.p
@@ -105,7 +105,7 @@ export function FAQ() {
                 value={`item-${index}`}
                 className={`border border-border/50 rounded-xl px-6 bg-card/50 backdrop-blur-sm transition-all duration-300 ${
                   activeItem === `item-${index}` 
-                    ? "border-primary/50 shadow-[0_0_30px_-10px_rgba(var(--primary),0.2)] bg-card" 
+                    ? "border-primary/50 shadow-sm bg-card" 
                     : "hover:border-primary/20 hover:bg-card/80"
                 }`}
               >
@@ -138,14 +138,10 @@ export function FAQ() {
           className="mt-16 text-center"
         >
           <div className="inline-flex flex-col md:flex-row items-center gap-4 md:gap-2 p-4 md:p-1 bg-muted/50 rounded-2xl md:rounded-full border border-border mx-auto">
-            <div className="flex -space-x-2 px-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground overflow-hidden">
-                   <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="Membre de l'équipe Whappi" className="w-full h-full object-cover" />
-                </div>
-              ))}
+            <div className="px-3 text-sm font-semibold text-primary">
+              FAQ terrain
             </div>
-            <span className="text-sm font-medium text-center md:text-left md:mr-4">Une démo vaut mieux qu'une longue promesse</span>
+            <span className="text-sm font-medium text-center md:text-left md:mr-4">Une démo vaut mieux qu&apos;une longue promesse</span>
             <Button size="sm" className="rounded-full w-full md:w-auto" asChild>
               <Link href="/contact">
                 Demander une démo <ArrowRight className="ml-2 w-4 h-4" />
