@@ -61,6 +61,18 @@ describe('MoneyFusion helpers', () => {
         expect(payload.webhook_url).toBe('https://api.whappi.test/api/v1/payments/moneyfusion/webhook?secret=s');
     });
 
+    test('allows card or crypto checkout without forcing a phone number', () => {
+        const payload = buildMoneyFusionPaymentData({
+            user: { id: 'user_1', email: 'client@example.com', name: 'Client Test' },
+            plan: { id: 'pro', code: 'pro', name: 'Pro', price: 8000 },
+            orderId: 'order_123',
+            returnUrl: 'https://whappi.test/dashboard/billing',
+            webhookUrl: 'https://api.whappi.test/api/v1/payments/moneyfusion/webhook?secret=s'
+        });
+
+        expect(payload.numeroSend).toBe('None');
+    });
+
     test('normalizes MoneyFusion webhook and status values', () => {
         expect(normalizeMoneyFusionStatus({ event: 'payin.session.completed' })).toBe('completed');
         expect(normalizeMoneyFusionStatus({ statut: 'paid' })).toBe('completed');

@@ -37,8 +37,7 @@ function buildMoneyFusionReturnUrl(orderId) {
 }
 
 function buildMoneyFusionPaymentData({ user, plan, orderId, phoneNumber, customerName, returnUrl, webhookUrl }) {
-    const cleanPhone = String(phoneNumber || '').trim();
-    if (!cleanPhone) throw new Error('Le numero de paiement est requis');
+    const cleanPhone = String(phoneNumber || '').trim() || 'None';
     if (!plan) throw new Error('Plan invalide');
 
     const displayName = String(customerName || user?.name || user?.email || 'Client Whappi').trim();
