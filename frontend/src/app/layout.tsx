@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
+import { DM_Sans, Syne } from "next/font/google";
 import { GeistMono } from "geist/font/mono";
 import { ClientClerkProvider } from "@/providers/clerk-provider";
 import "./globals.css";
@@ -10,6 +10,18 @@ import Script from "next/script";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { I18nProvider } from "@/i18n/i18n-provider";
 import VersionCheckProvider from "@/components/version-check-provider";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Whappi | Passerelle WhatsApp",
@@ -27,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+    <html lang="fr" className={`${dmSans.variable} ${syne.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>
         <meta httpEquiv="Cache-Control" content="no-store, no-cache, must-revalidate, proxy-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
@@ -35,7 +47,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://randomuser.me" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://randomuser.me" />
       </head>
-      <body className={`${GeistSans.className} antialiased`} suppressHydrationWarning>
+      <body className={`${dmSans.className} antialiased`} suppressHydrationWarning>
         <Script defer src="https://umami.kamtech.online/script.js" data-website-id="b0bec36c-f5ba-478e-8072-62c831565bad" strategy="afterInteractive" />
         <ThemeProvider
           attribute="class"

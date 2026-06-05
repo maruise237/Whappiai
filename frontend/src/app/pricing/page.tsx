@@ -10,26 +10,26 @@ import { cn } from "@/lib/utils"
 const plans = [
   {
     code: "starter",
-    name: "Essentiel",
-    price: "2 500 FCFA",
-    description: "Pour lancer un premier numero co-admin sans complexite.",
-    features: ["1 session WhatsApp active", "Jusqu'a 5 groupes pilotes", "Anti-liens et mots interdits", "Bienvenue quotidienne", "1 000 actions / mois"],
+    name: "Starter",
+    price: "3 500 FCFA",
+    description: "Pour tester et gerer un seul groupe actif.",
+    features: ["1 groupe connecte", "Bienvenue dans le groupe", "Mots interdits jusqu'a 20", "Avertissements + ban auto", "3 messages programmes actifs"],
     highlight: false,
   },
   {
     code: "pro",
-    name: "Croissance",
-    price: "5 000 FCFA",
-    description: "Pour les admins qui gerent plusieurs groupes.",
-    features: ["3 sessions WhatsApp actives", "Groupes illimites", "Avertissements automatiques", "Messages programmes", "5 000 actions / mois"],
+    name: "Pro",
+    price: "8 000 FCFA",
+    description: "Pour les admins qui gerent plusieurs groupes actifs.",
+    features: ["Jusqu'a 5 groupes connectes", "Bienvenue dans le groupe", "Filtre mots illimite + anti-liens", "Messages programmes illimites", "Dashboard complet + logs"],
     highlight: true,
   },
   {
     code: "business",
-    name: "Equipe",
-    price: "10 000 FCFA",
-    description: "Pour agences et operations multi-groupes.",
-    features: ["10 sessions WhatsApp actives", "Regles avancees par groupe", "Journal d'audit", "Support prioritaire", "25 000 actions / mois"],
+    name: "Organisation",
+    price: "18 000 FCFA",
+    description: "Pour associations, eglises, medias ou formations larges.",
+    features: ["Jusqu'a 20 groupes connectes", "Toutes les fonctionnalites Pro", "Liste noire partagee", "Logs avances", "Support prioritaire WhatsApp"],
     highlight: false,
   },
 ]
@@ -41,7 +41,7 @@ export default function PricingPage() {
         <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/10">Tarifs Whappi</Badge>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Forfaits co-admin WhatsApp</h1>
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Sessions, groupes, regles et actions mensuelles. Pas de recharge compliquee.
+          Trois offres simples pour passer d&apos;un groupe pilote a une communaute multi-groupes.
         </p>
       </div>
 

@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Smartphone,
   Users,
-  WalletCards,
 } from "lucide-react"
 import {
   Area,
@@ -89,13 +88,12 @@ type AdminStats = {
   users?: { total?: number; active?: number }
   sessions?: { total?: number; connected?: number }
   overview?: { activities?: number; successRate?: number; messagesSent?: number }
-  credits?: { deducted?: number }
+  operations?: { applied?: number; messagesSent?: number }
 }
 
 type AnalyticsPoint = {
   date?: string
   messages?: number
-  credits?: number
 }
 
 const sessionSchema = z.object({
@@ -580,7 +578,7 @@ function AdminPanel({
         <div className="grid gap-3 md:grid-cols-3">
           <MiniAdminStat icon={<Users className="h-4 w-4" />} label="Utilisateurs" value={adminStats?.users?.total || 0} />
           <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label="Sessions" value={adminStats?.sessions?.total || 0} />
-          <MiniAdminStat icon={<WalletCards className="h-4 w-4" />} label="Actions" value={adminStats?.credits?.deducted || 0} />
+          <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label="Actions" value={adminStats?.operations?.applied || 0} />
         </div>
 
         <div className="mt-5 h-[190px]">

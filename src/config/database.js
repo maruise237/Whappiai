@@ -496,9 +496,9 @@ function initializeSchema() {
         if (count === 0) {
             log("Migration : Initialisation des plans de tarification", "SYSTEM");
             const plans = [
-                { id: 'starter', code: 'starter', name: 'Essentiel', price: 2500, message_limit: 1000, chariow_id: 'prd_jx0jkk', url: 'https://esaystor.online/prd_jx0jkk', features: '1 session WhatsApp, 5 groupes pilotes, anti-liens, mots interdits, bienvenue quotidienne, 1 000 actions/mois' },
-                { id: 'pro', code: 'pro', name: 'Croissance', price: 5000, message_limit: 5000, chariow_id: 'prd_l2es24', url: 'https://esaystor.online/prd_l2es24', features: '3 sessions WhatsApp, groupes illimites, avertissements, messages programmes, 5 000 actions/mois' },
-                { id: 'business', code: 'business', name: 'Equipe', price: 10000, message_limit: 25000, chariow_id: 'prd_twafj6', url: 'https://esaystor.online/prd_twafj6', features: '10 sessions WhatsApp, regles avancees par groupe, journal audit, support prioritaire, 25 000 actions/mois' }
+                { id: 'starter', code: 'starter', name: 'Starter', price: 3500, message_limit: 1000, chariow_id: 'prd_jx0jkk', url: 'https://esaystor.online/prd_jx0jkk', features: '1 groupe connecte, bienvenue dans le groupe, mots interdits jusqu a 20, avertissements, 3 messages programmes actifs' },
+                { id: 'pro', code: 'pro', name: 'Pro', price: 8000, message_limit: 5000, chariow_id: 'prd_l2es24', url: 'https://esaystor.online/prd_l2es24', features: '5 groupes connectes, bienvenue dans le groupe, filtre mots illimite, anti-liens, messages programmes illimites, dashboard complet' },
+                { id: 'business', code: 'business', name: 'Organisation', price: 18000, message_limit: 25000, chariow_id: 'prd_twafj6', url: 'https://esaystor.online/prd_twafj6', features: '20 groupes connectes, toutes fonctionnalites Pro, liste noire partagee, logs avances, support prioritaire WhatsApp' }
             ];
 
             const stmt = db.prepare(`

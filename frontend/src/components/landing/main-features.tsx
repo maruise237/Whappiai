@@ -18,13 +18,13 @@ import {
 const features = [
   {
     icon: MessageCircle,
-    title: "Bienvenue automatique",
+    title: "Bienvenue dans le groupe",
     description: "Accueillez chaque nouveau membre avec un message personnalisé, les règles du groupe et les liens importants.",
     href: "/features/welcome",
     details: [
       "Message de bienvenue par groupe.",
       "Mention automatique du nouveau membre.",
-      "Envoi dans le groupe ou en message privé.",
+      "Envoi uniquement dans le groupe.",
       "Modèles rapides pour église, école, business ou tontine."
     ],
     cta: "Configurer l'accueil"

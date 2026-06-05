@@ -15,7 +15,7 @@ export default function BillingPage() {
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight">
             <CreditCard className="h-5 w-5 text-primary" /> Abonnement & plans
           </h1>
-          <p className="text-sm text-muted-foreground">Choisissez le volume adapte a vos sessions et groupes WhatsApp.</p>
+          <p className="text-sm text-muted-foreground">Choisissez l&apos;offre adaptee au nombre de groupes WhatsApp a gerer.</p>
         </div>
 
         <Badge variant="secondary" className="h-auto rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
@@ -25,8 +25,8 @@ export default function BillingPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {[
-          { label: "Sessions incluses", val: "1 / 1", icon: Zap },
-          { label: "Groupes pilotes", val: "0 / 5", icon: Users },
+          { label: "Groupes inclus", val: "1 a 20", icon: Users },
+          { label: "Messages programmes", val: "3 a illimite", icon: Zap },
           { label: "Regles actives", val: "0", icon: ShieldCheck }
         ].map((stat) => (
           <Card key={stat.label} className="bg-card shadow-sm">
@@ -43,9 +43,9 @@ export default function BillingPage() {
 
       <div className="space-y-6">
         <div className="mb-10 space-y-2 text-center">
-          <h2 className="text-2xl font-bold tracking-tight">Forfaits co-admin WhatsApp</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Offres co-admin WhatsApp</h2>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            Plus votre communaute grandit, plus Whappi vous donne de sessions, de groupes et d&apos;actions de moderation.
+            Starter pour tester, Pro pour plusieurs groupes, Organisation pour les communautes larges.
           </p>
         </div>
 

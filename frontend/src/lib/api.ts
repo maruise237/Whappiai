@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import NProgress from 'nprogress';
 
 // Configure NProgress
@@ -148,11 +149,6 @@ export const api = {
     updateSettings: (data: any, token?: string) => fetchApi("/api/v1/cal/settings", {
       method: "POST",
       body: JSON.stringify(data),
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-  },
-  credits: {
-    get: (token?: string) => fetchApi("/api/v1/credits", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
   },
@@ -388,11 +384,6 @@ export const api = {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
     getUserDetails: (userId: string, token?: string) => fetchApi(`/api/v1/admin/users/${userId}/details`, {
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    adjustCredits: (userId: string, amount: number, type: string, description: string, token?: string) => fetchApi(`/api/v1/admin/users/${userId}/credits`, {
-      method: "POST",
-      body: JSON.stringify({ amount, type, description }),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
     updateSubscription: (userId: string, data: any, token?: string) => fetchApi(`/api/v1/admin/users/${userId}/subscription`, {

@@ -15,7 +15,6 @@ import {
   Sun,
   UserCircle,
   Users,
-  WalletCards,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -58,12 +57,6 @@ const userNavigation: NavItemConfig[] = [
     detail: "Anti-liens, accueil, avertissements",
     href: "/dashboard/moderation",
     icon: ShieldCheck,
-  },
-  {
-    label: "Usage",
-    detail: "Usage du forfait",
-    href: "/dashboard/credits",
-    icon: WalletCards,
   },
   {
     label: "Forfaits",

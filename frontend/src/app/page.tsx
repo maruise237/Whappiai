@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   description: "Automatisez l'accueil, l'anti-spam, les avertissements et les rappels dans vos groupes WhatsApp. Pensé pour les admins africains francophones.",
   openGraph: {
     title: "Whappi - Le co-admin de vos groupes WhatsApp",
-    description: "Gardez vos groupes propres sans surveiller chaque message : bienvenue automatique, anti-liens, avertissements, ban auto et rappels.",
+    description: "Gardez vos groupes propres sans surveiller chaque message : accueil dans le groupe, anti-liens, avertissements, ban auto et rappels.",
     type: "website",
     locale: "fr_FR",
     siteName: "Whappi",

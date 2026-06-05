@@ -77,6 +77,47 @@ const ruleSummary = [
   },
 ]
 
+const presets: Array<{ name: string; patch: Partial<GroupSettings> }> = [
+  {
+    name: "Professionnel",
+    patch: {
+      antiLinksEnabled: true,
+      warningsEnabled: true,
+      forbiddenWords: "arnaque, spam, pari, crypto rapide, lien telegram",
+      warningMessage: "Attention @{{name}}, ce message ne respecte pas le cadre professionnel du groupe.",
+    },
+  },
+  {
+    name: "Eglise",
+    patch: {
+      antiLinksEnabled: true,
+      welcomeEnabled: true,
+      forbiddenWords: "insulte, arnaque, pari, lien suspect",
+      welcomeMessage: "Bienvenue aux nouveaux membres arrives aujourd'hui. Merci de garder un ton respectueux et de suivre les annonces du groupe.",
+      welcomeDigestTime: "19:00",
+    },
+  },
+  {
+    name: "Education",
+    patch: {
+      antiLinksEnabled: true,
+      welcomeEnabled: true,
+      forbiddenWords: "triche, arnaque, spam, pari",
+      welcomeMessage: "Bienvenue aux nouveaux apprenants. Consultez les consignes, respectez le sujet du cours et gardez les questions claires.",
+      welcomeDigestTime: "18:00",
+    },
+  },
+  {
+    name: "Tontine",
+    patch: {
+      antiLinksEnabled: true,
+      warningsEnabled: true,
+      forbiddenWords: "arnaque, faux depot, pari, spam",
+      warningMessage: "Attention @{{name}}, ce groupe suit des regles strictes de cotisation. Merci de rester conforme.",
+    },
+  },
+]
+
 export default function ModerationPage() {
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
@@ -195,6 +236,10 @@ export default function ModerationPage() {
     setSchedulingGroupId(groupId)
     try {
       const token = await getToken()
+      await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload({
+        ...settings,
+        welcomeEnabled: true,
+      }), token || undefined)
       await api.sessions.addEngagementTask(selectedSessionId, groupId, {
         message_content: settings.welcomeMessage,
         recurrence: "daily",
@@ -377,6 +422,26 @@ export default function ModerationPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 p-5">
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <p className="text-sm font-semibold">Presets rapides</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Point de depart adapte au type de communaute. Vous pouvez modifier chaque regle ensuite.
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                      {presets.map(preset => (
+                        <Button
+                          key={preset.name}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-[11px]"
+                          onClick={() => updateLocalGroup(groupId, preset.patch)}
+                        >
+                          {preset.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                   {(() => {
                     const scheduledDraft = scheduledDrafts[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
                     return (

@@ -13,47 +13,47 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 const plans = [
   {
     id: "starter",
-    name: "Essentiel",
-    price: "2,500 FCFA",
-    description: "Pour lancer un premier numero co-admin sans complexite.",
+    name: "Starter",
+    price: "3,500 FCFA",
+    description: "Pour tester et gerer un seul groupe actif.",
     features: [
-      "1 session WhatsApp active",
-      "Jusqu'a 5 groupes pilotes",
-      "Regles anti-liens et bienvenue",
-      "1,000 actions de moderation / mois",
-      "Historique essentiel des actions"
+      "1 groupe connecte",
+      "Bienvenue dans le groupe",
+      "Filtre de mots interdits jusqu'a 20",
+      "Systeme avertissements + ban auto",
+      "3 messages programmes actifs"
     ],
-    cta: "Choisir Essentiel",
+    cta: "Choisir Starter",
     highlighted: false,
   },
   {
     id: "pro",
-    name: "Croissance",
-    price: "5,000 FCFA",
-    description: "Le bon plan pour admins de communautes et vendeurs WhatsApp.",
+    name: "Pro",
+    price: "8,000 FCFA",
+    description: "Pour les admins serieux qui gerent plusieurs groupes actifs.",
     features: [
-      "3 sessions WhatsApp actives",
-      "Groupes WhatsApp illimites",
-      "Anti-liens, bienvenue et avertissements",
-      "5,000 actions de moderation / mois",
-      "Suivi prioritaire des incidents"
+      "Jusqu'a 5 groupes connectes",
+      "Bienvenue dans le groupe",
+      "Filtre mots illimite + anti-liens",
+      "Messages programmes illimites",
+      "Dashboard complet + logs"
     ],
-    cta: "Choisir Croissance",
+    cta: "Choisir Pro",
     highlighted: true,
   },
   {
     id: "business",
-    name: "Equipe",
-    price: "10,000 FCFA",
-    description: "Pour agences, reseaux de vente et operations multi-groupes.",
+    name: "Organisation",
+    price: "18,000 FCFA",
+    description: "Pour associations, eglises, medias ou formations larges.",
     features: [
-      "10 sessions WhatsApp actives",
-      "Regles avancees par groupe",
-      "Journal d'audit pour equipe",
-      "25,000 actions de moderation / mois",
-      "Accompagnement prioritaire"
+      "Jusqu'a 20 groupes connectes",
+      "Toutes les fonctionnalites Pro",
+      "Liste noire partagee entre groupes",
+      "Presets de configuration",
+      "Support prioritaire WhatsApp"
     ],
-    cta: "Choisir Equipe",
+    cta: "Choisir Organisation",
     highlighted: false,
   },
 ]

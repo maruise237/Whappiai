@@ -34,9 +34,9 @@ import { cn, ensureString, safeDate, safeRender } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const planDefaults: Record<string, { label: string; actions: number }> = {
-  starter: { label: "Essentiel", actions: 1000 },
-  pro: { label: "Croissance", actions: 5000 },
-  business: { label: "Equipe", actions: 25000 },
+  starter: { label: "Starter", actions: 1000 },
+  pro: { label: "Pro", actions: 5000 },
+  business: { label: "Organisation", actions: 25000 },
 }
 
 export default function UsersPage() {
@@ -503,9 +503,9 @@ export default function UsersPage() {
 
 function planLabel(planId?: unknown) {
   const value = ensureString(planId || "trial")
-  if (value.includes("starter")) return "Essentiel"
-  if (value.includes("pro")) return "Croissance"
-  if (value.includes("business")) return "Equipe"
+  if (value.includes("starter")) return "Starter"
+  if (value.includes("pro")) return "Pro"
+  if (value.includes("business")) return "Organisation"
   if (value.includes("trial")) return "Essai"
   if (value.includes("free")) return "Gratuit"
   return value
