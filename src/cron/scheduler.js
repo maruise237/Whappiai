@@ -47,7 +47,7 @@ class Scheduler {
      * Check for subscriptions expiring in 7, 3, and 1 days
      */
     async checkExpiringSubscriptions() {
-        const daysToCheck = [3, 1, 0]; // 3 days before, 1 day before, and on expiry day
+        const daysToCheck = [7, 3, 1, 0]; // 7 days before, 3 days before, 1 day before, and on expiry day
         
         for (const days of daysToCheck) {
             // Find users whose subscription expires in exactly 'days' days
@@ -56,14 +56,18 @@ class Scheduler {
                 SELECT * FROM users 
                 WHERE plan_status = 'active' 
                 AND date(subscription_expiry) = date('now', '+' || ? || ' days')
-            `).all(days);
+                AND NOT EXISTS (
+                    SELECT 1 FROM user_notifications n
+                    WHERE n.user_id = users.id
+                    AND n.type = 'subscription_expiring'
+                    AND n.metadata LIKE ?
+                    AND date(n.created_at) = date('now')
+                )
+            `).all(days, `%"days_remaining":${days}%`);
             
             log(`Checking expiring subscriptions for +${days} days. Found ${users.length} users.`, 'DEBUG');
 
             for (const user of users) {
-                // Avoid duplicate notifications if already sent today (optional optimization)
-                // For now, NotificationService handles creation
-                
                 NotificationService.create({
                     userId: user.id,
                     type: 'subscription_expiring',

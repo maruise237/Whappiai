@@ -35,6 +35,8 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
                 plan_code: subscription?.plan_code || user?.plan_id || 'trial',
                 status: subscription?.status || user?.plan_status || 'active',
                 current_period_end: subscription?.current_period_end || user?.subscription_expiry || null,
+                subscription_expiry: subscription?.current_period_end || user?.subscription_expiry || null,
+                renewal_reminders: [7, 3, 1, 0],
                 message_limit: subscription?.message_limit || user?.message_limit || 0,
                 message_used: user?.message_used || 0,
             }
