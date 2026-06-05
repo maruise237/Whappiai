@@ -198,6 +198,10 @@ export const api = {
     getWarnings: (sessionId: string, groupId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/warnings`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    resetWarningMember: (sessionId: string, groupId: string, userId: string, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/warnings/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
     addEngagementTask: (sessionId: string, groupId: string, data: any, token?: string) => fetchApi(`/api/v1/sessions/${sessionId}/moderation/groups/${groupId}/engagement`, {
       method: "POST",
       body: JSON.stringify(data),

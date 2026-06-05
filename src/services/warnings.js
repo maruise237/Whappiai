@@ -46,7 +46,15 @@ function listByGroup(sessionId, groupId) {
     }));
 }
 
+function resetMember(sessionId, groupId, userId) {
+    return db.prepare(`
+        DELETE FROM user_warnings
+        WHERE session_id = ? AND group_id = ? AND user_id = ?
+    `).run(sessionId, groupId, userId);
+}
+
 module.exports = {
     listByGroup,
+    resetMember,
     composeWarningMessage
 };

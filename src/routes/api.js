@@ -886,6 +886,19 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
+    router.delete('/sessions/:sessionId/moderation/groups/:groupId/warnings/:userId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
+        const { sessionId, groupId, userId } = req.params;
+        try {
+            const warningService = require('../services/warnings');
+            const decodedUserId = decodeURIComponent(userId);
+            const result = warningService.resetMember(sessionId, groupId, decodedUserId);
+            res.json({ status: 'success', data: { reset: true, changes: result.changes || 0 } });
+        } catch (err) {
+            log(`Erreur remise a zero avertissements pour ${groupId}: ${err.message}`, sessionId, { groupId, userId, error: err.message }, 'ERROR');
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    });
+
     router.get('/sessions/:sessionId/moderation/groups/:groupId/engagement', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {

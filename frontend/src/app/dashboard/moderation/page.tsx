@@ -11,6 +11,7 @@ import {
   Link2,
   Loader2,
   MessageSquareText,
+  RotateCcw,
   Search,
   Shield,
   Smartphone,
@@ -163,6 +164,7 @@ export default function ModerationPage() {
   const [loadingGroups, setLoadingGroups] = React.useState(false)
   const [savingGroupId, setSavingGroupId] = React.useState<string | null>(null)
   const [schedulingGroupId, setSchedulingGroupId] = React.useState<string | null>(null)
+  const [resettingWarningId, setResettingWarningId] = React.useState<string | null>(null)
   const [scheduledDrafts, setScheduledDrafts] = React.useState<Record<string, { message: string; scheduledAt: string; recurrence: string }>>({})
   const [warnedMembersByGroup, setWarnedMembersByGroup] = React.useState<Record<string, WarnedMember[]>>({})
   const [tasksByGroup, setTasksByGroup] = React.useState<Record<string, EngagementTask[]>>({})
@@ -405,6 +407,28 @@ export default function ModerationPage() {
     }
   }
 
+  const resetMemberWarnings = async (groupId: string, member: WarnedMember) => {
+    const userId = ensureString(member.userId)
+    if (!selectedSessionId || !groupId || !userId) return
+
+    const resetKey = `${groupId}:${userId}`
+    setResettingWarningId(resetKey)
+    try {
+      const token = await getToken()
+      await api.sessions.resetWarningMember(selectedSessionId, groupId, userId, token || undefined)
+      setWarnedMembersByGroup(prev => ({
+        ...prev,
+        [groupId]: (prev[groupId] || []).filter(item => ensureString(item.userId) !== userId),
+      }))
+      toast.success("Avertissements remis a zero")
+    } catch (error) {
+      console.error(error)
+      toast.error("Impossible de remettre ces avertissements a zero")
+    } finally {
+      setResettingWarningId(null)
+    }
+  }
+
   const filteredGroups = groups.filter(group =>
     ensureString(group.subject || group.name).toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -632,9 +656,26 @@ export default function ModerationPage() {
                                 <p className="truncate text-xs font-semibold">{safeRender(member.phone || member.userId)}</p>
                                 <p className="mt-0.5 text-[10px] text-muted-foreground">{formatScheduleDate(member.lastWarningAt)}</p>
                               </div>
-                              <Badge className={cn("shrink-0 border-none text-[10px]", riskClass(member.risk))}>
-                                {member.count || 0} avert.
-                              </Badge>
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                <Badge className={cn("border-none text-[10px]", riskClass(member.risk))}>
+                                  {member.count || 0} avert.
+                                </Badge>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                  onClick={() => resetMemberWarnings(groupId, member)}
+                                  disabled={resettingWarningId === `${groupId}:${ensureString(member.userId)}`}
+                                  title="Remettre a zero"
+                                >
+                                  {resettingWarningId === `${groupId}:${ensureString(member.userId)}` ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>

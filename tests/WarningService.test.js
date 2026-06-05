@@ -57,4 +57,15 @@ describe('WarningService', () => {
 
         expect(message).toBe('@237600000001 message supprime: Lien non autorise. Il reste 3 avertissement(s) avant exclusion.');
     });
+
+    test('resets warnings for one member in one group', () => {
+        const run = jest.fn().mockReturnValue({ changes: 1 });
+        db.prepare.mockReturnValue({ run });
+
+        const result = WarningService.resetMember('session-a', '120363@g.us', '237600000001@s.whatsapp.net');
+
+        expect(db.prepare).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM user_warnings'));
+        expect(run).toHaveBeenCalledWith('session-a', '120363@g.us', '237600000001@s.whatsapp.net');
+        expect(result).toEqual({ changes: 1 });
+    });
 });
