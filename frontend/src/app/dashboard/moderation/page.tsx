@@ -912,7 +912,7 @@ export default function ModerationPage() {
 
 function normalizeSettings(settings?: GroupSettings | null): Required<Pick<GroupSettings, "antiLinksEnabled" | "welcomeEnabled" | "warningsEnabled" | "exclusionEnabled" | "welcomeMessage" | "warningMessage" | "forbiddenWords" | "welcomeDigestTime" | "maxWarnings">> {
   return {
-    antiLinksEnabled: Boolean(settings?.antiLinksEnabled ?? settings?.anti_links_enabled ?? settings?.antiLinkEnabled),
+    antiLinksEnabled: Boolean(settings?.antiLinksEnabled ?? settings?.anti_link ?? settings?.anti_links_enabled ?? settings?.antiLinkEnabled),
     welcomeEnabled: Boolean(settings?.welcomeEnabled ?? settings?.welcome_digest_enabled ?? settings?.welcome_enabled),
     warningsEnabled: Boolean(settings?.warningsEnabled ?? settings?.warnings_enabled ?? settings?.warningsEnabled),
     exclusionEnabled: Boolean(settings?.exclusionEnabled ?? settings?.auto_kick_enabled ?? settings?.exclusion_enabled),
