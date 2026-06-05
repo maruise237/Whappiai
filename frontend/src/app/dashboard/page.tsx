@@ -11,9 +11,12 @@ import {
   ListChecks,
   TrendingUp,
   History,
+  Settings2,
+  LogOut,
   CreditCard,
   User,
-  ArrowRight
+  MoreVertical,
+  PlusCircle
 } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
 import { CreditCardUI } from "@/components/dashboard/credit-card-ui"
@@ -37,7 +40,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -46,6 +48,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   CartesianGrid,
   Tooltip,
@@ -71,47 +74,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 const DEFAULT_STATS_DAYS = 7
 const RECENT_LOGS_COUNT = 5
 
-type SessionItem = {
-  sessionId?: string
-  isConnected?: boolean
-  status?: string
-  qr?: string | null
-  pairingCode?: string | null
-  [key: string]: unknown
-}
-
-type ActivityItem = {
-  id?: string | number
-  action?: string
-  resource_id?: string
-  success?: boolean | number
-  status?: string
-  details?: unknown
-  timestamp?: string
-  created_at?: string
-  [key: string]: unknown
-}
-
-type AdminStats = {
-  users?: { total?: number; active?: number }
-  sessions?: { total?: number; connected?: number }
-  overview?: { activities?: number; successRate?: number; messagesSent?: number }
-  credits?: { deducted?: number }
-}
-
-type CreditsData = {
-  balance: number
-  used: number
-  plan: string
-  history: Array<{ type?: string; description?: unknown; amount?: number | string }>
-}
-
-type AnalyticsPoint = {
-  date?: string
-  messages?: number
-  credits?: number
-}
-
 const sessionSchema = z.object({
   sessionId: z.string().min(3, "L'ID de session doit comporter au moins 3 caractères").regex(/^[a-z0-9-]+$/, "Seuls les minuscules, les chiffres et les traits d-union sont autorisés"),
   phoneNumber: z.string().optional(),
@@ -124,15 +86,15 @@ export default function DashboardPage() {
   const { lastMessage } = useWebSocket()
   const lastProcessedMessageRef = React.useRef<string>("")
 
-  const [sessions, setSessions] = React.useState<SessionItem[]>([])
+  const [sessions, setSessions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
   const [summary, setSummary] = React.useState({ totalActivities: 0, successRate: 0, activeSessions: 0, messagesSent: 0 })
-  const [adminStats, setAdminStats] = React.useState<AdminStats | null>(null)
-  const [credits, setCredits] = React.useState<CreditsData | null>(null)
-  const [recentActivities, setRecentActivities] = React.useState<ActivityItem[]>([])
-  const [analyticsData, setAnalyticsData] = React.useState<AnalyticsPoint[]>([])
+  const [adminStats, setAdminStats] = React.useState<any>(null)
+  const [credits, setCredits] = React.useState<any>(null)
+  const [recentActivities, setRecentActivities] = React.useState<any[]>([])
+  const [analyticsData, setAnalyticsData] = React.useState<any[]>([])
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
@@ -166,7 +128,7 @@ export default function DashboardPage() {
     } catch (e) { console.error(e) }
   }, [])
 
-  const fetchUserSummary = React.useCallback(async (token: string, currentSessions: SessionItem[]) => {
+  const fetchUserSummary = React.useCallback(async (token: string, currentSessions: any[]) => {
     try {
       const summ = await api.activities.summary(DEFAULT_STATS_DAYS, token)
       setSummary({
@@ -178,7 +140,7 @@ export default function DashboardPage() {
     } catch (e) { console.error(e) }
   }, [])
 
-  const fetchSummaryData = React.useCallback(async (currentSessions: SessionItem[]) => {
+  const fetchSummaryData = React.useCallback(async (currentSessions: any[]) => {
     try {
       const token = await getToken()
       if (!token) return
@@ -221,7 +183,7 @@ export default function DashboardPage() {
       fetchSessions(true)
       fetchCreditsData()
     }
-  }, [isLoaded, user, fetchSessions, fetchCreditsData])
+  }, [isLoaded, user?.id])
 
   // Consolidated WebSocket update handling
   React.useEffect(() => {
@@ -301,15 +263,10 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <Badge variant="secondary" className="mb-2 w-fit border-primary/10 bg-primary/5 text-primary">
-            Centre de controle
-          </Badge>
-          <h1 className="text-2xl font-semibold tracking-tight">Piloter vos groupes WhatsApp</h1>
-          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">Whappi fonctionne comme un co-admin : connectez une session, ajoutez-la au groupe, activez une regle, puis verifiez les actions.</p>
+          <h1 className="text-xl font-semibold">Tableau de bord</h1>
+          <p className="text-sm text-muted-foreground">Connectez WhatsApp, activez vos règles et suivez les actions de vos groupes.</p>
         </div>
       </div>
-
-      <OperatingModel />
 
       {!isAdmin && sessions.length === 0 && (
         <EmptyActivationCard onCreate={() => setIsCreateOpen(true)} />
@@ -412,7 +369,7 @@ export default function DashboardPage() {
                                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                                     <TrendingUp className="h-4 w-4 text-primary" /> Performance Plateforme
                                 </CardTitle>
-                                <CardDescription className="text-[10px]">Volume de messages et actions des 7 derniers jours.</CardDescription>
+                                <CardDescription className="text-[10px]">Volume de messages et activité IA des 7 derniers jours.</CardDescription>
                             </div>
                             <Badge variant="secondary" className="text-[9px] font-bold bg-background">7 JOURS</Badge>
                         </div>
@@ -465,8 +422,8 @@ export default function DashboardPage() {
                           <p className="text-xs text-muted-foreground">WhatsApp Session</p>
                         </div>
                      </div>
-                     <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/moderation')}>
-                        <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                     <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/ai/config?sessionId=${selectedSessionId}`)}>
+                        <Settings2 className="h-4 w-4 text-muted-foreground" />
                      </Button>
                   </div>
                   <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
@@ -474,39 +431,13 @@ export default function DashboardPage() {
             </Card>
 
 
-            <Tabs defaultValue="plan" className="space-y-4">
+            <Tabs defaultValue="direct" className="space-y-4">
                <TabsList className="bg-muted/50 p-1 rounded-lg h-auto sm:h-9 flex flex-wrap sm:flex-nowrap gap-1 w-full sm:w-auto">
-                  <TabsTrigger value="plan" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">Plan du jour</TabsTrigger>
-                  <TabsTrigger value="history" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">Journal</TabsTrigger>
-                  {isAdmin && <TabsTrigger value="logs" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">Admin</TabsTrigger>}
+                  <TabsTrigger value="direct" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">Direct Message</TabsTrigger>
+                  <TabsTrigger value="history" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">History</TabsTrigger>
+                  {isAdmin && <TabsTrigger value="logs" className="flex-1 sm:flex-none text-[11px] font-semibold px-6 py-1.5 sm:py-0">System Logs</TabsTrigger>}
 
                </TabsList>
-
-               <TabsContent value="plan" className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-3">
-                     <ActionTile
-                       icon={<Smartphone className="h-4 w-4" />}
-                       title="1. Session WhatsApp"
-                       text={selectedSessionId ? `Session active : ${selectedSessionId}` : "Creez ou selectionnez le numero qui va agir comme co-admin."}
-                       cta={selectedSessionId ? "Session selectionnee" : "Creer une session"}
-                       onClick={() => selectedSessionId ? undefined : setIsCreateOpen(true)}
-                     />
-                     <ActionTile
-                       icon={<ShieldCheck className="h-4 w-4" />}
-                       title="2. Premiere regle"
-                       text="Commencez par anti-liens, bienvenue ou avertissement doux."
-                       cta="Ouvrir les groupes"
-                       href="/dashboard/moderation"
-                     />
-                     <ActionTile
-                       icon={<History className="h-4 w-4" />}
-                       title="3. Verifier"
-                       text="Controlez les actions recentes pour voir ce que Whappi a fait."
-                       cta="Voir le journal"
-                       href="/dashboard/activities"
-                     />
-                  </div>
-               </TabsContent>
 
                <TabsContent value="history" className="space-y-4">
                   <Card className="overflow-hidden">
@@ -615,9 +546,8 @@ export default function DashboardPage() {
                  setIsCreateOpen(false);
                  fetchSessions(true);
                  confetti();
-               } catch (error) {
-                 const message = error instanceof Error ? error.message : "Erreur de création";
-                 toast.error(message, { id: t });
+               } catch (e: any) {
+                 toast.error(e.message || "Erreur de création", { id: t });
                }
             })} className="space-y-6">
               <DialogHeader>
@@ -681,78 +611,6 @@ function StatCard({ label, value, subtext, icon }: { label: string; value: strin
         </div>
       </CardContent>
     </Card>
-  )
-}
-
-function OperatingModel() {
-  const steps = [
-    { icon: Smartphone, label: "Session", text: "Un numero WhatsApp dedie devient le point d'entree." },
-    { icon: Users, label: "Groupe", text: "Ajoutez ce numero au groupe et donnez-lui le role admin." },
-    { icon: ShieldCheck, label: "Regle", text: "Activez anti-liens, bienvenue ou avertissements." },
-    { icon: History, label: "Verification", text: "Suivez les actions dans le journal pour garder le controle." },
-  ]
-
-  return (
-    <section className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm">
-      <div className="grid gap-3 md:grid-cols-4">
-        {steps.map((step, index) => (
-          <div key={step.label} className="relative rounded-xl bg-muted/30 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background text-primary ring-1 ring-border/70">
-                <step.icon className="h-4 w-4" />
-              </div>
-              <span className="font-mono text-[10px] text-muted-foreground">0{index + 1}</span>
-            </div>
-            <p className="text-sm font-semibold">{step.label}</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">{step.text}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function ActionTile({
-  icon,
-  title,
-  text,
-  cta,
-  href,
-  onClick,
-}: {
-  icon: React.ReactNode
-  title: string
-  text: string
-  cta: string
-  href?: string
-  onClick?: () => void
-}) {
-  const content = (
-    <Card className="h-full border-border/60 bg-card/70 shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card">
-      <CardContent className="flex h-full flex-col gap-5 p-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          {icon}
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">{title}</h3>
-          <p className="min-h-10 text-xs leading-5 text-muted-foreground">{text}</p>
-        </div>
-        <div className="mt-auto inline-flex items-center gap-2 text-xs font-semibold text-primary">
-          {cta}
-          <ArrowRight className="h-3.5 w-3.5" />
-        </div>
-      </CardContent>
-    </Card>
-  )
-
-  if (href) {
-    return <Link href={href}>{content}</Link>
-  }
-
-  return (
-    <button type="button" onClick={onClick} className="text-left">
-      {content}
-    </button>
   )
 }
 
