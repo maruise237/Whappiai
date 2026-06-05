@@ -158,10 +158,14 @@ const sessionStore = new FileStore({
 app.use(cookieParser());
 app.use(ClerkExpressWithAuth());
 
-// Debug Clerk Auth
+// Debug Clerk Auth without exposing session claims.
 app.use((req, res, next) => {
-    if (req.auth && req.auth.userId) {
-        log(`Clerk Auth: UserID=${req.auth.userId}, Claims=${JSON.stringify(req.auth.sessionClaims)}`, 'AUTH', null, 'DEBUG');
+    if (req.auth && req.auth.userId && process.env.LOG_AUTH_DEBUG === '1') {
+        log('Clerk Auth verified', 'AUTH', {
+            userId: req.auth.userId,
+            path: req.originalUrl,
+            sessionId: req.auth.sessionId || req.auth.sid || null
+        }, 'DEBUG');
     }
     next();
 });

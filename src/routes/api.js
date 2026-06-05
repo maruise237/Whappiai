@@ -165,7 +165,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     id: user?.id || req.auth.userId
                 };
 
-                log(`Authenticated user: ${finalEmail} (role: ${role})`, 'AUTH', { email: finalEmail, role }, 'INFO');
+                log(`Authenticated user: ${finalEmail} (role: ${role})`, 'AUTH', { email: finalEmail, role }, 'DEBUG');
 
                 // Auto-create or update user from Clerk
                 // This ensures that anyone authenticated via Clerk has a local record
@@ -340,7 +340,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     // Create or Reconnect Session
     router.post('/sessions', checkSessionOrTokenAuth, async (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body }, 'DEBUG');
 
         const { sessionId, phoneNumber } = req.body;
         if (!sessionId) {
@@ -441,7 +441,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     router.get('/sessions', checkSessionOrTokenAuth, (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl }, 'DEBUG');
 
         // IMPORTANT: By default, everyone (including admin) only sees their own sessions
         // If an admin wants to see ALL sessions, they could potentially use a query param
@@ -1272,7 +1272,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     router.delete('/sessions/:sessionId', checkSessionOrTokenAuth, async (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, params: req.params });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, params: req.params }, 'DEBUG');
         const { sessionId } = req.params;
 
         try {
@@ -1380,7 +1380,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     // Webhook setup endpoint
     router.post('/webhook', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body }, 'DEBUG');
         const { url, sessionId } = req.body;
         if (!url || !sessionId) {
             log('API error', 'SYSTEM', { event: 'api-error', error: 'URL and sessionId are required.', endpoint: req.originalUrl });
@@ -1413,7 +1413,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     // Hardened media upload endpoint (validation handled by multer fileFilter)
     router.post('/media', checkSessionOrTokenAuth, upload.single('file'), (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body }, 'DEBUG');
         if (!req.file) {
             log('API error', 'SYSTEM', { event: 'api-error', error: 'No file uploaded or invalid file type.', endpoint: req.originalUrl });
             return res.status(400).json({ status: 'error', message: 'No file uploaded or invalid file type. Allowed: JPEG, PNG, GIF, WebP, PDF, DOC, DOCX, XLS, XLSX, MP3, MP4, OGG, WAV, WEBM, MOV. Max size: 25MB.' });
@@ -1453,7 +1453,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     // Main message sending endpoint
     router.post('/messages', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, query: req.query });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, query: req.query }, 'DEBUG');
         const { sessionId } = req.query;
         if (!sessionId) {
             log('API error', 'SYSTEM', { event: 'api-error', error: 'sessionId query parameter is required', endpoint: req.originalUrl });

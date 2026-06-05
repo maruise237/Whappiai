@@ -50,7 +50,7 @@ function initializeNotificationsRoutes(routerInstance, dependencies) {
 
     // Legacy webhook endpoints (kept for backward compatibility)
     routerInstance.post('/webhook', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body }, 'DEBUG');
         const { url, sessionId } = req.body;
         if (!url || !sessionId) {
             log('API error', 'SYSTEM', { event: 'api-error', error: 'URL and sessionId are required.', endpoint: req.originalUrl });
@@ -82,7 +82,7 @@ function initializeNotificationsRoutes(routerInstance, dependencies) {
 
     // Media upload endpoint
     routerInstance.post('/media', checkSessionOrTokenAuth, dependencies.upload.single('file'), (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body }, 'DEBUG');
         if (!req.file) {
             log('API error', 'SYSTEM', { event: 'api-error', error: 'No file uploaded or invalid file type.', endpoint: req.originalUrl });
             return res.status(400).json({ status: 'error', message: 'No file uploaded or invalid file type. Allowed: JPEG, PNG, GIF, WebP, PDF, DOC, DOCX, XLS, XLSX, MP3, MP4, OGG, WAV, WEBM, MOV. Max size: 25MB.' });

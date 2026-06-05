@@ -66,7 +66,7 @@ function initializeMessageRoutes(routerInstance, dependencies) {
 
     // Main message sending endpoint
     routerInstance.post('/messages', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, query: req.query });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, query: req.query }, 'DEBUG');
         const { sessionId } = req.query;
         if (!sessionId) {
             log('API error', 'SYSTEM', { event: 'api-error', error: 'sessionId query parameter is required', endpoint: req.originalUrl });

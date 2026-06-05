@@ -19,7 +19,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
 
     // Create new session
     routerInstance.post('/sessions', checkSessionOrTokenAuth, async (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body }, 'DEBUG');
 
         const { sessionId, phoneNumber } = req.body;
         if (!sessionId) {
@@ -61,7 +61,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
 
     // List sessions
     routerInstance.get('/sessions', checkSessionOrTokenAuth, (req, res) => {
-        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl });
+        log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl }, 'DEBUG');
 
         const showAll = req.query.all === 'true' && req.currentUser.role === 'admin';
         res.status(200).json(getSessionsDetails(req.currentUser.email, showAll));
