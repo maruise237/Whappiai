@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
+import GradientBlinds from "@/components/landing/GradientBlinds"
 
 const avatars = [
   "/avatars/avatar1.webp",
@@ -36,12 +37,28 @@ const textRevealVariants = {
 export function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20 pb-16 lg:pt-32">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-card pointer-events-none" />
-      
-      {/* Background Shapes for Desktop */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 blur-[120px] rounded-full pointer-events-none hidden lg:block translate-x-1/3 -translate-y-1/4" />
-      <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-purple-500/5 blur-[100px] rounded-full pointer-events-none hidden lg:block -translate-x-1/4 translate-y-1/4" />
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute inset-0 opacity-80 dark:opacity-65">
+        <GradientBlinds
+          gradientColors={["#07130D", "#128C7E", "#25D366", "#D9FBE8"]}
+          angle={12}
+          noise={0.14}
+          blindCount={14}
+          blindMinWidth={72}
+          spotlightRadius={0.46}
+          spotlightSoftness={1.35}
+          spotlightOpacity={0.55}
+          mouseDampening={0.18}
+          mirrorGradient
+          distortAmount={0.08}
+          shineDirection="left"
+          mixBlendMode="screen"
+          dpr={1.25}
+        />
+      </div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,hsl(var(--background)/0.62)_46%,hsl(var(--background))_82%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/88 via-background/72 to-background pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,hsl(var(--background)/0.92)_0%,transparent_26%,transparent_74%,hsl(var(--background)/0.92)_100%)] pointer-events-none" />
 
       <div className="container px-4 mx-auto relative z-10">
         <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto space-y-8">
