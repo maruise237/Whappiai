@@ -39,7 +39,7 @@ const plans = [
   },
   {
     name: "Organisation",
-    description: "Pour associations, eglises, medias ou formations larges.",
+    description: "Pour associations, medias, formations ou reseaux larges.",
     price: { monthly: "18 000 FCFA", yearly: "172 800 FCFA", monthlyValue: 18000, yearlyValue: 172800 },
     features: [
       "Jusqu'a 20 groupes connectes",

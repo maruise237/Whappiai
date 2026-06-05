@@ -4,6 +4,7 @@ const { Session, ActivityLog, User } = require('../models');
 const { log } = require('../utils/logger');
 const CreditService = require('./CreditService');
 const QueueService = require('./QueueService');
+const WarningService = require('./warnings');
 
 /**
  * Moderation Service
@@ -225,8 +226,10 @@ async function getAdminGroups(sock, sessionId) {
                     is_active: 0,
                     anti_link: 0,
                     bad_words: '',
-                    warning_template: 'Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
-                    max_warnings: 5
+                    warning_template: '@{{name}} votre message a ete supprime: {{reason}}. Avertissement {{count}}/{{max}}. Il reste {{remaining}} avertissement(s) avant exclusion.',
+                    warnings_enabled: 0,
+                    auto_kick_enabled: 0,
+                    max_warnings: 3
                 }
             });
         }
@@ -258,8 +261,10 @@ function updateGroupSettings(sessionId, groupId, settings) {
     const is_active = settings.is_active ? 1 : 0;
     const anti_link = settings.anti_link ? 1 : 0;
     const bad_words = settings.bad_words || settings.banned_words || "";
-    const warning_template = settings.warning_template || "Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.";
-    const max_warnings = settings.max_warnings || settings.warning_threshold || 5;
+    const warning_template = settings.warning_template || "@{{name}} votre message a ete supprime: {{reason}}. Avertissement {{count}}/{{max}}. Il reste {{remaining}} avertissement(s) avant exclusion.";
+    const warnings_enabled = settings.warnings_enabled === undefined ? 1 : (settings.warnings_enabled ? 1 : 0);
+    const auto_kick_enabled = settings.auto_kick_enabled ? 1 : 0;
+    const max_warnings = settings.max_warnings || settings.warning_threshold || 3;
     const warning_reset_days = settings.warning_reset_days || 0;
     const welcome_enabled = settings.welcome_enabled ? 1 : 0;
     const welcome_template = settings.welcome_template || settings.welcome_message || "";
@@ -269,17 +274,19 @@ function updateGroupSettings(sessionId, groupId, settings) {
     
     log(`Mise à jour des paramètres de modération pour le groupe ${groupId}`, sessionId, { 
         event: 'moderation-config-update',
-        settings: { is_active, anti_link, bad_words, max_warnings, welcome_enabled, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days }
+        settings: { is_active, anti_link, bad_words, warnings_enabled, auto_kick_enabled, max_warnings, welcome_enabled, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days }
     }, 'INFO');
 
     const stmt = db.prepare(`
-        INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, warnings_enabled, auto_kick_enabled, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(group_id, session_id) DO UPDATE SET
         is_active = excluded.is_active,
         anti_link = excluded.anti_link,
         bad_words = excluded.bad_words,
         warning_template = excluded.warning_template,
+        warnings_enabled = excluded.warnings_enabled,
+        auto_kick_enabled = excluded.auto_kick_enabled,
         max_warnings = excluded.max_warnings,
         welcome_enabled = excluded.welcome_enabled,
         welcome_template = excluded.welcome_template,
@@ -290,7 +297,7 @@ function updateGroupSettings(sessionId, groupId, settings) {
         updated_at = CURRENT_TIMESTAMP
     `);
     
-    stmt.run(groupId, sessionId, is_active, anti_link, bad_words, warning_template, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days);
+    stmt.run(groupId, sessionId, is_active, anti_link, bad_words, warning_template, warnings_enabled, auto_kick_enabled, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days);
 }
 
 /**
@@ -505,6 +512,10 @@ async function handleIncomingMessage(sock, sessionId, msg) {
             try {
                 // 1. Delete Message (High priority for moderation)
                 await QueueService.enqueue(sessionId, sock, groupId, { delete: msg.key }, { priority: 'high' });
+
+                if (settings.warnings_enabled === 0) {
+                    return true;
+                }
                 
                 // 2. Increment Warnings with automatic reset check
                 const resetDays = settings.warning_reset_days || 0;
@@ -533,10 +544,10 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                 `).get(groupId, sessionId, senderJid);
                 
                 const currentCount = warningInfo.count;
-                const maxWarnings = settings.max_warnings || 5;
+                const maxWarnings = settings.max_warnings || 3;
                 
                 // 3. Kick if max reached
-                if (currentCount >= maxWarnings) {
+                if (settings.auto_kick_enabled && currentCount >= maxWarnings) {
                     log(`User ${senderJid} kicked from ${groupId} after ${currentCount} warnings`, sessionId, {
                         event: 'moderation-kick',
                         groupId,
@@ -565,14 +576,13 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                     Session.updateAIStats(sessionId, 'sent');
                 } else {
                     // 4. Send Warning
-                    let template = settings.warning_template || 'Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.';
-                    
-                    // Replace variables
-                    const warningMsg = template
-                        .replace(/{{name}}/g, `${senderJid.split('@')[0]}`)
-                        .replace(/{{count}}/g, currentCount)
-                        .replace(/{{max}}/g, maxWarnings)
-                        .replace(/{{reason}}/g, violation);
+                    const warningMsg = WarningService.composeWarningMessage({
+                        template: settings.warning_template,
+                        senderJid,
+                        currentCount,
+                        maxWarnings,
+                        reason: violation
+                    });
 
                     await QueueService.enqueue(sessionId, sock, groupId, {
                         text: warningMsg,

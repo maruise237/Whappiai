@@ -45,4 +45,16 @@ describe('WarningService', () => {
             }
         ]);
     });
+
+    test('composes warning message with remaining count before exclusion', () => {
+        const message = WarningService.composeWarningMessage({
+            template: '@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion.',
+            senderJid: '237600000001@s.whatsapp.net',
+            currentCount: 2,
+            maxWarnings: 5,
+            reason: 'Lien non autorise'
+        });
+
+        expect(message).toBe('@237600000001 message supprime: Lien non autorise. Il reste 3 avertissement(s) avant exclusion.');
+    });
 });

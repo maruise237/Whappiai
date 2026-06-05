@@ -743,9 +743,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     is_active: 0,
                     anti_link: 0,
                     bad_words: '',
-                    warning_template: 'Attention @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
-                    max_warnings: 5,
+                    warning_template: '@{{name}} votre message a ete supprime: {{reason}}. Avertissement {{count}}/{{max}}. Il reste {{remaining}} avertissement(s) avant exclusion.',
+                    warnings_enabled: 0,
+                    auto_kick_enabled: 0,
+                    max_warnings: 3,
                     welcome_enabled: 0,
+                    welcome_digest_enabled: 0,
+                    welcome_digest_time: '18:00',
                     ai_assistant_enabled: 0
                 }
             });

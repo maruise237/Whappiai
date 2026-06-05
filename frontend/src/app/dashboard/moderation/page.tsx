@@ -41,6 +41,7 @@ type GroupSettings = {
   antiLinksEnabled?: boolean
   welcomeEnabled?: boolean
   warningsEnabled?: boolean
+  exclusionEnabled?: boolean
   welcomeMessage?: string
   warningMessage?: string
   forbiddenWords?: string
@@ -79,7 +80,7 @@ type EngagementTask = {
 }
 
 const defaultWelcomeMessage = "Bienvenue aux nouveaux membres arrives aujourd'hui. Merci de respecter le sujet, d'eviter les liens hors contexte et de garder les echanges utiles."
-const defaultWarningMessage = "Attention : ce message ne respecte pas les regles du groupe. Merci de corriger avant une action admin."
+const defaultWarningMessage = "@{{name}} votre message a ete supprime: {{reason}}. Merci de respecter les regles du groupe."
 
 const ruleSummary = [
   {
@@ -105,18 +106,10 @@ const presets: Array<{ name: string; patch: Partial<GroupSettings> }> = [
     patch: {
       antiLinksEnabled: true,
       warningsEnabled: true,
+      exclusionEnabled: true,
+      maxWarnings: 3,
       forbiddenWords: "arnaque, spam, pari, crypto rapide, lien telegram",
-      warningMessage: "Attention @{{name}}, ce message ne respecte pas le cadre professionnel du groupe.",
-    },
-  },
-  {
-    name: "Eglise",
-    patch: {
-      antiLinksEnabled: true,
-      welcomeEnabled: true,
-      forbiddenWords: "insulte, arnaque, pari, lien suspect",
-      welcomeMessage: "Bienvenue aux nouveaux membres arrives aujourd'hui. Merci de garder un ton respectueux et de suivre les annonces du groupe.",
-      welcomeDigestTime: "19:00",
+      warningMessage: "@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
     },
   },
   {
@@ -124,8 +117,12 @@ const presets: Array<{ name: string; patch: Partial<GroupSettings> }> = [
     patch: {
       antiLinksEnabled: true,
       welcomeEnabled: true,
+      warningsEnabled: true,
+      exclusionEnabled: true,
+      maxWarnings: 3,
       forbiddenWords: "triche, arnaque, spam, pari",
       welcomeMessage: "Bienvenue aux nouveaux apprenants. Consultez les consignes, respectez le sujet du cours et gardez les questions claires.",
+      warningMessage: "@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
       welcomeDigestTime: "18:00",
     },
   },
@@ -134,8 +131,24 @@ const presets: Array<{ name: string; patch: Partial<GroupSettings> }> = [
     patch: {
       antiLinksEnabled: true,
       warningsEnabled: true,
+      exclusionEnabled: true,
+      maxWarnings: 2,
       forbiddenWords: "arnaque, faux depot, pari, spam",
-      warningMessage: "Attention @{{name}}, ce groupe suit des regles strictes de cotisation. Merci de rester conforme.",
+      warningMessage: "@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
+    },
+  },
+  {
+    name: "Suivi client",
+    patch: {
+      antiLinksEnabled: true,
+      welcomeEnabled: true,
+      warningsEnabled: true,
+      exclusionEnabled: true,
+      maxWarnings: 3,
+      forbiddenWords: "arnaque, spam, insultes, hors sujet, lien concurrent",
+      welcomeMessage: "Bienvenue aux nouveaux clients arrives aujourd'hui. Posez votre demande avec le numero de commande, le besoin et le delai attendu.",
+      warningMessage: "@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe de suivi client.",
+      welcomeDigestTime: "17:30",
     },
   },
 ]
@@ -747,18 +760,53 @@ export default function ModerationPage() {
                   )}
                   <RuleSwitch
                     icon={<AlertTriangle className="h-4 w-4" />}
-                    title="Avertissement avant sanction"
-                    text="Garder une moderation transparente avant exclusion."
+                    title="Avertir et taguer"
+                    text="Supprimer le message, puis taguer le membre concerne avec un avertissement."
                     checked={settings.warningsEnabled}
                     onCheckedChange={checked => updateLocalGroup(groupId, { warningsEnabled: checked })}
                   />
                   {settings.warningsEnabled && (
-                    <Textarea
-                      value={settings.warningMessage}
-                      onChange={event => updateLocalGroup(groupId, { warningMessage: event.target.value })}
-                      className="min-h-20 resize-none text-xs"
-                      placeholder="Message d'avertissement"
-                    />
+                    <div className="space-y-3 rounded-2xl border bg-background/60 p-4">
+                      <Textarea
+                        value={settings.warningMessage}
+                        onChange={event => updateLocalGroup(groupId, { warningMessage: event.target.value })}
+                        className="min-h-24 resize-none text-xs"
+                        placeholder="Message d'avertissement"
+                      />
+                      <div className="rounded-xl border bg-card p-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-semibold">Exclusion automatique</p>
+                            <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                              Si desactive, Whappi avertit et tague seulement. Si active, il exclut au seuil choisi.
+                            </p>
+                          </div>
+                          <Switch
+                            checked={settings.exclusionEnabled}
+                            onCheckedChange={checked => updateLocalGroup(groupId, { exclusionEnabled: checked })}
+                            aria-label="Exclusion automatique"
+                          />
+                        </div>
+                        {settings.exclusionEnabled && (
+                          <div className="mt-3 grid gap-2 sm:grid-cols-[180px_1fr] sm:items-center">
+                            <Input
+                              type="number"
+                              min={1}
+                              max={10}
+                              value={settings.maxWarnings}
+                              onChange={event => updateLocalGroup(groupId, { maxWarnings: clampWarningLimit(event.target.value) })}
+                              className="h-10 text-xs"
+                            />
+                            <p className="text-[10px] leading-4 text-muted-foreground">
+                              Exemple : {settings.maxWarnings} = exclusion au {settings.maxWarnings}e avertissement.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[10px] leading-4 text-muted-foreground">
+                        Variables : {"{{name}}"}, {"{{reason}}"}, {"{{count}}"}, {"{{max}}"}, {"{{remaining}}"}.
+                      </p>
+                    </div>
                   )}
 
                   <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -785,15 +833,17 @@ export default function ModerationPage() {
   )
 }
 
-function normalizeSettings(settings?: GroupSettings | null): Required<Pick<GroupSettings, "antiLinksEnabled" | "welcomeEnabled" | "warningsEnabled" | "welcomeMessage" | "warningMessage" | "forbiddenWords" | "welcomeDigestTime">> {
+function normalizeSettings(settings?: GroupSettings | null): Required<Pick<GroupSettings, "antiLinksEnabled" | "welcomeEnabled" | "warningsEnabled" | "exclusionEnabled" | "welcomeMessage" | "warningMessage" | "forbiddenWords" | "welcomeDigestTime" | "maxWarnings">> {
   return {
     antiLinksEnabled: Boolean(settings?.antiLinksEnabled ?? settings?.anti_links_enabled ?? settings?.antiLinkEnabled),
     welcomeEnabled: Boolean(settings?.welcomeEnabled ?? settings?.welcome_digest_enabled ?? settings?.welcome_enabled),
-    warningsEnabled: Boolean(settings?.warningsEnabled ?? settings?.warnings_enabled),
+    warningsEnabled: Boolean(settings?.warningsEnabled ?? settings?.warnings_enabled ?? settings?.warningsEnabled),
+    exclusionEnabled: Boolean(settings?.exclusionEnabled ?? settings?.auto_kick_enabled ?? settings?.exclusion_enabled),
     welcomeMessage: ensureString(settings?.welcomeMessage ?? settings?.welcome_message, defaultWelcomeMessage),
     warningMessage: ensureString(settings?.warningMessage ?? settings?.warning_message, defaultWarningMessage),
     forbiddenWords: ensureString(settings?.forbiddenWords ?? settings?.bad_words ?? settings?.banned_words, ""),
     welcomeDigestTime: ensureString(settings?.welcomeDigestTime ?? settings?.welcome_digest_time, "18:00"),
+    maxWarnings: clampWarningLimit(settings?.maxWarnings ?? settings?.max_warnings ?? 3),
   }
 }
 
@@ -803,8 +853,10 @@ function toModerationPayload(settings?: GroupSettings | null) {
     is_active: normalized.antiLinksEnabled || normalized.welcomeEnabled || normalized.warningsEnabled || Boolean(normalized.forbiddenWords.trim()),
     anti_link: normalized.antiLinksEnabled,
     bad_words: normalized.forbiddenWords,
+    warnings_enabled: normalized.warningsEnabled,
+    auto_kick_enabled: normalized.exclusionEnabled,
     warning_template: normalized.warningMessage,
-    max_warnings: 3,
+    max_warnings: normalized.maxWarnings,
     welcome_enabled: false,
     welcome_template: normalized.welcomeMessage,
     welcome_digest_enabled: normalized.welcomeEnabled,
@@ -859,6 +911,12 @@ function riskClass(value?: string) {
   if (value === "high") return "bg-destructive/10 text-destructive hover:bg-destructive/10"
   if (value === "medium") return "bg-amber-500/10 text-amber-600 hover:bg-amber-500/10"
   return "bg-primary/10 text-primary hover:bg-primary/10"
+}
+
+function clampWarningLimit(value: unknown) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return 3
+  return Math.min(10, Math.max(1, Math.round(parsed)))
 }
 
 function RuleSwitch({

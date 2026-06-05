@@ -151,7 +151,9 @@ function initializeSchema() {
             anti_link INTEGER DEFAULT 0,
             bad_words TEXT,
             warning_template TEXT DEFAULT 'ATTENTION @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
-            max_warnings INTEGER DEFAULT 5,
+            warnings_enabled INTEGER DEFAULT 1,
+            auto_kick_enabled INTEGER DEFAULT 0,
+            max_warnings INTEGER DEFAULT 3,
             warning_reset_days INTEGER DEFAULT 0,
             welcome_enabled INTEGER DEFAULT 0,
             welcome_template TEXT,
@@ -364,7 +366,9 @@ function initializeSchema() {
                         anti_link INTEGER DEFAULT 0,
                         bad_words TEXT,
                         warning_template TEXT DEFAULT 'ATTENTION @{{name}}, avertissement {{count}}/{{max}} pour : {{reason}}.',
-                        max_warnings INTEGER DEFAULT 5,
+                        warnings_enabled INTEGER DEFAULT 1,
+                        auto_kick_enabled INTEGER DEFAULT 0,
+                        max_warnings INTEGER DEFAULT 3,
                         warning_reset_days INTEGER DEFAULT 0,
                         welcome_enabled INTEGER DEFAULT 0,
                         welcome_template TEXT,
@@ -390,6 +394,8 @@ function initializeSchema() {
     runner.run('group-settings-welcome-digest-v1', (db) => {
         const tableInfo = db.prepare("PRAGMA table_info(group_settings)").all();
         const columns = [
+            { name: 'warnings_enabled', type: 'INTEGER DEFAULT 1' },
+            { name: 'auto_kick_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'welcome_digest_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'welcome_digest_time', type: "TEXT DEFAULT '18:00'" }
         ];

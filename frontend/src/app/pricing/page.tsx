@@ -28,7 +28,7 @@ const plans = [
     code: "business",
     name: "Organisation",
     price: "18 000 FCFA",
-    description: "Pour associations, eglises, medias ou formations larges.",
+    description: "Pour associations, medias, formations ou reseaux larges.",
     features: ["Jusqu'a 20 groupes connectes", "Toutes les fonctionnalites Pro", "Liste noire partagee", "Logs avances", "Support prioritaire WhatsApp"],
     highlight: false,
   },

@@ -25,7 +25,7 @@ const features = [
       "Message de bienvenue par groupe.",
       "Mention automatique du nouveau membre.",
       "Envoi uniquement dans le groupe.",
-      "Modèles rapides pour église, école, business ou tontine."
+      "Modeles rapides pour ecole, business, tontine ou suivi client."
     ],
     cta: "Configurer l'accueil"
   },
