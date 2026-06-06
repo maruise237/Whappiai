@@ -466,11 +466,9 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
         data: updateData
     });
 
-    // Also dispatch via global so webhook handlers can trigger broadcasts
-    if (global._broadcastSessionUpdate) {
-        global._broadcastSessionUpdate(id, status, detail, qrOrCode);
-    }
 };
+
+global._broadcastSessionUpdate = broadcastSessionUpdate;
 
 const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
     const session = SessionService.isProviderActive()
