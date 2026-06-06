@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Bot,
   Moon,
   ShieldCheck,
   Sun,
@@ -68,6 +69,13 @@ const userNavigation: NavItemConfig[] = [
 ]
 
 const adminNavigation: NavItemConfig[] = [
+  {
+    label: "Modèles IA",
+    detail: "Providers, modèles, clés API",
+    href: "/dashboard/ai-models",
+    icon: Bot,
+    adminOnly: true,
+  },
   {
     label: "Utilisateurs",
     detail: "Comptes et forfaits",
