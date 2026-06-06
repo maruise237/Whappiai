@@ -47,6 +47,7 @@ const subscriptionRoutes = require('./src/routes/subscriptions');
 const creditRoutes = require('./src/routes/credits');
 const notificationRoutes = require('./src/routes/notifications');
 const calRoutes = require('./src/routes/cal');
+const publicRoutes = require('./src/routes/public');
 const evolutionWebhookRouter = require('./src/services/EvolutionWebhookHandler');
 const { log, setBroadcastFn } = require('./src/utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middleware/errorHandler');
@@ -582,6 +583,7 @@ app.use('/api/v1/credits', authLimiter, creditRoutes);
 app.use('/api/v1/notifications', authLimiter, notificationRoutes);
 app.use('/api/v1/cal', authLimiter, calRoutes);
 app.use('/api/v1/webhooks', evolutionWebhookRouter);
+app.use('/api/v1', publicRoutes);  // public, no auth
 app.use('/api/v1', apiRouter);
 
 // Serve modern UI
