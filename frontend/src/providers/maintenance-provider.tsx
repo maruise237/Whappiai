@@ -2,8 +2,9 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
+import { useUser } from "@clerk/clerk-react"
 import { fetchApi } from "@/lib/api"
-import { Wrench, Timer, Clock } from "lucide-react"
+import { Wrench, Clock } from "lucide-react"
 
 type MaintenanceData = {
   active: boolean
@@ -14,10 +15,12 @@ type MaintenanceData = {
   scheduled_end_at?: string | null
 }
 
-const POLL_INTERVAL = 60_000 // 1 minute
+const POLL_INTERVAL = 60_000
+const ADMIN_BYPASS_EMAILS = ["maruise237@gmail.com"]
 
 export function MaintenanceProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { user, isLoaded } = useUser()
   const [maintenance, setMaintenance] = React.useState<MaintenanceData | null>(null)
   const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -26,34 +29,34 @@ export function MaintenanceProvider({ children }: { children: React.ReactNode })
       const data = await fetchApi("/api/v1/maintenance/status") as MaintenanceData
       setMaintenance(data)
     } catch {
-      // Silently fail — if API is down, don't block the user
       setMaintenance(null)
     }
   }, [])
 
   React.useEffect(() => {
-    // Only check on dashboard routes
     if (!pathname?.startsWith("/dashboard")) return
-
     checkMaintenance()
-
     intervalRef.current = setInterval(checkMaintenance, POLL_INTERVAL)
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [pathname, checkMaintenance])
 
-  // Don't show overlay on the maintenance config page itself, landing page, or when inactive
   const isDashboardRoute = pathname?.startsWith("/dashboard")
   const isMaintenancePage = pathname === "/dashboard/maintenance"
   const isActive = maintenance?.active === true
 
-  if (!isDashboardRoute || isMaintenancePage || !isActive) {
+  // Admin bypass: admins can always access the dashboard to toggle maintenance off
+  const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase().trim() || ""
+  const isAdmin = isLoaded && (
+    user?.publicMetadata?.role === "admin" ||
+    ADMIN_BYPASS_EMAILS.includes(userEmail)
+  )
+
+  if (!isDashboardRoute || isMaintenancePage || !isActive || isAdmin) {
     return <>{children}</>
   }
 
-  // Schedule info
   const hasSchedule = maintenance.scheduled_end_at
   const endTime = hasSchedule
     ? new Date(maintenance.scheduled_end_at!).toLocaleString("fr-FR", {
