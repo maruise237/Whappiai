@@ -1,53 +1,184 @@
-# 🚀 Guide de Déploiement Whappi sur Dokploy
+# Whappi server deployment (Dokploy + Traefik + Evolution API)
 
-Ce guide explique comment déployer l'architecture Whappi (Frontend Next.js + Backend Node.js) sur un serveur utilisant **Dokploy** avec Traefik et SSL automatique.
+This document describes the current production-style deployment path for Whappi on a Linux VPS using Dokploy, Traefik, and Evolution API.
 
-## 📋 Prérequis
+## Architecture
 
-1.  Un serveur avec **Dokploy** installé.
-2.  Un nom de domaine avec deux sous-domaines pointant vers l'IP de votre serveur (ex: `app.domaine.com` et `api.domaine.com`).
-3.  Un compte **Clerk** configuré pour votre application.
+- **Whappi**: product app, dashboard, auth, billing, orchestration
+- **Evolution API**: WhatsApp session engine (QR, state, send/receive)
+- **Dokploy**: build + container orchestration
+- **Traefik**: HTTPS routing and certificates
+- **SQLite volume**: persistent app data
 
-## 🛠️ Étapes de Configuration dans Dokploy
+Current runtime shape in this repository:
+- Single app container exposed on port `3000`
+- Public domain routed by Traefik to the app container
+- `WHATSAPP_PROVIDER=evolution`
+- Optional Redis support, but it must stay disabled unless a real Redis server exists
 
-### 1. Créer un Projet
-Dans l'interface Dokploy, créez un nouveau projet nommé `Whappi`.
+## Prerequisites
 
-### 2. Configuration du Réseau
-Assurez-vous que le réseau `dokploy-network` existe. Dokploy le crée généralement par défaut. S'il n'existe pas, créez-le dans l'onglet **Networks**.
+1. Linux VPS with Docker and Dokploy already working
+2. Traefik / Dokploy network available: `dokploy-network`
+3. Domain pointed to the VPS
+4. Clerk production keys
+5. Evolution API instance already deployed and reachable over HTTPS
+6. GitHub repo connected to Dokploy or available on the VPS
 
-### 3. Déploiement via Docker Compose
-1.  Cliquez sur **Create Service** > **Compose**.
-2.  Copiez le contenu du fichier `docker-compose.yml` du projet.
-3.  **Important** : Dokploy gère les variables d'environnement. Dans l'onglet **Environment**, ajoutez toutes les variables listées dans le `.env.example`.
+## Required environment variables
 
-### 4. Variables d'Environnement à Configurer
-| Variable | Description |
-| :--- | :--- |
-| `FRONTEND_DOMAIN` | Sous-domaine frontend (ex: `app.domaine.com`) |
-| `BACKEND_DOMAIN` | Sous-domaine backend (ex: `api.domaine.com`) |
-| `CLERK_SECRET_KEY` | Clé secrète Clerk (Backend) |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clé publique Clerk (Frontend) |
-| `TOKEN_ENCRYPTION_KEY` | Clé hex 64 caractères (Sécurité WhatsApp) |
-| `SESSION_SECRET` | Secret pour les sessions Express |
-| `CLERK_WEBHOOK_SECRET` | Secret pour synchroniser les utilisateurs |
+Use `.env.example` as the source of truth.
 
-> Production : utilisez les cles Clerk live (`pk_live_...` et `sk_live_...`) sur le domaine public. Les cles `pk_test_...` affichent un avertissement navigateur et ne doivent pas servir pour une landing en production.
+Critical variables:
+- `APP_URL`
+- `FRONTEND_URL`
+- `FRONTEND_DOMAIN`
+- `NEXT_PUBLIC_API_URL`
+- `SESSION_SECRET`
+- `TOKEN_ENCRYPTION_KEY`
+- `CLERK_SECRET_KEY`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_WEBHOOK_SECRET`
+- `WHATSAPP_PROVIDER=evolution`
+- `EVOLUTION_API_URL`
+- `EVOLUTION_API_KEY`
+- `EVOLUTION_WEBHOOK_SECRET`
 
-## 📦 Persistance des Données (Volumes)
-Le `docker-compose.yml` définit 3 volumes nommés pour garantir que vos sessions WhatsApp et votre base de données ne soient pas perdues lors des mises à jour :
--   `whappi-data` : Base de données SQLite.
--   `whappi-sessions` : Sessions WhatsApp (évite de rescanner le QR).
--   `whappi-media` : Fichiers médias reçus/envoyés.
+Recommended:
+- `MASTER_ADMIN_EMAIL`
+- `MASTER_API_KEY`
+- `ADMIN_DASHBOARD_PASSWORD`
 
-## 🔒 Configuration SSL & WebSocket
-Traefik gère automatiquement les certificats SSL via Let's Encrypt grâce aux labels définis dans le `docker-compose.yml`. 
-Le support des **WebSockets** (crucial pour le QR Code WhatsApp en temps réel) est activé via les middlewares Traefik configurés sur le service backend.
+Optional:
+- `REDIS_URL` -> keep empty if no Redis service is deployed
+- `CAL_CLIENT_ID`, `CAL_CLIENT_SECRET`, `CAL_REDIRECT_URI`
+- payment provider variables
 
-## 🔄 CI/CD (Mises à jour automatiques)
-Connectez votre dépôt GitHub à Dokploy pour activer le déploiement automatique à chaque `git push`. Dokploy reconstruira les images Docker en utilisant les Dockerfiles multi-stage optimisés pour la production.
+## Important production notes
 
-## 🧪 Vérifications Post-Déploiement
-1.  Accédez à `https://api.votre-domaine.com/api/v1/health` pour vérifier que le backend répond.
-2.  Accédez à `https://app.votre-domaine.com` pour le tableau de bord.
-3.  Vérifiez que la console du navigateur ne contient pas d'erreurs CORS lors des appels API.
+### 1) Encryption key stability
+`TOKEN_ENCRYPTION_KEY` must remain stable across restarts and redeploys.
+If you change it after encrypted model keys already exist in the database, startup will log decrypt errors until those records are rotated or reset.
+
+### 2) Redis is optional
+If `REDIS_URL` points to a non-existent host, Whappi starts but logs connection errors and disables cache after retries.
+If Redis is not deployed, set:
+
+```env
+REDIS_URL=
+```
+
+### 3) Evolution provider mode
+Whappi is expected to run with:
+
+```env
+WHATSAPP_PROVIDER=evolution
+EVOLUTION_API_URL=https://your-evolution-domain
+EVOLUTION_API_KEY=your-evolution-api-key
+EVOLUTION_WEBHOOK_SECRET=your-shared-secret
+```
+
+## Dokploy deployment steps
+
+### Option A - Deploy from GitHub in Dokploy
+1. Push the repo to GitHub
+2. In Dokploy, create or open the Whappi compose app
+3. Point Dokploy to this repository
+4. Confirm `docker-compose.yml` at repo root is used
+5. Fill the Dokploy Environment tab using `.env.example`
+6. Deploy
+
+### Option B - Deploy from repo already present on the VPS
+1. Update the code on the VPS
+2. Ensure Dokploy compose app points to this directory/repo state
+3. Update environment variables
+4. Redeploy the compose app
+
+## Container expectations
+
+The compose file currently:
+- builds `whappi-frontend` from `Dockerfile.backend`
+- exposes internal port `3000`
+- mounts persistent volumes:
+  - `whappi-data`
+  - `whappi-sessions`
+  - `whappi-media`
+- attaches to external network `dokploy-network`
+
+## Post-deploy verification
+
+### App health
+
+```bash
+curl -sS https://your-domain/api/health
+```
+
+Expected shape:
+
+```json
+{"status":"healthy"}
+```
+
+### Container logs
+
+```bash
+docker compose logs --tail=100 whappi-frontend
+```
+
+Healthy startup signs:
+- database schema initialized
+- indexes added
+- server running on port 3000
+- no repeated Redis timeout errors
+- no `Failed to decrypt API key` errors
+
+### Evolution connectivity
+From inside the container or app code path, confirm the provider can query an instance status successfully.
+
+## Troubleshooting
+
+### Redis timeout spam
+Cause:
+- `REDIS_URL` configured but Redis service absent/unreachable
+
+Fix:
+- empty `REDIS_URL`
+- redeploy
+
+### `bad decrypt` on startup
+Cause:
+- encrypted DB values were created with another `TOKEN_ENCRYPTION_KEY`
+
+Fix:
+- restore the original key, or
+- rotate/reset the affected encrypted fields, then redeploy
+
+### Clerk warnings or auth issues
+Cause:
+- wrong test/live keys for the deployed domain
+
+Fix:
+- use production Clerk keys matching the public domain
+
+### Evolution requests fail
+Check:
+- `EVOLUTION_API_URL`
+- `EVOLUTION_API_KEY`
+- network reachability
+- webhook secret consistency
+
+## Recommended operating workflow
+
+1. Update code in Git
+2. Push to GitHub
+3. Redeploy from Dokploy
+4. Check logs
+5. Check `/api/health`
+6. Validate Evolution status for at least one session
+
+## Persistence
+
+Do not remove these volumes unless you intentionally want data loss:
+- `whappi-data`
+- `whappi-sessions`
+- `whappi-media`

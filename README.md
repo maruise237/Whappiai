@@ -1,62 +1,76 @@
-# 🚀 Whappi - WhatsApp API Server & Dashboard
+# Whappi
 
-Whappi est une solution complète, légère et puissante pour gérer l'automatisation de WhatsApp. Elle combine un serveur API robuste basé sur **Baileys** et un dashboard moderne construit avec **Next.js**.
+Whappi is a SaaS layer for WhatsApp operations: dashboard, auth, billing, moderation, credits, and automation.
 
-## ✨ Caractéristiques
+## Current architecture
 
-- **Multi-Sessions** : Gérez plusieurs comptes WhatsApp simultanément.
-- **Dashboard Moderne** : Interface utilisateur intuitive avec mode sombre, statistiques en temps réel et gestion des sessions.
-- **API REST & Webhooks** : Intégrez facilement WhatsApp à vos applications existantes.
-- **IA Intégrée** : Support pour les réponses automatiques basées sur l'IA.
-- **Engagement & Modération** : Outils avancés pour la stratégie d'engagement et la modération de groupes.
-- **Déploiement Facile** : Prêt pour Docker et optimisé pour Dokploy/Coolify.
+- **App layer**: Whappi
+- **WhatsApp engine**: Evolution API
+- **Frontend / backend runtime**: Node.js + Next.js app container
+- **Persistence**: SQLite volume
+- **Deployment target**: Dokploy + Traefik on a Linux VPS
 
-## 🛠️ Stack Technique
+Whappi is no longer documented here as a Baileys-first deployment. The production path in this repo is **Evolution API provider mode**.
 
-- **Backend** : Node.js, Express, Baileys, SQLite (better-sqlite3).
-- **Frontend** : Next.js 15, Tailwind CSS, Shadcn UI, Clerk Auth.
-- **Infrastructure** : Docker, Docker Compose.
+## Main features
 
-## 🚀 Installation Rapide
+- Multi-session WhatsApp management
+- Dashboard and SaaS administration
+- REST endpoints and webhooks
+- AI-assisted flows
+- Group engagement and moderation tools
+- Dokploy-ready deployment
 
-### Pré-requis
-- Docker et Docker Compose installés.
-- Un compte Clerk pour l'authentification (optionnel si configuré autrement).
+## Quick start
 
-### Configuration
-1. Clonez le dépôt :
-   ```bash
-   git clone https://github.com/votre-username/whappi.git
-   cd whappi
-   ```
-2. Configurez l'environnement :
-   Copiez le fichier `.env.example` en `.env` et remplissez vos variables :
-   ```bash
-   cp .env.example .env
-   ```
-
-### Lancement avec Docker (Recommandé)
+### 1. Clone
 ```bash
-docker-compose up -d --build
+git clone git@github.com:maruise237/Whappiai.git
+cd Whappiai
 ```
-- **Backend API** : `http://localhost:3000`
-- **Dashboard** : `http://localhost:3001`
 
-## ☁️ Déploiement sur Dokploy
+### 2. Configure env
+```bash
+cp .env.example .env
+```
 
-Ce projet est optimisé pour être déployé sur un VPS via **Dokploy**.
-1. Connectez votre dépôt GitHub à Dokploy.
-2. Créez une nouvelle application "Compose".
-3. Dokploy utilisera automatiquement le fichier `docker-compose.yml` présent à la racine.
-4. N'oubliez pas de configurer les **Volumes** pour la persistance des sessions WhatsApp.
+Then fill the required variables.
 
-## 🔒 Sécurité
-- Authentification via Clerk.
-- Chiffrement des jetons de session.
-- Protection contre les attaques par force brute (Rate Limiting).
+Most important:
+- `TOKEN_ENCRYPTION_KEY`
+- `SESSION_SECRET`
+- Clerk keys
+- `WHATSAPP_PROVIDER=evolution`
+- `EVOLUTION_API_URL`
+- `EVOLUTION_API_KEY`
+- `EVOLUTION_WEBHOOK_SECRET`
 
-## 📄 Licence
-Distribué sous la licence MIT. Voir `LICENSE` pour plus d'informations.
+If you do **not** have Redis deployed, keep:
+```env
+REDIS_URL=
+```
 
----
-Développé avec ❤️ par Kamtech.
+### 3. Run with Docker Compose
+```bash
+docker compose up -d --build
+```
+
+### 4. Health check
+```bash
+curl -sS http://localhost:3000/api/health
+```
+
+## Production deployment
+
+See:
+- `README-DEPLOY.md`
+- `.env.example`
+
+## Notes
+
+- `TOKEN_ENCRYPTION_KEY` must stay stable after production data exists
+- Redis is optional; a fake `REDIS_URL` creates noisy timeout logs
+- Evolution API must be reachable from the app container
+
+## License
+MIT
