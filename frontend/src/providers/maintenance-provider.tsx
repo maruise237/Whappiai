@@ -103,13 +103,25 @@ export function MaintenanceProvider({ children }: { children: React.ReactNode })
     ADMIN_BYPASS_EMAILS.includes(userEmail)
   )
 
-  if (!isDashboardRoute || isMaintenancePage || !isActive || isAdmin) {
+  // ╔═══════════════════════════════════════════════════════╗
+  // ║  BREAK GLASS: If scheduled end time has passed,      ║
+  // ║  show the dashboard immediately. The cron will        ║
+  // ║  update the DB later, but users don't wait for it.   ║
+  // ╚═══════════════════════════════════════════════════════╝
+  const timeLeft = calcTimeLeft(maintenance?.scheduled_end_at)
+  const isExpired = timeLeft?.expired === true
+
+  if (
+    !isDashboardRoute ||
+    isMaintenancePage ||
+    !isActive ||
+    isAdmin ||
+    isExpired  // past end -> show dashboard even if DB still says active
+  ) {
     return <>{children}</>
   }
 
-  const timeLeft = calcTimeLeft(maintenance.scheduled_end_at)
-  // suppress unused-var lint for tick (forces re-evaluation each second)
-  void tick
+  void tick // forces re-evaluation each second
 
   const Icon = (maintenance.icon && ICON_MAP[maintenance.icon]) || Wrench
 
