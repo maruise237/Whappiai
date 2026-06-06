@@ -40,20 +40,47 @@ services:
       - whappi-media:/app/media
     networks:
       - dokploy-network
-
-  # Dummy service to satisfy Dokploy service detection if needed
+      - default
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.rule=Host(`whappi.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.entrypoints=web
+      - traefik.http.services.whappi-whappi-sypalq-7-web.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.service=whappi-whappi-sypalq-7-web
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.rule=Host(`whappi.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.entrypoints=websecure
+      - traefik.http.services.whappi-whappi-sypalq-7-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.service=whappi-whappi-sypalq-7-websecure
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
   waha:
     image: busybox
-    command: ["sh", "-c", "echo 'Whappi Alias Service Active' && sleep infinity"]
+    command:
+      - sh
+      - -c
+      - echo 'Whappi Alias Service Active' && sleep infinity
     restart: always
     networks:
       - dokploy-network
-
+      - default
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.rule=Host(`whappi-bck.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.entrypoints=web
+      - traefik.http.services.whappi-whappi-sypalq-37-web.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.service=whappi-whappi-sypalq-37-web
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.rule=Host(`whappi-bck.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.entrypoints=websecure
+      - traefik.http.services.whappi-whappi-sypalq-37-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.service=whappi-whappi-sypalq-37-websecure
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
 volumes:
-  whappi-data:
-  whappi-sessions:
-  whappi-media:
-
+  whappi-data: null
+  whappi-sessions: null
+  whappi-media: null
 networks:
   dokploy-network:
     external: true

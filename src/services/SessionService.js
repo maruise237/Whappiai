@@ -23,24 +23,82 @@ function isProviderActive() {
 
 const lastQrCache = new Map();
 
+function normalizeOwner(owner) {
+    if (!owner) return { id: null, email: null, role: 'user' };
+    if (typeof owner === 'string') return { id: null, email: owner, role: 'user' };
+    return {
+        id: owner.id || null,
+        email: owner.email || null,
+        role: owner.role || 'user'
+    };
+}
+
+function buildError(code, message, status = 400, extra = {}) {
+    const err = new Error(message);
+    err.code = code;
+    err.status = status;
+    Object.assign(err, extra);
+    return err;
+}
+
 /**
- * Create a session via the active provider.
- * For Evolution, this calls /instance/create and fetches the first QR/pairing code.
+ * Create or reconcile a session via the active provider.
+ * Handles three drift cases robustly:
+ *  - local session exists, provider missing   -> recreate provider instance
+ *  - provider exists, local row missing       -> admin can adopt it
+ *  - legacy owner alias (clerk-user_*)        -> auto-migrate to canonical email
  */
-async function createSessionProvider(sessionId, email, phoneNumber = null) {
+async function createSessionProvider(sessionId, ownerInput, phoneNumber = null, options = {}) {
     const provider = getProvider();
-    // Persist metadata first so the UI has a row even if the provider is slow.
-    const session = Session.create(sessionId, email);
-    // Pass the phone number to Evolution so it issues a pairing code on the
-    // same call (we don't need a separate pairing endpoint).
-    const r = await provider.createInstance(sessionId, { phoneNumber });
-    if (!r.ok) {
-        log(`Provider createInstance failed for ${sessionId}: ${r.error}`, 'SESSION', null, 'ERROR');
-        // Best-effort cleanup of the local row to avoid orphan DB entries.
-        try { Session.delete(sessionId); } catch (_) { /* ignore */ }
-        throw new Error(`Provider error: ${r.error || r.status}`);
+    const owner = normalizeOwner(ownerInput);
+    const allowAdoptProviderOrphan = options.allowAdoptProviderOrphan === true || owner.role === 'admin';
+
+    let session = Session.findById(sessionId);
+    const hadLocalSession = Boolean(session);
+
+    if (session) {
+        if (Session.isClaimable(session) && owner.email) {
+            session = Session.updateOwner(sessionId, owner.email);
+        } else if (!Session.isOwnedBy(session, owner)) {
+            throw buildError('SESSION_OWNERSHIP_CONFLICT', 'Cette session appartient déjà à un autre utilisateur', 403);
+        } else if (owner.email && Session.normalizeOwnerEmail(session.owner_email) !== Session.normalizeOwnerEmail(owner.email)) {
+            session = Session.updateOwner(sessionId, owner.email);
+            log(`Session ${sessionId} owner normalized to ${owner.email}`, 'SESSION', { sessionId, ownerId: owner.id }, 'INFO');
+        }
     }
-    // Fetch the QR / pairing code from Evolution right after creation.
+
+    const providerStatus = await provider.getStatus(sessionId);
+    const providerExists = providerStatus && providerStatus.ok;
+    const providerMissing = !providerExists && Number(providerStatus && providerStatus.status) === 404;
+
+    if (!session) {
+        if (providerExists && !allowAdoptProviderOrphan) {
+            throw buildError('SESSION_NAME_TAKEN', `Ce nom de session est déjà utilisé. Choisissez un autre nom.`, 409);
+        }
+
+        session = Session.create(sessionId, owner.email);
+
+        if (providerExists && allowAdoptProviderOrphan) {
+            log(`Provider-only session ${sessionId} adopted locally by ${owner.email || owner.id || 'unknown-user'}`, 'SESSION', { sessionId, owner }, 'WARN');
+        }
+    }
+
+    if (!providerExists) {
+        if (!providerMissing && providerStatus && providerStatus.error) {
+            throw buildError('PROVIDER_STATUS_ERROR', `Provider error: ${providerStatus.error}`, 502, { providerStatus });
+        }
+
+        const r = await provider.createInstance(sessionId, { phoneNumber });
+        if (!r.ok) {
+            log(`Provider createInstance failed for ${sessionId}: ${r.error}`, 'SESSION', null, 'ERROR');
+            if (!hadLocalSession) {
+                try { Session.delete(sessionId); } catch (_) { /* ignore */ }
+            }
+            throw buildError('PROVIDER_CREATE_ERROR', `Provider error: ${r.error || r.status}`, 502, { providerResult: r });
+        }
+    }
+
+    // Fetch the QR / pairing code after creation or reconciliation.
     try {
         const pair = await provider.getQr(sessionId);
         if (pair && pair.ok && pair.qr) {
@@ -51,11 +109,14 @@ async function createSessionProvider(sessionId, email, phoneNumber = null) {
                 pair.qr.pairingCode || undefined,
                 pair.qr.base64 || pair.qr.code || undefined
             );
+        } else if (providerExists) {
+            Session.updateStatus(sessionId, 'CONNECTING', 'Provider instance found');
         }
     } catch (e) {
         log(`QR/pairing fetch failed for ${sessionId}: ${e.message}`, 'SESSION', null, 'WARN');
     }
-    return session;
+
+    return Session.findById(sessionId);
 }
 
 /**
@@ -104,9 +165,9 @@ async function disconnectSessionProvider(sessionId) {
 /**
  * Send a text message via the provider.
  */
-async function sendTextMessageProvider(sessionId, jid, text) {
+async function sendTextMessageProvider(sessionId, input) {
     const provider = getProvider();
-    return provider.sendTextMessage(sessionId, { jid, text });
+    return provider.sendTextMessage(sessionId, { jid: input.jid, text: input.text });
 }
 
 module.exports = {

@@ -12,6 +12,50 @@ const { encrypt, decrypt } = require('../utils/crypto');
 const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY;
 
 class Session {
+    static normalizeOwnerEmail(value) {
+        return typeof value === 'string' ? value.toLowerCase().trim() : '';
+    }
+
+    static getOwnerAliases(owner) {
+        if (!owner) return [];
+
+        if (typeof owner === 'string') {
+            const normalized = this.normalizeOwnerEmail(owner);
+            return normalized ? [normalized] : [];
+        }
+
+        const aliases = new Set();
+        const email = this.normalizeOwnerEmail(owner.email);
+        if (email) aliases.add(email);
+
+        if (owner.id) {
+            aliases.add(`clerk-${String(owner.id).toLowerCase().trim()}`);
+        }
+
+        return [...aliases].filter(Boolean);
+    }
+
+    static isClaimable(session) {
+        if (!session) return false;
+        const ownerEmail = this.normalizeOwnerEmail(session.owner_email);
+        return !ownerEmail || ownerEmail === 'admin@localhost';
+    }
+
+    static isOwnedBy(session, owner) {
+        if (!session) return false;
+        const ownerEmail = this.normalizeOwnerEmail(session.owner_email);
+        if (!ownerEmail) return false;
+        return this.getOwnerAliases(owner).includes(ownerEmail);
+    }
+
+    static updateOwner(sessionId, ownerEmail) {
+        const normalized = this.normalizeOwnerEmail(ownerEmail);
+        if (!normalized) return this.findById(sessionId);
+
+        const stmt = db.prepare('UPDATE whatsapp_sessions SET owner_email = ?, updated_at = datetime(\'now\') WHERE id = ?');
+        stmt.run(normalized, sessionId);
+        return this.findById(sessionId);
+    }
     /**
      * Create a new session
      * @param {string} sessionId - Session ID
@@ -20,14 +64,13 @@ class Session {
      */
     static create(sessionId, ownerEmail = null) {
         const existingSession = this.findById(sessionId);
+        const normalizedOwner = this.normalizeOwnerEmail(ownerEmail);
         if (existingSession) {
             // If the session exists but has no owner or is owned by admin@localhost,
             // and we have a specific ownerEmail, let's "claim" it for the new user.
-            if (ownerEmail && (existingSession.owner_email === 'admin@localhost' || !existingSession.owner_email)) {
-                log(`Session orpheline ${sessionId} revendiquée par ${ownerEmail}`, 'SYSTEM', { sessionId, ownerEmail }, 'INFO');
-                const stmt = db.prepare('UPDATE whatsapp_sessions SET owner_email = ?, updated_at = datetime(\'now\') WHERE id = ?');
-                stmt.run(ownerEmail.toLowerCase().trim(), sessionId);
-                return this.findById(sessionId);
+            if (normalizedOwner && this.isClaimable(existingSession)) {
+                log(`Session orpheline ${sessionId} revendiquée par ${normalizedOwner}`, 'SYSTEM', { sessionId, ownerEmail: normalizedOwner }, 'INFO');
+                return this.updateOwner(sessionId, normalizedOwner);
             }
             return existingSession; // Just return if already exists and owned
         }
@@ -39,7 +82,7 @@ class Session {
             VALUES (?, ?, ?, 'DISCONNECTED', datetime('now'), datetime('now'))
         `);
 
-        stmt.run(sessionId, ownerEmail, token);
+        stmt.run(sessionId, normalizedOwner || null, token);
 
         return this.findById(sessionId);
     }
@@ -299,7 +342,7 @@ class Session {
      */
     static getSessionIdsByOwner(ownerEmail) {
         const stmt = db.prepare('SELECT id FROM whatsapp_sessions WHERE owner_email = ?');
-        return stmt.all(ownerEmail.toLowerCase()).map(s => s.id);
+        return stmt.all(this.normalizeOwnerEmail(ownerEmail)).map(s => s.id);
     }
 
     /**

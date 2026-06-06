@@ -13,6 +13,7 @@ const Session = require('../../models/Session');
 const ActivityLog = require('../../models/ActivityLog');
 const User = require('../../models/User');
 const SessionService = require('../../services/SessionService');
+const AccountAccessService = require('../../services/AccountAccessService');
 
 const router = express.Router();
 
@@ -47,24 +48,48 @@ function initializeSessionRoutes(routerInstance, dependencies) {
         }
 
         try {
-            const creatorEmail = req.currentUser ? req.currentUser.email : null;
+            const currentUser = req.currentUser || null;
+            const existing = Session.findById(sanitizedSessionId);
+            const isExistingOwned = existing && Session.isOwnedBy(existing, currentUser);
+            const isClaimable = existing && Session.isClaimable(existing);
+
+            if (existing && !isExistingOwned && !isClaimable && currentUser?.role !== 'admin') {
+                return res.status(403).json({ status: 'error', message: 'Cette session appartient déjà à un autre utilisateur' });
+            }
+
+            if (!existing || (!isExistingOwned && isClaimable)) {
+                const user = currentUser?.id ? User.findById(currentUser.id) : User.findByEmail(currentUser?.email);
+                const currentSessions = Session.getSessionIdsByOwner(currentUser?.email || '');
+                const access = AccountAccessService.canCreateSession(user || currentUser, currentSessions.length);
+
+                if (!access.allowed && currentUser?.role !== 'admin') {
+                    return res.status(403).json({
+                        status: 'error',
+                        message: access.message || 'Limite de sessions atteinte pour ce forfait.',
+                        limit: access.limit,
+                        current: access.current
+                    });
+                }
+            }
+
             let token = null;
             if (SessionService.isProviderActive()) {
                 const session = await SessionService.createSessionProvider(
                     sanitizedSessionId,
-                    creatorEmail,
-                    phoneNumber || null
+                    currentUser,
+                    phoneNumber || null,
+                    { allowAdoptProviderOrphan: currentUser?.role === 'admin' }
                 );
                 token = session ? session.token : null;
             } else {
-                // Legacy Baileys path
-                const result = await createSession(sanitizedSessionId, creatorEmail, phoneNumber);
+                const creatorEmail = currentUser ? currentUser.email : null;
+                await createSession(sanitizedSessionId, creatorEmail, phoneNumber);
                 token = sessionTokens.get(sanitizedSessionId);
             }
 
-            if (req.currentUser && ActivityLog) {
+            if (currentUser && ActivityLog) {
                 await ActivityLog.logSessionCreate(
-                    req.currentUser.email,
+                    currentUser.email,
                     sanitizedSessionId,
                     req.ip,
                     req.headers['user-agent']
@@ -74,18 +99,20 @@ function initializeSessionRoutes(routerInstance, dependencies) {
             log('Session created', sanitizedSessionId, {
                 event: 'session-created',
                 sessionId: sanitizedSessionId,
-                createdBy: req.currentUser ? req.currentUser.email : 'api-key',
+                createdBy: currentUser ? currentUser.email : 'api-key',
                 provider: process.env.WHATSAPP_PROVIDER || 'evolution'
             });
             res.status(201).json({
                 status: 'success',
-                message: `Session ${sanitizedSessionId} created.`,
+                message: `Session ${sanitizedSessionId} prête.`,
                 token,
                 provider: process.env.WHATSAPP_PROVIDER || 'evolution'
             });
         } catch (error) {
-            log('API error', 'SYSTEM', { event: 'api-error', error: error.message, endpoint: req.originalUrl });
-            res.status(500).json({ status: 'error', message: `Failed to create session: ${error.message}` });
+            log('API error', 'SYSTEM', { event: 'api-error', error: error.message, endpoint: req.originalUrl, code: error.code });
+            const status = Number(error.status) || ((error.code === 'SESSION_OWNERSHIP_CONFLICT' || error.code === 'SESSION_NAME_TAKEN') ? 409 : 500);
+            const message = error.code === 'PROVIDER_CREATE_ERROR' ? error.message.replace(/^Provider error:\s*/i, '') : error.message;
+            res.status(status).json({ status: 'error', message });
         }
     });
 
