@@ -1,7 +1,6 @@
 {
   "ignore": [
     "sessions/*",
-    "auth_info_baileys/*",
     "media/*",
     "frontend/*",
     "*.test.js",

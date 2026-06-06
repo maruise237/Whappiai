@@ -37,7 +37,7 @@ const { db } = require('./src/config/database');
 const { User, Session, ActivityLog, AIModel } = require('./src/models');
 const { encrypt, decrypt, isValidKey } = require('./src/utils/crypto');
 const response = require('./src/utils/response');
-const whatsappService = require('./src/services/whatsapp');
+const SessionService = require('./src/services/SessionService');
 const engagementService = require('./src/services/engagement');
 const userRoutes = require('./src/routes/users');
 const adminRoutes = require('./src/routes/admin');
@@ -47,6 +47,7 @@ const subscriptionRoutes = require('./src/routes/subscriptions');
 const creditRoutes = require('./src/routes/credits');
 const notificationRoutes = require('./src/routes/notifications');
 const calRoutes = require('./src/routes/cal');
+const evolutionWebhookRouter = require('./src/services/EvolutionWebhookHandler');
 const { log, setBroadcastFn } = require('./src/utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middleware/errorHandler');
 const redisService = require('./src/services/redis');
@@ -466,8 +467,9 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
 };
 
 const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
-    const session = Session.create(sessionId, email);
-    await whatsappService.connect(sessionId, broadcastSessionUpdate, null, phoneNumber);
+    const session = SessionService.isProviderActive()
+        ? await SessionService.createSessionProvider(sessionId, email, phoneNumber)
+        : Session.create(sessionId, email);
 
     if (session.token) {
         sessionTokens.set(sessionId, session.token);
@@ -478,17 +480,12 @@ const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
 const deleteSessionWrapper = async (sessionId) => {
     log(`Demande de suppression complète pour la session: ${sessionId}`, 'SYSTEM', { sessionId }, 'INFO');
 
-    // 1. Clear tokens and prevent new connections
     sessionTokens.delete(sessionId);
-
-    // 2. Delete metadata from Database first to prevent UI from showing it
+    if (SessionService.isProviderActive()) {
+        await SessionService.deleteSessionProvider(sessionId);
+    }
     Session.delete(sessionId);
 
-    // 3. Force disconnect and delete physical files from disk (Important to prevent syncWithFilesystem from restoring it)
-    // deleteSessionData now calls disconnect(sessionId, true) internally and uses deletingSessions lock
-    await whatsappService.deleteSessionData(sessionId);
-
-    // 4. Broadcast deletion to all clients
     broadcastToClients({
         type: 'session-deleted',
         data: { sessionId }
@@ -497,30 +494,15 @@ const deleteSessionWrapper = async (sessionId) => {
 
 const getSessionsDetailsWrapper = (email, isAdmin) => {
     const sessions = Session.getAll(email, isAdmin);
-    const activeSockets = whatsappService.getActiveSessions();
 
-    return sessions.map(s => {
-        const hasSocket = activeSockets.has(s.id);
-        const sock = hasSocket ? activeSockets.get(s.id) : null;
-        const isConnected = hasSocket && sock?.user != null;
-
-        // If DB says CONNECTED but socket is missing or not authenticated, it's actually not connected
-        let currentStatus = s.status;
-        if (currentStatus === 'CONNECTED' && !isConnected) {
-            currentStatus = 'DISCONNECTED';
-            // We don't update DB here to avoid race conditions during server restart
-            // The background connect() process will update it back to CONNECTED when ready
-        }
-
-        return {
-            ...s,
-            status: currentStatus,
-            sessionId: s.id,
-            isConnected: isConnected,
-            pairingCode: s.pairing_code,
-            qr: s.qr_code || whatsappService.getLastQr(s.id)
-        };
-    });
+    return sessions.map(s => ({
+        ...s,
+        status: s.status,
+        sessionId: s.id,
+        isConnected: s.status === 'CONNECTED',
+        pairingCode: s.pairing_code,
+        qr: s.qr_code
+    }));
 };
 
 const triggerQRWrapper = async (sessionId) => {
@@ -530,70 +512,44 @@ const triggerQRWrapper = async (sessionId) => {
         return false;
     }
 
-    // Check if session is already connected
-    const activeSockets = whatsappService.getActiveSessions();
-    const hasSocket = activeSockets.has(sessionId);
-    const sock = hasSocket ? activeSockets.get(sessionId) : null;
-    const isConnected = hasSocket && sock?.user != null;
-
-    if (isConnected) {
-        log(`La session ${sessionId} est déjà connectée, reconnexion ignorée`, 'SYSTEM', { sessionId }, 'INFO');
-        broadcastSessionUpdate(sessionId, 'CONNECTED', 'Déjà connecté');
+    if (SessionService.isProviderActive()) {
+        const qr = await SessionService.getQrProvider(sessionId);
+        if (!qr.ok) return false;
+        broadcastSessionUpdate(
+            sessionId,
+            qr.qr?.pairingCode ? 'GENERATING_CODE' : 'GENERATING_QR',
+            qr.qr?.pairingCode ? 'Pairing code refreshed' : 'QR refreshed',
+            qr.qr?.pairingCode || qr.qr?.base64 || qr.qr?.code
+        );
         return true;
     }
 
-    log(`Déclenchement manuel de la connexion pour le QR: ${sessionId}`, 'SYSTEM', { sessionId }, 'INFO');
-    // We don't await connect() here because it's a long process (QR generation)
-    // But we use a wrapper to handle errors
-    whatsappService.connect(sessionId, broadcastSessionUpdate, null)
-        .catch(err => log(`Erreur connect via triggerQR: ${err.message}`, 'SYSTEM', { sessionId, error: err.message }, 'ERROR'));
-
-    return true;
+    return false;
 };
 
-// Session Proxy to adapt whatsappService sockets (Map<string, Socket>) to api.js expectation ({ sock, status })
+// Session Proxy backed by local DB rows. In Evolution mode there is no local
+// Baileys socket in-process; the transport lives in the provider.
 const sessionsProxy = {
     get: (sessionId) => {
-        const sock = whatsappService.getSocket(sessionId);
         const session = Session.findById(sessionId);
-
-        if (sock) {
-            return {
-                sock: sock,
-                status: 'CONNECTED',
-                token: session?.token
-            };
-        }
-
-        // If no socket but session exists in DB, return its status
-        if (session) {
-            return {
-                sock: null,
-                status: session.status,
-                token: session.token,
-                detail: session.detail
-            };
-        }
-
-        return null;
+        if (!session) return null;
+        return {
+            sock: null,
+            status: session.status,
+            token: session.token,
+            detail: session.detail
+        };
     },
-    has: (sessionId) => {
-        return whatsappService.getActiveSessions().has(sessionId) || Session.findById(sessionId) !== null;
-    },
-    keys: () => {
-        const activeKeys = Array.from(whatsappService.getActiveSessions().keys());
-        const dbSessions = Session.getAll().map(s => s.id);
-        return Array.from(new Set([...activeKeys, ...dbSessions]));
-    },
+    has: (sessionId) => Session.findById(sessionId) !== null,
+    keys: () => Session.getAll().map(s => s.id),
     forEach: (callback) => {
         const dbSessions = Session.getAll();
         dbSessions.forEach(s => {
-            const sock = whatsappService.getSocket(s.id);
             callback({
-                sock: sock,
-                status: sock ? 'CONNECTED' : s.status,
+                sock: null,
+                status: s.status,
                 owner: s.owner_email || 'unknown',
-                detail: s.detail || (sock ? 'Connected' : 'Disconnected'),
+                detail: s.detail || 'Provider-managed session',
                 token: s.token
             }, s.id);
         });
@@ -621,6 +577,7 @@ app.use('/api/v1/subscriptions', authLimiter, subscriptionRoutes);
 app.use('/api/v1/credits', authLimiter, creditRoutes);
 app.use('/api/v1/notifications', authLimiter, notificationRoutes);
 app.use('/api/v1/cal', authLimiter, calRoutes);
+app.use('/api/v1/webhooks', evolutionWebhookRouter);
 app.use('/api/v1', apiRouter);
 
 // Serve modern UI
@@ -731,41 +688,12 @@ AIModel.ensureDefaultDeepSeek();
 // Initialize existing sessions on startup
 if (require.main === module) {
     (async () => {
-        // Sync sessions from disk to DB
-        Session.syncWithFilesystem();
-
-        // IMPORTANT: use admin mode to retrieve all sessions for automatic reinitialization
         const existingSessions = Session.getAll(null, true);
         log(`Trouvé ${existingSessions.length} session(s) existante(s)`, 'SYSTEM', { count: existingSessions.length }, 'INFO');
 
         for (const session of existingSessions) {
-            // Populate sessionTokens
             if (session.token) {
                 sessionTokens.set(session.id, session.token);
-            }
-
-            // Re-initialize any session that was previously connected
-            // IMPORTANT: Reconnect ONLY sessions that have a valid creds folder to avoid infinite QR loop at start
-            const sessionDir = path.join(process.cwd(), 'auth_info_baileys', session.id);
-            const credsFile = path.join(sessionDir, 'creds.json');
-            
-            if (fs.existsSync(credsFile)) {
-                log(`Session ${session.id} trouvée with des identifiants valides. Réinitialisation automatique...`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'INFO');
-
-                // Increase delay to 3s between session initializations to prevent Dokploy CPU spikes and mass disconnects during updates
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                
-                // Fire and forget: don't wait for the connection to be established to start others
-                whatsappService.connect(session.id, broadcastSessionUpdate, null)
-                    .catch(err => {
-                        log(`Échec de l'initialisation auto de ${session.id}: ${err.message}`, 'SYSTEM', { sessionId: session.id, error: err.message }, 'ERROR');
-                    });
-            } else {
-                log(`Session ${session.id} ignorée au démarrage (pas d'identifiants sur le disque)`, 'SYSTEM', { sessionId: session.id, status: session.status }, 'DEBUG');
-                // If it was supposed to be CONNECTED but no files exist, reset status
-                if (session.status === 'CONNECTED') {
-                    Session.updateStatus(session.id, 'DISCONNECTED', 'No credentials found on disk');
-                }
             }
         }
 
@@ -798,13 +726,6 @@ if (require.main === module) {
 // Graceful shutdown
 const gracefulShutdown = async (signal) => {
     log(`Signal ${signal} reçu. Arrêt en cours...`, 'SYSTEM', { signal }, 'INFO');
-
-    try {
-        // Disconnect all WhatsApp sessions cleanly
-        await whatsappService.disconnectAll();
-    } catch (err) {
-        log(`Erreur lors de la déconnexion des sessions: ${err.message}`, 'SYSTEM', null, 'WARN');
-    }
 
     // Close Redis connection
     if (redisService.isConnected) {

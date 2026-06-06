@@ -1,4 +1,3 @@
-```
 # Dependencies
 node_modules/
 
@@ -6,6 +5,9 @@ node_modules/
 .env
 .env.local
 .env.*
+
+# Local Evolution API key (dev only)
+scripts/.evo.env
 
 # Logs
 *.log
@@ -62,4 +64,3 @@ __pycache__/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-```

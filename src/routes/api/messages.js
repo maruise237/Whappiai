@@ -7,6 +7,7 @@ const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const CreditService = require('../../services/CreditService');
 const QueueService = require('../../services/QueueService');
 const ActivityLog = require('../../models/ActivityLog');
+const SessionService = require('../../services/SessionService');
 
 /**
  * Initialize message routes with dependencies
@@ -26,12 +27,25 @@ function initializeMessageRoutes(routerInstance, dependencies) {
             log(`[API] Tentative d'envoi de message vers ${jid}`, 'SYSTEM', { to: jid }, 'DEBUG');
             log(`[API] Structure du message: ${JSON.stringify(message)}`, 'SYSTEM', { message }, 'DEBUG');
 
-            const result = await QueueService.enqueue(sessionId, sock, jid, message, {
-                priority: 'high'
-            });
+            let result;
+            if (SessionService.isProviderActive()) {
+                // Evolution adapter: for now we support text sends directly.
+                if (!message || typeof message.text !== 'string') {
+                    throw new Error('Only text messages are supported in Evolution mode for this route version');
+                }
+                const providerResult = await SessionService.sendTextMessageProvider(sessionId, jid, message.text);
+                if (!providerResult.ok) {
+                    throw new Error(providerResult.error || 'Provider send failed');
+                }
+                result = { key: { id: providerResult.messageId || `evo-${Date.now()}` } };
+            } else {
+                result = await QueueService.enqueue(sessionId, sock, jid, message, {
+                    priority: 'high'
+                });
+            }
 
             if (!result) {
-                throw new Error('Baileys a retourné un résultat vide');
+                throw new Error('Message provider returned an empty result');
             }
 
             if (ActivityLog) {
@@ -80,7 +94,17 @@ function initializeMessageRoutes(routerInstance, dependencies) {
             sockConnected: session?.sock?.user ? 'yes' : 'no'
         }, 'DEBUG');
 
-        if (!session || !session.sock || session.status !== 'CONNECTED') {
+        if (SessionService.isProviderActive()) {
+            // In Evolution mode we trust the provider-managed lifecycle. The local
+            // session row can be CONNECTING while messages are already accepted.
+            if (!session) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: `Session ${sessionId} not found.`,
+                    detail: 'Session does not exist'
+                });
+            }
+        } else if (!session || !session.sock || session.status !== 'CONNECTED') {
             log('API error', 'SYSTEM', {
                 event: 'api-error',
                 error: `Session ${sessionId} not found or not connected.`,

@@ -15,7 +15,6 @@ REM Create required directories if they don't exist
 if not exist logs mkdir logs
 if not exist sessions mkdir sessions
 if not exist media mkdir media
-if not exist auth_info_baileys mkdir auth_info_baileys
 if not exist activity_logs mkdir activity_logs
 
 REM Check if PM2 is available

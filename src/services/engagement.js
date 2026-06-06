@@ -3,9 +3,8 @@ const { log } = require('../utils/logger');
 const { Session, ActivityLog } = require('../models');
 const User = require('../models/User');
 const CreditService = require('./CreditService');
-const whatsappService = require('./whatsapp');
+const SessionService = require('./SessionService');
 const aiService = require('./ai');
-const QueueService = require('./QueueService');
 
 /**
  * Engagement Service
@@ -109,11 +108,14 @@ class EngagementService {
         try {
             log(`Tentative d'envoi du message programmé ${id}`, session_id, { event: 'engagement-exec-start', taskId: id, scheduled_at: task.scheduled_at }, 'INFO');
             
-            const sock = whatsappService.getSocket(session_id);
-            if (!sock || !whatsappService.isConnected(session_id)) {
-                // Si la session n'est pas connectée, on repasse en 'pending' pour retenter plus tard
-                const retryAt = new Date(Date.now() + 15 * 60 * 1000); db.prepare("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(retryAt.toISOString(), id);
-                throw new Error('Session non active ou non connectée. Tâche remise en attente.');
+            if (SessionService.isProviderActive()) {
+                const providerState = await SessionService.getStatusProvider(session_id);
+                const normalizedState = String(providerState.state || '').toLowerCase();
+                if (!providerState.ok || !['open', 'connected'].includes(normalizedState)) {
+                    const retryAt = new Date(Date.now() + 15 * 60 * 1000);
+                    db.prepare("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(retryAt.toISOString(), id);
+                    throw new Error('Session non active ou non connectée. Tâche remise en attente.');
+                }
             }
             
             // Vérification et déduction des crédits
@@ -132,34 +134,7 @@ class EngagementService {
 
             // Envoi du message
             if (media_url && ['image', 'video', 'audio'].includes(media_type)) {
-                const messageOptions = {};
-                const formattedContent = aiService.formatForWhatsApp(message_content || '');
-                
-                if (media_type === 'image') {
-                    messageOptions.image = { url: media_url };
-                    messageOptions.caption = formattedContent;
-                } else if (media_type === 'video') {
-                    messageOptions.video = { url: media_url };
-                    messageOptions.caption = formattedContent;
-                } else if (media_type === 'audio') {
-                    messageOptions.audio = { url: media_url };
-                    messageOptions.mimetype = 'audio/mp4';
-                }
-                
-                await QueueService.enqueue(session_id, sock, group_id, messageOptions);
-                
-                // Log activity
-                const session = Session.findById(session_id);
-                if (ActivityLog && session) {
-                    await ActivityLog.logMessageSend(
-                        session.owner_email || 'engagement-system',
-                        session_id,
-                        group_id,
-                        media_type,
-                        '127.0.0.1',
-                        'Group Engagement'
-                    );
-                }
+                throw new Error('Les médias programmés ne sont pas encore implémentés en mode Evolution');
             } else {
                 let text = message_content || '';
                 if (media_url && !text.includes(media_url)) {
@@ -171,7 +146,14 @@ class EngagementService {
                 }
                 
                 const formattedText = aiService.formatForWhatsApp(text);
-                await QueueService.enqueue(session_id, sock, group_id, { text: formattedText });
+                if (SessionService.isProviderActive()) {
+                    const sent = await SessionService.sendTextMessageProvider(session_id, group_id, formattedText);
+                    if (!sent.ok) {
+                        throw new Error(sent.error || 'Evolution send failed');
+                    }
+                } else {
+                    throw new Error('Legacy Baileys mode is disabled in this branch');
+                }
 
                 // Log activity
                 const session = Session.findById(session_id);

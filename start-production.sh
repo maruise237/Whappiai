@@ -16,7 +16,6 @@ export NODE_ARGS="--expose-gc"
 mkdir -p logs
 mkdir -p sessions
 mkdir -p media
-mkdir -p auth_info_baileys
 mkdir -p activity_logs
 
 # Install dependencies

@@ -1,17 +1,14 @@
 /**
  * WhatsApp Session Model
  * SQLite-based session metadata management
- * Note: Actual auth credentials stored in auth_info_baileys folder
+ * Session transport is provider-managed (Evolution API)
  */
 
 const { db } = require('../config/database');
-const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const { log } = require('../utils/logger');
 const { encrypt, decrypt } = require('../utils/crypto');
 
-const SESSION_DIR = path.join(process.cwd(), 'auth_info_baileys');
 const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY;
 
 class Session {
@@ -306,46 +303,11 @@ class Session {
     }
 
     /**
-     * Sync database with filesystem
-     * Detects session folders that are not in the DB and adds them
+     * Legacy no-op kept for compatibility with older callers.
+     * Session state is now provider-managed by Evolution API.
      */
     static syncWithFilesystem() {
-        if (!fs.existsSync(SESSION_DIR)) {
-            return;
-        }
-
-        const entries = fs.readdirSync(SESSION_DIR, { withFileTypes: true });
-        const directories = entries
-            .filter(dirent => dirent.isDirectory())
-            .map(dirent => dirent.name)
-            .filter(name => {
-                // Ensure it's a valid session folder (contains creds.json)
-                const credsExists = fs.existsSync(path.join(SESSION_DIR, name, 'creds.json'));
-                return credsExists;
-            });
-
-        log(`[Session] Trouvé ${directories.length} dossier(s) de session valide(s) sur le disque`, 'SYSTEM', { count: directories.length }, 'INFO');
-
-        const insertStmt = db.prepare(`
-            INSERT OR IGNORE INTO whatsapp_sessions (id, owner_email, token, status, created_at, updated_at)
-            VALUES (?, 'admin@localhost', ?, 'DISCONNECTED', datetime('now'), datetime('now'))
-        `);
-
-        let addedCount = 0;
-        for (const sessionId of directories) {
-            // Check if exists
-            const exists = this.findById(sessionId);
-            if (!exists) {
-                const token = crypto.randomUUID();
-                insertStmt.run(sessionId, token);
-                addedCount++;
-                log(`[Session] Session orpheline enregistrée depuis le disque: ${sessionId}`, 'SYSTEM', { sessionId }, 'INFO');
-            }
-        }
-
-        if (addedCount > 0) {
-            log(`[Session] Synchronisation de ${addedCount} sessions du disque vers la base de données`, 'SYSTEM', { count: addedCount }, 'INFO');
-        }
+        log('[Session] syncWithFilesystem skipped: Evolution API mode', 'SYSTEM', null, 'DEBUG');
     }
 }
 
