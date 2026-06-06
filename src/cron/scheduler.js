@@ -3,12 +3,13 @@ const { log } = require('../utils/logger');
 const NotificationService = require('../services/NotificationService');
 const SubscriptionService = require('../services/SubscriptionService');
 
-// Check interval: 1 hour
+// Check interval: 1 hour for subscriptions/credits
 const CHECK_INTERVAL = 60 * 60 * 1000;
 
 class Scheduler {
     constructor() {
         this.interval = null;
+        this.maintenanceInterval = null;
     }
 
     start() {
@@ -21,14 +22,31 @@ class Scheduler {
 
         // Schedule periodic run
         this.interval = setInterval(() => {
+    // Check maintenance every 30s for instant schedule activation
+    this.maintenanceInterval = setInterval(() => {
+        this.checkScheduledMaintenance();
+    }, 30000);
             this.runTasks();
+    // Check maintenance every 30s for instant schedule activation
+    this.maintenanceInterval = setInterval(() => {
+        this.checkScheduledMaintenance();
+    }, 30000);
         }, CHECK_INTERVAL);
+    // Check maintenance every 30s for instant schedule activation
+    this.maintenanceInterval = setInterval(() => {
+        this.checkScheduledMaintenance();
+    }, 30000);
     }
 
     stop() {
         if (this.interval) {
             clearInterval(this.interval);
             this.interval = null;
+        }
+        if (this.maintenanceInterval) {
+            clearInterval(this.maintenanceInterval);
+            this.maintenanceInterval = null;
+        this.maintenanceInterval = null;
             log('Stopped SaaS Scheduler', 'SYSTEM');
         }
     }
