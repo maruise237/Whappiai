@@ -250,7 +250,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     checkUserSync()
   }, [getToken, isLoaded, router, user])
 
+  // Auth guard: redirect to login if not authenticated
   if (!isLoaded || !mounted) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#0d0d0c]">
+        <Logo size={40} showText={false} className="animate-pulse" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    router.push("/login")
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-[#0d0d0c]">
         <Logo size={40} showText={false} className="animate-pulse" />
