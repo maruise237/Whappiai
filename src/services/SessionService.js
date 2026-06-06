@@ -170,6 +170,55 @@ async function sendTextMessageProvider(sessionId, input) {
     return provider.sendTextMessage(sessionId, { jid: input.jid, text: input.text });
 }
 
+/**
+ * Reconcile all sessions' local DB status with the provider's live state.
+ * Called before returning session list so the UI never shows stale status.
+ *
+ * @param {string} ownerEmail - filter sessions for this owner (optional)
+ * @param {boolean} isAdmin  - if true, reconcile all sessions
+ */
+async function reconcileSessionsStatus(ownerEmail = null, isAdmin = false) {
+    if (!isProviderActive()) return;
+
+    const sessions = Session.getAll(ownerEmail, isAdmin);
+    const provider = getProvider();
+
+    const stateMap = {
+        'open': 'CONNECTED',
+        'connecting': 'CONNECTING',
+        'close': 'DISCONNECTED',
+        'closed': 'DISCONNECTED',
+        'disconnected': 'DISCONNECTED'
+    };
+
+    for (const session of sessions) {
+        try {
+            const r = await provider.getStatus(session.id);
+            if (!r.ok || !r.state) continue;
+
+            const liveStatus = stateMap[r.state.toLowerCase()] || null;
+            if (!liveStatus) {
+                log(`[Reconcile] Unknown state "${r.state}" for ${session.id}`, 'SESSION', null, 'DEBUG');
+                continue;
+            }
+
+            // Skip if DB already matches live state
+            if (session.status === liveStatus) continue;
+
+            log(
+                `[Reconcile] ${session.id}: DB=${session.status} → Evolution=${r.state} (→ ${liveStatus})`,
+                'SESSION',
+                { sessionId: session.id, from: session.status, to: liveStatus, evolutionState: r.state },
+                'INFO'
+            );
+
+            Session.updateStatus(session.id, liveStatus, `Reconciled from Evolution: ${r.state}`);
+        } catch (e) {
+            log(`[Reconcile] Error checking ${session.id}: ${e.message}`, 'SESSION', null, 'WARN');
+        }
+    }
+}
+
 module.exports = {
     isProviderActive,
     getProvider,
@@ -179,5 +228,6 @@ module.exports = {
     deleteSessionProvider,
     disconnectSessionProvider,
     sendTextMessageProvider,
+    reconcileSessionsStatus,
     lastQrCache
 };

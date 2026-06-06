@@ -497,7 +497,12 @@ const deleteSessionWrapper = async (sessionId) => {
     });
 };
 
-const getSessionsDetailsWrapper = (email, isAdmin) => {
+const getSessionsDetailsWrapper = async (email, isAdmin) => {
+    // Reconcile local DB status with live provider state before returning
+    if (SessionService.isProviderActive()) {
+        await SessionService.reconcileSessionsStatus(email, isAdmin);
+    }
+
     const sessions = Session.getAll(email, isAdmin);
 
     return sessions.map(s => ({

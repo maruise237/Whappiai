@@ -119,10 +119,15 @@ function initializeSessionRoutes(routerInstance, dependencies) {
     // ------------------------------------------------------------------
     // GET /sessions  — list
     // ------------------------------------------------------------------
-    routerInstance.get('/sessions', checkSessionOrTokenAuth, (req, res) => {
+    routerInstance.get('/sessions', checkSessionOrTokenAuth, async (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl }, 'DEBUG');
         const showAll = req.query.all === 'true' && req.currentUser.role === 'admin';
-        res.status(200).json(getSessionsDetails(req.currentUser.email, showAll));
+        try {
+            const sessions = await getSessionsDetails(req.currentUser.email, showAll);
+            res.status(200).json(sessions);
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
     });
 
     // ------------------------------------------------------------------
