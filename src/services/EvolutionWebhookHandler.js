@@ -66,14 +66,25 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                     : instanceName;
                 const state = data.state || (data.connectionStatus);
                 const mapped = mapState(state);
-                Session.updateStatus(localId, mapped, data.statusReason || null);
+                const detail = data.statusReason || null;
+                const qrOrCode = data.base64 || data.code || null;
+                Session.updateStatus(localId, mapped, detail, null, qrOrCode);
+                // Broadcast to frontend WebSocket clients
+                if (global._broadcastSessionUpdate) {
+                    global._broadcastSessionUpdate(localId, mapped, detail, qrOrCode);
+                }
                 break;
             }
             case 'QRCODE_UPDATED':
             case 'qrcode.updated': {
                 if (!instanceName) break;
                 const localId = stripPrefix(instanceName, process.env.EVOLUTION_INSTANCE_PREFIX || '');
-                Session.updateStatus(localId, 'CONNECTING', 'QR updated', null, data.base64 || data.code || null);
+                const qrOrCode = data.base64 || data.code || null;
+                Session.updateStatus(localId, 'CONNECTING', 'QR updated', null, qrOrCode);
+                // Broadcast to frontend WebSocket clients
+                if (global._broadcastSessionUpdate) {
+                    global._broadcastSessionUpdate(localId, 'CONNECTING', 'QR updated', qrOrCode);
+                }
                 break;
             }
             case 'MESSAGES_UPSERT':

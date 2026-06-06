@@ -430,6 +430,7 @@ const userManager = {
 const sessionTokens = new Map();
 
 // Helper to broadcast session updates
+// Exposed globally so EvolutionWebhookHandler can call it without circular require
 const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
     const isPairingCode = status === 'GENERATING_CODE';
     const isQR = status === 'GENERATING_QR';
@@ -464,6 +465,11 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
         type: 'session-update',
         data: updateData
     });
+
+    // Also dispatch via global so webhook handlers can trigger broadcasts
+    if (global._broadcastSessionUpdate) {
+        global._broadcastSessionUpdate(id, status, detail, qrOrCode);
+    }
 };
 
 const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
