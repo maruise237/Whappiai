@@ -250,12 +250,18 @@ function initializeSessionRoutes(routerInstance, dependencies) {
                 return res.status(404).json({ status: 'error', message: 'Session not found' });
             }
 
-            // Tell the provider to drop the instance (Evolution).
+            // Tell the provider to drop the instance (Evolution) before deleting locally.
+            // Important: do NOT swallow provider errors here. If Evolution deletion fails
+            // and we delete only Whappi's local row, we create a zombie Evolution session.
             if (SessionService.isProviderActive()) {
-                try {
-                    await SessionService.deleteSessionProvider(sessionId);
-                } catch (e) {
-                    log(`Provider delete failed for ${sessionId}: ${e.message}`, 'SESSION', null, 'WARN');
+                const providerDelete = await SessionService.deleteSessionProvider(sessionId);
+                if (providerDelete && providerDelete.ok === false) {
+                    const message = providerDelete.error || `Evolution API delete failed with status ${providerDelete.status || 'unknown'}`;
+                    log(`Provider delete failed for ${sessionId}: ${message}`, 'SESSION', null, 'ERROR');
+                    return res.status(502).json({
+                        status: 'error',
+                        message: `Impossible de supprimer la session sur Evolution API: ${message}`
+                    });
                 }
             }
 

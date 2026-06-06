@@ -113,7 +113,21 @@ class EvolutionApiProvider extends WhatsAppProvider {
 
     async deleteInstance(instanceId) {
         const name = this._instanceName(instanceId);
-        return this._request('DELETE', `/instance/delete/${name}`);
+
+        // Best-effort logout first so connected WhatsApp devices are detached before deletion.
+        // Some Evolution versions return 400/404 when the instance is already closed; ignore that
+        // and continue to the destructive delete call.
+        await this._request('DELETE', `/instance/logout/${name}`).catch(() => null);
+
+        const res = await this._request('DELETE', `/instance/delete/${name}`);
+
+        // If the instance is already gone on Evolution, local cleanup is safe and prevents stale Whappi rows.
+        const errorText = String(res.error || '').toLowerCase();
+        if (!res.ok && (res.status === 404 || errorText.includes('not found') || errorText.includes('não encontrada') || errorText.includes('not exist'))) {
+            return { ok: true, status: res.status, alreadyDeleted: true, payload: res.payload || null };
+        }
+
+        return res;
     }
 
     async sendTextMessage(instanceId, input) {
