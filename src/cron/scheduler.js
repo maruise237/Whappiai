@@ -13,12 +13,12 @@ class Scheduler {
 
     start() {
         if (this.interval) return;
-        
+
         log('Starting SaaS Scheduler...', 'SYSTEM');
-        
+
         // Run immediately on start
         this.runTasks();
-        
+
         // Schedule periodic run
         this.interval = setInterval(() => {
             this.runTasks();
@@ -37,7 +37,6 @@ class Scheduler {
         try {
             await this.checkExpiringSubscriptions();
             await this.checkScheduledMaintenance();
-
             await this.checkLowCredits();
             await this.processRenewals();
         } catch (error) {
@@ -45,18 +44,13 @@ class Scheduler {
         }
     }
 
-    /**
-     * Check for subscriptions expiring in 7, 3, and 1 days
-     */
     async checkExpiringSubscriptions() {
-        const daysToCheck = [7, 3, 1, 0]; // 7 days before, 3 days before, 1 day before, and on expiry day
-        
+        const daysToCheck = [7, 3, 1, 0];
+
         for (const days of daysToCheck) {
-            // Find users whose subscription expires in exactly 'days' days
-            // Use date() to compare only the date part, ignoring time
             const users = db.prepare(`
-                SELECT * FROM users 
-                WHERE plan_status = 'active' 
+                SELECT * FROM users
+                WHERE plan_status = 'active'
                 AND date(subscription_expiry) = date('now', '+' || ? || ' days')
                 AND NOT EXISTS (
                     SELECT 1 FROM user_notifications n
@@ -66,7 +60,7 @@ class Scheduler {
                     AND date(n.created_at) = date('now')
                 )
             `).all(days, `%"days_remaining":${days}%`);
-            
+
             log(`Checking expiring subscriptions for +${days} days. Found ${users.length} users.`, 'DEBUG');
 
             for (const user of users) {
@@ -77,22 +71,13 @@ class Scheduler {
                     message: `Votre abonnement expire dans ${days} jour(s). Renouvelez maintenant pour éviter toute interruption.`,
                     metadata: { days_remaining: days, expiry: user.subscription_expiry }
                 });
-                
+
                 log(`Sent expiry warning (${days} days) to ${user.email}`, 'CRON');
             }
         }
     }
 
-    /**
-     * Check for low credits (< 10% of plan limit)
-     */
     async checkLowCredits() {
-        // Find users with active plans and low credits (< 10% of total allocation)
-        // We exclude admins as they have unlimited credits
-        // message_limit is the remaining balance
-        // message_used is the total used
-        // Total allocation = message_limit + message_used
-        // We use NOT EXISTS to filter out users who have already been notified recently
         const users = db.prepare(`
             SELECT u.* FROM users u
             WHERE u.plan_status = 'active'
@@ -125,37 +110,23 @@ class Scheduler {
         }
     }
 
-    /**
-     * Process auto-renewals (placeholder for now)
-     */
     async processRenewals() {
-        // Find expired subscriptions that have auto-renewal enabled (if we had that flag)
-        // For now, we just mark expired users as 'expired' if they passed the date
-        
         const expiredUsers = db.prepare(`
-            SELECT * FROM users 
-            WHERE plan_status IN ('active', 'trialing') 
+            SELECT * FROM users
+            WHERE plan_status IN ('active', 'trialing')
             AND subscription_expiry < datetime('now')
         `).all();
 
         await Promise.all(expiredUsers.map(async (user) => {
             try {
-                // Expire paid subscriptions and trials without granting fallback access.
                 await SubscriptionService.expire(user.id);
-                
                 log(`Expired subscription for ${user.email}`, 'CRON');
             } catch (err) {
                 log(`Failed to expire subscription for ${user.email}: ${err.message}`, 'CRON', null, 'ERROR');
             }
         }));
     }
-}
 
-
-
-    /**
-     * Check scheduled maintenance windows and auto-activate/deactivate
-     */
     async checkScheduledMaintenance() {
         try {
             const settings = db.prepare('SELECT * FROM maintenance_settings WHERE id = 1').get();
@@ -163,11 +134,8 @@ class Scheduler {
 
             const now = new Date().toISOString();
 
-            // If maintenance has a scheduled start time and it's now or past
             if (!settings.enabled && settings.scheduled_start_at && settings.scheduled_start_at <= now) {
-                // Check if we're still within the window or past the end
                 if (settings.scheduled_end_at && settings.scheduled_end_at <= now) {
-                    // Window already passed, clear schedule
                     db.prepare(`
                         UPDATE maintenance_settings SET
                             scheduled_start_at = NULL,
@@ -179,7 +147,6 @@ class Scheduler {
                     return;
                 }
 
-                // Activate maintenance
                 db.prepare(`
                     UPDATE maintenance_settings SET
                         enabled = 1,
@@ -189,7 +156,6 @@ class Scheduler {
                 log('Maintenance auto-activated from schedule', 'CRON');
             }
 
-            // If maintenance is enabled and has an end time that's passed, deactivate
             if (settings.enabled && settings.scheduled_end_at && settings.scheduled_end_at <= now) {
                 db.prepare(`
                     UPDATE maintenance_settings SET
@@ -205,5 +171,6 @@ class Scheduler {
             log('Maintenance scheduler error: ' + error.message, 'SYSTEM', null, 'ERROR');
         }
     }
+}
 
 module.exports = new Scheduler();
