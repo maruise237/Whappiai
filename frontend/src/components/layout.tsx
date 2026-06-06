@@ -16,6 +16,7 @@ import {
   Sun,
   UserCircle,
   Users,
+  Wrench,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -38,6 +39,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
+import { MaintenanceProvider } from "@/providers/maintenance-provider"
 
 type NavItemConfig = {
   label: string
@@ -81,6 +83,13 @@ const adminNavigation: NavItemConfig[] = [
     detail: "Comptes et forfaits",
     href: "/dashboard/users",
     icon: Users,
+    adminOnly: true,
+  },
+  {
+    label: "Maintenance",
+    detail: "Page de maintenance du dashboard",
+    href: "/dashboard/maintenance",
+    icon: Wrench,
     adminOnly: true,
   },
 ]
@@ -346,7 +355,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_32%),hsl(var(--background))]">
             <div className="mx-auto max-w-[1480px] p-4 sm:p-6 lg:p-8">
-              <ErrorBoundary>{children}</ErrorBoundary>
+              <ErrorBoundary><MaintenanceProvider>{children}</MaintenanceProvider></ErrorBoundary>
             </div>
           </main>
         </div>

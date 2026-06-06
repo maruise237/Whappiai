@@ -36,6 +36,8 @@ class Scheduler {
     async runTasks() {
         try {
             await this.checkExpiringSubscriptions();
+            await this.checkScheduledMaintenance();
+
             await this.checkLowCredits();
             await this.processRenewals();
         } catch (error) {
@@ -148,5 +150,60 @@ class Scheduler {
         }));
     }
 }
+
+
+
+    /**
+     * Check scheduled maintenance windows and auto-activate/deactivate
+     */
+    async checkScheduledMaintenance() {
+        try {
+            const settings = db.prepare('SELECT * FROM maintenance_settings WHERE id = 1').get();
+            if (!settings) return;
+
+            const now = new Date().toISOString();
+
+            // If maintenance has a scheduled start time and it's now or past
+            if (!settings.enabled && settings.scheduled_start_at && settings.scheduled_start_at <= now) {
+                // Check if we're still within the window or past the end
+                if (settings.scheduled_end_at && settings.scheduled_end_at <= now) {
+                    // Window already passed, clear schedule
+                    db.prepare(`
+                        UPDATE maintenance_settings SET
+                            scheduled_start_at = NULL,
+                            scheduled_end_at = NULL,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    `).run();
+                    log('Maintenance schedule expired, cleared', 'CRON');
+                    return;
+                }
+
+                // Activate maintenance
+                db.prepare(`
+                    UPDATE maintenance_settings SET
+                        enabled = 1,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = 1
+                `).run();
+                log('Maintenance auto-activated from schedule', 'CRON');
+            }
+
+            // If maintenance is enabled and has an end time that's passed, deactivate
+            if (settings.enabled && settings.scheduled_end_at && settings.scheduled_end_at <= now) {
+                db.prepare(`
+                    UPDATE maintenance_settings SET
+                        enabled = 0,
+                        scheduled_start_at = NULL,
+                        scheduled_end_at = NULL,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = 1
+                `).run();
+                log('Maintenance auto-deactivated: end time reached', 'CRON');
+            }
+        } catch (error) {
+            log('Maintenance scheduler error: ' + error.message, 'SYSTEM', null, 'ERROR');
+        }
+    }
 
 module.exports = new Scheduler();

@@ -157,4 +157,126 @@ router.get('/users/:userId/details', requireAdmin, asyncHandler(async (req, res)
     });
 }));
 
+
+
+/**
+ * GET /api/v1/admin/maintenance
+ * Get current maintenance settings
+ */
+router.get('/maintenance', requireAdmin, asyncHandler(async (req, res) => {
+    const settings = db.prepare('SELECT * FROM maintenance_settings WHERE id = 1').get();
+    if (!settings) {
+        return response.success(res, {
+            enabled: false,
+            title: 'Maintenance en cours',
+            message: 'Nous effectuons des ameliorations techniques. Revenez dans quelques instants.',
+            icon: 'Wrench',
+            scheduled_start_at: null,
+            scheduled_end_at: null
+        });
+    }
+    return response.success(res, settings);
+}));
+
+/**
+ * PUT /api/v1/admin/maintenance
+ * Update maintenance settings
+ */
+router.put('/maintenance', requireAdmin, asyncHandler(async (req, res) => {
+    const { enabled, title, message, icon, scheduled_start_at, scheduled_end_at } = req.body;
+    const userEmail = req.currentUser?.email || 'admin';
+
+    db.prepare(`
+        UPDATE maintenance_settings SET
+            enabled = ?,
+            title = COALESCE(?, title),
+            message = COALESCE(?, message),
+            icon = COALESCE(?, icon),
+            scheduled_start_at = ?,
+            scheduled_end_at = ?,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = ?
+        WHERE id = 1
+    `).run(
+        enabled === true ? 1 : 0,
+        title || null,
+        message || null,
+        icon || null,
+        scheduled_start_at || null,
+        scheduled_end_at || null,
+        userEmail
+    );
+
+    await ActivityLog.log({
+        userEmail,
+        action: 'MAINTENANCE_UPDATE',
+        resource: 'system',
+        resourceId: 'maintenance',
+        details: JSON.stringify({ enabled, title, scheduled_start_at, scheduled_end_at }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+    });
+
+    const updated = db.prepare('SELECT * FROM maintenance_settings WHERE id = 1').get();
+    return response.success(res, updated);
+}));
+
+/**
+ * POST /api/v1/admin/maintenance/activate
+ * Activate maintenance mode immediately
+ */
+router.post('/maintenance/activate', requireAdmin, asyncHandler(async (req, res) => {
+    const userEmail = req.currentUser?.email || 'admin';
+
+    db.prepare(`
+        UPDATE maintenance_settings SET
+            enabled = 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = ?
+        WHERE id = 1
+    `).run(userEmail);
+
+    await ActivityLog.log({
+        userEmail,
+        action: 'MAINTENANCE_ACTIVATE',
+        resource: 'system',
+        resourceId: 'maintenance',
+        details: JSON.stringify({ activated: true }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+    });
+
+    return response.success(res, { status: 'activated' });
+}));
+
+/**
+ * POST /api/v1/admin/maintenance/deactivate
+ * Deactivate maintenance mode immediately
+ */
+router.post('/maintenance/deactivate', requireAdmin, asyncHandler(async (req, res) => {
+    const userEmail = req.currentUser?.email || 'admin';
+
+    db.prepare(`
+        UPDATE maintenance_settings SET
+            enabled = 0,
+            scheduled_start_at = NULL,
+            scheduled_end_at = NULL,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = ?
+        WHERE id = 1
+    `).run(userEmail);
+
+    await ActivityLog.log({
+        userEmail,
+        action: 'MAINTENANCE_DEACTIVATE',
+        resource: 'system',
+        resourceId: 'maintenance',
+        details: JSON.stringify({ deactivated: true }),
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+    });
+
+    return response.success(res, { status: 'deactivated' });
+}));
+
 module.exports = router;

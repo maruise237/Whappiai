@@ -407,5 +407,21 @@ export const api = {
       body: JSON.stringify(data),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    getMaintenance: (token?: string) => fetchApi('/api/v1/admin/maintenance', {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    updateMaintenance: (data: any, token?: string) => fetchApi('/api/v1/admin/maintenance', {
+      method: "PUT",
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    activateMaintenance: (token?: string) => fetchApi('/api/v1/admin/maintenance/activate', {
+      method: "POST",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    deactivateMaintenance: (token?: string) => fetchApi('/api/v1/admin/maintenance/deactivate', {
+      method: "POST",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   }
 };

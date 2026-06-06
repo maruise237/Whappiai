@@ -594,6 +594,31 @@ function initializeSchema() {
     });
 
     log('Schéma de la base de données initialisé avec succès', 'SYSTEM', { event: 'db-schema-init' }, 'INFO');
+    // Maintenance Settings Table
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS maintenance_settings (
+            id INTEGER PRIMARY KEY CHECK(id = 1),
+            enabled INTEGER DEFAULT 0,
+            scheduled_start_at DATETIME,
+            scheduled_end_at DATETIME,
+            title TEXT DEFAULT 'Maintenance en cours',
+            message TEXT DEFAULT 'Nous effectuons des améliorations techniques. Revenez dans quelques instants.',
+            icon TEXT DEFAULT 'Wrench',
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_by TEXT
+        )
+    `);
+
+    // Seed default maintenance row
+    const maintenanceExists = db.prepare('SELECT id FROM maintenance_settings WHERE id = 1').get();
+    if (!maintenanceExists) {
+        db.exec(`
+            INSERT INTO maintenance_settings (id, enabled, title, message, icon)
+            VALUES (1, 0, 'Maintenance en cours', 'Nous effectuons des améliorations techniques. Revenez dans quelques instants.', 'Wrench')
+        `);
+    }
+
+
 }
 
 /**
