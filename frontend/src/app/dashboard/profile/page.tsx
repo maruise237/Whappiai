@@ -43,6 +43,14 @@ import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/pla
 import { api } from "@/lib/api"
 import { cn, ensureString, safeDate } from "@/lib/utils"
 
+const COMMON_TIMEZONES = [
+  'Africa/Douala', 'Africa/Lagos', 'Africa/Abidjan', 'Africa/Nairobi',
+  'Africa/Johannesburg', 'Africa/Cairo', 'Africa/Casablanca',
+  'Europe/Paris', 'Europe/London', 'America/New_York',
+  'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'Asia/Dubai', 'Asia/Tokyo', 'Asia/Shanghai', 'UTC'
+];
+
 type DbUserProfile = {
   organization_name?: string | null
   timezone?: string | null
@@ -74,6 +82,7 @@ export default function ProfilePage() {
   const [subscription, setSubscription] = React.useState<SubscriptionProfile | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [organisation, setOrganisation] = React.useState("")
+  const [timezone, setTimezone] = React.useState("Africa/Douala")
   const [savingProfile, setSavingProfile] = React.useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [confirmEmail, setConfirmEmail] = React.useState("")
@@ -92,6 +101,7 @@ export default function ProfilePage() {
       setDbUser(nextUser)
       setSubscription(nextSubscription)
       setOrganisation(ensureString(nextUser?.organization_name))
+      setTimezone(nextUser?.timezone || "Africa/Douala")
     } catch (error) {
       console.error(error)
       toast.error("Impossible de charger les parametres")
@@ -115,14 +125,14 @@ export default function ProfilePage() {
   const expiry = subscription?.current_period_end || subscription?.subscription_expiry || dbUser?.subscription_expiry || null
   const messageLimit = Number(subscription?.message_limit || dbUser?.message_limit || 0)
   const messageUsed = Number(subscription?.message_used || dbUser?.message_used || 0)
-  const hasProfileChanges = organisation !== ensureString(dbUser?.organization_name)
+  const hasProfileChanges = organisation !== ensureString(dbUser?.organization_name) || timezone !== (dbUser?.timezone || "Africa/Douala")
 
   async function handleSaveProfile() {
     try {
       setSavingProfile(true)
       const token = await getToken()
-      await api.users.updateProfile({ organization_name: organisation }, token || undefined)
-      setDbUser({ ...dbUser, organization_name: organisation })
+      await api.users.updateProfile({ organization_name: organisation, timezone }, token || undefined)
+      setDbUser({ ...dbUser, organization_name: organisation, timezone })
       toast.success("Parametres mis a jour")
     } catch (error) {
       console.error(error)
@@ -265,12 +275,23 @@ export default function ProfilePage() {
               text="Voir les rappels d'abonnement et les alertes systeme."
               href="/dashboard"
             />
-            <ReadOnlyRow
-              icon={<Building2 className="h-4 w-4" />}
-              label="Fuseau horaire"
-              value={ensureString(dbUser?.timezone || "Africa/Douala")}
-              meta="Systeme"
-            />
+            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
+              <Label className="text-xs font-semibold text-muted-foreground">Fuseau horaire</Label>
+              <div className="mt-2">
+                <select
+                  value={timezone}
+                  onChange={e => setTimezone(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-primary/15 bg-background px-3 text-sm focus-visible:ring-primary/30"
+                >
+                  {COMMON_TIMEZONES.map(tz => (
+                    <option key={tz} value={tz}>{tz}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Les messages programmés respecteront ce fuseau.
+              </p>
+            </div>
           </SettingsBlock>
         </div>
 
