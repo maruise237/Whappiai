@@ -156,7 +156,7 @@ class EngagementService {
                     
                     const formattedText = aiService.formatForWhatsApp(text);
                     if (SessionService.isProviderActive()) {
-                        const sent = await SessionService.sendTextMessageProvider(session_id, group_id, formattedText);
+                        const sent = await SessionService.sendTextMessageProvider(session_id, { jid: group_id, text: formattedText });
                         if (!sent.ok) {
                             throw new Error(sent.error || 'Evolution send failed');
                         }
@@ -172,7 +172,7 @@ class EngagementService {
                 
                 const formattedText = aiService.formatForWhatsApp(text);
                 if (SessionService.isProviderActive()) {
-                    const sent = await SessionService.sendTextMessageProvider(session_id, group_id, formattedText);
+                    const sent = await SessionService.sendTextMessageProvider(session_id, { jid: group_id, text: formattedText });
                     if (!sent.ok) {
                         throw new Error(sent.error || 'Evolution send failed');
                     }
