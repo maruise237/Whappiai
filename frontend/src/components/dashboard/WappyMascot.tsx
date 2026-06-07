@@ -129,7 +129,7 @@ const ANIMS = {
   ticktock:"wappy-ticktock 2s cubic-bezier(0.4, 0, 0.2, 1) infinite",
 }
 
-export default function WappyMascot({ state = "idle", size = 180, className = "", style = {} }) {
+export default function WappyMascot({ state = "idle", size = 180, className = "", style = {}, compact = false, onExpand }) {
   const [key, setKey] = useState(state)
   const [pupils, setPupils] = useState({ lx: 0, ly: 0, rx: 0, ry: 0 })
   const [blink, setBlink] = useState(false)
@@ -225,9 +225,43 @@ export default function WappyMascot({ state = "idle", size = 180, className = ""
         @keyframes glow-pulse   { 0%,100%{opacity:.25} 50%{opacity:.45} }
         @keyframes clock-spin   { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
         @keyframes shield-pulse { 0%,100%{opacity:0.25; transform:scale(1)} 50%{opacity:0.55; transform:scale(1.04)} }
+        @keyframes wappy-retract-pulse { 0%,100%{transform:scale(1);opacity:0.7} 50%{transform:scale(1.08);opacity:1} }
       `}</style>
 
-      {/* OUTER: className fixe le positionnement (fixed, bottom, right) — pas de position ici */}
+      {/* COMPACT MODE: simple orb */}
+      {compact ? (
+        <div
+          onClick={onExpand}
+          style={{
+            width: "100%", height: "100%", cursor: "pointer",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            animation: "wappy-retract-pulse 2.2s ease-in-out infinite",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg,#22c55e,#14532d)",
+            boxShadow: "0 4px 20px rgba(34,197,94,.35), inset 0 1px 0 rgba(255,255,255,.2)",
+            transition: "all .3s ease",
+            userSelect: "none"
+          }}
+        >
+          {/* Eye peeking */}
+          <svg viewBox="0 0 40 40" width="45%" height="45%">
+            <defs>
+              <radialGradient id="scl2" cx="38%" cy="32%">
+                <stop offset="0%" stopColor="#f0fff0"/>
+                <stop offset="100%" stopColor="#d4edd4"/>
+              </radialGradient>
+              <radialGradient id="iris2" cx="32%" cy="28%">
+                <stop offset="0%" stopColor="#6ef08a"/>
+                <stop offset="100%" stopColor="#166534"/>
+              </radialGradient>
+            </defs>
+            <circle cx="20" cy="20" r="16" fill="url(#scl2)"/>
+            <circle cx="20" cy="20" r="11" fill="url(#iris2)"/>
+            <circle cx="20" cy="20" r="6.5" fill="#091409"/>
+            <circle cx="23" cy="17" r="2.5" fill="white" opacity=".9"/>
+          </svg>
+        </div>
+      ) : (
       <div className={className} style={{
         display:"flex", flexDirection:"column", alignItems:"center",
         fontFamily:"'DM Sans',system-ui,sans-serif",
@@ -441,6 +475,7 @@ export default function WappyMascot({ state = "idle", size = 180, className = ""
           </div>
         </div>
       </div>
+      )}
     </>
   )
 }
