@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   description: "Passerelle API WhatsApp ultra-légère",
   icons: {
     icon: "/icon.png",
-    shortcut: "/favicon.ico",
+    shortcut: "/icon.png",
     apple: "/apple-icon.png",
   },
 };

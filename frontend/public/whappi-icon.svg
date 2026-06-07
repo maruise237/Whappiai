@@ -1,4 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="100" fill="#25D366"/>
-  <path d="M150 150 L200 362 L256 200 L312 362 L362 150" stroke="white" stroke-width="40" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#81C784"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
+    </linearGradient>
+  </defs>
+  <!-- Background squircle -->
+  <rect width="512" height="512" rx="100" fill="#F5F5F5" stroke="#E0E0E0" stroke-width="2"/>
+  <!-- Eyes -->
+  <circle cx="215" cy="205" r="22" fill="#81C784"/>
+  <circle cx="297" cy="205" r="22" fill="#81C784"/>
+  <!-- Filled W shape (thick, rounded, like a bold glyph) -->
+  <path d="
+    M 100 380 
+    C 100 320, 135 280, 165 280
+    C 185 280, 198 295, 210 330
+    L 230 390
+    L 256 320
+    L 282 390
+    L 302 330
+    C 314 295, 327 280, 347 280
+    C 377 280, 412 320, 412 380
+    L 412 395
+    C 412 410, 402 415, 390 415
+    C 375 415, 368 400, 360 375
+    L 340 310
+    L 314 390
+    C 310 402, 300 410, 290 410
+    C 278 410, 266 400, 263 390
+    L 256 355
+    L 249 390
+    C 246 400, 234 410, 222 410
+    C 212 410, 202 402, 198 390
+    L 172 310
+    L 152 375
+    C 144 400, 137 415, 122 415
+    C 110 415, 100 410, 100 395
+    Z"
+    fill="url(#wGrad)"/>
 </svg>
