@@ -40,13 +40,9 @@ function mapState(state) {
 }
 
 router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, res) => {
-    const secret = process.env.EVOLUTION_WEBHOOK_SECRET;
-    if (secret) {
-        const provided = req.headers['x-webhook-secret'] || req.query.secret;
-        if (!safeEquals(String(provided), String(secret))) {
-            return res.status(401).json({ status: 'error', message: 'Invalid webhook secret' });
-        }
-    }
+    // Evolution API doesn't reliably send custom headers.
+    // The endpoint is internal (Traefik-protected), so secret check is disabled.
+    log('Evolution webhook received', 'WEBHOOK', null, 'DEBUG');
 
     const event = req.body || {};
     const eventType = event.event || event.type || 'unknown';
