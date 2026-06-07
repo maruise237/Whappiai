@@ -374,11 +374,35 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
 function WappyMascotWrapper() {
   const { state } = useWappy()
+  const [mounted, setMounted] = React.useState(false)
+  const [isMobile, setIsMobile] = React.useState(false)
+  const [scrollY, setScrollY] = React.useState(0)
+
+  React.useEffect(() => {
+    setMounted(true)
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    const onScroll = () => setScrollY(window.scrollY)
+    onResize()
+    onScroll()
+    window.addEventListener("resize", onResize)
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      window.removeEventListener("resize", onResize)
+      window.removeEventListener("scroll", onScroll)
+    }
+  }, [])
+
+  if (!mounted) return null
+
+  const baseSize = isMobile ? 100 : 140
+  const scrollOpacity = Math.max(0.3, 1 - scrollY / 600)
+
   return (
     <WappyMascot
       state={state}
-      size={140}
-      className="fixed bottom-5 right-5 z-50 pointer-events-auto"
+      size={baseSize}
+      style={{ opacity: scrollOpacity }}
+      className="fixed bottom-5 right-5 z-50 pointer-events-auto transition-opacity duration-300"
     />
   )
 }
