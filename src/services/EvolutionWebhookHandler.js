@@ -51,7 +51,7 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
     const event = req.body || {};
     const eventType = event.event || event.type || 'unknown';
     const instance = event.instance || (event.data && event.data.instance) || null;
-    const instanceName = instance && instance.instanceName ? instance.instanceName : null;
+    const instanceName = instance && instance.instanceName ? instance.instanceName : (typeof instance === 'string' ? instance : null);
     const data = event.data || {};
 
     log(`Evolution webhook: ${eventType} (${instanceName || 'n/a'})`, 'WEBHOOK', { event: eventType, instanceName }, 'DEBUG');
@@ -89,7 +89,8 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
             }
             case 'MESSAGES_UPSERT':
             case 'messages.upsert': {
-                const messages = Array.isArray(data.messages) ? data.messages : (data.message ? [data] : []);
+                // Evolution v2 sends individual messages; v1 sends data.messages array
+                const messages = Array.isArray(data.messages) ? data.messages : (data.key ? [data] : []);
                 for (const msg of messages) {
                     if (!msg.key || msg.key.fromMe || !instanceName) continue;
                     const groupJid = msg.key.remoteJid || '';

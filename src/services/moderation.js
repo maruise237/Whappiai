@@ -653,7 +653,7 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
 
     try {
         const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
-        if (!settings) return false;
+        if (!settings || !settings.is_active) return false;
 
         const senderJid = extra.senderJid || (msg.key && msg.key.participant) || (msg.key && msg.key.remoteJid) || '';
         const text = extra.plainText || msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
