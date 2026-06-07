@@ -688,16 +688,16 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         if (settings.warnings_enabled === 0) return true;
 
         // Increment warnings
-        const existing = db.prepare('SELECT * FROM user_warnings WHERE session_id = ? AND group_id = ? AND user_jid = ?').get(sessionId, groupId, senderJid);
-        const currentCount = existing ? existing.warning_count : 0;
+        const existing = db.prepare('SELECT * FROM user_warnings WHERE session_id = ? AND group_id = ? AND user_id = ?').get(sessionId, groupId, senderJid);
+        const currentCount = existing ? existing.count : 0;
         const newCount = currentCount + 1;
         const maxWarnings = settings.auto_kick_threshold || 3;
         const remaining = maxWarnings - newCount;
 
         if (existing) {
-            db.prepare("UPDATE user_warnings SET warning_count = ?, updated_at = datetime('now') WHERE id = ?").run(newCount, existing.id);
+            db.prepare("UPDATE user_warnings SET count = ?, last_warning_at = datetime('now') WHERE group_id = ? AND session_id = ? AND user_id = ?").run(newCount, groupId, sessionId, senderJid);
         } else {
-            db.prepare('INSERT INTO user_warnings (session_id, group_id, user_jid, warning_count) VALUES (?, ?, ?, ?)').run(sessionId, groupId, senderJid, newCount);
+            db.prepare('INSERT INTO user_warnings (session_id, group_id, user_id, count) VALUES (?, ?, ?, ?)').run(sessionId, groupId, senderJid, newCount);
         }
 
         // Send warning message
