@@ -2,6 +2,7 @@ const { db } = require('../config/database');
 const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const { Session, ActivityLog, User } = require('../models');
 const { log } = require('../utils/logger');
+const wappy = require('./WappyEventBroadcaster');
 const CreditService = require('./CreditService');
 const QueueService = require('./QueueService');
 const WarningService = require('./warnings');
@@ -512,6 +513,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
             try {
                 // 1. Delete Message (High priority for moderation)
                 await QueueService.enqueue(sessionId, sock, groupId, { delete: msg.key }, { priority: 'high' });
+                wappy.linkBlocked(groupId, sessionId);
 
                 if (settings.warnings_enabled === 0) {
                     return true;
@@ -729,6 +731,7 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
             log(`Membre ${senderJid} exclu de ${groupId} (${newCount}/${maxWarnings})`, sessionId, {
                 event: 'moderation-kick', groupId, senderJid, warnings: newCount
             }, 'INFO');
+            wappy.memberBanned(groupId, sessionId, senderJid);
         }
 
         return true;

@@ -40,6 +40,9 @@ import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { WebSocketProvider, useWebSocket } from "@/providers/websocket-provider"
 import { MaintenanceProvider } from "@/providers/maintenance-provider"
+import { WappyProvider, useWappy } from "@/providers/wappy-provider"
+import WappyMascot from "@/components/dashboard/WappyMascot"
+import { WappyConnector } from "@/components/dashboard/WappyConnector"
 
 type NavItemConfig = {
   label: string
@@ -279,7 +282,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <WebSocketProvider>
-      <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
+      <WappyProvider>
+        <WappyConnector />
+        <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
         <aside className="hidden w-[280px] shrink-0 border-r border-border lg:flex">
           <DashboardSidebar isAdmin={isAdmin} pathname={pathname} />
         </aside>
@@ -360,6 +365,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+        {/* Wappy mascot */}
+        <WappyMascotWrapper />
+      </WappyProvider>
     </WebSocketProvider>
+  )
+}
+
+function WappyMascotWrapper() {
+  const { state } = useWappy()
+  return (
+    <WappyMascot
+      state={state}
+      size={140}
+      className="fixed bottom-5 right-5 z-50 pointer-events-auto"
+    />
   )
 }

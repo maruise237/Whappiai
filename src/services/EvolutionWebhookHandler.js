@@ -14,6 +14,7 @@
 const express = require('express');
 const Session = require('../models/Session');
 const SessionService = require('./SessionService');
+const wappy = require('./WappyEventBroadcaster');
 const { log } = require('../utils/logger');
 
 const router = express.Router();
@@ -68,6 +69,12 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                 // Broadcast to frontend WebSocket clients
                 if (global._broadcastSessionUpdate) {
                     global._broadcastSessionUpdate(localId, mapped, detail, qrOrCode);
+                }
+                // Wappy event
+                if (mapped === 'CONNECTED') {
+                    wappy.sessionConnected(localId);
+                } else if (mapped === 'DISCONNECTED') {
+                    wappy.sessionDisconnected(localId);
                 }
                 break;
             }

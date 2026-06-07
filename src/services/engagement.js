@@ -4,6 +4,7 @@ const { Session, ActivityLog } = require('../models');
 const User = require('../models/User');
 const CreditService = require('./CreditService');
 const SessionService = require('./SessionService');
+const wappy = require('./WappyEventBroadcaster');
 const aiService = require('./ai');
 
 /**
@@ -207,6 +208,7 @@ class EngagementService {
             })();
 
             log(`Message d'engagement programmé ${id} envoyé avec succès`, session_id, { event: 'engagement-exec-success', taskId: id }, 'INFO');
+            wappy.messageScheduled(session_id);
 
         } catch (err) {
             if (creditDeducted && sessionOwnerId) {
