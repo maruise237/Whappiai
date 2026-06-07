@@ -709,7 +709,7 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
             .replace('{{max}}', String(maxWarnings))
             .replace('{{remaining}}', String(Math.max(0, remaining)));
 
-        await provider.sendTextMessage(sessionId, { jid: groupId, text: warningText });
+        await provider.sendTextMessage(sessionId, { jid: groupId, text: warningText, mentions: [senderJid] });
 
         // Auto-kick if threshold reached
         if (settings.auto_kick_enabled === 1 && newCount >= maxWarnings) {

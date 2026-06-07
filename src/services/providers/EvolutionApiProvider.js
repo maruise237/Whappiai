@@ -4,6 +4,7 @@
  */
 
 const WhatsAppProvider = require('./WhatsAppProvider');
+const { log } = require('../../utils/logger');
 
 class EvolutionApiProvider extends WhatsAppProvider {
     /**
@@ -144,8 +145,14 @@ class EvolutionApiProvider extends WhatsAppProvider {
             number: input.jid,
             text: input.text || ''
         };
+        if (input.mentions && Array.isArray(input.mentions)) {
+            body.mentions = input.mentions;
+        }
         const res = await this._request('POST', `/message/sendText/${name}`, body);
-        if (!res.ok) return res;
+        if (!res.ok) {
+            log(`sendTextMessage failed for ${instanceId}: ${res.error}`, instanceId, null, 'ERROR');
+            return res;
+        }
         const messageId = (res.payload && res.payload.key && res.payload.key.id) || (res.payload && res.payload.id) || null;
         return { ok: true, messageId };
     }
@@ -183,7 +190,11 @@ class EvolutionApiProvider extends WhatsAppProvider {
             remoteJid: msg.remoteJid,
             fromMe: msg.fromMe !== false
         };
-        return this._request('DELETE', `/chat/deleteMessageForEveryone/${name}`, body);
+        const res = await this._request('DELETE', `/chat/deleteMessageForEveryone/${name}`, body);
+        if (!res.ok) {
+            log(`deleteMessage failed for ${instanceId}: ${res.error} (id=${msg.id}, remoteJid=${msg.remoteJid})`, instanceId, null, 'ERROR');
+        }
+        return res;
     }
 
     /**
