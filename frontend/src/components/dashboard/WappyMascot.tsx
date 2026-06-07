@@ -428,7 +428,7 @@ export default function WappyMascot({ state = "idle", size = 180, className = ""
               fontFamily:"'Syne',sans-serif", fontWeight:700,
               fontSize:"7px", color:"#2d4a2d", letterSpacing:"2.5px",
               textTransform:"uppercase"
-            }}>WAPPY</span>
+            }}>WHAPPI</span>
             <div style={{
               background:`${s.color}16`,
               border:`1px solid ${s.color}3a`,
