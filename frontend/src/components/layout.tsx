@@ -44,7 +44,6 @@ import { WappyProvider, useWappy } from "@/providers/wappy-provider"
 import WappyMascot from "@/components/dashboard/WappyMascot"
 import { WappyConnector } from "@/components/dashboard/WappyConnector"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
-import { I18nProvider } from "@/i18n/i18n-provider"
 
 type NavItemConfig = {
   label: string
@@ -284,7 +283,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <WebSocketProvider>
-      <I18nProvider>
         <WappyProvider>
           <WappyConnector />
           <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
@@ -372,7 +370,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           {/* Wappy mascot */}
           <WappyMascotWrapper />
         </WappyProvider>
-      </I18nProvider>
     </WebSocketProvider>
   )
 }

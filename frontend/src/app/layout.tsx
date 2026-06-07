@@ -8,7 +8,7 @@ import ProgressBar from "@/components/progress-bar";
 import { Suspense } from "react";
 import Script from "next/script";
 import { ThemeProvider } from "@/providers/theme-provider";
-import { I18nProvider } from "@/i18n/i18n-provider";
+import { TranslationProvider } from "@/lib/i18n/provider";
 import VersionCheckProvider from "@/components/version-check-provider";
 
 const dmSans = DM_Sans({
@@ -56,7 +56,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ClientClerkProvider>
-            <I18nProvider>
+            <TranslationProvider>
               <VersionCheckProvider>
                 <Suspense fallback={null}>
                   <ProgressBar />
@@ -64,7 +64,7 @@ export default function RootLayout({
                 {children}
                 <Toaster />
               </VersionCheckProvider>
-            </I18nProvider>
+            </TranslationProvider>
           </ClientClerkProvider>
         </ThemeProvider>
       </body>

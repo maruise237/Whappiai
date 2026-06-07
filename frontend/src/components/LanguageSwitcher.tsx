@@ -1,17 +1,24 @@
 "use client"
 
-import { useI18n } from "@/i18n/i18n-provider"
+import { useTranslation } from "react-i18next"
 
 export function LanguageSwitcher() {
-  const { locale, setLocale } = useI18n()
+  const { i18n } = useTranslation()
+  const current = i18n.language?.startsWith("en") ? "en" : "fr"
+
+  const toggle = () => {
+    const next = current === "fr" ? "en" : "fr"
+    i18n.changeLanguage(next)
+    localStorage.setItem("whappi_locale", next)
+  }
 
   return (
     <button
-      onClick={() => setLocale(locale === "fr" ? "en" : "fr")}
+      onClick={toggle}
       className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-[11px] font-bold uppercase tracking-wider text-muted-foreground transition hover:bg-muted hover:text-foreground"
-      title={locale === "fr" ? "Switch to English" : "Passer en français"}
+      title={current === "fr" ? "Switch to English" : "Passer en français"}
     >
-      {locale === "fr" ? "EN" : "FR"}
+      {current === "fr" ? "EN" : "FR"}
     </button>
   )
 }

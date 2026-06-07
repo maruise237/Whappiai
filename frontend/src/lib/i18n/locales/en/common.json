@@ -1,0 +1,18 @@
+{
+  "loading": "Loading...",
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "connected": "Connected",
+  "offline": "Offline",
+  "or": "or",
+  "confirm": "Confirm",
+  "close": "Close",
+  "back": "Back",
+  "next": "Next",
+  "search": "Search",
+  "no_data": "No data",
+  "error_occurred": "An error occurred",
+  "retry": "Retry",
+  "loading_page": "Loading..."
+}

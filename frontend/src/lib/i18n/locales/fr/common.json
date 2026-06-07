@@ -1,0 +1,18 @@
+{
+  "loading": "Chargement...",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "delete": "Supprimer",
+  "connected": "Connecté",
+  "offline": "Hors ligne",
+  "or": "ou",
+  "confirm": "Confirmer",
+  "close": "Fermer",
+  "back": "Retour",
+  "next": "Suivant",
+  "search": "Rechercher",
+  "no_data": "Aucune donnée",
+  "error_occurred": "Une erreur est survenue",
+  "retry": "Réessayer",
+  "loading_page": "Chargement..."
+}
