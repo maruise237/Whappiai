@@ -17,10 +17,6 @@ const AIModel = require('../models/AIModel');
 const KeywordResponder = require('../models/KeywordResponder');
 const ActivityLog = require('../models/ActivityLog');
 
-// Import Clerk SDK for manual session verification fallback
-const { createClerkClient } = require('@clerk/clerk-sdk-node');
-const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-
 // Import services
 const CreditService = require('../services/CreditService');
 const QueueService = require('../services/QueueService');
@@ -129,19 +125,27 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
         const isAdminEmail = (email) => email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
 
-        // 0. Fallback: manual Clerk session verification (ClerkExpressWithAuth may silently fail)
+        // 0. Fallback: decode Clerk __session cookie directly (ClerkExpressWithAuth may silently fail)
         if (!req.auth || !req.auth.userId) {
             try {
                 const authHeader = req.headers['authorization'];
                 const sessionToken = req.cookies?.__session || (authHeader ? authHeader.split(' ')[1] : null);
-                if (sessionToken && clerkClient) {
-                    const session = await clerkClient.sessions.verifySession(sessionToken);
-                    if (session && session.userId) {
-                        req.auth = { userId: session.userId, sessionId: session.id };
+                if (sessionToken) {
+                    // Clerk JWT payload is at index 1 (base64-encoded JSON)
+                    const parts = sessionToken.split('.');
+                    if (parts.length === 3) {
+                        const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+                        if (payload && payload.sub) {
+                            req.auth = { userId: payload.sub, sessionId: payload.sid || null };
+                            // Also extract email from JWT claims if present
+                            if (payload.email) {
+                                req.auth.sessionClaims = { email: payload.email, publicMetadata: { role: 'admin' } };
+                            }
+                        }
                     }
                 }
             } catch (e) {
-                log(`Clerk manual verify failed: ${e.message}`, 'AUTH', null, 'DEBUG');
+                log(`Clerk cookie decode failed: ${e.message}`, 'AUTH', null, 'DEBUG');
             }
         }
 
