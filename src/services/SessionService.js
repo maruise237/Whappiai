@@ -201,6 +201,14 @@ async function groupUpdateParticipantProvider(sessionId, opts) {
 }
 
 /**
+ * Resolve a @lid participant JID to the actual WhatsApp phone JID.
+ */
+async function resolveParticipantJidProvider(sessionId, lidJid) {
+    const provider = getProvider();
+    return provider.resolveParticipantJid(sessionId, lidJid);
+}
+
+/**
  * Reconcile all sessions' local DB status with the provider's live state.
  * Called before returning session list so the UI never shows stale status.
  *
@@ -260,6 +268,7 @@ module.exports = {
     sendTextMessageProvider,
     sendMediaProvider,
     deleteMessageProvider,
+    resolveParticipantJidProvider,
     groupUpdateParticipantProvider,
     reconcileSessionsStatus,
     lastQrCache

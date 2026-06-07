@@ -681,6 +681,10 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         }, 'WARN');
 
         const provider = require('./SessionService').getProvider();
+        const SessionService = require('./SessionService');
+
+        // Resolve @lid JID to WhatsApp phone JID for mentions/actions
+        const resolvedJid = await SessionService.resolveParticipantJidProvider(sessionId, senderJid);
 
         // Delete the violating message
         const msgId = msg.key && msg.key.id;
@@ -692,35 +696,35 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         if (settings.warnings_enabled === 0) return true;
 
         // Increment warnings
-        const existing = db.prepare('SELECT * FROM user_warnings WHERE session_id = ? AND group_id = ? AND user_id = ?').get(sessionId, groupId, senderJid);
+        const existing = db.prepare('SELECT * FROM user_warnings WHERE session_id = ? AND group_id = ? AND user_id = ?').get(sessionId, groupId, resolvedJid);
         const currentCount = existing ? existing.count : 0;
         const newCount = currentCount + 1;
         const maxWarnings = settings.auto_kick_threshold || 3;
         const remaining = maxWarnings - newCount;
 
         if (existing) {
-            db.prepare("UPDATE user_warnings SET count = ?, last_warning_at = datetime('now') WHERE group_id = ? AND session_id = ? AND user_id = ?").run(newCount, groupId, sessionId, senderJid);
+            db.prepare("UPDATE user_warnings SET count = ?, last_warning_at = datetime('now') WHERE group_id = ? AND session_id = ? AND user_id = ?").run(newCount, groupId, sessionId, resolvedJid);
         } else {
-            db.prepare('INSERT INTO user_warnings (session_id, group_id, user_id, count) VALUES (?, ?, ?, ?)').run(sessionId, groupId, senderJid, newCount);
+            db.prepare('INSERT INTO user_warnings (session_id, group_id, user_id, count) VALUES (?, ?, ?, ?)').run(sessionId, groupId, resolvedJid, newCount);
         }
 
         // Send warning message
         const template = settings.warning_template || '@{{name}} votre message a ete supprime: {{reason}}. Merci de respecter les regles du groupe.';
         const warningText = template
-            .replace('{{name}}', `${senderJid.split('@')[0]}`)
+            .replace('{{name}}', `${resolvedJid.split('@')[0]}`)
             .replace('{{reason}}', violation)
             .replace('{{count}}', String(newCount))
             .replace('{{max}}', String(maxWarnings))
             .replace('{{remaining}}', String(Math.max(0, remaining)));
 
-        await provider.sendTextMessage(sessionId, { jid: groupId, text: warningText, mentions: [senderJid] });
+        await provider.sendTextMessage(sessionId, { jid: groupId, text: warningText, mentions: [resolvedJid] });
 
         // Auto-kick if threshold reached
         if (settings.auto_kick_enabled === 1 && newCount >= maxWarnings) {
             await provider.groupUpdateParticipant(sessionId, {
                 groupJid: groupId,
                 action: 'remove',
-                participants: [senderJid]
+                participants: [resolvedJid]
             });
             log(`Membre ${senderJid} exclu de ${groupId} (${newCount}/${maxWarnings})`, sessionId, {
                 event: 'moderation-kick', groupId, senderJid, warnings: newCount

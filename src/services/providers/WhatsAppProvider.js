@@ -117,7 +117,11 @@ class WhatsAppProvider {
     }
 
     async fetchGroups(instanceId) {
-        throw new Error('Not implemented');
+        throw new Error('fetchGroups not implemented by this provider');
+    }
+
+    async resolveParticipantJid(instanceId, lidJid) {
+        return lidJid;
     }
 }
 

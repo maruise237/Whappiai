@@ -278,6 +278,26 @@ class EvolutionApiProvider extends WhatsAppProvider {
         const groups = Array.isArray(res.payload) ? res.payload : [];
         return { ok: true, groups };
     }
+
+    /**
+     * Resolve a @lid participant JID to the actual WhatsApp phone JID
+     * by fetching group participants and matching the lid ID.
+     * @param {string} instanceId
+     * @param {string} lidJid - e.g. "74797258166444@lid"
+     * @returns {Promise<string|null>} - e.g. "237658992588@s.whatsapp.net"
+     */
+    async resolveParticipantJid(instanceId, lidJid) {
+        if (!lidJid || !lidJid.endsWith('@lid')) return lidJid;
+        const name = this._instanceName(instanceId);
+        const res = await this._request('GET', `/group/fetchAllGroups/${name}?getParticipants=true`);
+        if (!res.ok || !Array.isArray(res.payload)) return lidJid;
+        for (const group of res.payload) {
+            const participants = group.participants || [];
+            const match = participants.find(p => p.id === lidJid);
+            if (match && match.phoneNumber) return match.phoneNumber;
+        }
+        return lidJid;
+    }
 }
 
 module.exports = EvolutionApiProvider;
