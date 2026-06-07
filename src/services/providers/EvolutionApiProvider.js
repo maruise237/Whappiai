@@ -189,19 +189,21 @@ class EvolutionApiProvider extends WhatsAppProvider {
     async setWebhook(instanceId, webhookUrl, events = []) {
         const name = this._instanceName(instanceId);
         const body = {
-            url: webhookUrl,
-            enabled: true,
-            webhookByEvents: false,
-            events: events.length ? events : [
-                'APPLICATION_STARTUP',
-                'QRCODE_UPDATED',
-                'CONNECTION_UPDATE',
-                'MESSAGES_UPSERT',
-                'MESSAGES_UPDATE',
-                'SEND_MESSAGE',
-                'CONTACTS_UPDATE',
-                'GROUPS_UPSERT'
-            ]
+            webhook: {
+                url: webhookUrl,
+                enabled: true,
+                webhookByEvents: false,
+                events: events.length ? events : [
+                    'APPLICATION_STARTUP',
+                    'QRCODE_UPDATED',
+                    'CONNECTION_UPDATE',
+                    'MESSAGES_UPSERT',
+                    'MESSAGES_UPDATE',
+                    'SEND_MESSAGE',
+                    'CONTACTS_UPDATE',
+                    'GROUPS_UPSERT'
+                ]
+            }
         };
         return this._request('POST', `/webhook/set/${name}`, body);
     }
