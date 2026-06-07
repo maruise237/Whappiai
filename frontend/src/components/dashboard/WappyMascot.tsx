@@ -227,274 +227,217 @@ export default function WappyMascot({ state = "idle", size = 180, className = ""
         @keyframes shield-pulse { 0%,100%{opacity:0.25; transform:scale(1)} 50%{opacity:0.55; transform:scale(1.04)} }
       `}</style>
 
+      {/* OUTER: className fixe le positionnement (fixed, bottom, right) — pas de position ici */}
       <div className={className} style={{
-        position:"relative", display:"flex", flexDirection:"column", alignItems:"center",
+        display:"flex", flexDirection:"column", alignItems:"center",
         fontFamily:"'DM Sans',system-ui,sans-serif",
         width: size, ...style
       }}>
-        {/* Ambient glow */}
-        <div style={{
-          position:"absolute", bottom:"20px", left:"50%",
-          transform:"translateX(-50%)",
-          width: "200px", height:"60px",
-          background:`radial-gradient(ellipse, ${s.color}30, transparent 70%)`,
-          filter:"blur(18px)",
-          transition:"background .6s ease",
-          animation:"glow-pulse 3s ease-in-out infinite",
-          pointerEvents:"none"
-        }}/>
-
-        {/* Speech bubble */}
-        {showMsg && s.msg && (
+        {/* INNER: conteneur positionné pour les enfants absolute */}
+        <div style={{ position:"relative", display:"flex", flexDirection:"column", alignItems:"center", width:"100%" }}>
+          {/* Ambient glow */}
           <div style={{
-            position:"absolute", top:0, left:"50%",
-            transform:"translateX(-50%) translateY(-100%)",
-            background:"#ffffff", color:"#0f1f0f",
-            padding:"11px 18px", borderRadius:"18px",
-            borderBottomLeftRadius:"5px",
-            fontSize:"13px", fontWeight:600, lineHeight:1.45,
-            maxWidth:"270px", textAlign:"center",
-            boxShadow:"0 10px 40px rgba(0,0,0,.5)",
-            animation:"bubble-in .4s cubic-bezier(.175,.885,.32,1.275) forwards",
-            zIndex:20, whiteSpace:"normal",
-            border:"1px solid #e0f2e9"
-          }}>
-            {s.msg}
+            position:"absolute", bottom:"20px", left:"50%",
+            transform:"translateX(-50%)",
+            width: "200px", height:"60px",
+            background:`radial-gradient(ellipse, ${s.color}30, transparent 70%)`,
+            filter:"blur(18px)",
+            transition:"background .6s ease",
+            animation:"glow-pulse 3s ease-in-out infinite",
+            pointerEvents:"none"
+          }}/>
+
+          {/* Speech bubble */}
+          {showMsg && s.msg && (
             <div style={{
-              position:"absolute", bottom:-7, left:"20px",
-              width:0,height:0,
-              borderLeft:"8px solid transparent",
-              borderRight:"8px solid transparent",
-              borderTop:"8px solid white"
-            }}/>
+              position:"absolute", top:0, left:"50%",
+              transform:"translateX(-50%) translateY(-100%)",
+              background:"#ffffff", color:"#0f1f0f",
+              padding:"11px 18px", borderRadius:"18px",
+              borderBottomLeftRadius:"5px",
+              fontSize:"13px", fontWeight:600, lineHeight:1.45,
+              maxWidth:"270px", textAlign:"center",
+              boxShadow:"0 10px 40px rgba(0,0,0,.5)",
+              animation:"bubble-in .4s cubic-bezier(.175,.885,.32,1.275) forwards",
+              zIndex:20, whiteSpace:"normal",
+              border:"1px solid #e0f2e9"
+            }}>
+              {s.msg}
+              <div style={{
+                position:"absolute", bottom:-7, left:"20px",
+                width:0,height:0,
+                borderLeft:"8px solid transparent",
+                borderRight:"8px solid transparent",
+                borderTop:"8px solid white"
+              }}/>
+            </div>
+          )}
+
+          {/* SVG CHARACTER */}
+          <div
+            ref={ref}
+            key={animKey}
+            style={{
+              width:"100%",
+              height:"auto",
+              aspectRatio: "200/225",
+              animation: ANIMS[s.anim],
+              position:"relative", zIndex:10,
+              userSelect:"none"
+            }}
+          >
+            <svg viewBox="0 0 200 225" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+              <defs>
+                <linearGradient id="wG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"  stopColor="#6ef08a"/>
+                  <stop offset="45%" stopColor="#22c55e"/>
+                  <stop offset="100%" stopColor="#14532d"/>
+                </linearGradient>
+                <radialGradient id="scl" cx="38%" cy="32%">
+                  <stop offset="0%" stopColor="#f8fff8"/>
+                  <stop offset="100%" stopColor="#e8f5ea"/>
+                </radialGradient>
+                <radialGradient id="iris" cx="32%" cy="28%">
+                  <stop offset="0%" stopColor="#4ade80"/>
+                  <stop offset="100%" stopColor="#166534"/>
+                </radialGradient>
+                <filter id="bShadow" x="-22%" y="-12%" width="144%" height="138%">
+                  <feDropShadow dx="0" dy="10" stdDeviation="14" floodColor="#166534" floodOpacity=".38"/>
+                </filter>
+                <filter id="eGlow" x="-55%" y="-55%" width="210%" height="210%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#22c55e" floodOpacity=".55"/>
+                </filter>
+                <filter id="redGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#ef4444" floodOpacity=".7"/>
+                </filter>
+              </defs>
+
+              <path
+                d="M 24,75 C 24,180 42,205 66,205 C 86,205 100,150 100,125 C 100,150 114,205 134,205 C 158,205 176,180 176,75"
+                stroke="url(#wG)" strokeWidth="38" strokeLinecap="round" strokeLinejoin="round"
+                fill="none" filter="url(#bShadow)"
+              />
+
+              {s.blush > 0 && <>
+                <ellipse cx="66" cy="80" rx="13" ry="9" fill="#f9a8c9" opacity={s.blush} style={{transition:"opacity .4s"}}/>
+                <ellipse cx="134" cy="80" rx="13" ry="9" fill="#f9a8c9" opacity={s.blush} style={{transition:"opacity .4s"}}/>
+              </>}
+
+              <g filter="url(#eGlow)">
+                <circle cx="66" cy="45" r="21" fill="url(#scl)"/>
+                {!eyeClosed ? <>
+                  <circle cx={66+pupils.lx} cy={45+eDy+pupils.ly} r={14.5*eScale} fill="url(#iris)" style={{transition:"r .12s"}}/>
+                  <circle cx={66+pupils.lx} cy={45+eDy+pupils.ly} r={9*eScale} fill="#091409" style={{transition:"r .12s"}}/>
+                  <circle cx={71+pupils.lx*.35} cy={40+eDy+pupils.ly*.35} r="3.4" fill="white" opacity=".95"/>
+                  <circle cx={60+pupils.lx*.2}  cy={50+eDy+pupils.ly*.2}  r="1.6" fill="white" opacity=".45"/>
+                </> : <path d="M 47,45 Q 66,55 85,45" stroke="#15803d" strokeWidth="3.8" fill="none" strokeLinecap="round"/>}
+              </g>
+
+              <g filter="url(#eGlow)">
+                <circle cx="134" cy="45" r="21" fill="url(#scl)"/>
+                {!eyeClosed ? <>
+                  <circle cx={134+pupils.rx} cy={45+eDy+pupils.ry} r={14.5*eScale} fill="url(#iris)" style={{transition:"r .12s"}}/>
+                  <circle cx={134+pupils.rx} cy={45+eDy+pupils.ry} r={9*eScale} fill="#091409" style={{transition:"r .12s"}}/>
+                  <circle cx={139+pupils.rx*.35} cy={40+eDy+pupils.ry*.35} r="3.4" fill="white" opacity=".95"/>
+                  <circle cx={128+pupils.rx*.2}  cy={50+eDy+pupils.ry*.2}  r="1.6" fill="white" opacity=".45"/>
+                </> : <path d="M 115,45 Q 134,55 153,45" stroke="#15803d" strokeWidth="3.8" fill="none" strokeLinecap="round"/>}
+              </g>
+
+              <path d={s.brow[0]} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>
+              <path d={s.brow[1]} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>
+
+              {s.mouth.t === "arc"  && <path d={s.mouth.d} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>}
+              {s.mouth.t === "oval" && <ellipse cx={s.mouth.cx} cy={s.mouth.cy} rx={s.mouth.rx} ry={s.mouth.ry} fill="#134e1b"/>}
+              {s.mouth.t === "line" && <path d={s.mouth.d} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>}
+
+              {key === "sleeping" && (
+                <g fill="#9ca3af" fontFamily="Syne,system-ui" fontWeight="800">
+                  <text x="152" y="52" fontSize="14" opacity=".5">z</text>
+                  <text x="163" y="39" fontSize="18" opacity=".7">z</text>
+                  <text x="177" y="23" fontSize="24" opacity=".9">Z</text>
+                </g>
+              )}
+
+              {(key === "alert" || key === "surprised") && (
+                <g filter={key==="alert"?"url(#redGlow)":undefined}>
+                  <circle cx="100" cy="22" r="13" fill={key==="alert"?"#ef4444":"#f59e0b"} opacity=".95"/>
+                  <text x="100" y="28" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="system-ui">!</text>
+                </g>
+              )}
+
+              {key === "thinking" && [
+                {x:153,y:52,r:5,delay:"0s"},{x:164,y:38,r:7,delay:".15s"},{x:178,y:22,r:9,delay:".3s"}
+              ].map((d,i) => (
+                <circle key={i} cx={d.x} cy={d.y} r={d.r}
+                  fill="#fbbf24" opacity=".85"
+                  style={{ animation:"dot-pulse 1.2s ease-in-out infinite", animationDelay:d.delay }}
+                />
+              ))}
+
+              {key === "happy" && <>
+                <text x="22" y="48" fontSize="18" style={{animation:"star-spin 3s linear infinite",transformOrigin:"30px 40px"}}>✦</text>
+                <text x="160" y="46" fontSize="14" style={{animation:"star-spin 2s linear infinite reverse",transformOrigin:"167px 39px"}}>✦</text>
+              </>}
+
+              {key === "sad" && (
+                <ellipse cx="78" cy="70" rx="4" ry="6" fill="#93c5fd" opacity=".8"
+                  style={{ animation:"tear-fall 1.8s ease-in infinite" }}/>
+              )}
+
+              {key === "protected" && (
+                <g style={{animation:"shield-pulse 2.5s ease-in-out infinite",transformOrigin:"100px 115px"}}>
+                  <path d="M 100,5 L 180,35 L 180,105 C 180,165 100,215 100,215 C 100,215 20,165 20,105 L 20,35 Z"
+                    fill="none" stroke="#06b6d4" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" opacity="0.8"/>
+                  <path d="M 100,18 L 165,42 L 165,100 C 165,150 100,195 100,195 C 100,195 35,150 35,100 L 35,42 Z"
+                    fill="none" stroke="#22d3ee" strokeWidth="3" strokeDasharray="8 8" opacity="0.5"/>
+                </g>
+              )}
+
+              {key === "scheduled" && <>
+                <g style={{animation:"clock-spin 3s linear infinite",transformOrigin:"165px 35px"}}>
+                  <circle cx="165" cy="35" r="14" fill="#8b5cf6" opacity="0.9"/>
+                  <circle cx="165" cy="35" r="11" fill="#fff"/>
+                  <path d="M 165,35 L 165,27 M 165,35 L 170,38" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round"/>
+                </g>
+                <g style={{animation:"clock-spin 4s linear infinite",transformOrigin:"35px 55px"}}>
+                  <circle cx="35" cy="55" r="10" fill="#a78bfa" opacity="0.9"/>
+                  <circle cx="35" cy="55" r="7.5" fill="#fff"/>
+                  <path d="M 35,55 L 35,50 M 35,55 L 38,57" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"/>
+                </g>
+              </>}
+
+              {key === "banning" && (
+                <g>
+                  <path d="M 135,15 L 150,25 M 150,15 L 135,25" stroke="#ef4444" strokeWidth="4" strokeLinecap="round" opacity="0.8"/>
+                  <path d="M 50,15 L 65,25 M 65,15 L 50,25" stroke="#ef4444" strokeWidth="4" strokeLinecap="round" opacity="0.8"/>
+                </g>
+              )}
+
+              {(key === "alert" || key === "banning") && (
+                <g style={{animation:"wappy-bounce 1s infinite",transformOrigin:"175px 25px"}}>
+                  <circle cx="175" cy="25" r="14" fill="#ef4444" stroke="#070c07" strokeWidth="3"/>
+                  <text x="175" y="30" fill="#fff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="system-ui">1</text>
+                </g>
+              )}
+            </svg>
           </div>
-        )}
 
-        {/* SVG CHARACTER */}
-        <div
-          ref={ref}
-          key={animKey}
-          style={{
-            width:"100%",
-            height:"auto",
-            aspectRatio: "200/225",
-            animation: ANIMS[s.anim],
-            position:"relative", zIndex:10,
-            userSelect:"none"
-          }}
-        >
-          <svg viewBox="0 0 200 225" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-            <defs>
-              {/* W body gradient */}
-              <linearGradient id="wG" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"  stopColor="#6ef08a"/>
-                <stop offset="45%" stopColor="#22c55e"/>
-                <stop offset="100%" stopColor="#14532d"/>
-              </linearGradient>
-              {/* Eye sclera */}
-              <radialGradient id="scl" cx="38%" cy="32%">
-                <stop offset="0%" stopColor="#f8fff8"/>
-                <stop offset="100%" stopColor="#e8f5ea"/>
-              </radialGradient>
-              {/* Iris */}
-              <radialGradient id="iris" cx="32%" cy="28%">
-                <stop offset="0%" stopColor="#4ade80"/>
-                <stop offset="100%" stopColor="#166534"/>
-              </radialGradient>
-              {/* Body shadow */}
-              <filter id="bShadow" x="-22%" y="-12%" width="144%" height="138%">
-                <feDropShadow dx="0" dy="10" stdDeviation="14" floodColor="#166534" floodOpacity=".38"/>
-              </filter>
-              {/* Eye glow */}
-              <filter id="eGlow" x="-55%" y="-55%" width="210%" height="210%">
-                <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#22c55e" floodOpacity=".55"/>
-              </filter>
-              {/* Alert glow */}
-              <filter id="redGlow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#ef4444" floodOpacity=".7"/>
-              </filter>
-            </defs>
-
-            {/* ── W BODY (stroke) ── */}
-            <path
-              d="M 24,75 C 24,180 42,205 66,205 C 86,205 100,150 100,125 C 100,150 114,205 134,205 C 158,205 176,180 176,75"
-              stroke="url(#wG)"
-              strokeWidth="38"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-              filter="url(#bShadow)"
-            />
-
-            {/* ── BLUSH ── */}
-            {s.blush > 0 && <>
-              <ellipse cx="66" cy="80" rx="13" ry="9"
-                fill="#f9a8c9" opacity={s.blush}
-                style={{ transition:"opacity .4s" }}/>
-              <ellipse cx="134" cy="80" rx="13" ry="9"
-                fill="#f9a8c9" opacity={s.blush}
-                style={{ transition:"opacity .4s" }}/>
-            </>}
-
-            {/* ── LEFT EYE ── */}
-            <g filter="url(#eGlow)">
-              <circle cx="66" cy="45" r="21" fill="url(#scl)"/>
-              {!eyeClosed ? <>
-                <circle
-                  cx={66 + pupils.lx} cy={45 + eDy + pupils.ly}
-                  r={14.5 * eScale} fill="url(#iris)"
-                  style={{ transition:"r .12s" }}
-                />
-                <circle
-                  cx={66 + pupils.lx} cy={45 + eDy + pupils.ly}
-                  r={9 * eScale} fill="#091409"
-                  style={{ transition:"r .12s" }}
-                />
-                <circle cx={71 + pupils.lx*.35} cy={40 + eDy + pupils.ly*.35} r="3.4" fill="white" opacity=".95"/>
-                <circle cx={60 + pupils.lx*.2}  cy={50 + eDy + pupils.ly*.2}  r="1.6" fill="white" opacity=".45"/>
-              </> :
-                <path d="M 47,45 Q 66,55 85,45" stroke="#15803d" strokeWidth="3.8" fill="none" strokeLinecap="round"/>
-              }
-            </g>
-
-            {/* ── RIGHT EYE ── */}
-            <g filter="url(#eGlow)">
-              <circle cx="134" cy="45" r="21" fill="url(#scl)"/>
-              {!eyeClosed ? <>
-                <circle
-                  cx={134 + pupils.rx} cy={45 + eDy + pupils.ry}
-                  r={14.5 * eScale} fill="url(#iris)"
-                  style={{ transition:"r .12s" }}
-                />
-                <circle
-                  cx={134 + pupils.rx} cy={45 + eDy + pupils.ry}
-                  r={9 * eScale} fill="#091409"
-                  style={{ transition:"r .12s" }}
-                />
-                <circle cx={139 + pupils.rx*.35} cy={40 + eDy + pupils.ry*.35} r="3.4" fill="white" opacity=".95"/>
-                <circle cx={128 + pupils.rx*.2}  cy={50 + eDy + pupils.ry*.2}  r="1.6" fill="white" opacity=".45"/>
-              </> :
-                <path d="M 115,45 Q 134,55 153,45" stroke="#15803d" strokeWidth="3.8" fill="none" strokeLinecap="round"/>
-              }
-            </g>
-
-            {/* ── BROWS ── */}
-            <path d={s.brow[0]} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>
-            <path d={s.brow[1]} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>
-
-            {/* ── MOUTH ── */}
-            {s.mouth.t === "arc"  && <path d={s.mouth.d} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>}
-            {s.mouth.t === "oval" && <ellipse cx={s.mouth.cx} cy={s.mouth.cy} rx={s.mouth.rx} ry={s.mouth.ry} fill="#134e1b"/>}
-            {s.mouth.t === "line" && <path d={s.mouth.d} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>}
-
-            {/* ── EXTRAS ── */}
-
-            {/* ZZZ - sleeping */}
-            {key === "sleeping" && (
-              <g fill="#9ca3af" fontFamily="Syne,system-ui" fontWeight="800">
-                <text x="152" y="52" fontSize="14" opacity=".5">z</text>
-                <text x="163" y="39" fontSize="18" opacity=".7">z</text>
-                <text x="177" y="23" fontSize="24" opacity=".9">Z</text>
-              </g>
-            )}
-
-            {/* ! - alert / surprised */}
-            {(key === "alert" || key === "surprised") && (
-              <g filter={key==="alert"?"url(#redGlow)":undefined}>
-                <circle cx="100" cy="22" r="13" fill={key==="alert"?"#ef4444":"#f59e0b"} opacity=".95"/>
-                <text x="100" y="28" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="system-ui">!</text>
-              </g>
-            )}
-
-            {/* Thinking dots */}
-            {key === "thinking" && [
-              {x:153,y:52,r:5,delay:"0s"},
-              {x:164,y:38,r:7,delay:".15s"},
-              {x:178,y:22,r:9,delay:".3s"}
-            ].map((d,i) => (
-              <circle key={i} cx={d.x} cy={d.y} r={d.r}
-                fill="#fbbf24" opacity=".85"
-                style={{ animation:`dot-pulse 1.2s ease-in-out infinite`, animationDelay:d.delay }}
-              />
-            ))}
-
-            {/* Stars - happy */}
-            {key === "happy" && <>
-              <text x="22" y="48" fontSize="18"
-                style={{ animation:"star-spin 3s linear infinite", transformOrigin:"30px 40px" }}>
-                ✦
-              </text>
-              <text x="160" y="46" fontSize="14"
-                style={{ animation:"star-spin 2s linear infinite reverse", transformOrigin:"167px 39px" }}>
-                ✦
-              </text>
-            </>}
-
-            {/* Tear - sad */}
-            {key === "sad" && (
-              <ellipse cx="78" cy="70" rx="4" ry="6"
-                fill="#93c5fd" opacity=".8"
-                style={{ animation:"tear-fall 1.8s ease-in infinite" }}
-              />
-            )}
-
-            {/* Shield - protected */}
-            {key === "protected" && (
-              <g style={{ animation:"shield-pulse 2.5s ease-in-out infinite", transformOrigin:"100px 115px" }}>
-                <path d="M 100,5 L 180,35 L 180,105 C 180,165 100,215 100,215 C 100,215 20,165 20,105 L 20,35 Z" 
-                  fill="none" stroke="#06b6d4" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
-                <path d="M 100,18 L 165,42 L 165,100 C 165,150 100,195 100,195 C 100,195 35,150 35,100 L 35,42 Z" 
-                  fill="none" stroke="#22d3ee" strokeWidth="3" strokeDasharray="8 8" opacity="0.5" />
-              </g>
-            )}
-
-            {/* Clocks - scheduled */}
-            {key === "scheduled" && <>
-              <g style={{ animation:"clock-spin 3s linear infinite", transformOrigin:"165px 35px" }}>
-                <circle cx="165" cy="35" r="14" fill="#8b5cf6" opacity="0.9" />
-                <circle cx="165" cy="35" r="11" fill="#fff" />
-                <path d="M 165,35 L 165,27 M 165,35 L 170,38" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" />
-              </g>
-              <g style={{ animation:"clock-spin 4s linear infinite", transformOrigin:"35px 55px" }}>
-                <circle cx="35" cy="55" r="10" fill="#a78bfa" opacity="0.9" />
-                <circle cx="35" cy="55" r="7.5" fill="#fff" />
-                <path d="M 35,55 L 35,50 M 35,55 L 38,57" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" />
-              </g>
-            </>}
-
-            {/* Anger marks - banning */}
-            {key === "banning" && (
-              <g>
-                <path d="M 135,15 L 150,25 M 150,15 L 135,25" stroke="#ef4444" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
-                <path d="M 50,15 L 65,25 M 65,15 L 50,25" stroke="#ef4444" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
-              </g>
-            )}
-
-            {/* WhatsApp Notification Badge (on alert and banning) */}
-            {(key === "alert" || key === "banning") && (
-              <g style={{ animation:"wappy-bounce 1s infinite", transformOrigin:"175px 25px" }}>
-                <circle cx="175" cy="25" r="14" fill="#ef4444" stroke="#070c07" strokeWidth="3" />
-                <text x="175" y="30" fill="#fff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="system-ui">1</text>
-              </g>
-            )}
-          </svg>
-        </div>
-
-        {/* Name + state badge */}
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"6px", marginTop:"2px" }}>
-          <span style={{
-            fontFamily:"'Syne',sans-serif", fontWeight:700,
-            fontSize:"10px", color:"#2d4a2d", letterSpacing:"3.5px",
-            textTransform:"uppercase"
-          }}>WAPPY</span>
-          <div style={{
-            background:`${s.color}16`,
-            border:`1px solid ${s.color}3a`,
-            color: s.color, padding:"5px 16px",
-            borderRadius:"20px", fontSize:"12px", fontWeight:700,
-            transition:"all .35s ease", letterSpacing:".3px"
-          }}>
-            {s.emoji} {s.fr}
+          {/* Name + state badge */}
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"6px", marginTop:"2px" }}>
+            <span style={{
+              fontFamily:"'Syne',sans-serif", fontWeight:700,
+              fontSize:"10px", color:"#2d4a2d", letterSpacing:"3.5px",
+              textTransform:"uppercase"
+            }}>WAPPY</span>
+            <div style={{
+              background:`${s.color}16`,
+              border:`1px solid ${s.color}3a`,
+              color: s.color, padding:"5px 16px",
+              borderRadius:"20px", fontSize:"12px", fontWeight:700,
+              transition:"all .35s ease", letterSpacing:".3px"
+            }}>
+              {s.emoji} {s.fr}
+            </div>
           </div>
         </div>
       </div>
