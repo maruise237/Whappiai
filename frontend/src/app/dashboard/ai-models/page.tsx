@@ -68,7 +68,7 @@ export default function AIModelsPage() {
     setLoading(true)
     setError("")
     try {
-      const data = await apiFetch("/admin/ai-models")
+      const data = await apiFetch("/api/v1/admin/ai-models")
       setModels(data.models || data || [])
     } catch (e: any) {
       setError(e.message)
@@ -87,9 +87,9 @@ export default function AIModelsPage() {
     setSaving(true)
     try {
       if (dialog?.mode === "create") {
-        await apiFetch("/admin/ai-models", { method: "POST", body: JSON.stringify(form) })
+        await apiFetch("/api/v1/admin/ai-models", { method: "POST", body: JSON.stringify(form) })
       } else if (dialog?.mode === "edit" && dialog.model?.id) {
-        await apiFetch(`/admin/ai-models/${dialog.model.id}`, { method: "PUT", body: JSON.stringify(form) })
+        await apiFetch(`/api/v1/admin/ai-models/${dialog.model.id}`, { method: "PUT", body: JSON.stringify(form) })
       }
       setDialog(null)
       load()
@@ -104,7 +104,7 @@ export default function AIModelsPage() {
     if (!dialog?.model?.id) return
     setSaving(true)
     try {
-      await apiFetch(`/admin/ai-models/${dialog.model.id}`, { method: "DELETE" })
+      await apiFetch(`/api/v1/admin/ai-models/${dialog.model.id}`, { method: "DELETE" })
       setDialog(null)
       load()
     } catch (e: any) {
