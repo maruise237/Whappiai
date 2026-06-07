@@ -423,18 +423,18 @@ export default function WappyMascot({ state = "idle", size = 180, className = ""
           </div>
 
           {/* Name + state badge */}
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"6px", marginTop:"2px" }}>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", marginTop:"2px" }}>
             <span style={{
               fontFamily:"'Syne',sans-serif", fontWeight:700,
-              fontSize:"10px", color:"#2d4a2d", letterSpacing:"3.5px",
+              fontSize:"7px", color:"#2d4a2d", letterSpacing:"2.5px",
               textTransform:"uppercase"
             }}>WAPPY</span>
             <div style={{
               background:`${s.color}16`,
               border:`1px solid ${s.color}3a`,
-              color: s.color, padding:"5px 16px",
-              borderRadius:"20px", fontSize:"12px", fontWeight:700,
-              transition:"all .35s ease", letterSpacing:".3px"
+              color: s.color, padding:"3px 10px",
+              borderRadius:"16px", fontSize:"8px", fontWeight:600,
+              transition:"all .35s ease", letterSpacing:".2px"
             }}>
               {s.emoji} {s.fr}
             </div>
