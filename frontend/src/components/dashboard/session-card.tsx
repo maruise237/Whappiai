@@ -246,42 +246,57 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </TabsContent>
 
               <TabsContent value="code" className="space-y-6 pt-4">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Numéro de téléphone</label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="ex: 237600000000"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="h-10 text-sm"
-                    />
-                    <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
-                      Obtenir le code
-                    </Button>
-                  </div>
-                </div>
-
                 {pairingCode ? (
-                  <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
-                    <div className="flex flex-wrap justify-center gap-1.5">
-                      {ensureString(pairingCode).split('').map((char: string, i: number) => (
-                        <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
-                          {char}
-                        </div>
-                      ))}
+                  <>
+                    <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
+                      <div className="flex flex-wrap justify-center gap-1.5">
+                        {ensureString(pairingCode).split('').map((char: string, i: number) => (
+                          <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
+                            {char}
+                          </div>
+                        ))}
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(pairingCode, "Code")}>
+                        <Copy className="h-3.5 w-3.5 mr-2" />
+                        Copier le code
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(pairingCode, "Code")}>
-                      <Copy className="h-3.5 w-3.5 mr-2" />
-                      Copier le code
-                    </Button>
-                  </div>
+                    <details className="text-xs text-muted-foreground">
+                      <summary className="cursor-pointer hover:text-foreground font-medium">Modifier le numéro</summary>
+                      <div className="flex gap-2 mt-3">
+                        <Input
+                          placeholder="ex: 237600000000"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Button size="sm" className="h-9 px-3 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                          Regénérer
+                        </Button>
+                      </div>
+                    </details>
+                  </>
                 ) : (
-                   <div className="p-8 text-center border border-dashed rounded-lg bg-muted/20">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Numéro de téléphone</label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="ex: 237600000000"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="h-10 text-sm"
+                      />
+                      <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                        Obtenir le code
+                      </Button>
+                    </div>
+                    <div className="p-8 text-center border border-dashed rounded-lg bg-muted/20">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                         {loading ? "Demande de code..." : "Entrez un numéro pour lier manuellement"}
+                        {loading ? "Demande de code..." : "Entrez un numéro pour lier manuellement"}
                       </p>
-                   </div>
+                    </div>
+                  </div>
                 )}
               </TabsContent>
             </Tabs>
