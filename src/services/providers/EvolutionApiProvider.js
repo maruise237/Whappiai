@@ -221,6 +221,7 @@ class EvolutionApiProvider extends WhatsAppProvider {
             remoteJid: msg.remoteJid,
             fromMe: msg.fromMe !== false
         };
+        if (msg.participant) body.participant = msg.participant;
         const res = await this._request('DELETE', `/chat/deleteMessageForEveryone/${name}`, body);
         if (!res.ok) {
             log(`deleteMessage failed for ${instanceId}: ${res.error} (id=${msg.id}, remoteJid=${msg.remoteJid})`, instanceId, null, 'ERROR');

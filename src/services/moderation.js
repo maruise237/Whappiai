@@ -691,7 +691,7 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         log(`Tentative suppression message ${groupId}: id=${msgId}`, sessionId, {
             event: 'moderation-delete', groupId, msgId
         }, 'INFO');
-        await provider.deleteMessage(sessionId, { id: msgId, remoteJid: groupId, fromMe: false });
+        await provider.deleteMessage(sessionId, { id: msgId, remoteJid: groupId, fromMe: false, participant: msg.key && msg.key.participant });
 
         if (settings.warnings_enabled === 0) return true;
 
