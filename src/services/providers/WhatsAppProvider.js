@@ -100,6 +100,15 @@ class WhatsAppProvider {
     async setWebhook(instanceId, webhookUrl, events = []) {
         return { ok: true };
     }
+
+    /**
+     * Fetch all groups the instance participates in (admin or member)
+     * @param {string} instanceId
+     * @returns {Promise<{ok: boolean, groups?: Array<{id:string,subject:string,admin:boolean,size:number}>, error?: string}>}
+     */
+    async fetchGroups(instanceId) {
+        throw new Error('Not implemented');
+    }
 }
 
 module.exports = WhatsAppProvider;

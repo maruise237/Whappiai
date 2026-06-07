@@ -639,11 +639,103 @@ async function handleIncomingMessage(sock, sessionId, msg) {
     return false;
 }
 
+/**
+ * Handle incoming message for moderation (Provider-aware version, no Baileys sock)
+ * Called by the Evolution webhook handler on MESSAGES_UPSERT.
+ *
+ * @param {string} sessionId
+ * @param {Object} msg - Evolution message format { key, message, pushName, ... }
+ * @param {Object} [extra] - { groupId, senderJid, plainText }
+ */
+async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
+    const groupId = extra.groupId || (msg.key && msg.key.remoteJid) || '';
+    if (!groupId.endsWith('@g.us')) return false;
+
+    try {
+        const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+        if (!settings) return false;
+
+        const senderJid = extra.senderJid || (msg.key && msg.key.participant) || (msg.key && msg.key.remoteJid) || '';
+        const text = extra.plainText || msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+
+        if (msg.key && msg.key.fromMe) return false;
+
+        let violation = null;
+        if (settings.anti_link === 1) {
+            const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-z0-9-]+\.[a-z]{2,}\b)/gi;
+            if (linkRegex.test(text)) violation = 'Lien non autorisé';
+        }
+
+        if (!violation && settings.bad_words) {
+            const badWords = (settings.bad_words || '').split(',').map(w => w.trim().toLowerCase()).filter(w => w);
+            const lowerText = text.toLowerCase();
+            if (badWords.length > 0 && badWords.some(word => lowerText.includes(word))) {
+                violation = 'Langage inapproprié';
+            }
+        }
+
+        if (!violation) return false;
+
+        log(`Violation détectée dans ${groupId} par ${senderJid}: ${violation}`, sessionId, {
+            event: 'moderation-violation', groupId, senderJid, violation
+        }, 'WARN');
+
+        const provider = require('./SessionService').getProvider();
+
+        // Delete the violating message
+        await provider.deleteMessage(sessionId, { id: msg.key.id, remoteJid: groupId, fromMe: false });
+
+        if (settings.warnings_enabled === 0) return true;
+
+        // Increment warnings
+        const existing = db.prepare('SELECT * FROM user_warnings WHERE session_id = ? AND group_id = ? AND user_jid = ?').get(sessionId, groupId, senderJid);
+        const currentCount = existing ? existing.warning_count : 0;
+        const newCount = currentCount + 1;
+        const maxWarnings = settings.auto_kick_threshold || 3;
+        const remaining = maxWarnings - newCount;
+
+        if (existing) {
+            db.prepare("UPDATE user_warnings SET warning_count = ?, updated_at = datetime('now') WHERE id = ?").run(newCount, existing.id);
+        } else {
+            db.prepare('INSERT INTO user_warnings (session_id, group_id, user_jid, warning_count) VALUES (?, ?, ?, ?)').run(sessionId, groupId, senderJid, newCount);
+        }
+
+        // Send warning message
+        const template = settings.warning_template || '@{{name}} votre message a ete supprime: {{reason}}. Merci de respecter les regles du groupe.';
+        const warningText = template
+            .replace('{{name}}', `@${senderJid.split('@')[0]}`)
+            .replace('{{reason}}', violation)
+            .replace('{{count}}', String(newCount))
+            .replace('{{max}}', String(maxWarnings))
+            .replace('{{remaining}}', String(Math.max(0, remaining)));
+
+        await provider.sendTextMessage(sessionId, { jid: groupId, text: warningText });
+
+        // Auto-kick if threshold reached
+        if (settings.auto_kick_enabled === 1 && newCount >= maxWarnings) {
+            await provider.groupUpdateParticipant(sessionId, {
+                groupJid: groupId,
+                action: 'remove',
+                participants: [senderJid]
+            });
+            log(`Membre ${senderJid} exclu de ${groupId} (${newCount}/${maxWarnings})`, sessionId, {
+                event: 'moderation-kick', groupId, senderJid, warnings: newCount
+            }, 'INFO');
+        }
+
+        return true;
+    } catch (err) {
+        log(`Erreur modération pour ${groupId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+        return false;
+    }
+}
+
 module.exports = {
     getAdminGroups,
     updateGroupSettings,
     handleIncomingMessage,
     handleParticipantUpdate,
     isGroupAdmin,
-    getGroupMetadata
+    getGroupMetadata,
+    handleIncomingMessageProvider
 };

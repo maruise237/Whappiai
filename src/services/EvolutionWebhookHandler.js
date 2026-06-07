@@ -89,8 +89,17 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
             }
             case 'MESSAGES_UPSERT':
             case 'messages.upsert': {
-                // Logged for now. Future: dispatch to WebhookService per session config.
-                log(`Evolution inbound messages: ${Array.isArray(data.messages) ? data.messages.length : 1}`, 'WEBHOOK');
+                const messages = Array.isArray(data.messages) ? data.messages : (data.message ? [data] : []);
+                for (const msg of messages) {
+                    if (!msg.key || msg.key.fromMe || !instanceName) continue;
+                    const groupJid = msg.key.remoteJid || '';
+                    if (!groupJid.endsWith('@g.us')) continue;
+                    const localId = stripPrefix(instanceName, process.env.EVOLUTION_INSTANCE_PREFIX || '');
+                    const moderation = require('./moderation');
+                    moderation.handleIncomingMessageProvider(localId, msg).catch(err => {
+                        log(`Moderation error for ${localId}/${groupJid}: ${err.message}`, 'WEBHOOK', null, 'ERROR');
+                    });
+                }
                 break;
             }
             case 'SEND_MESSAGE':

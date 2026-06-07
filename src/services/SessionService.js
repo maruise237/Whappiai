@@ -171,6 +171,22 @@ async function sendTextMessageProvider(sessionId, input) {
 }
 
 /**
+ * Delete a message for everyone via the provider.
+ */
+async function deleteMessageProvider(sessionId, msg) {
+    const provider = getProvider();
+    return provider.deleteMessage(sessionId, msg);
+}
+
+/**
+ * Update group participants (kick/promote/demote) via the provider.
+ */
+async function groupUpdateParticipantProvider(sessionId, opts) {
+    const provider = getProvider();
+    return provider.groupUpdateParticipant(sessionId, opts);
+}
+
+/**
  * Reconcile all sessions' local DB status with the provider's live state.
  * Called before returning session list so the UI never shows stale status.
  *
@@ -228,6 +244,8 @@ module.exports = {
     deleteSessionProvider,
     disconnectSessionProvider,
     sendTextMessageProvider,
+    deleteMessageProvider,
+    groupUpdateParticipantProvider,
     reconcileSessionsStatus,
     lastQrCache
 };

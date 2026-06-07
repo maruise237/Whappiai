@@ -440,14 +440,18 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
     });
 
-    router.get('/sessions', checkSessionOrTokenAuth, (req, res) => {
+    router.get('/sessions', checkSessionOrTokenAuth, async (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl }, 'DEBUG');
 
         // IMPORTANT: By default, everyone (including admin) only sees their own sessions
         // If an admin wants to see ALL sessions, they could potentially use a query param
         const showAll = req.query.all === 'true' && req.currentUser.role === 'admin';
-
-        res.status(200).json(getSessionsDetails(req.currentUser.email, showAll));
+        try {
+            const sessions = await getSessionsDetails(req.currentUser.email, showAll);
+            res.status(200).json(sessions);
+        } catch (err) {
+            res.status(500).json({ status: 'error', message: err.message });
+        }
     });
 
     router.post('/sessions/:sessionId/mark-used', checkSessionOrTokenAuth, ensureOwnership, (req, res) => {
@@ -717,7 +721,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId } = req.params;
         const sessionData = sessions.get(sessionId);
 
-        if (!sessionData || !sessionData.sock || sessionData.status !== 'CONNECTED') {
+        if (!sessionData || sessionData.status !== 'CONNECTED') {
             return res.status(400).json({
                 status: 'error',
                 message: `La session "${sessionId}" n'est pas connectée. Veuillez coupler votre compte WhatsApp.`
@@ -725,8 +729,34 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
 
         try {
-            const moderationService = require('../services/moderation');
-            const groups = await moderationService.getAdminGroups(sessionData.sock, sessionId);
+            const SessionService = require('../services/SessionService');
+            const provider = SessionService.getProvider();
+
+            // Get owner JID to identify 'me' in group participants
+            const status = await provider.getStatus(sessionId);
+            const ownerJid = status.ok ? (status.phoneNumber || '') : '';
+
+            const result = await provider.fetchGroups(sessionId);
+            if (!result.ok) {
+                throw new Error(result.error || 'Échec de récupération des groupes');
+            }
+
+            const groups = (result.groups || [])
+                .filter(g => {
+                    // Only include groups where current user is admin/superadmin
+                    if (!g.participants || !ownerJid) return false;
+                    const me = g.participants.find(p =>
+                        p.phoneNumber === ownerJid || p.id === ownerJid
+                    );
+                    return me && (me.admin === 'admin' || me.admin === 'superadmin');
+                })
+                .map(g => ({
+                    id: g.id,
+                    subject: g.subject || g.name || 'Sans nom',
+                    admin: true,
+                    size: g.size || g.participants?.length || 0,
+                    participants: g.participants || []
+                }));
             res.json({ status: 'success', data: groups });
         } catch (err) {
             log(`Erreur lors de la récupération des groupes pour ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');

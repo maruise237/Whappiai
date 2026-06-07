@@ -102,7 +102,15 @@ class EvolutionApiProvider extends WhatsAppProvider {
         const res = await this._request('GET', `/instance/connectionState/${name}`);
         if (!res.ok) return res;
         const state = (res.payload && (res.payload.state || res.payload.instance && res.payload.instance.state)) || 'unknown';
-        const phoneNumber = (res.payload && (res.payload.phoneNumber || res.payload.instance && res.payload.instance.ownerJid)) || null;
+        let phoneNumber = (res.payload && (res.payload.phoneNumber || res.payload.instance && res.payload.instance.ownerJid)) || null;
+        // connectionState doesn't always return ownerJid; try fetchInstances as fallback
+        if (!phoneNumber) {
+            const instances = await this._request('GET', '/instance/fetchInstances');
+            if (instances.ok && Array.isArray(instances.payload)) {
+                const match = instances.payload.find(i => i.name === name);
+                if (match && match.ownerJid) phoneNumber = match.ownerJid;
+            }
+        }
         return { ok: true, state, phoneNumber };
     }
 
@@ -160,6 +168,51 @@ class EvolutionApiProvider extends WhatsAppProvider {
             ]
         };
         return this._request('POST', `/webhook/set/${name}`, body);
+    }
+
+    /**
+     * Delete a message for everyone (revoke)
+     * @param {string} instanceId
+     * @param {Object} msg - { id, remoteJid, fromMe }
+     * @returns {Promise<{ok: boolean, error?: string}>}
+     */
+    async deleteMessage(instanceId, msg) {
+        const name = this._instanceName(instanceId);
+        const body = {
+            id: msg.id,
+            remoteJid: msg.remoteJid,
+            fromMe: msg.fromMe !== false
+        };
+        return this._request('DELETE', `/chat/deleteMessageForEveryone/${name}`, body);
+    }
+
+    /**
+     * Update group participants (kick, promote, demote, add)
+     * @param {string} instanceId
+     * @param {Object} opts - { groupJid, action: 'add'|'remove'|'promote'|'demote', participants: string[] }
+     * @returns {Promise<{ok: boolean, error?: string}>}
+     */
+    async groupUpdateParticipant(instanceId, opts) {
+        const name = this._instanceName(instanceId);
+        const body = {
+            groupJid: opts.groupJid,
+            action: opts.action,
+            participants: opts.participants
+        };
+        return this._request('POST', `/group/updateParticipant/${name}`, body);
+    }
+
+    /**
+     * Fetch all groups for this instance via Evolution API
+     * @param {string} instanceId
+     * @returns {Promise<{ok: boolean, groups?: Array, error?: string}>}
+     */
+    async fetchGroups(instanceId) {
+        const name = this._instanceName(instanceId);
+        const res = await this._request('GET', `/group/fetchAllGroups/${name}?getParticipants=true`);
+        if (!res.ok) return res;
+        const groups = Array.isArray(res.payload) ? res.payload : [];
+        return { ok: true, groups };
     }
 }
 
