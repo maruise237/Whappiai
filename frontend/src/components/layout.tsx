@@ -43,6 +43,8 @@ import { MaintenanceProvider } from "@/providers/maintenance-provider"
 import { WappyProvider, useWappy } from "@/providers/wappy-provider"
 import WappyMascot from "@/components/dashboard/WappyMascot"
 import { WappyConnector } from "@/components/dashboard/WappyConnector"
+import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { I18nProvider } from "@/i18n/i18n-provider"
 
 type NavItemConfig = {
   label: string
@@ -282,92 +284,95 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <WebSocketProvider>
-      <WappyProvider>
-        <WappyConnector />
-        <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
-        <aside className="hidden w-[280px] shrink-0 border-r border-border lg:flex">
-          <DashboardSidebar isAdmin={isAdmin} pathname={pathname} />
-        </aside>
+      <I18nProvider>
+        <WappyProvider>
+          <WappyConnector />
+          <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
+          <aside className="hidden w-[280px] shrink-0 border-r border-border lg:flex">
+            <DashboardSidebar isAdmin={isAdmin} pathname={pathname} />
+          </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-16 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-xl sm:px-6">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="lg:hidden">
-                <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-[290px] border-border bg-card p-0">
-                    <DashboardSidebar
-                      isAdmin={isAdmin}
-                      pathname={pathname}
-                      onItemClick={() => setMobileOpen(false)}
-                    />
-                  </SheetContent>
-                </Sheet>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex h-16 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-xl sm:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="lg:hidden">
+                  <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Menu className="h-5 w-5" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-[290px] border-border bg-card p-0">
+                      <DashboardSidebar
+                        isAdmin={isAdmin}
+                        pathname={pathname}
+                        onItemClick={() => setMobileOpen(false)}
+                      />
+                    </SheetContent>
+                  </Sheet>
+                </div>
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{currentItem?.label || "Centre"}</p>
+                  <p className="hidden text-[11px] text-muted-foreground sm:block">{currentItem?.detail || "Dashboard Whappi"}</p>
+                </div>
               </div>
 
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{currentItem?.label || "Centre"}</p>
-                <p className="hidden text-[11px] text-muted-foreground sm:block">{currentItem?.detail || "Dashboard Whappi"}</p>
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:block">
+                  <LiveIndicator />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                >
+                  {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+                <LanguageSwitcher />
+                <NotificationDropdown />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card p-1 pr-2 text-left transition hover:bg-muted">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.imageUrl} />
+                        <AvatarFallback className="bg-primary/15 text-xs text-primary">
+                          {userName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden max-w-[110px] truncate text-xs font-medium text-foreground sm:block">{userName}</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">Compte</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
+                      <UserCircle className="mr-2 h-4 w-4" /> Profil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
+                      <CreditCard className="mr-2 h-4 w-4" /> Forfaits
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" /> Deconnexion
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            </div>
+            </header>
 
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:block">
-                <LiveIndicator />
+            <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_32%),hsl(var(--background))]">
+              <div className="mx-auto max-w-[1480px] p-4 sm:p-6 lg:p-8">
+                <ErrorBoundary><MaintenanceProvider>{children}</MaintenanceProvider></ErrorBoundary>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-              >
-                {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-              <NotificationDropdown />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card p-1 pr-2 text-left transition hover:bg-muted">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.imageUrl} />
-                      <AvatarFallback className="bg-primary/15 text-xs text-primary">
-                        {userName.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden max-w-[110px] truncate text-xs font-medium text-foreground sm:block">{userName}</span>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">Compte</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
-                    <UserCircle className="mr-2 h-4 w-4" /> Profil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
-                    <CreditCard className="mr-2 h-4 w-4" /> Forfaits
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" /> Deconnexion
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </header>
-
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_32%),hsl(var(--background))]">
-            <div className="mx-auto max-w-[1480px] p-4 sm:p-6 lg:p-8">
-              <ErrorBoundary><MaintenanceProvider>{children}</MaintenanceProvider></ErrorBoundary>
-            </div>
-          </main>
+            </main>
+          </div>
         </div>
-      </div>
-        {/* Wappy mascot */}
-        <WappyMascotWrapper />
-      </WappyProvider>
+          {/* Wappy mascot */}
+          <WappyMascotWrapper />
+        </WappyProvider>
+      </I18nProvider>
     </WebSocketProvider>
   )
 }
