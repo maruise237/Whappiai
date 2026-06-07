@@ -17,6 +17,10 @@ const AIModel = require('../models/AIModel');
 const KeywordResponder = require('../models/KeywordResponder');
 const ActivityLog = require('../models/ActivityLog');
 
+// Import Clerk SDK for manual session verification fallback
+const { createClerkClient } = require('@clerk/clerk-sdk-node');
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+
 // Import services
 const CreditService = require('../services/CreditService');
 const QueueService = require('../services/QueueService');
@@ -124,6 +128,22 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     const checkSessionOrTokenAuth = async (req, res, next) => {
         const MASTER_ADMIN_EMAIL = 'maruise237@gmail.com';
         const isAdminEmail = (email) => email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
+
+        // 0. Fallback: manual Clerk session verification (ClerkExpressWithAuth may silently fail)
+        if (!req.auth || !req.auth.userId) {
+            try {
+                const authHeader = req.headers['authorization'];
+                const sessionToken = req.cookies?.__session || (authHeader ? authHeader.split(' ')[1] : null);
+                if (sessionToken && clerkClient) {
+                    const session = await clerkClient.sessions.verifySession(sessionToken);
+                    if (session && session.userId) {
+                        req.auth = { userId: session.userId, sessionId: session.id };
+                    }
+                }
+            } catch (e) {
+                log(`Clerk manual verify failed: ${e.message}`, 'AUTH', null, 'DEBUG');
+            }
+        }
 
         // 1. Try Clerk Auth
         if (req.auth && req.auth.userId) {
