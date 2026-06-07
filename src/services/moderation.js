@@ -476,10 +476,17 @@ async function handleIncomingMessage(sock, sessionId, msg) {
         
         // 2. Bad Words Check
     if (!violation && (settings.bad_words || settings.bad_words === "")) {
-        const badWords = (settings.bad_words || "").split(',').map(w => w.trim().toLowerCase()).filter(w => w);
+        const raw = (settings.bad_words || "");
+        const badWords = raw
+            .split(/[\n,]+/)
+            .map(w => w.trim().toLowerCase())
+            .filter(w => w.length > 0);
             const lowerText = text.toLowerCase();
         if (badWords.length > 0 && badWords.some(word => lowerText.includes(word))) {
                 violation = 'Langage inapproprié';
+                log(`Bad word matched in ${groupId}: text="${text.slice(0,60)}", words=${JSON.stringify(badWords)}`, sessionId, {
+                    event: 'moderation-badword-match', groupId, badWords
+                }, 'DEBUG');
             }
         }
         
@@ -662,7 +669,29 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         if (!settings || !settings.is_active) return false;
 
         const senderJid = extra.senderJid || (msg.key && msg.key.participant) || (msg.key && msg.key.remoteJid) || '';
-        const text = extra.plainText || msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+        
+        // Extract text from all possible message formats (Evolution API / Baileys)
+        const m = msg.message || {};
+        const text = extra.plainText
+            || m.conversation
+            || (m.extendedTextMessage && m.extendedTextMessage.text)
+            || (m.imageMessage && m.imageMessage.caption)
+            || (m.videoMessage && m.videoMessage.caption)
+            || (m.documentMessage && m.documentMessage.caption)
+            || (m.audioMessage && m.audioMessage.text)
+            || (m.stickerMessage && m.stickerMessage.text)
+            || (m.buttonsResponseMessage && m.buttonsResponseMessage.selectedButtonId)
+            || (m.listResponseMessage && m.listResponseMessage.singleSelectReply && m.listResponseMessage.singleSelectReply.selectedRowId)
+            || (m.templateButtonReplyMessage && m.templateButtonReplyMessage.selectedId)
+            || (m.ephemeralMessage && m.ephemeralMessage.message && (
+                m.ephemeralMessage.message.conversation
+                || (m.ephemeralMessage.message.extendedTextMessage && m.ephemeralMessage.message.extendedTextMessage.text)
+            ))
+            || (m.viewOnceMessage && m.viewOnceMessage.message && (
+                m.viewOnceMessage.message.conversation
+                || (m.viewOnceMessage.message.extendedTextMessage && m.viewOnceMessage.message.extendedTextMessage.text)
+            ))
+            || '';
 
         if (msg.key && msg.key.fromMe) return false;
 
@@ -673,10 +702,18 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         }
 
         if (!violation && settings.bad_words) {
-            const badWords = (settings.bad_words || '').split(',').map(w => w.trim().toLowerCase()).filter(w => w);
+            // Support virgules, sauts de ligne, espaces multiples
+            const raw = (settings.bad_words || '');
+            const badWords = raw
+                .split(/[\n,]+/)
+                .map(w => w.trim().toLowerCase())
+                .filter(w => w.length > 0);
             const lowerText = text.toLowerCase();
             if (badWords.length > 0 && badWords.some(word => lowerText.includes(word))) {
                 violation = 'Langage inapproprié';
+                log(`Bad word matched in ${groupId}: text="${text.slice(0,60)}", words=${JSON.stringify(badWords)}`, sessionId, {
+                    event: 'moderation-badword-match', groupId, badWords
+                }, 'DEBUG');
             }
         }
 
