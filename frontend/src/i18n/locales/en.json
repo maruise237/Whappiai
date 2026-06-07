@@ -20,72 +20,13 @@
   },
   "dashboard": {
     "welcome": "Welcome back",
-    "loading": "Loading Whappi center...",
     "overview_title": "Overview",
     "overview_desc": "Manage your sessions and monitor activity.",
-    "new_session": "New Session",
-    "new_session_title": "New WhatsApp Session",
-    "session_creating": "Creating session...",
-    "session_ready": "Session ready",
-    "session_error": "Creation error",
-    "choose_session": "Choose a session",
-    "activity_limit": "View limited to your sessions activity.",
-    "no_activity": "No recent activity. Activate a rule to see Whappi work.",
-    "no_platform_activity": "No recent platform activity.",
     "stats": {
-      "sessions": "Sessions",
-      "messages": "Messages",
-      "success": "Success",
-      "actions": "Actions",
-      "connected": "connected",
-      "volume": "Tracked volume",
-      "activity_recent": "Recent activity",
-      "sent": "sent",
-      "last_7d": "last 7 days",
-      "ok_7d": "ok (7d)"
-    },
-    "onboarding": {
-      "session": "Session",
-      "connection": "Connection",
-      "group": "Group",
-      "rule": "Rule",
-      "connect_session": "Connect a session",
-      "connect_session_text": "QR code or pairing code",
-      "add_group": "Add to group",
-      "add_group_text": "Number must be admin",
-      "activate_rule": "Activate a rule",
-      "activate_rule_text": "Anti-links or welcome",
-      "verify_actions": "Verify actions",
-      "verify_actions_text": "See what was applied"
-    },
-    "rules": {
-      "anti_links": "Anti-Links",
-      "anti_links_desc": "Block ads, scams and off-topic links.",
-      "welcome": "Welcome",
-      "welcome_desc": "Send rules when a member arrives.",
-      "warnings": "Warnings",
-      "warnings_desc": "Warn before kicking to keep the group calm."
-    },
-    "activity": {
-      "welcome": "Welcome",
-      "scheduled": "Scheduled",
-      "message": "Message",
-      "image": "Image",
-      "video": "Video",
-      "whatsapp": "WhatsApp Message",
-      "action_executed": "Action executed",
-      "ok": "OK",
-      "error": "Error",
-      "session": "Session"
-    },
-    "admin": {
-      "users": "Users",
-      "sessions": "Sessions",
-      "actions": "Actions",
-      "profile": "Profile"
-    },
-    "validation": {
-      "session_id": "Lowercase letters, numbers and hyphens only"
+      "total_sessions": "Total Sessions",
+      "success_rate": "Success Rate",
+      "messages_sent": "Messages Sent",
+      "remaining_credits": "Remaining Credits"
     }
   },
   "common": {

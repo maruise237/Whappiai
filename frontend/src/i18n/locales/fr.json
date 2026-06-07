@@ -20,72 +20,13 @@
   },
   "dashboard": {
     "welcome": "Bienvenue",
-    "loading": "Chargement du centre Whappi...",
     "overview_title": "Vue d'ensemble",
     "overview_desc": "Gérez vos sessions et surveillez l'activité.",
-    "new_session": "Nouvelle session",
-    "new_session_title": "Nouvelle session WhatsApp",
-    "session_creating": "Création de la session...",
-    "session_ready": "Session prête",
-    "session_error": "Erreur de création",
-    "choose_session": "Choisir une session",
-    "activity_limit": "Vue limitée aux actions de vos sessions.",
-    "no_activity": "Aucune action récente. Activez une règle pour voir Whappi travailler.",
-    "no_platform_activity": "Aucune action plateforme récente.",
     "stats": {
-      "sessions": "Sessions",
-      "messages": "Messages",
-      "success": "Réussite",
-      "actions": "Actions",
-      "connected": "connectée(s)",
-      "volume": "Volume suivi",
-      "activity_recent": "Activité récente",
-      "sent": "envoi(s) réussi(s)",
-      "last_7d": "7 derniers jours",
-      "ok_7d": "réussis (7j)"
-    },
-    "onboarding": {
-      "session": "Session",
-      "connection": "Connexion",
-      "group": "Groupe",
-      "rule": "Règle",
-      "connect_session": "Connecter une session",
-      "connect_session_text": "QR code ou code d'appairage",
-      "add_group": "Ajouter au groupe",
-      "add_group_text": "Le numéro doit être admin",
-      "activate_rule": "Activer une règle",
-      "activate_rule_text": "Anti-liens ou bienvenue",
-      "verify_actions": "Vérifier les actions",
-      "verify_actions_text": "Voir ce qui a été appliqué"
-    },
-    "rules": {
-      "anti_links": "Anti-liens",
-      "anti_links_desc": "Bloquer pubs, arnaques et liens hors sujet.",
-      "welcome": "Bienvenue",
-      "welcome_desc": "Envoyer les règles quand un membre arrive.",
-      "warnings": "Avertissements",
-      "warnings_desc": "Prévenir avant exclusion pour garder le groupe calme."
-    },
-    "activity": {
-      "welcome": "Bienvenue",
-      "scheduled": "Programmé",
-      "message": "Message",
-      "image": "Image",
-      "video": "Vidéo",
-      "whatsapp": "Message WhatsApp",
-      "action_executed": "Action exécutée",
-      "ok": "OK",
-      "error": "Erreur",
-      "session": "Session"
-    },
-    "admin": {
-      "users": "Utilisateurs",
-      "sessions": "Sessions",
-      "actions": "Actions",
-      "profile": "Profil"
-    },
-    "validation": {
-      "session_id": "Minuscules, chiffres et traits d'union uniquement"
+      "total_sessions": "Sessions totales",
+      "success_rate": "Taux de succès",
+      "messages_sent": "Messages envoyés",
+      "remaining_credits": "Crédits restants"
     }
   },
   "common": {

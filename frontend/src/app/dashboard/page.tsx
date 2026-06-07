@@ -67,7 +67,6 @@ import { api } from "@/lib/api"
 import { shouldCelebrateSessionConnection } from "@/lib/session-celebration"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 import { useWebSocket } from "@/providers/websocket-provider"
-import { useI18n } from "@/i18n/i18n-provider"
 
 const DEFAULT_STATS_DAYS = 7
 const RECENT_LOGS_COUNT = 6
@@ -125,7 +124,6 @@ const sessionSchema = z.object({
 })
 
 export default function DashboardPage() {
-  const { t } = useI18n()
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
@@ -383,7 +381,7 @@ export default function DashboardPage() {
   if (!isLoaded || loading) {
     return (
       <div className="grid min-h-[70dvh] place-items-center text-zinc-500">
-        {t("dashboard.loading")}
+        Chargement du centre Whappi...
       </div>
     )
   }
@@ -417,20 +415,20 @@ export default function DashboardPage() {
               </div>
               <Button onClick={() => setIsCreateOpen(true)} className="h-10 rounded-xl">
                 <Plus className="mr-2 h-4 w-4" />
-                {t("dashboard.new_session")}
+                Nouvelle session
               </Button>
             </div>
           </div>
 
           <div className="grid gap-px bg-border md:grid-cols-4">
-            <MetricTile label={t("dashboard.stats.sessions")} value={sessions.length} sub={`${summary.activeSessions} ${t("dashboard.stats.connected")}`} />
-            <MetricTile label={t("dashboard.stats.messages")} value={summary.messagesSent} sub={t("dashboard.stats.volume")} />
+            <MetricTile label="Sessions" value={sessions.length} sub={`${summary.activeSessions} connectee(s)`} />
+            <MetricTile label="Messages" value={summary.messagesSent} sub="Volume suivi" />
             <MetricTile
-              label={t("dashboard.stats.success")}
+              label="Reussite"
               value={successMetricValue(summary.messagesSent, summary.successRate)}
               sub={successMetricSub(summary.messagesSent, summary.successRate)}
             />
-            <MetricTile label={t("dashboard.stats.actions")} value={summary.totalActivities} sub={t("dashboard.stats.activity_recent")} />
+            <MetricTile label="Actions" value={summary.totalActivities} sub="Activite recente" />
           </div>
         </div>
 
@@ -490,7 +488,7 @@ export default function DashboardPage() {
               </div>
               <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
                 <SelectTrigger className="h-10 text-xs md:w-[220px]">
-                  <SelectValue placeholder={t("dashboard.choose_session")} />
+                  <SelectValue placeholder="Choisir une session" />
                 </SelectTrigger>
                 <SelectContent>
                   {sessions.map(session => (
@@ -524,9 +522,9 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid gap-3">
-              <RuleRow icon={<Link2 className="h-4 w-4" />} title={t("dashboard.rules.anti_links")} text={t("dashboard.rules.anti_links_desc")} />
-              <RuleRow icon={<MessageCircle className="h-4 w-4" />} title={t("dashboard.rules.welcome")} text={t("dashboard.rules.welcome_desc")} />
-              <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title={t("dashboard.rules.warnings")} text={t("dashboard.rules.warnings_desc")} />
+              <RuleRow icon={<Link2 className="h-4 w-4" />} title="Anti-liens" text="Bloquer pubs, arnaques et liens hors sujet." />
+              <RuleRow icon={<MessageCircle className="h-4 w-4" />} title="Bienvenue" text="Envoyer les regles quand un membre arrive." />
+              <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title="Avertissements" text="Prevenir avant exclusion pour garder le groupe calme." />
             </div>
           </CardContent>
         </Card>
@@ -551,22 +549,22 @@ export default function DashboardPage() {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(async (value: z.infer<typeof sessionSchema>) => {
-                const toastId = toast.loading(t("dashboard.session_creating"))
+                const toastId = toast.loading("Creation de la session...")
                 try {
                   const token = await getToken()
                   await api.sessions.create(value.sessionId, value.phoneNumber, token || undefined)
-                  toast.success(t("dashboard.session_ready"), { id: toastId })
+                  toast.success("Session prete", { id: toastId })
                   setIsCreateOpen(false)
                   fetchSessions(true)
                 } catch (error) {
-                  const message = error instanceof Error ? error.message : t("dashboard.session_error")
+                  const message = error instanceof Error ? error.message : "Erreur de creation"
                   toast.error(message, { id: toastId })
                 }
               })}
               className="space-y-6"
             >
               <DialogHeader>
-                <DialogTitle>{t("dashboard.new_session_title")}</DialogTitle>
+                <DialogTitle>Nouvelle session WhatsApp</DialogTitle>
                 <DialogDescription>
                   Choisissez un nom simple pour le numero qui servira de co-admin.
                 </DialogDescription>
@@ -663,11 +661,11 @@ function UserActivityPanel({ recentActivities }: { recentActivities: ActivityIte
         <div className="mb-5 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold">Dernieres actions</p>
-            <p className="mt-1 text-xs text-muted-foreground">{t("dashboard.activity_limit")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Vue limitee aux actions de vos sessions.</p>
           </div>
           <History className="h-4 w-4 text-muted-foreground" />
         </div>
-        <ActivityTable recentActivities={recentActivities} emptyText={t("dashboard.no_activity")} />
+        <ActivityTable recentActivities={recentActivities} emptyText="Aucune action recente. Activez une regle pour voir Whappi travailler." />
       </CardContent>
     </Card>
   )
@@ -696,9 +694,9 @@ function AdminPanel({
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <MiniAdminStat icon={<Users className="h-4 w-4" />} label={t("dashboard.admin.users")} value={adminStats?.users?.total || 0} />
-          <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label={t("dashboard.admin.sessions")} value={adminStats?.sessions?.total || 0} />
-          <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label={t("dashboard.admin.actions")} value={adminStats?.operations?.applied || 0} />
+          <MiniAdminStat icon={<Users className="h-4 w-4" />} label="Utilisateurs" value={adminStats?.users?.total || 0} />
+          <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label="Sessions" value={adminStats?.sessions?.total || 0} />
+          <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label="Actions" value={adminStats?.operations?.applied || 0} />
         </div>
 
         <div className="mt-5 h-[190px]">
