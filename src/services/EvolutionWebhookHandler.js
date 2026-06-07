@@ -107,6 +107,25 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                 log(`Evolution send_message ack`, 'WEBHOOK');
                 break;
             }
+            case 'GROUPS_UPSERT':
+            case 'groups.upsert': {
+                if (!instanceName) break;
+                const localId = stripPrefix(instanceName, process.env.EVOLUTION_INSTANCE_PREFIX || '');
+                const groupJid = data.groupJid || '';
+                if (!groupJid.endsWith('@g.us')) break;
+                const participants = Array.isArray(data.participants) ? data.participants : [];
+                const action = data.action || '';
+                if (action !== 'add' || participants.length === 0) break;
+                const moderation = require('./moderation');
+                moderation.handleParticipantUpdateProvider(localId, {
+                    groupJid,
+                    participants,
+                    action
+                }).catch(err => {
+                    log(`Welcome error for ${localId}/${groupJid}: ${err.message}`, 'WEBHOOK', null, 'ERROR');
+                });
+                break;
+            }
             default:
                 // Ignore unknown events but acknowledge them.
                 break;

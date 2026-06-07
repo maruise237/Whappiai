@@ -106,6 +106,16 @@ class WhatsAppProvider {
      * @param {string} instanceId
      * @returns {Promise<{ok: boolean, groups?: Array<{id:string,subject:string,admin:boolean,size:number}>, error?: string}>}
      */
+    /**
+     * Send a media message (image, video, audio, document)
+     * @param {string} instanceId
+     * @param {Object} input - { jid, mediaUrl, mediaType, caption?, fileName? }
+     * @returns {Promise<{ok: boolean, messageId?: string, error?: string}>}
+     */
+    async sendMedia(instanceId, input) {
+        throw new Error('Not implemented');
+    }
+
     async fetchGroups(instanceId) {
         throw new Error('Not implemented');
     }

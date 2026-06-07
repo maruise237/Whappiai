@@ -207,6 +207,30 @@ class EvolutionApiProvider extends WhatsAppProvider {
      * @param {string} instanceId
      * @returns {Promise<{ok: boolean, groups?: Array, error?: string}>}
      */
+    /**
+     * Send a media message (image, video, audio, document)
+     * @param {string} instanceId
+     * @param {Object} input - { jid, mediaUrl, mediaType, caption?, fileName? }
+     * @returns {Promise<{ok: boolean, messageId?: string, error?: string}>}
+     */
+    async sendMedia(instanceId, input) {
+        const name = this._instanceName(instanceId);
+        // Evolution API /message/sendMedia/{name}
+        // Supports both URL and base64 media. We use URL mode.
+        const body = {
+            number: input.jid,
+            mediatype: input.mediaType || 'image', // image|video|audio|document
+            media: input.mediaUrl
+        };
+        if (input.caption) body.caption = input.caption;
+        if (input.fileName) body.fileName = input.fileName;
+
+        const res = await this._request('POST', `/message/sendMedia/${name}`, body);
+        if (!res.ok) return res;
+        const messageId = (res.payload && res.payload.key && res.payload.key.id) || (res.payload && res.payload.id) || null;
+        return { ok: true, messageId };
+    }
+
     async fetchGroups(instanceId) {
         const name = this._instanceName(instanceId);
         const res = await this._request('GET', `/group/fetchAllGroups/${name}?getParticipants=true`);

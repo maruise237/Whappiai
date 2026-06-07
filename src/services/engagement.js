@@ -134,13 +134,38 @@ class EngagementService {
 
             // Envoi du message
             if (media_url && ['image', 'video', 'audio'].includes(media_type)) {
-                throw new Error('Les médias programmés ne sont pas encore implémentés en mode Evolution');
+                if (SessionService.isProviderActive()) {
+                    const sent = await SessionService.sendMediaProvider(session_id, {
+                        jid: group_id,
+                        mediaUrl: media_url,
+                        mediaType: media_type,
+                        caption: message_content || ''
+                    });
+                    if (!sent.ok) {
+                        throw new Error(sent.error || 'Evolution sendMedia failed');
+                    }
+                } else {
+                    let text = message_content || '';
+                    if (media_url && !text.includes(media_url)) {
+                        text = text ? `${text}\n\n${media_url}` : media_url;
+                    }
+                    
+                    if (!text) {
+                        throw new Error('Message vide (pas de contenu ni de média valide)');
+                    }
+                    
+                    const formattedText = aiService.formatForWhatsApp(text);
+                    if (SessionService.isProviderActive()) {
+                        const sent = await SessionService.sendTextMessageProvider(session_id, group_id, formattedText);
+                        if (!sent.ok) {
+                            throw new Error(sent.error || 'Evolution send failed');
+                        }
+                    } else {
+                        throw new Error('Legacy Baileys mode is disabled in this branch');
+                    }
+                }
             } else {
                 let text = message_content || '';
-                if (media_url && !text.includes(media_url)) {
-                    text = text ? `${text}\n\n${media_url}` : media_url;
-                }
-                
                 if (!text) {
                     throw new Error('Message vide (pas de contenu ni de média valide)');
                 }
@@ -153,19 +178,6 @@ class EngagementService {
                     }
                 } else {
                     throw new Error('Legacy Baileys mode is disabled in this branch');
-                }
-
-                // Log activity
-                const session = Session.findById(session_id);
-                if (ActivityLog && session) {
-                    await ActivityLog.logMessageSend(
-                        session.owner_email || 'engagement-system',
-                        session_id,
-                        group_id,
-                        'text',
-                        '127.0.0.1',
-                        'Group Engagement'
-                    );
                 }
             }
 

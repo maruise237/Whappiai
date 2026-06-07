@@ -730,11 +730,102 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
     }
 }
 
+/**
+ * Handle participant updates (welcome messages) via provider (Evolution API).
+ * Called from GROUPS_UPSERT webhook when action === 'add'.
+ * @param {string} sessionId
+ * @param {Object} data - Evolution webhook data { groupJid, participants: string[], action }
+ */
+async function handleParticipantUpdateProvider(sessionId, data) {
+    const { groupJid: groupId, participants, action } = data;
+    if (action !== 'add') return;
+
+    try {
+        const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+        if (!settings || !settings.welcome_enabled || !settings.welcome_template) return;
+
+        const SessionService = require('./SessionService');
+        const provider = SessionService.getProvider();
+
+        // Get group metadata via fetchGroups to have subject/description
+        const fetchResult = await provider.fetchGroups(sessionId);
+        const groups = fetchResult.ok ? fetchResult.groups : [];
+        const groupMeta = groups.find(g => g.id === groupId) || {};
+
+        const groupService = require('./groups');
+        const profile = groupService.getProfile(sessionId, groupId);
+        const links = groupService.getProductLinks(sessionId, groupId);
+
+        // Check Credits
+        const session = Session.findById(sessionId);
+        let user = null;
+        if (session && session.owner_email) {
+            user = User.findByEmail(session.owner_email);
+        }
+
+        for (const jid of participants) {
+            let creditDeducted = false;
+            if (user) {
+                const hasCredit = CreditService.deduct(user.id, 1, `Moderation: Welcome message to ${jid}`);
+                if (!hasCredit) {
+                    log(`Insufficient credits for welcome message to ${jid} (Session: ${sessionId})`, sessionId, { event: 'moderation-insufficient-credits' }, 'WARN');
+                    continue;
+                }
+                creditDeducted = true;
+            } else {
+                log(`User not found for session ${sessionId} - Skipping credit check for welcome`, sessionId, null, 'WARN');
+            }
+
+            let message = settings.welcome_template;
+            message = message
+                .replace(/{{name}}/g, `${jid.split('@')[0]}`)
+                .replace(/{{group_name}}/g, groupMeta.subject || groupId)
+                .replace(/{{date}}/g, new Date().toLocaleDateString('fr-FR'))
+                .replace(/{{rules}}/g, profile?.rules || groupMeta.description || 'Pas de règles spécifiées.');
+
+            if (links.length > 0) {
+                let linksText = "\n\n*Nos produits/liens :*\n";
+                links.forEach(link => {
+                    linksText += `\n📌 *${link.title}*\n${link.description}\n🔗 ${link.url}\n👉 ${link.cta}\n`;
+                });
+                message += linksText;
+            }
+
+            try {
+                await provider.sendTextMessage(sessionId, { jid: groupId, text: message });
+
+                const session = Session.findById(sessionId);
+                if (ActivityLog && session) {
+                    await ActivityLog.logMessageSend(
+                        session.owner_email || 'moderation-system',
+                        sessionId,
+                        groupId,
+                        'text',
+                        '127.0.0.1',
+                        'Moderation (Welcome)'
+                    );
+                }
+                Session.updateAIStats(sessionId, 'sent');
+
+                log(`[Bienvenue] Message envoyé à ${jid} dans ${groupId}`, sessionId, { event: 'moderation-welcome-sent' }, 'INFO');
+            } catch (sendErr) {
+                log(`Failed to send welcome message to ${jid}: ${sendErr.message}`, sessionId, { event: 'moderation-welcome-send-error', error: sendErr.message }, 'ERROR');
+                if (creditDeducted && user) {
+                    CreditService.add(user.id, 1, 'credit', `Remboursement: échec bienvenue ${jid}`);
+                }
+            }
+        }
+    } catch (err) {
+        log(`Erreur lors de l'envoi du message de bienvenue (provider): ${err.message}`, sessionId, { event: 'moderation-welcome-error', error: err.message }, 'ERROR');
+    }
+}
+
 module.exports = {
     getAdminGroups,
     updateGroupSettings,
     handleIncomingMessage,
     handleParticipantUpdate,
+    handleParticipantUpdateProvider,
     isGroupAdmin,
     getGroupMetadata,
     handleIncomingMessageProvider

@@ -171,6 +171,20 @@ async function sendTextMessageProvider(sessionId, input) {
 }
 
 /**
+ * Send a media message via the provider.
+ */
+async function sendMediaProvider(sessionId, input) {
+    const provider = getProvider();
+    return provider.sendMedia(sessionId, {
+        jid: input.jid,
+        mediaUrl: input.mediaUrl,
+        mediaType: input.mediaType || 'image',
+        caption: input.caption || '',
+        fileName: input.fileName
+    });
+}
+
+/**
  * Delete a message for everyone via the provider.
  */
 async function deleteMessageProvider(sessionId, msg) {
@@ -244,6 +258,7 @@ module.exports = {
     deleteSessionProvider,
     disconnectSessionProvider,
     sendTextMessageProvider,
+    sendMediaProvider,
     deleteMessageProvider,
     groupUpdateParticipantProvider,
     reconcileSessionsStatus,
