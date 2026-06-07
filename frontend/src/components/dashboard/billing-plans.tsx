@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Check, ChevronDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -11,59 +12,70 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { getPlanCode, PlanBadge } from "@/components/dashboard/plan-badge"
 
-const plans = [
-  {
-    id: "starter",
-    name: "Starter",
-    price: "3,500 FCFA",
-    description: "Pour tester et gerer un seul groupe actif.",
-    features: [
-      "1 groupe connecte",
-      "Bienvenue dans le groupe",
-      "Filtre de mots interdits jusqu'a 20",
-      "Systeme avertissements + ban auto",
-      "3 messages programmes actifs"
-    ],
-    cta: "Choisir Starter",
-    highlighted: false,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "8,000 FCFA",
-    description: "Pour les admins serieux qui gerent plusieurs groupes actifs.",
-    features: [
-      "Jusqu'a 5 groupes connectes",
-      "Bienvenue dans le groupe",
-      "Filtre mots illimite + anti-liens",
-      "Messages programmes illimites",
-      "Dashboard complet + logs"
-    ],
-    cta: "Choisir Pro",
-    highlighted: true,
-  },
-  {
-    id: "business",
-    name: "Organisation",
-    price: "18,000 FCFA",
-    description: "Pour associations, medias, formations ou reseaux larges.",
-    features: [
-      "Jusqu'a 20 groupes connectes",
-      "Toutes les fonctionnalites Pro",
-      "Liste noire partagee entre groupes",
-      "Presets de configuration",
-      "Support prioritaire WhatsApp"
-    ],
-    cta: "Choisir Organisation",
-    highlighted: false,
-  },
-]
-
 export function BillingPlans() {
+  const { t } = useTranslation("billing")
   const [loading, setLoading] = useState<string | null>(null)
   const [showComparison, setShowComparison] = useState(false)
   const [activePlan, setActivePlan] = useState("trial")
   const { getToken } = useAuth()
+
+  const plans = [
+    {
+      id: "starter",
+      name: t("plan_name_starter"),
+      price: t("plan_price_starter"),
+      description: t("plan_desc_starter"),
+      features: [
+        t("feature_starter_1"),
+        t("feature_starter_2"),
+        t("feature_starter_3"),
+        t("feature_starter_4"),
+        t("feature_starter_5"),
+      ],
+      cta: t("plan_cta_starter"),
+      highlighted: false,
+    },
+    {
+      id: "pro",
+      name: t("plan_name_pro"),
+      price: t("plan_price_pro"),
+      description: t("plan_desc_pro"),
+      features: [
+        t("feature_pro_1"),
+        t("feature_pro_2"),
+        t("feature_pro_3"),
+        t("feature_pro_4"),
+        t("feature_pro_5"),
+      ],
+      cta: t("plan_cta_pro"),
+      highlighted: true,
+    },
+    {
+      id: "business",
+      name: t("plan_name_business"),
+      price: t("plan_price_business"),
+      description: t("plan_desc_business"),
+      features: [
+        t("feature_business_1"),
+        t("feature_business_2"),
+        t("feature_business_3"),
+        t("feature_business_4"),
+        t("feature_business_5"),
+      ],
+      cta: t("plan_cta_business"),
+      highlighted: false,
+    },
+  ]
+
+  const comparisonRows = [
+    { feature: t("compare_row_groups"), starter: t("compare_val_1"), pro: t("compare_val_5"), business: t("compare_val_20") },
+    { feature: t("compare_row_scheduled"), starter: t("compare_val_3"), pro: t("compare_val_unlimited"), business: t("compare_val_unlimited") },
+    { feature: t("compare_row_filter"), starter: t("compare_val_20") + " " + t("compare_row_filter"), pro: t("compare_val_unlimited"), business: t("compare_val_unlimited") },
+    { feature: t("compare_row_anti_links"), starter: t("compare_val_included"), pro: t("compare_val_included"), business: t("compare_val_included") },
+    { feature: t("compare_row_warnings"), starter: t("compare_val_included"), pro: t("compare_val_included"), business: t("compare_val_included") },
+    { feature: t("compare_row_dashboard"), starter: t("compare_val_basic"), pro: t("compare_val_full"), business: t("compare_val_full") },
+    { feature: t("compare_row_support"), starter: t("compare_val_dash"), pro: t("compare_val_dash"), business: t("compare_val_included") },
+  ]
 
   useEffect(() => {
     let mounted = true
@@ -112,11 +124,11 @@ export function BillingPlans() {
       if (response.url) {
         window.location.href = response.url
       } else {
-        toast.error("Impossible d'initialiser le paiement MoneyFusion")
+        toast.error(t("toast_payment_error"))
       }
     } catch (error) {
       console.error(error)
-      toast.error(error instanceof Error ? error.message : "Une erreur inattendue est survenue")
+      toast.error(error instanceof Error ? error.message : t("toast_generic_error"))
     } finally {
       setLoading(null)
     }
@@ -135,7 +147,7 @@ export function BillingPlans() {
           )}>
           {plan.highlighted && (
             <Badge className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-sm font-semibold text-primary-foreground shadow hover:bg-primary">
-              Recommande
+              {t("plan_badge_recommended")}
             </Badge>
           )}
 
@@ -147,7 +159,7 @@ export function BillingPlans() {
             <p className="mt-2 min-h-10 text-xs leading-5 text-muted-foreground">{plan.description}</p>
             <div className="mt-4 flex items-baseline gap-1">
               <span className="text-3xl font-semibold tracking-tight">{plan.price}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">/ mois</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("per_month")}</span>
             </div>
           </CardHeader>
           <CardContent className="flex-1 p-5">
@@ -184,7 +196,7 @@ export function BillingPlans() {
           className="gap-2 text-xs"
           onClick={() => setShowComparison(prev => !prev)}
         >
-          Comparer tous les plans
+          {t("compare_button")}
           <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showComparison && "rotate-180")} />
         </Button>
       </div>
@@ -196,10 +208,10 @@ export function BillingPlans() {
               <table className="w-full min-w-[680px] text-sm">
                 <thead className="bg-surface-neutral">
                   <tr className="border-b">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Feature</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Starter</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Pro</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Organisation</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{t("compare_col_feature")}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{t("compare_col_starter")}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{t("compare_col_pro")}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{t("compare_col_business")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -220,13 +232,3 @@ export function BillingPlans() {
     </div>
   )
 }
-
-const comparisonRows = [
-  { feature: "Groupes connectes", starter: "1", pro: "5", business: "20" },
-  { feature: "Messages programmes", starter: "3", pro: "Illimite", business: "Illimite" },
-  { feature: "Filtre mots interdits", starter: "20 mots", pro: "Illimite", business: "Illimite" },
-  { feature: "Anti-liens", starter: "Inclus", pro: "Inclus", business: "Inclus" },
-  { feature: "Avertissements + exclusion", starter: "Inclus", pro: "Inclus", business: "Inclus" },
-  { feature: "Dashboard + suivi", starter: "Basique", pro: "Complet", business: "Complet" },
-  { feature: "Support prioritaire", starter: "-", pro: "-", business: "Inclus" },
-]

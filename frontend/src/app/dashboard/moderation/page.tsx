@@ -33,6 +33,7 @@ import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 import { getPlanCode } from "@/components/dashboard/plan-badge"
+import { useTranslation } from "react-i18next"
 
 type SessionItem = {
   sessionId?: string
@@ -83,75 +84,75 @@ type EngagementTask = {
   [key: string]: unknown
 }
 
-const defaultWelcomeMessage = "Bienvenue aux nouveaux membres arrives aujourd'hui. Merci de respecter le sujet, d'eviter les liens hors contexte et de garder les echanges utiles."
-const defaultWarningMessage = "@{{name}} votre message a ete supprime: {{reason}}. Merci de respecter les regles du groupe."
+const defaultWelcomeMessage = "default_welcome_message"
+const defaultWarningMessage = "default_warning_message"
 
-const ruleSummary = [
+const ruleSummary = (t: (key: string) => string) => [
   {
     icon: Link2,
-    title: "Anti-liens",
-    text: "Bloque les liens hors sujet avant qu'ils polluent la discussion.",
+    title: t("rule_antilinks_title"),
+    text: t("rule_antilinks_text"),
   },
   {
     icon: MessageSquareText,
-    title: "Accueil quotidien",
-    text: "Envoie un message de bienvenue une fois par jour en fin de journee.",
+    title: t("rule_welcome_title"),
+    text: t("rule_welcome_text"),
   },
   {
     icon: AlertTriangle,
-    title: "Avertissements",
-    text: "Previent avant sanction pour garder une moderation lisible.",
+    title: t("rule_warnings_title"),
+    text: t("rule_warnings_text"),
   },
 ]
 
-const presets: Array<{ name: string; patch: Partial<GroupSettings> }> = [
+const presets = (t: (key: string) => string): Array<{ name: string; patch: Partial<GroupSettings> }> => [
   {
-    name: "Professionnel",
+    name: t("preset_professionnel"),
     patch: {
       antiLinksEnabled: true,
       warningsEnabled: true,
       exclusionEnabled: true,
       maxWarnings: 3,
-      forbiddenWords: "arnaque, spam, pari, crypto rapide, lien telegram",
-      warningMessage: "@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
+      forbiddenWords: t("preset_professionnel_forbidden"),
+      warningMessage: t("preset_professionnel_warning"),
     },
   },
   {
-    name: "Education",
+    name: t("preset_education"),
     patch: {
       antiLinksEnabled: true,
       welcomeEnabled: true,
       warningsEnabled: true,
       exclusionEnabled: true,
       maxWarnings: 3,
-      forbiddenWords: "triche, arnaque, spam, pari",
-      welcomeMessage: "Bienvenue aux nouveaux apprenants. Consultez les consignes, respectez le sujet du cours et gardez les questions claires.",
-      warningMessage: "@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
+      forbiddenWords: t("preset_education_forbidden"),
+      welcomeMessage: t("preset_education_welcome"),
+      warningMessage: t("preset_education_warning"),
       welcomeDigestTime: "18:00",
     },
   },
   {
-    name: "Tontine",
+    name: t("preset_tontine"),
     patch: {
       antiLinksEnabled: true,
       warningsEnabled: true,
       exclusionEnabled: true,
       maxWarnings: 2,
-      forbiddenWords: "arnaque, faux depot, pari, spam",
-      warningMessage: "@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
+      forbiddenWords: t("preset_tontine_forbidden"),
+      warningMessage: t("preset_tontine_warning"),
     },
   },
   {
-    name: "Suivi client",
+    name: t("preset_suivi_client"),
     patch: {
       antiLinksEnabled: true,
       welcomeEnabled: true,
       warningsEnabled: true,
       exclusionEnabled: true,
       maxWarnings: 3,
-      forbiddenWords: "arnaque, spam, insultes, hors sujet, lien concurrent",
-      welcomeMessage: "Bienvenue aux nouveaux clients arrives aujourd'hui. Posez votre demande avec le numero de commande, le besoin et le delai attendu.",
-      warningMessage: "@{{name}} message supprime: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe de suivi client.",
+      forbiddenWords: t("preset_suivi_client_forbidden"),
+      welcomeMessage: t("preset_suivi_client_welcome"),
+      warningMessage: t("preset_suivi_client_warning"),
       welcomeDigestTime: "17:30",
     },
   },
@@ -160,6 +161,7 @@ const presets: Array<{ name: string; patch: Partial<GroupSettings> }> = [
 export default function ModerationPage() {
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
+  const { t } = useTranslation('moderation')
   const [sessions, setSessions] = React.useState<SessionItem[]>([])
   const [selectedSessionId, setSelectedSessionId] = React.useState("")
   const [groups, setGroups] = React.useState<GroupItem[]>([])
@@ -258,9 +260,9 @@ export default function ModerationPage() {
           if (!groupId) return group
           try {
             const settings = await api.sessions.getGroupSettings(selectedSessionId, groupId, token || undefined)
-            return { ...group, settings: normalizeSettings(settings) }
+            return { ...group, settings: normalizeSettings(settings, t) }
           } catch {
-            return { ...group, settings: normalizeSettings(group.settings) }
+            return { ...group, settings: normalizeSettings(group.settings, t) }
           }
         })
       )
@@ -296,7 +298,7 @@ export default function ModerationPage() {
       return {
         ...group,
         settings: {
-          ...normalizeSettings(group.settings),
+          ...normalizeSettings(group.settings, t),
           ...patch,
         },
       }
@@ -315,7 +317,7 @@ export default function ModerationPage() {
     setSavingGroupId(groupId)
     try {
       const token = await getToken()
-      await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload(group.settings), token || undefined)
+      await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload(group.settings, t), token || undefined)
       toast.success(`${ensureString(group.subject || group.name, "Groupe")} mis a jour`)
     } catch (error) {
       console.error(error)
@@ -329,14 +331,14 @@ export default function ModerationPage() {
     const groupId = ensureString(group.id || group.jid)
     if (!selectedSessionId || !groupId) return
 
-    const settings = normalizeSettings(group.settings)
+    const settings = normalizeSettings(group.settings, t)
     setSchedulingGroupId(groupId)
     try {
       const token = await getToken()
       await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload({
         ...settings,
         welcomeEnabled: true,
-      }), token || undefined)
+      }, t), token || undefined)
       await api.sessions.addEngagementTask(selectedSessionId, groupId, {
         message_content: settings.welcomeMessage,
         recurrence: "daily",
@@ -468,19 +470,19 @@ export default function ModerationPage() {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div className="space-y-2">
-          <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">Centre de moderation</Badge>
+          <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">{t("badge")}</Badge>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <Shield className="h-6 w-6 text-primary" /> Groupes WhatsApp
+            <Shield className="h-6 w-6 text-primary" /> {t("title")}
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Une session, des groupes, des regles visibles. Configurez anti-liens, accueil et avertissements sans quitter la page.
+            {t("description")}
           </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
             <SelectTrigger className="h-10 w-full sm:w-[260px]">
-              <SelectValue placeholder="Choisir une session" />
+              <SelectValue placeholder={t("session_placeholder")} />
             </SelectTrigger>
             <SelectContent>
               {sessions.map(session => (
@@ -493,7 +495,7 @@ export default function ModerationPage() {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Rechercher un groupe..."
+              placeholder={t("search_placeholder")}
               className="h-10 pl-9"
               value={searchQuery}
               onChange={event => setSearchQuery(event.target.value)}
@@ -503,7 +505,7 @@ export default function ModerationPage() {
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
-        {ruleSummary.map(rule => (
+        {ruleSummary(t).map(rule => (
           <Card key={rule.title} className="bg-card shadow-none">
             <CardContent className="flex gap-3 p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -521,22 +523,22 @@ export default function ModerationPage() {
       <div className="flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 p-3">
         <Info className="h-4 w-4 shrink-0 text-primary" />
         <p className="text-xs text-muted-foreground">
-          Whappi applique les regles uniquement dans les groupes ou la session WhatsApp est administrateur.
+          {t("info_banner")}
         </p>
       </div>
 
       {sessions.length === 0 ? (
         <EmptyState
-          title="Aucune session creee"
-          text="Commencez par creer une session WhatsApp avant de configurer vos groupes."
-          actionLabel="Aller au centre"
+          title={t("empty_no_sessions_title")}
+          text={t("empty_no_sessions_text")}
+          actionLabel={t("empty_no_sessions_action")}
           href="/dashboard"
         />
       ) : connectedSessions.length === 0 ? (
         <EmptyState
-          title="Aucune session connectee"
-          text="Reconnectez une session pour lire les groupes et appliquer les regles."
-          actionLabel="Voir les sessions"
+          title={t("empty_no_connection_title")}
+          text={t("empty_no_connection_text")}
+          actionLabel={t("empty_no_connection_action")}
           href="/dashboard"
         />
       ) : loadingGroups ? (
@@ -545,9 +547,9 @@ export default function ModerationPage() {
         </div>
       ) : filteredGroups.length === 0 ? (
         <EmptyState
-          title="Aucun groupe trouve"
-          text="Ajoutez la session dans un groupe WhatsApp, donnez-lui le role admin, puis revenez ici."
-          actionLabel="Actualiser"
+          title={t("empty_no_groups_title")}
+          text={t("empty_no_groups_text")}
+          actionLabel={t("empty_no_groups_action")}
           onClick={fetchGroups}
         />
       ) : (
@@ -556,10 +558,10 @@ export default function ModerationPage() {
             <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span className="flex items-center gap-2 text-amber-700">
                 <Info className="h-4 w-4 shrink-0" />
-                Plan actuel : <strong>Essai gratuit</strong>
+                <span dangerouslySetInnerHTML={{ __html: t("trial_banner_text") }} />
               </span>
               <Link href="/dashboard/billing" className="font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800">
-                Passer au plan Pro
+                {t("trial_banner_cta")}
               </Link>
             </div>
           )}
@@ -567,12 +569,12 @@ export default function ModerationPage() {
         <Accordion type="single" collapsible className="gap-3">
           {filteredGroups.map(group => {
             const groupId = ensureString(group.id || group.jid)
-            const settings = normalizeSettings(group.settings)
+            const settings = normalizeSettings(group.settings, t)
             const activeCount = [settings.antiLinksEnabled, settings.welcomeEnabled, settings.warningsEnabled].filter(Boolean).length
             const warnedMembers = warnedMembersByGroup[groupId] || []
             const scheduledTasks = tasksByGroup[groupId] || []
-            const groupName = ensureString(group.subject || group.name, "Groupe sans nom")
-            const activePreset = presetByGroup[groupId] || detectPresetName(settings)
+            const groupName = ensureString(group.subject || group.name, t("group_unnamed"))
+            const activePreset = presetByGroup[groupId] || detectPresetName(settings, t)
 
             return (
               <AccordionItem key={groupId} value={groupId} className="overflow-hidden rounded-2xl border bg-card">
@@ -587,7 +589,7 @@ export default function ModerationPage() {
                     <div className="min-w-0 text-left">
                       <p className="truncate text-sm font-semibold" title={groupName}>{truncateGroupName(groupName)}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {group.participantCount ? `${safeRender(group.participantCount)} membres - ` : ""}{activeCount}/3 regles actives
+                        {group.participantCount ? `${safeRender(group.participantCount)} ${t("group_members")} - ` : ""}{activeCount}/3 {t("group_rules_active")}
                       </p>
                     </div>
                   </div>
@@ -596,16 +598,16 @@ export default function ModerationPage() {
                       "border-none text-[10px]",
                       activeCount > 0 ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-muted text-muted-foreground"
                     )}>
-                      {activeCount > 0 ? "Actif" : "Inactif"}
+                      {activeCount > 0 ? t("group_active_badge") : t("group_inactive_badge")}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px]">{activeCount} regle{activeCount > 1 ? "s" : ""}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{activeCount} {activeCount > 1 ? t("group_rules_count_plural") : t("group_rules_count")}</Badge>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pb-0">
                   <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-y bg-card/95 px-4 py-3 backdrop-blur sm:px-5">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold">{groupName}</p>
-                      <p className="text-xs text-muted-foreground">Preset actif : {activePreset || "Aucun preset selectionne"}</p>
+                      <p className="text-xs text-muted-foreground">{t("preset_active")} : {activePreset || t("preset_none")}</p>
                     </div>
                     <Button
                       size="sm"
@@ -614,17 +616,17 @@ export default function ModerationPage() {
                       disabled={savingGroupId === groupId}
                     >
                       {savingGroupId === groupId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {savingGroupId === groupId ? "Enregistrement..." : "Enregistrer"}
+                      {savingGroupId === groupId ? t("saving_button") : t("save_button")}
                     </Button>
                   </div>
                   <div className="space-y-4 p-4 sm:p-5">
                   <div className="rounded-2xl border bg-background/60 p-4">
-                    <p className="text-sm font-semibold">Presets rapides</p>
+                    <p className="text-sm font-semibold">{t("presets_title")}</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Point de depart adapte au type de communaute. Vous pouvez modifier chaque regle ensuite.
+                      {t("presets_desc")}
                     </p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                      {presets.map(preset => (
+                      {presets(t).map(preset => (
                         <Button
                           key={preset.name}
                           type="button"
@@ -642,7 +644,7 @@ export default function ModerationPage() {
                         </Button>
                       ))}
                     </div>
-                    <p className="mt-2 text-xs text-muted-foreground">Preset actif : {activePreset || "Aucun preset selectionne"}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{t("preset_active")} : {activePreset || t("preset_none")}</p>
                   </div>
                   {(() => {
                     const scheduledDraft = scheduledDrafts[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
@@ -653,9 +655,9 @@ export default function ModerationPage() {
                             <Clock3 className="h-4 w-4" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold">Message programme</p>
+                            <p className="text-sm font-semibold">{t("scheduled_message_title")}</p>
                             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                              Planifiez une annonce, un rappel de paiement, une relance ou un message recurrent.
+                              {t("scheduled_message_desc")}
                             </p>
                           </div>
                         </div>
@@ -664,7 +666,7 @@ export default function ModerationPage() {
                             value={scheduledDraft.message}
                             onChange={event => updateScheduledDraft(groupId, { message: event.target.value })}
                             className="min-h-20 resize-none text-xs"
-                            placeholder="ex: Rappel : pensez a confirmer votre presence avant 18h."
+                            placeholder={t("scheduled_message_placeholder")}
                           />
                           <div className="grid gap-3 sm:grid-cols-[1fr_140px_120px]">
                             <Input
@@ -679,9 +681,9 @@ export default function ModerationPage() {
                             >
                               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="none">Une fois</SelectItem>
-                                <SelectItem value="daily">Chaque jour</SelectItem>
-                                <SelectItem value="weekly">Chaque semaine</SelectItem>
+                                <SelectItem value="none">{t("scheduled_recurrence_none")}</SelectItem>
+                                <SelectItem value="daily">{t("scheduled_recurrence_daily")}</SelectItem>
+                                <SelectItem value="weekly">{t("scheduled_recurrence_weekly")}</SelectItem>
                               </SelectContent>
                             </Select>
                             <Button
@@ -690,7 +692,7 @@ export default function ModerationPage() {
                               onClick={() => scheduleCustomMessage(group)}
                               disabled={schedulingGroupId === groupId}
                             >
-                              {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : "Programmer"}
+                              {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : t("scheduled_button")}
                             </Button>
                           </div>
                         </div>
@@ -705,8 +707,8 @@ export default function ModerationPage() {
                             <UserRound className="h-4 w-4" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold">Membres avertis</p>
-                            <p className="mt-1 text-xs leading-5 text-muted-foreground">Compteur actif avant exclusion.</p>
+                            <p className="text-sm font-semibold">{t("warned_members_title")}</p>
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("warned_members_desc")}</p>
                           </div>
                         </div>
                         <Badge variant="outline" className="rounded-full px-2.5 text-[10px]">
@@ -715,7 +717,7 @@ export default function ModerationPage() {
                       </div>
                       {warnedMembers.length === 0 ? (
                         <p className="rounded-xl border border-dashed p-3 text-xs leading-5 text-muted-foreground">
-                          Aucun membre averti pour ce groupe.
+                          {t("warned_members_empty")}
                         </p>
                       ) : (
                         <div className="space-y-2">
@@ -723,11 +725,11 @@ export default function ModerationPage() {
                             <div key={ensureString(member.userId)} className="flex items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2">
                               <div className="min-w-0">
                                 <p className="truncate text-xs font-semibold">{safeRender(member.phone || member.userId)}</p>
-                                <p className="mt-0.5 text-[10px] text-muted-foreground">{formatScheduleDate(member.lastWarningAt)}</p>
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">{formatScheduleDate(member.lastWarningAt, t)}</p>
                               </div>
                               <div className="flex shrink-0 items-center gap-1.5">
                                 <Badge className={cn("border-none text-[10px]", riskClass(member.risk))}>
-                                  {member.count || 0} avert.
+                                  {member.count || 0} {t("warned_members_count")}
                                 </Badge>
                                 <Button
                                   type="button"
@@ -736,7 +738,7 @@ export default function ModerationPage() {
                                   className="h-7 w-7 text-muted-foreground hover:text-primary"
                                   onClick={() => resetMemberWarnings(groupId, member)}
                                   disabled={resettingWarningId === `${groupId}:${ensureString(member.userId)}`}
-                                  title="Remettre a zero"
+                                  title={t("warned_members_reset")}
                                 >
                                   {resettingWarningId === `${groupId}:${ensureString(member.userId)}` ? (
                                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -758,8 +760,8 @@ export default function ModerationPage() {
                             <CalendarDays className="h-4 w-4" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold">Calendrier programmes</p>
-                            <p className="mt-1 text-xs leading-5 text-muted-foreground">Messages en attente et recurrents.</p>
+                            <p className="text-sm font-semibold">{t("calendar_title")}</p>
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("calendar_desc")}</p>
                           </div>
                         </div>
                         <Badge variant="outline" className="rounded-full px-2.5 text-[10px]">
@@ -768,7 +770,7 @@ export default function ModerationPage() {
                       </div>
                       {scheduledTasks.length === 0 ? (
                         <p className="rounded-xl border border-dashed p-3 text-xs leading-5 text-muted-foreground">
-                          Aucun message programme pour ce groupe.
+                          {t("calendar_empty")}
                         </p>
                       ) : (
                         <div className="space-y-2">
@@ -776,9 +778,9 @@ export default function ModerationPage() {
                             <div key={safeRender(task.id)} className="rounded-xl border bg-card p-3">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                  <p className="text-xs font-semibold">{formatScheduleDate(task.scheduled_at)}</p>
+                                  <p className="text-xs font-semibold">{formatScheduleDate(task.scheduled_at, t)}</p>
                                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                                    {safeRender(task.message_content, "Message sans contenu")}
+                                    {safeRender(task.message_content, t("calendar_no_content"))}
                                   </p>
                                 </div>
                                 <Button
@@ -793,7 +795,7 @@ export default function ModerationPage() {
                                 </Button>
                               </div>
                               <div className="mt-2 flex items-center gap-2">
-                                <Badge variant="secondary" className="text-[10px]">{recurrenceLabel(task.recurrence)}</Badge>
+                                <Badge variant="secondary" className="text-[10px]">{recurrenceLabel(task.recurrence, t)}</Badge>
                                 <span className="text-[10px] text-muted-foreground">{safeRender(task.status, "pending")}</span>
                               </div>
                             </div>
@@ -804,22 +806,23 @@ export default function ModerationPage() {
                   </div>
                   <RuleSwitch
                     icon={<Link2 className="h-4 w-4" />}
-                    title="Anti-liens"
-                    text="Bloquer les liens suspects ou hors sujet."
+                    title={t("rule_antilinks_switch_title")}
+                    text={t("rule_antilinks_switch_text")}
                     checked={settings.antiLinksEnabled}
                     onCheckedChange={checked => updateLocalGroup(groupId, { antiLinksEnabled: checked })}
                   />
-                  <SectionPanel enabled={Boolean(settings.forbiddenWords.trim())} icon={<Shield className="h-4 w-4" />} title="Mots interdits" text="Ajoutez les mots ou expressions a bloquer. Entree ou virgule valide chaque mot.">
+                  <SectionPanel enabled={Boolean(settings.forbiddenWords.trim())} icon={<Shield className="h-4 w-4" />} title={t("rule_forbidden_title")} text={t("rule_forbidden_text")} t={t}>
                     <ForbiddenWordsInput
                       value={settings.forbiddenWords}
                       planLimit={forbiddenWordsLimit(activePlan)}
                       onChange={value => updateLocalGroup(groupId, { forbiddenWords: value })}
+                      t={t}
                     />
                   </SectionPanel>
                   <RuleSwitch
                     icon={<MessageSquareText className="h-4 w-4" />}
-                    title="Bienvenue quotidienne"
-                    text="Envoyer un recap clair une fois par jour, en fin de journee."
+                    title={t("rule_welcome_switch_title")}
+                    text={t("rule_welcome_switch_text")}
                     checked={settings.welcomeEnabled}
                     onCheckedChange={checked => updateLocalGroup(groupId, { welcomeEnabled: checked })}
                   />
@@ -830,11 +833,11 @@ export default function ModerationPage() {
                           value={settings.welcomeMessage}
                           onChange={event => updateLocalGroup(groupId, { welcomeMessage: event.target.value })}
                           className="min-h-24 resize-none text-xs"
-                          placeholder="Message de bienvenue"
+                          placeholder={t("rule_welcome_placeholder")}
                         />
                         <div className="space-y-2">
                           <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Heure d&apos;envoi
+                            {t("rule_welcome_send_time")}
                           </label>
                           <Input
                             type="time"
@@ -850,7 +853,7 @@ export default function ModerationPage() {
                             disabled={schedulingGroupId === groupId}
                           >
                             {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="mr-2 h-3.5 w-3.5" />}
-                            Programmer
+                            {t("scheduled_button")}
                           </Button>
                         </div>
                       </div>
@@ -858,8 +861,8 @@ export default function ModerationPage() {
                   )}
                   <RuleSwitch
                     icon={<AlertTriangle className="h-4 w-4" />}
-                    title="Avertir et taguer"
-                    text="Supprimer le message, puis taguer le membre concerne avec un avertissement."
+                    title={t("rule_warning_switch_title")}
+                    text={t("rule_warning_switch_text")}
                     checked={settings.warningsEnabled}
                     onCheckedChange={checked => updateLocalGroup(groupId, { warningsEnabled: checked })}
                   />
@@ -869,20 +872,20 @@ export default function ModerationPage() {
                         value={settings.warningMessage}
                         onChange={event => updateLocalGroup(groupId, { warningMessage: event.target.value })}
                         className="min-h-24 resize-none text-xs"
-                        placeholder="Message d'avertissement"
+                        placeholder={t("rule_warning_placeholder")}
                       />
                       <div className="rounded-xl border bg-card p-3">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <p className="text-xs font-semibold">Exclusion automatique</p>
+                            <p className="text-xs font-semibold">{t("rule_exclusion_title")}</p>
                             <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-                              Si desactive, Whappi avertit et tague seulement. Si active, il exclut au seuil choisi.
+                              {t("rule_exclusion_desc")}
                             </p>
                           </div>
                           <Switch
                             checked={settings.exclusionEnabled}
                             onCheckedChange={checked => updateLocalGroup(groupId, { exclusionEnabled: checked })}
-                            aria-label="Exclusion automatique"
+                            aria-label={t("rule_exclusion_title")}
                           />
                         </div>
                         {settings.exclusionEnabled && (
@@ -896,13 +899,13 @@ export default function ModerationPage() {
                               className="h-10 text-xs"
                             />
                             <p className="text-[10px] leading-4 text-muted-foreground">
-                              Exemple : {settings.maxWarnings} = exclusion au {settings.maxWarnings}e avertissement.
+                              {t("rule_exclusion_example", { max: settings.maxWarnings })}
                             </p>
                           </div>
                         )}
                       </div>
                       <p className="text-[10px] leading-4 text-muted-foreground">
-                        Variables : {"{{name}}"}, {"{{reason}}"}, {"{{count}}"}, {"{{max}}"}, {"{{remaining}}"}.
+                        {t("rule_exclusion_variables")}
                       </p>
                     </div>
                   )}
@@ -910,7 +913,7 @@ export default function ModerationPage() {
                   <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 border-t bg-card/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <CheckCircle2 className="h-4 w-4 text-primary" />
-                      {activeRuleLabel(activeCount)}
+                      {activeRuleLabel(activeCount, t)}
                     </div>
                     <Button
                       size="sm"
@@ -919,7 +922,7 @@ export default function ModerationPage() {
                       disabled={savingGroupId === groupId}
                     >
                       {savingGroupId === groupId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {savingGroupId === groupId ? "Enregistrement..." : "Enregistrer"}
+                      {savingGroupId === groupId ? t("saving_button") : t("save_button")}
                     </Button>
                   </div>
                   </div>
@@ -934,22 +937,24 @@ export default function ModerationPage() {
   )
 }
 
-function normalizeSettings(settings?: GroupSettings | null): Required<Pick<GroupSettings, "antiLinksEnabled" | "welcomeEnabled" | "warningsEnabled" | "exclusionEnabled" | "welcomeMessage" | "warningMessage" | "forbiddenWords" | "welcomeDigestTime" | "maxWarnings">> {
+function normalizeSettings(settings?: GroupSettings | null, t?: (key: string) => string): Required<Pick<GroupSettings, "antiLinksEnabled" | "welcomeEnabled" | "warningsEnabled" | "exclusionEnabled" | "welcomeMessage" | "warningMessage" | "forbiddenWords" | "welcomeDigestTime" | "maxWarnings">> {
+  const fallbackWelcome = t ? t("default_welcome_message") : "default_welcome_message"
+  const fallbackWarning = t ? t("default_warning_message") : "default_warning_message"
   return {
     antiLinksEnabled: Boolean(settings?.antiLinksEnabled ?? settings?.anti_link ?? settings?.anti_links_enabled ?? settings?.antiLinkEnabled),
     welcomeEnabled: Boolean(settings?.welcomeEnabled ?? settings?.welcome_digest_enabled ?? settings?.welcome_enabled),
     warningsEnabled: Boolean(settings?.warningsEnabled ?? settings?.warnings_enabled ?? settings?.warningsEnabled),
     exclusionEnabled: Boolean(settings?.exclusionEnabled ?? settings?.auto_kick_enabled ?? settings?.exclusion_enabled),
-    welcomeMessage: ensureString(settings?.welcomeMessage ?? settings?.welcome_message, defaultWelcomeMessage),
-    warningMessage: ensureString(settings?.warningMessage ?? settings?.warning_message, defaultWarningMessage),
+    welcomeMessage: ensureString(settings?.welcomeMessage ?? settings?.welcome_message, fallbackWelcome),
+    warningMessage: ensureString(settings?.warningMessage ?? settings?.warning_message, fallbackWarning),
     forbiddenWords: ensureString(settings?.forbiddenWords ?? settings?.bad_words ?? settings?.banned_words, ""),
     welcomeDigestTime: ensureString(settings?.welcomeDigestTime ?? settings?.welcome_digest_time, "18:00"),
     maxWarnings: clampWarningLimit(settings?.maxWarnings ?? settings?.max_warnings ?? 3),
   }
 }
 
-function toModerationPayload(settings?: GroupSettings | null) {
-  const normalized = normalizeSettings(settings)
+function toModerationPayload(settings?: GroupSettings | null, t?: (key: string) => string) {
+  const normalized = normalizeSettings(settings, t)
   return {
     is_active: normalized.antiLinksEnabled || normalized.welcomeEnabled || normalized.warningsEnabled || Boolean(normalized.forbiddenWords.trim()),
     anti_link: normalized.antiLinksEnabled,
@@ -990,10 +995,10 @@ function sortTasks(tasks: EngagementTask[]) {
   })
 }
 
-function formatScheduleDate(value?: string) {
-  if (!value) return "Date inconnue"
+function formatScheduleDate(value?: string, t?: (key: string) => string) {
+  if (!value) return t ? t("unknown_date") : "Date inconnue"
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return "Date inconnue"
+  if (Number.isNaN(date.getTime())) return t ? t("unknown_date") : "Date inconnue"
   return new Intl.DateTimeFormat("fr-FR", {
     day: "2-digit",
     month: "short",
@@ -1002,10 +1007,11 @@ function formatScheduleDate(value?: string) {
   }).format(date)
 }
 
-function recurrenceLabel(value?: string) {
-  if (value === "daily") return "Chaque jour"
-  if (value === "weekly") return "Chaque semaine"
-  return "Une fois"
+function recurrenceLabel(value?: string, t?: (key: string) => string) {
+  const tFn = t || ((key: string) => key)
+  if (value === "daily") return tFn("scheduled_recurrence_daily")
+  if (value === "weekly") return tFn("scheduled_recurrence_weekly")
+  return tFn("scheduled_recurrence_none")
 }
 
 function riskClass(value?: string) {
@@ -1051,20 +1057,20 @@ function getGroupColor(groupId: string) {
   return GROUP_COLORS[hash % GROUP_COLORS.length]
 }
 
-function activeRuleLabel(count: number) {
-  if (count === 0) return "Aucune regle active pour ce groupe"
-  if (count === 1) return "1 regle active pour ce groupe"
-  return `${count} regles actives pour ce groupe`
+function activeRuleLabel(count: number, t: (key: string, options?: Record<string, unknown>) => string) {
+  if (count === 0) return t("active_rule_zero")
+  if (count === 1) return t("active_rule_one")
+  return t("active_rule_other", { count })
 }
 
 function forbiddenWordsLimit(plan: string) {
   return getPlanCode(plan) === "starter" || getPlanCode(plan) === "trial" ? 20 : 999
 }
 
-function detectPresetName(settings: ReturnType<typeof normalizeSettings>) {
+function detectPresetName(settings: ReturnType<typeof normalizeSettings>, t: (key: string) => string) {
   const currentWords = splitForbiddenWords(settings.forbiddenWords).sort().join("|")
-  const match = presets.find(preset => {
-    const patch = normalizeSettings(preset.patch)
+  const match = presets(t).find(preset => {
+    const patch = normalizeSettings(preset.patch, t)
     const presetWords = splitForbiddenWords(patch.forbiddenWords).sort().join("|")
     return (
       patch.antiLinksEnabled === settings.antiLinksEnabled &&
@@ -1083,12 +1089,14 @@ function SectionPanel({
   title,
   text,
   children,
+  t,
 }: {
   enabled: boolean
   icon: React.ReactNode
   title: string
   text: string
   children: React.ReactNode
+  t: (key: string) => string
 }) {
   return (
     <div className={cn(
@@ -1104,7 +1112,7 @@ function SectionPanel({
         <div>
           <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
             {title}
-            {!enabled && <span className="text-xs font-medium text-muted-foreground">Desactive</span>}
+            {!enabled && <span className="text-xs font-medium text-muted-foreground">{t("rule_disabled_label")}</span>}
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
         </div>
@@ -1118,10 +1126,12 @@ function ForbiddenWordsInput({
   value,
   planLimit,
   onChange,
+  t,
 }: {
   value: string
   planLimit: number
   onChange: (value: string) => void
+  t: (key: string, options?: Record<string, unknown>) => string
 }) {
   const [draft, setDraft] = React.useState("")
   const tags = splitForbiddenWords(value)
@@ -1145,7 +1155,7 @@ function ForbiddenWordsInput({
         {tags.map(tag => (
           <Badge key={tag} variant="secondary" className="gap-1 rounded-full pr-1 text-xs">
             {tag}
-            <button type="button" onClick={() => removeTag(tag)} className="rounded-full p-0.5 hover:bg-background" aria-label={`Supprimer ${tag}`}>
+            <button type="button" onClick={() => removeTag(tag)} className="rounded-full p-0.5 hover:bg-background" aria-label={t("forbidden_input_remove_aria", { tag })}>
               <X className="h-3 w-3" />
             </button>
           </Badge>
@@ -1171,15 +1181,15 @@ function ForbiddenWordsInput({
             }
           }}
           className="min-w-32 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-          placeholder={isLimitReached ? "Limite atteinte" : "Ajouter un mot..."}
+          placeholder={isLimitReached ? t("forbidden_input_limit_reached") : t("forbidden_input_placeholder")}
         />
       </div>
       <div className="flex items-center justify-between gap-3">
         <span className={cn("text-xs text-muted-foreground", isLimitReached && "text-state-warning")}>
-          {tags.length} / {isUnlimited ? "illimite" : planLimit} mots
+          {t("forbidden_input_count", { count: tags.length, limit: isUnlimited ? t("forbidden_input_unlimited") : planLimit })}
         </span>
         {isLimitReached && (
-          <span className="text-xs text-state-warning">Limite atteinte - passez au plan Pro</span>
+          <span className="text-xs text-state-warning">{t("forbidden_input_upgrade")}</span>
         )}
       </div>
     </div>

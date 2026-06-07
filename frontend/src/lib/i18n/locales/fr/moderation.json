@@ -1,0 +1,117 @@
+{
+  "badge": "Centre de modération",
+  "title": "Groupes WhatsApp",
+  "description": "Une session, des groupes, des règles visibles. Configurez anti-liens, accueil et avertissements sans quitter la page.",
+  "session_placeholder": "Choisir une session",
+  "search_placeholder": "Rechercher un groupe...",
+
+  "rule_antilinks_title": "Anti-liens",
+  "rule_antilinks_text": "Bloque les liens hors sujet avant qu'ils polluent la discussion.",
+  "rule_welcome_title": "Accueil quotidien",
+  "rule_welcome_text": "Envoie un message de bienvenue une fois par jour en fin de journée.",
+  "rule_warnings_title": "Avertissements",
+  "rule_warnings_text": "Prévient avant sanction pour garder une modération lisible.",
+
+  "info_banner": "Whappi applique les règles uniquement dans les groupes où la session WhatsApp est administrateur.",
+
+  "empty_no_sessions_title": "Aucune session créée",
+  "empty_no_sessions_text": "Commencez par créer une session WhatsApp avant de configurer vos groupes.",
+  "empty_no_sessions_action": "Aller au centre",
+
+  "empty_no_connection_title": "Aucune session connectée",
+  "empty_no_connection_text": "Reconnectez une session pour lire les groupes et appliquer les règles.",
+  "empty_no_connection_action": "Voir les sessions",
+
+  "empty_no_groups_title": "Aucun groupe trouvé",
+  "empty_no_groups_text": "Ajoutez la session dans un groupe WhatsApp, donnez-lui le rôle admin, puis revenez ici.",
+  "empty_no_groups_action": "Actualiser",
+
+  "trial_banner_text": "Plan actuel : <strong>Essai gratuit</strong>",
+  "trial_banner_cta": "Passer au plan Pro",
+
+  "group_members": "membres",
+  "group_rules_active": "règles actives",
+  "group_active_badge": "Actif",
+  "group_inactive_badge": "Inactif",
+  "group_rules_count": "règle",
+  "group_rules_count_plural": "règles",
+  "group_unnamed": "Groupe sans nom",
+
+  "preset_active": "Preset actif",
+  "preset_none": "Aucun preset sélectionné",
+  "presets_title": "Presets rapides",
+  "presets_desc": "Point de départ adapté au type de communauté. Vous pouvez modifier chaque règle ensuite.",
+  "preset_professionnel": "Professionnel",
+  "preset_education": "Éducation",
+  "preset_tontine": "Tontine",
+  "preset_suivi_client": "Suivi client",
+
+  "preset_professionnel_forbidden": "arnaque, spam, pari, crypto rapide, lien telegram",
+  "preset_professionnel_warning": "@{{name}} message supprimé: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
+  "preset_education_forbidden": "triche, arnaque, spam, pari",
+  "preset_education_welcome": "Bienvenue aux nouveaux apprenants. Consultez les consignes, respectez le sujet du cours et gardez les questions claires.",
+  "preset_education_warning": "@{{name}} message supprimé: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
+  "preset_tontine_forbidden": "arnaque, faux dépôt, pari, spam",
+  "preset_tontine_warning": "@{{name}} message supprimé: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe.",
+  "preset_suivi_client_forbidden": "arnaque, spam, insultes, hors sujet, lien concurrent",
+  "preset_suivi_client_welcome": "Bienvenue aux nouveaux clients arrivés aujourd'hui. Posez votre demande avec le numéro de commande, le besoin et le délai attendu.",
+  "preset_suivi_client_warning": "@{{name}} message supprimé: {{reason}}. Il reste {{remaining}} avertissement(s) avant exclusion du groupe de suivi client.",
+
+  "scheduled_message_title": "Message programmé",
+  "scheduled_message_desc": "Planifiez une annonce, un rappel de paiement, une relance ou un message récurrent.",
+  "scheduled_message_placeholder": "ex: Rappel : pensez à confirmer votre présence avant 18h.",
+  "scheduled_recurrence_none": "Une fois",
+  "scheduled_recurrence_daily": "Chaque jour",
+  "scheduled_recurrence_weekly": "Chaque semaine",
+  "scheduled_button": "Programmer",
+
+  "warned_members_title": "Membres avertis",
+  "warned_members_desc": "Compteur actif avant exclusion.",
+  "warned_members_empty": "Aucun membre averti pour ce groupe.",
+  "warned_members_count": "avert.",
+  "warned_members_reset": "Remettre à zéro",
+
+  "calendar_title": "Calendrier programmés",
+  "calendar_desc": "Messages en attente et récurrents.",
+  "calendar_empty": "Aucun message programmé pour ce groupe.",
+  "calendar_no_content": "Message sans contenu",
+
+  "save_button": "Enregistrer",
+  "saving_button": "Enregistrement...",
+
+  "rule_antilinks_switch_title": "Anti-liens",
+  "rule_antilinks_switch_text": "Bloquer les liens suspects ou hors sujet.",
+  "rule_forbidden_title": "Mots interdits",
+  "rule_forbidden_text": "Ajoutez les mots ou expressions à bloquer. Entrée ou virgule valide chaque mot.",
+  "rule_welcome_switch_title": "Bienvenue quotidienne",
+  "rule_welcome_switch_text": "Envoyer un récap clair une fois par jour, en fin de journée.",
+  "rule_welcome_placeholder": "Message de bienvenue",
+  "rule_welcome_send_time": "Heure d'envoi",
+  "rule_warning_switch_title": "Avertir et taguer",
+  "rule_warning_switch_text": "Supprimer le message, puis taguer le membre concerné avec un avertissement.",
+  "rule_warning_placeholder": "Message d'avertissement",
+  "rule_exclusion_title": "Exclusion automatique",
+  "rule_exclusion_desc": "Si désactivé, Whappi avertit et tague seulement. Si activé, il exclut au seuil choisi.",
+  "rule_exclusion_example": "Exemple : {{max}} = exclusion au {{max}}e avertissement.",
+  "rule_exclusion_variables": "Variables : {{name}}, {{reason}}, {{count}}, {{max}}, {{remaining}}.",
+
+  "rule_disabled_label": "Désactivé",
+
+  "default_welcome_message": "Bienvenue aux nouveaux membres arrivés aujourd'hui. Merci de respecter le sujet, d'éviter les liens hors contexte et de garder les échanges utiles.",
+  "default_warning_message": "@{{name}} votre message a été supprimé: {{reason}}. Merci de respecter les règles du groupe.",
+
+  "unknown_date": "Date inconnue",
+
+  "active_rule_zero": "Aucune règle active pour ce groupe",
+  "active_rule_one": "1 règle active pour ce groupe",
+  "active_rule_other": "{{count}} règles actives pour ce groupe",
+
+  "forbidden_input_placeholder": "Ajouter un mot...",
+  "forbidden_input_limit_reached": "Limite atteinte",
+  "forbidden_input_count": "{{count}} / {{limit}} mots",
+  "forbidden_input_unlimited": "illimité",
+  "forbidden_input_upgrade": "Limite atteinte - passez au plan Pro",
+  "forbidden_input_remove_aria": "Supprimer {{tag}}",
+
+  "plan_trial": "Essai gratuit"
+}

@@ -5,8 +5,10 @@ import { useRef } from "react"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 export function FinalCTA() {
+  const { t } = useTranslation('landing')
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
@@ -23,10 +25,10 @@ export function FinalCTA() {
           className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight"
           style={{ fontFamily: "var(--font-cal-sans)" }}
         >
-          Votre groupe peut être plus calme dès cette semaine
+          {t('cta_title')}
         </h2>
         <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-          Testez Whappi sur un groupe réel pendant 7 jours. Voyez les spams supprimés, les nouveaux membres accueillis et les rappels envoyés sans courir derrière chaque message.
+          {t('cta_desc')}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -36,7 +38,7 @@ export function FinalCTA() {
             asChild
           >
             <Link href="/register">
-              Tester sur mon groupe
+              {t('cta_primary')}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
@@ -46,11 +48,11 @@ export function FinalCTA() {
             className="rounded-full px-8 h-14 text-base font-medium border-border text-muted-foreground hover:bg-card hover:text-foreground hover:border-primary bg-transparent"
             asChild
           >
-            <a href="mailto:sales@whappi.com">Demander une démo</a>
+            <a href="mailto:sales@whappi.com">{t('cta_secondary')}</a>
           </Button>
         </div>
 
-        <p className="mt-8 text-sm text-muted-foreground">Plan Starter à 3 500 FCFA/mois. Paiement Mobile Money prévu pour le lancement.</p>
+        <p className="mt-8 text-sm text-muted-foreground">{t('cta_note')}</p>
       </motion.div>
     </section>
   )

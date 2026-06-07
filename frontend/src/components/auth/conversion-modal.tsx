@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useUser, useSignUp, useAuth } from "@clerk/clerk-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -10,6 +11,7 @@ import { toast } from "sonner"
 import { API_BASE_URL } from "@/lib/api"
 
 export function ConversionModal() {
+  const { t } = useTranslation("auth")
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user, isSignedIn } = useUser()
@@ -18,6 +20,13 @@ export function ConversionModal() {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   
+  const benefits = [
+    t("conversion_benefit_1"),
+    t("conversion_benefit_2"),
+    t("conversion_benefit_3"),
+    t("conversion_benefit_4"),
+  ]
+
   useEffect(() => {
     const from = searchParams.get("from")
     const intent = searchParams.get("intent")
@@ -25,7 +34,6 @@ export function ConversionModal() {
     
     if ((from === "google_login" && intent === "signup") || conversion === "true") {
       setIsOpen(true)
-      // Tracking analytics
       console.log("Conversion Modal Viewed", { 
         source: from || 'direct_conversion',
         email: user?.primaryEmailAddress?.emailAddress 
@@ -37,7 +45,6 @@ export function ConversionModal() {
     setLoading(true)
     console.log("Conversion Action: Create Account Clicked")
     
-    // Case 1: User is already authenticated with Clerk (e.g. Google Login) but missing local account
     if (isSignedIn && user) {
       try {
         const token = await getToken()
@@ -54,8 +61,7 @@ export function ConversionModal() {
         })
 
         if (response.ok) {
-          toast.success("Compte créé avec succès !")
-          // Analytics event: Conversion Success
+          toast.success(t("conversion_toast_success"))
           console.log("Conversion Success: Account Synced")
           router.push("/dashboard")
           setIsOpen(false)
@@ -64,14 +70,13 @@ export function ConversionModal() {
         }
       } catch (err) {
         console.error("Sync error:", err)
-        toast.error("Erreur lors de la création du compte. Veuillez réessayer.")
+        toast.error(t("conversion_toast_error"))
       } finally {
         setLoading(false)
       }
       return
     }
 
-    // Case 2: User is NOT authenticated (should not happen in this specific flow but good fallback)
     if (!isLoaded) return
 
     try {
@@ -88,7 +93,6 @@ export function ConversionModal() {
 
   const handleCancel = () => {
     console.log("Conversion Action: Cancelled")
-    // Redirect to login if they cancel the creation process
     router.push("/login")
   }
 
@@ -100,27 +104,22 @@ export function ConversionModal() {
         <div className="bg-gradient-to-br from-green-500/10 via-background to-background p-6 sm:p-8">
           <DialogHeader className="mb-6">
             <DialogTitle className="text-2xl sm:text-3xl font-bold text-center mb-2">
-              Finalisation de votre compte
+              {t("conversion_title")}
             </DialogTitle>
             <DialogDescription className="text-center text-base sm:text-lg text-foreground/80">
-              Nous n'avons pas trouvé de compte associé à cette adresse email Google.
+              {t("conversion_description")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
             <div className="bg-card/50 backdrop-blur-sm border rounded-xl p-4 text-sm text-muted-foreground">
               <p className="mb-2 font-medium text-foreground text-center text-lg">
-                Créez votre compte en 30 secondes pour accéder à toutes les fonctionnalités.
+                {t("conversion_prompt")}
               </p>
             </div>
 
             <div className="space-y-3">
-              {[
-                "Accès complet au Dashboard",
-                "Configuration de vos assistants IA",
-                "Gestion des groupes et modération",
-                "Statistiques détaillées"
-              ].map((benefit, index) => (
+              {benefits.map((benefit, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                     <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -141,7 +140,7 @@ export function ConversionModal() {
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
                   <>
-                    Créer mon compte
+                    {t("conversion_create_button")}
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </>
                 )}
@@ -153,7 +152,7 @@ export function ConversionModal() {
                 onClick={handleCancel}
                 disabled={loading}
               >
-                Annuler
+                {t("conversion_cancel")}
               </Button>
             </div>
           </div>
@@ -163,15 +162,15 @@ export function ConversionModal() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5" />
-              <span>RGPD Compliant</span>
+              <span>{t("conversion_rgpd")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Lock className="w-3.5 h-3.5" />
-              <span>Données sécurisées</span>
+              <span>{t("conversion_secure")}</span>
             </div>
           </div>
           <a href="/privacy" className="hover:underline hover:text-foreground transition-colors">
-            Politique de confidentialité
+            {t("conversion_privacy")}
           </a>
         </div>
       </DialogContent>

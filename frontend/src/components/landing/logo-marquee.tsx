@@ -2,6 +2,7 @@
 
 import { motion, useInView } from "framer-motion"
 import { useRef } from "react"
+import { useTranslation } from "react-i18next"
 
 const logos = [
   { name: "WhatsApp", width: 100 },
@@ -15,6 +16,7 @@ const logos = [
 ]
 
 export function LogoMarquee() {
+  const { t } = useTranslation('landing')
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
@@ -26,7 +28,7 @@ export function LogoMarquee() {
         transition={{ duration: 0.6 }}
         className="text-center mb-10"
       >
-        <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium">Pensé pour WhatsApp, Mobile Money et les groupes actifs</p>
+        <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium">{t('marquee_text')}</p>
       </motion.div>
 
       <div className="relative">

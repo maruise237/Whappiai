@@ -11,42 +11,44 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 import { ArrowRight, MessageCircle, ShieldCheck, Zap, Users, Lock, CreditCard } from "lucide-react"
 
 const faqData = [
   {
-    question: "Est-ce que mon numéro WhatsApp peut être bloqué ?",
-    answer: "Whappi fonctionne comme une session WhatsApp Web via QR code. Comme tout outil non officiel, le risque zéro n'existe pas. Nous recommandons un numéro dédié au bot, un comportement raisonnable et une configuration anti-spam stricte pour réduire le risque.",
+    question: "faq_q_1",
+    answer: "faq_a_1",
     icon: ShieldCheck
   },
   {
-    question: "Dois-je utiliser mon numéro personnel ?",
-    answer: "Non. Pour un groupe sérieux, le mieux est d'utiliser un numéro secondaire dédié à Whappi. Vous gardez votre numéro personnel tranquille, et le groupe voit clairement le bot comme un co-admin.",
+    question: "faq_q_2",
+    answer: "faq_a_2",
     icon: MessageCircle
   },
   {
-    question: "Faut-il des compétences techniques pour utiliser Whappi ?",
-    answer: "Non. Vous scannez un QR code, vous ajoutez le numéro Whappi dans votre groupe, puis vous le promouvez admin. Ensuite vous choisissez vos règles depuis le dashboard.",
+    question: "faq_q_3",
+    answer: "faq_a_3",
     icon: Zap
   },
   {
-    question: "Est-ce que Whappi peut gérer plusieurs groupes ?",
-    answer: "Oui. Le plan Pro est pensé pour les admins qui gèrent plusieurs communautés. Vous pouvez suivre les règles, les logs, les rappels et l'activité depuis un seul dashboard.",
+    question: "faq_q_4",
+    answer: "faq_a_4",
     icon: Users
   },
   {
-    question: "Whappi lit-il tous les messages du groupe ?",
-    answer: "Whappi analyse les messages nécessaires à la modération : liens, mots interdits, règles configurées et actions à journaliser. Le produit doit rester transparent : l'admin sait ce qui est surveillé et pourquoi.",
+    question: "faq_q_5",
+    answer: "faq_a_5",
     icon: Lock
   },
   {
-    question: "Comment payer depuis l'Afrique francophone ?",
-    answer: "Les offres sont en FCFA. Le paiement Mobile Money est prioritaire, avec possibilité de démarrer par un encaissement direct pendant les premiers déploiements.",
+    question: "faq_q_6",
+    answer: "faq_a_6",
     icon: CreditCard
   }
 ]
 
 export function FAQ() {
+  const { t } = useTranslation('landing')
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
   const [activeItem, setActiveItem] = useState<string | null>(null)
@@ -67,7 +69,7 @@ export function FAQ() {
             transition={{ duration: 0.5 }}
           >
             <Badge variant="outline" className="px-4 py-1.5 text-sm border-primary/20 bg-primary/5 text-primary mb-4 rounded-full">
-              Objections fréquentes
+              {t('faq_badge')}
             </Badge>
           </motion.div>
           
@@ -77,7 +79,7 @@ export function FAQ() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground"
           >
-            Les questions que les admins posent avant d&apos;essayer
+            {t('faq_title')}
           </motion.h2>
           
           <motion.p
@@ -86,9 +88,9 @@ export function FAQ() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-lg text-muted-foreground"
           >
-            Installation, sécurité, numéro dédié, paiement : les points à clarifier avant de confier un groupe à Whappi.
+            {t('faq_subtitle')}
             <br className="hidden sm:block" />
-            Vous ne trouvez pas votre réponse ? Demandez une démo WhatsApp.
+            {t('faq_subtitle_2')}
           </motion.p>
         </div>
 
@@ -119,12 +121,12 @@ export function FAQ() {
                     <span className={`text-lg font-medium transition-colors ${
                       activeItem === `item-${index}` ? "text-foreground" : "text-foreground/80"
                     }`}>
-                      {item.question}
+                      {t(item.question)}
                     </span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6 pl-[3.25rem]">
-                  {item.answer}
+                  {t(item.answer)}
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -139,12 +141,12 @@ export function FAQ() {
         >
           <div className="inline-flex flex-col md:flex-row items-center gap-4 md:gap-2 p-4 md:p-1 bg-muted/50 rounded-2xl md:rounded-full border border-border mx-auto">
             <div className="px-3 text-sm font-semibold text-primary">
-              FAQ terrain
+              {t('faq_cta_badge')}
             </div>
-            <span className="text-sm font-medium text-center md:text-left md:mr-4">Une démo vaut mieux qu&apos;une longue promesse</span>
+            <span className="text-sm font-medium text-center md:text-left md:mr-4">{t('faq_cta_text')}</span>
             <Button size="sm" className="rounded-full w-full md:w-auto" asChild>
               <Link href="/contact">
-                Demander une démo <ArrowRight className="ml-2 w-4 h-4" />
+                {t('faq_cta_button')} <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
             </Button>
           </div>

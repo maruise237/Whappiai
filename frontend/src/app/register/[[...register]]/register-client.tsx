@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import type { Dispatch, FormEvent, SetStateAction } from "react"
+import { useTranslation } from "react-i18next"
 import { useSignUp, useUser } from "@clerk/clerk-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -60,12 +61,13 @@ const getAuthErrorMessage = (error: unknown, fallback: string) => {
 }
 
 function VerificationForm({ email, code, setCode, error, loading, onBack, onVerify }: VerificationFormProps) {
+  const { t } = useTranslation("auth")
+
   return (
-    <AuthLayout title="Vérification" subtitle="Entrez le code reçu par email pour activer votre espace Whappi">
+    <AuthLayout title={t("verify_title")} subtitle={t("verify_subtitle")}>
       <form onSubmit={onVerify} className="space-y-6 flex flex-col items-center">
         <div className="text-center text-sm text-muted-foreground mb-2">
-          Un code a été envoyé à <span className="text-foreground font-medium">{email}</span>
-        </div>
+          {t("verify_code_sent", { email })}</div>
 
         <InputOTP
           maxLength={6}
@@ -93,14 +95,14 @@ function VerificationForm({ email, code, setCode, error, loading, onBack, onVeri
             onClick={onBack}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour
+            {t("verify_back")}
           </Button>
           <Button
             type="submit"
             className="flex-[2] h-12 bg-green-500 hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-400 text-white dark:text-black font-bold text-[15px] rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)]"
             disabled={loading}
           >
-            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Vérifier"}
+            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : t("verify_button")}
           </Button>
         </div>
       </form>
@@ -116,8 +118,10 @@ function SignUpForm({
   showPassword, setShowPassword,
   onSubmit, loading, error
 }: SignUpFormProps) {
+  const { t } = useTranslation("auth")
+
   return (
-    <AuthLayout title="Créer un compte" subtitle="Testez Whappi sur un vrai groupe pendant 7 jours">
+    <AuthLayout title={t("register_title")} subtitle={t("register_subtitle")}>
       <ConversionModal />
 
       <form onSubmit={onSubmit} className="space-y-4">
@@ -129,7 +133,7 @@ function SignUpForm({
           <div className="absolute left-4">
             <Mail className="w-5 h-5" />
           </div>
-          {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Créer mon espace Whappi"}
+          {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : t("register_button")}
         </Button>
 
         <div className="space-y-3 pt-2">
@@ -137,14 +141,14 @@ function SignUpForm({
             <Input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Prénom"
+              placeholder={t("register_firstname_placeholder")}
               className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
               required
             />
             <Input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Nom"
+              placeholder={t("register_lastname_placeholder")}
               className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
               required
             />
@@ -154,7 +158,7 @@ function SignUpForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Entrez votre email"
+            placeholder={t("register_email_placeholder")}
             className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
             required
           />
@@ -164,7 +168,7 @@ function SignUpForm({
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Créez un mot de passe"
+              placeholder={t("register_password_placeholder")}
               className="h-12 bg-background border-input focus:border-green-500 text-foreground pr-10 placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
               required
             />
@@ -190,16 +194,16 @@ function SignUpForm({
           <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase tracking-widest font-medium">
-          <span className="bg-background px-3 text-muted-foreground">ou créer avec</span>
+          <span className="bg-background px-3 text-muted-foreground">{t("register_or_create")}</span>
         </div>
       </div>
 
       <SocialButtons mode="signup" />
 
       <div className="mt-8 pt-6 border-t border-dashed border-border/60 text-center text-sm text-muted-foreground">
-        Vous avez déjà un compte ?{" "}
+        {t("register_have_account")}{" "}
         <Link href="/login" className="text-green-600 dark:text-green-500 hover:text-green-500 dark:hover:text-green-400 font-semibold transition-colors hover:underline">
-          Se connecter
+          {t("register_login_link")}
         </Link>
       </div>
     </AuthLayout>
@@ -207,6 +211,7 @@ function SignUpForm({
 }
 
 export default function RegisterPage() {
+  const { t } = useTranslation("auth")
   const { isLoaded, signUp, setActive } = useSignUp()
   const { user, isSignedIn } = useUser()
   const [firstName, setFirstName] = useState("")
@@ -220,10 +225,8 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
-  // Redirection automatique une fois l'utilisateur authentifié
   useEffect(() => {
     if (isSignedIn && user) {
-      // Si on vient du flux de conversion, on laisse la modale gérer la redirection
       const params = new URLSearchParams(window.location.search)
       if (params.get("intent") === "signup" || params.get("conversion") === "true") {
         return
@@ -250,7 +253,7 @@ export default function RegisterPage() {
       setVerifying(true)
     } catch (err: unknown) {
       console.error("Register error:", err)
-      setError(getAuthErrorMessage(err, "Une erreur est survenue lors de l'inscription."))
+      setError(getAuthErrorMessage(err, t("register_error_generic")))
     } finally {
       setLoading(false)
     }
@@ -269,16 +272,15 @@ export default function RegisterPage() {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId })
-        // Redirection immédiate sans attendre le useEffect
         router.push("/dashboard")
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2))
-        setError("Code de vérification invalide.")
+        setError(t("verify_error_invalid"))
         setLoading(false)
       }
     } catch (err: unknown) {
       console.error("Verification error:", err)
-      setError(getAuthErrorMessage(err, "Code invalide."))
+      setError(getAuthErrorMessage(err, t("verify_error_invalid_short")))
       setLoading(false)
     }
   }

@@ -4,31 +4,33 @@ import { motion } from "framer-motion"
 import { ShieldCheck, MessageCircle, ListChecks, Zap, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 const benefits = [
   {
     icon: ShieldCheck,
-    title: "Coupe les liens et le spam",
-    description: "Whappi détecte les liens non autorisés, supprime les messages indésirables et avertit le membre selon les règles de chaque groupe."
+    title: "vp_benefit_1_title",
+    description: "vp_benefit_1_desc"
   },
   {
     icon: MessageCircle,
-    title: "Accueille les nouveaux membres",
-    description: "Chaque nouvel arrivant reçoit un message clair avec les règles, les liens utiles et le ton choisi par l'admin."
+    title: "vp_benefit_2_title",
+    description: "vp_benefit_2_desc"
   },
   {
     icon: ListChecks,
-    title: "Applique vos règles sans fatigue",
-    description: "Mots interdits, avertissements, exclusions automatiques et logs d'actions : l'admin garde le contrôle sans surveiller le groupe toute la journée."
+    title: "vp_benefit_3_title",
+    description: "vp_benefit_3_desc"
   },
   {
     icon: Zap,
-    title: "Gère plusieurs groupes",
-    description: "Un seul dashboard permet de piloter les paramètres, les messages programmés et l'activité récente de plusieurs communautés WhatsApp."
+    title: "vp_benefit_4_title",
+    description: "vp_benefit_4_desc"
   }
 ]
 
 export function ValueProposition() {
+  const { t } = useTranslation('landing')
   return (
     <section className="py-24 px-4 bg-background relative overflow-hidden transition-colors duration-300">
       {/* Background Gradients */}
@@ -46,7 +48,7 @@ export function ValueProposition() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6 tracking-tight max-w-4xl mx-auto leading-tight">
-            Arrêtez de passer vos journées à faire la police dans vos groupes
+            {t('vp_title')}
           </h2>
         </motion.div>
 
@@ -65,10 +67,10 @@ export function ValueProposition() {
                   <benefit.icon className="w-6 h-6" strokeWidth={2} />
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-3">
-                  {benefit.title}
+                  {t(benefit.title)}
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  {benefit.description}
+                  {t(benefit.description)}
                 </p>
               </div>
             </motion.div>
@@ -83,7 +85,7 @@ export function ValueProposition() {
           className="text-center mt-16"
         >
           <p className="text-primary font-medium mb-8 text-lg">
-            Whappi fait le travail répétitif. Vous restez l&apos;admin, avec plus de temps et moins de chaos.
+            {t('vp_subtitle')}
           </p>
           <Button 
             asChild
@@ -91,7 +93,7 @@ export function ValueProposition() {
             className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-8 py-6 text-lg shadow-md shadow-primary/20 transition-all duration-300"
           >
             <Link href="/register">
-              Tester sur mon groupe
+              {t('vp_cta')}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>

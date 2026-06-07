@@ -1,0 +1,117 @@
+{
+  "badge": "Moderation Center",
+  "title": "WhatsApp Groups",
+  "description": "One session, multiple groups, visible rules. Configure anti-links, welcome messages, and warnings without leaving the page.",
+  "session_placeholder": "Choose a session",
+  "search_placeholder": "Search groups...",
+
+  "rule_antilinks_title": "Anti-Links",
+  "rule_antilinks_text": "Blocks off-topic links before they pollute the discussion.",
+  "rule_welcome_title": "Daily Welcome",
+  "rule_welcome_text": "Sends a welcome message once a day at the end of the day.",
+  "rule_warnings_title": "Warnings",
+  "rule_warnings_text": "Warns before sanctioning for clear moderation.",
+
+  "info_banner": "Whappi applies rules only in groups where the WhatsApp session is an admin.",
+
+  "empty_no_sessions_title": "No sessions created",
+  "empty_no_sessions_text": "Start by creating a WhatsApp session before configuring your groups.",
+  "empty_no_sessions_action": "Go to center",
+
+  "empty_no_connection_title": "No connected session",
+  "empty_no_connection_text": "Reconnect a session to read groups and apply rules.",
+  "empty_no_connection_action": "View sessions",
+
+  "empty_no_groups_title": "No groups found",
+  "empty_no_groups_text": "Add the session to a WhatsApp group, give it admin role, then come back here.",
+  "empty_no_groups_action": "Refresh",
+
+  "trial_banner_text": "Current plan: <strong>Free Trial</strong>",
+  "trial_banner_cta": "Upgrade to Pro",
+
+  "group_members": "members",
+  "group_rules_active": "rules active",
+  "group_active_badge": "Active",
+  "group_inactive_badge": "Inactive",
+  "group_rules_count": "rule",
+  "group_rules_count_plural": "rules",
+  "group_unnamed": "Unnamed group",
+
+  "preset_active": "Active preset",
+  "preset_none": "No preset selected",
+  "presets_title": "Quick presets",
+  "presets_desc": "Starting point adapted to your community type. You can modify each rule afterwards.",
+  "preset_professionnel": "Professional",
+  "preset_education": "Education",
+  "preset_tontine": "Tontine",
+  "preset_suivi_client": "Client follow-up",
+
+  "preset_professionnel_forbidden": "scam, spam, betting, fast crypto, telegram link",
+  "preset_professionnel_warning": "@{{name}} message deleted: {{reason}}. {{remaining}} warning(s) left before group exclusion.",
+  "preset_education_forbidden": "cheating, scam, spam, betting",
+  "preset_education_welcome": "Welcome new learners. Please review the guidelines, stay on topic, and keep questions clear.",
+  "preset_education_warning": "@{{name}} message deleted: {{reason}}. {{remaining}} warning(s) left before group exclusion.",
+  "preset_tontine_forbidden": "scam, fake deposit, betting, spam",
+  "preset_tontine_warning": "@{{name}} message deleted: {{reason}}. {{remaining}} warning(s) left before group exclusion.",
+  "preset_suivi_client_forbidden": "scam, spam, insults, off-topic, competitor link",
+  "preset_suivi_client_welcome": "Welcome new clients arriving today. Please include your order number, request, and expected deadline.",
+  "preset_suivi_client_warning": "@{{name}} message deleted: {{reason}}. {{remaining}} warning(s) left before client follow-up group exclusion.",
+
+  "scheduled_message_title": "Scheduled message",
+  "scheduled_message_desc": "Schedule an announcement, payment reminder, follow-up, or recurring message.",
+  "scheduled_message_placeholder": "e.g. Reminder: please confirm your attendance before 6 PM.",
+  "scheduled_recurrence_none": "Once",
+  "scheduled_recurrence_daily": "Daily",
+  "scheduled_recurrence_weekly": "Weekly",
+  "scheduled_button": "Schedule",
+
+  "warned_members_title": "Warned members",
+  "warned_members_desc": "Active counter before exclusion.",
+  "warned_members_empty": "No warned members for this group.",
+  "warned_members_count": "warn.",
+  "warned_members_reset": "Reset to zero",
+
+  "calendar_title": "Scheduled calendar",
+  "calendar_desc": "Pending and recurring messages.",
+  "calendar_empty": "No scheduled messages for this group.",
+  "calendar_no_content": "Message without content",
+
+  "save_button": "Save",
+  "saving_button": "Saving...",
+
+  "rule_antilinks_switch_title": "Anti-Links",
+  "rule_antilinks_switch_text": "Block suspicious or off-topic links.",
+  "rule_forbidden_title": "Forbidden words",
+  "rule_forbidden_text": "Add words or expressions to block. Enter or comma validates each word.",
+  "rule_welcome_switch_title": "Daily Welcome",
+  "rule_welcome_switch_text": "Send a clear recap once a day at the end of the day.",
+  "rule_welcome_placeholder": "Welcome message",
+  "rule_welcome_send_time": "Send time",
+  "rule_warning_switch_title": "Warn and tag",
+  "rule_warning_switch_text": "Delete the message, then tag the member with a warning.",
+  "rule_warning_placeholder": "Warning message",
+  "rule_exclusion_title": "Auto-exclusion",
+  "rule_exclusion_desc": "If disabled, Whappi only warns and tags. If enabled, it kicks at the chosen threshold.",
+  "rule_exclusion_example": "Example: {{max}} = exclusion at {{max}}th warning.",
+  "rule_exclusion_variables": "Variables: {{name}}, {{reason}}, {{count}}, {{max}}, {{remaining}}.",
+
+  "rule_disabled_label": "Disabled",
+
+  "default_welcome_message": "Welcome to new members arriving today. Please respect the topic, avoid off-topic links, and keep exchanges useful.",
+  "default_warning_message": "@{{name}} your message has been deleted: {{reason}}. Please respect the group rules.",
+
+  "unknown_date": "Unknown date",
+
+  "active_rule_zero": "No active rules for this group",
+  "active_rule_one": "1 active rule for this group",
+  "active_rule_other": "{{count}} active rules for this group",
+
+  "forbidden_input_placeholder": "Add a word...",
+  "forbidden_input_limit_reached": "Limit reached",
+  "forbidden_input_count": "{{count}} / {{limit}} words",
+  "forbidden_input_unlimited": "unlimited",
+  "forbidden_input_upgrade": "Limit reached - upgrade to Pro",
+  "forbidden_input_remove_aria": "Remove {{tag}}",
+
+  "plan_trial": "Free Trial"
+}

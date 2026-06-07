@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { useSignIn, useUser } from "@clerk/clerk-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,7 @@ const getAuthErrorMessage = (error: unknown, fallback: string) => {
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation("auth")
   const { isLoaded, signIn, setActive } = useSignIn()
   const { user, isSignedIn } = useUser()
   const [email, setEmail] = useState("")
@@ -37,7 +39,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
-  // Redirection automatique une fois l'utilisateur authentifié
   useEffect(() => {
     if (isSignedIn && user) {
       router.push("/dashboard")
@@ -58,23 +59,22 @@ export default function LoginPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId })
-        // Redirection immédiate sans attendre le useEffect
         router.push("/dashboard")
       } else {
         console.log(result)
-        setError("Une erreur est survenue. Veuillez vérifier vos identifiants.")
+        setError(t("login_error_generic"))
         setLoading(false)
       }
     } catch (err: unknown) {
       console.error("Login error:", err)
-      setError(getAuthErrorMessage(err, "Identifiants invalides."))
+      setError(getAuthErrorMessage(err, t("login_error_credentials")))
       setLoading(false)
     }
   }
 
   return (
     <>
-      <AuthLayout title="Bon retour" subtitle="Accédez à vos groupes, règles et sessions WhatsApp">
+      <AuthLayout title={t("login_title")} subtitle={t("login_subtitle")}>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Button
@@ -85,10 +85,9 @@ export default function LoginPage() {
             <div className="absolute left-4">
               <Mail className="w-5 h-5" />
             </div>
-            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Se connecter avec Email"}
+            {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : t("login_email_button")}
           </Button>
 
-          {/* Email/Password Fields - Visually integrated to look like they expand or belong to the email flow */}
           <div className="space-y-3 pt-2">
             <div className="space-y-1">
               <Input
@@ -96,7 +95,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Entrez votre email"
+                placeholder={t("login_email_placeholder")}
                 className="h-12 bg-background border-input focus:border-green-500 text-foreground placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                 required
               />
@@ -107,7 +106,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mot de passe"
+                placeholder={t("login_password_placeholder")}
                 className="h-12 bg-background border-input focus:border-green-500 text-foreground pr-10 placeholder:text-muted-foreground/60 rounded-xl transition-colors shadow-sm"
                 required
               />
@@ -133,13 +132,12 @@ export default function LoginPage() {
             <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase tracking-widest font-medium">
-            <span className="bg-background px-3 text-muted-foreground">ou continuer avec</span>
+            <span className="bg-background px-3 text-muted-foreground">{t("login_or_continue")}</span>
           </div>
         </div>
 
         <SocialButtons mode="signin" />
 
-        {/* Section Nouveau Compte - SaaS 2026 Best Practice */}
         <div className="mt-8 pt-6 border-t border-dashed border-border/60">
           <div className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-2xl p-5 border border-green-500/10 hover:border-green-500/20 transition-colors group">
             <div className="flex items-start gap-3">
@@ -147,9 +145,9 @@ export default function LoginPage() {
                 <Sparkles size={18} />
               </div>
               <div className="space-y-1">
-                <h3 className="font-semibold text-sm text-foreground">Pas encore de compte ?</h3>
+                <h3 className="font-semibold text-sm text-foreground">{t("login_no_account")}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Testez Whappi sur un groupe réel. Essai gratuit, sans carte bancaire.
+                  {t("login_trial_desc")}
                 </p>
               </div>
             </div>
@@ -159,7 +157,7 @@ export default function LoginPage() {
               className="w-full mt-4 h-10 border border-green-500/20 hover:border-green-500/40 hover:bg-green-500/10 text-green-700 dark:text-green-300 transition-all text-xs uppercase tracking-wide font-bold flex items-center justify-between px-4 group/btn"
               onClick={() => router.push('/register')}
             >
-              <span>Tester mon groupe</span>
+              <span>{t("login_trial_button")}</span>
               <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
             </Button>
           </div>

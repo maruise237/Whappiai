@@ -1,3 +1,6 @@
+"use client"
+
+import { useTranslation, Trans } from "react-i18next"
 import { Logo } from "@/components/ui/logo"
 import Link from "next/link"
 import { CheckCircle2 } from "lucide-react"
@@ -8,13 +11,15 @@ interface AuthLayoutProps {
   subtitle: string
 }
 
-const setupSteps = [
-  "Créez votre compte",
-  "Connectez un numéro dédié",
-  "Activez vos règles de groupe",
-]
-
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
+  const { t } = useTranslation("auth")
+
+  const setupSteps = [
+    t("setup_step_1"),
+    t("setup_step_2"),
+    t("setup_step_3"),
+  ]
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden font-sans text-foreground transition-colors duration-300">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -36,15 +41,15 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           </Link>
 
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4 leading-tight">
-            Lancez votre{" "}
+            {t("hero_prefix")}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-400 dark:to-emerald-500 relative inline-block">
-              co-admin WhatsApp
+              {t("hero_highlight")}
               <svg className="absolute w-full h-2 -bottom-1 left-0 text-green-500" viewBox="0 0 100 10" preserveAspectRatio="none">
                 <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
               </svg>
             </span>
             <br />
-            pour calmer vos groupes
+            {t("hero_suffix")}
           </h1>
 
           <div className="mt-2 grid w-full gap-2 text-left text-xs text-muted-foreground sm:grid-cols-3 sm:text-center">
@@ -70,19 +75,15 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground uppercase tracking-widest">
             <span className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Sécurisé par Clerk
+              {t("secured_by")}
             </span>
           </div>
           <div className="text-xs text-muted-foreground/80 max-w-xs mx-auto leading-relaxed">
-            En vous inscrivant, vous acceptez nos{" "}
-            <Link href="/terms" className="text-green-600 dark:text-green-500 hover:underline">
-              termes
-            </Link>{" "}
-            et{" "}
-            <Link href="/privacy" className="text-green-600 dark:text-green-500 hover:underline">
-              politique de confidentialité
-            </Link>
-            .
+            <Trans t={t} i18nKey="terms_accept" ns="auth">
+              En vous inscrivant, vous acceptez nos{" "}
+              <Link href="/terms">termes</Link> et{" "}
+              <Link href="/privacy">politique de confidentialité</Link>.
+            </Trans>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState, useRef } from "react"
 import { ArrowLeft, Video, Phone, MoreVertical, Mic, Plus, Camera, Smile, Ban } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 type Message = {
   id: string
@@ -58,6 +59,7 @@ interface ChatPreviewProps {
 }
 
 export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProps) {
+  const { t } = useTranslation('landing')
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [scenarioIndex, setScenarioIndex] = useState(0)
@@ -163,8 +165,8 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
                 <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00a884] rounded-full border-2 border-[#202c33]"></div>
               </div>
               <div className="flex flex-col">
-                <span className="text-gray-100 text-sm font-semibold leading-tight">Whappi Admin</span>
-                <span className="text-[#8696a0] text-[10px] font-medium">Co-admin actif</span>
+                <span className="text-gray-100 text-sm font-semibold leading-tight">{t('chat_admin_name')}</span>
+                <span className="text-[#8696a0] text-[10px] font-medium">{t('chat_admin_status')}</span>
               </div>
             </div>
             <div className="flex items-center gap-4 text-[#00a884]">
@@ -184,7 +186,7 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
               <div className="flex justify-center mb-6 mt-2">
                 <div className="bg-[#182229] px-3 py-1.5 rounded-lg shadow-sm max-w-[85%] text-center">
                   <p className="text-[#8696a0] text-[10px] leading-3 flex items-center justify-center gap-1">
-                     🔒  Les messages sont chiffrés de bout en bout.
+                     🔒  {t('chat_encryption')}
                   </p>
                 </div>
               </div>
@@ -267,7 +269,7 @@ export function ChatPreview({ onScenarioChange, selectedIndex }: ChatPreviewProp
           <div className="bg-[#202c33] p-2 flex items-center gap-2 z-20">
              <Plus className="text-[#8696a0] w-6 h-6" />
              <div className="flex-1 bg-[#2a3942] rounded-lg h-9 flex items-center px-3 justify-between">
-                <span className="text-[#8696a0] text-sm">Message</span>
+                <span className="text-[#8696a0] text-sm">{t('chat_input_placeholder')}</span>
                 <Smile className="text-[#8696a0] w-5 h-5 opacity-70" />
              </div>
              <div className="flex gap-3 pr-1">

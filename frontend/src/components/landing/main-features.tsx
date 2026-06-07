@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { MessageCircle, ShieldCheck, Ban, Calendar, ArrowRight, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 import { ChatPreview } from "@/components/landing/chat-preview"
 import {
   Dialog,
@@ -18,59 +19,60 @@ import {
 const features = [
   {
     icon: MessageCircle,
-    title: "Bienvenue dans le groupe",
-    description: "Accueillez chaque nouveau membre avec un message personnalisé, les règles du groupe et les liens importants.",
+    title: "mf_feature_1_title",
+    description: "mf_feature_1_desc",
     href: "/features/welcome",
     details: [
-      "Message de bienvenue par groupe.",
-      "Mention automatique du nouveau membre.",
-      "Envoi uniquement dans le groupe.",
-      "Modeles rapides pour ecole, business, tontine ou suivi client."
+      "mf_feature_1_detail_1",
+      "mf_feature_1_detail_2",
+      "mf_feature_1_detail_3",
+      "mf_feature_1_detail_4"
     ],
-    cta: "Configurer l'accueil"
+    cta: "mf_feature_1_cta"
   },
   {
     icon: ShieldCheck,
-    title: "Anti-liens & anti-spam",
-    description: "Bloquez les liens douteux, les pubs sauvages et les messages qui perturbent votre communauté.",
+    title: "mf_feature_2_title",
+    description: "mf_feature_2_desc",
     href: "/features/moderation",
     details: [
-      "Détection des liens non autorisés.",
-      "Liste blanche de domaines utiles.",
-      "Suppression automatique des messages interdits.",
-      "Notification claire dans le groupe après action."
+      "mf_feature_2_detail_1",
+      "mf_feature_2_detail_2",
+      "mf_feature_2_detail_3",
+      "mf_feature_2_detail_4"
     ],
-    cta: "Activer l'anti-spam"
+    cta: "mf_feature_2_cta"
   },
   {
     icon: Ban,
-    title: "Avertissements + ban auto",
-    description: "Définissez vos seuils : Whappi avertit, compte les violations et exclut automatiquement si nécessaire.",
+    title: "mf_feature_3_title",
+    description: "mf_feature_3_desc",
     href: "/features/warnings",
     details: [
-      "Compteur d'avertissements par membre.",
-      "Seuil configurable par groupe.",
-      "Exclusion automatique au nombre limite.",
-      "Historique des actions pour vérifier chaque décision."
+      "mf_feature_3_detail_1",
+      "mf_feature_3_detail_2",
+      "mf_feature_3_detail_3",
+      "mf_feature_3_detail_4"
     ],
-    cta: "Créer les règles"
+    cta: "mf_feature_3_cta"
   },
   {
     icon: Calendar,
-    title: "Messages programmés",
-    description: "Planifiez rappels, annonces et messages récurrents pour garder vos membres informés sans répétition manuelle.",
+    title: "mf_feature_4_title",
+    description: "mf_feature_4_desc",
     href: "/features/scheduled-messages",
     details: [
-      "Rappels de cotisation, cours, culte ou réunion.",
-      "Programmation par jour et heure.",
-      "Messages différents selon le groupe.",
-      "Vue calendrier depuis le dashboard."
+      "mf_feature_4_detail_1",
+      "mf_feature_4_detail_2",
+      "mf_feature_4_detail_3",
+      "mf_feature_4_detail_4"
     ],
-    cta: "Planifier un message"
+    cta: "mf_feature_4_cta"
   }
 ]
 
 export function MainFeatures() {
+  const { t } = useTranslation('landing')
   const [activeFeature, setActiveFeature] = useState(0)
 
   return (
@@ -84,7 +86,7 @@ export function MainFeatures() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight">
-            Ce que Whappi fait pour vos groupes
+            {t('mf_title')}
           </h2>
         </motion.div>
 
@@ -127,11 +129,11 @@ export function MainFeatures() {
                         <h3 className={`text-xl font-bold mb-2 transition-colors duration-300 ${
                         activeFeature === index ? "text-primary" : "text-foreground"
                         }`}>
-                        {feature.title}
+                        {t(feature.title)}
                         </h3>
                     </div>
                     <p className="text-muted-foreground leading-relaxed text-sm sm:text-base mb-3">
-                      {feature.description}
+                      {t(feature.description)}
                     </p>
                     <Dialog>
                       <DialogTrigger asChild>
@@ -140,7 +142,7 @@ export function MainFeatures() {
                             className={`p-0 h-auto font-semibold group/btn ${activeFeature === index ? "text-primary" : "text-muted-foreground"}`}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            En savoir plus 
+                        {t('mf_learn_more')} 
                             <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                         </Button>
                       </DialogTrigger>
@@ -150,29 +152,29 @@ export function MainFeatures() {
                              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                                 <feature.icon className="w-6 h-6" />
                              </div>
-                             <DialogTitle className="text-2xl font-bold">{feature.title}</DialogTitle>
+                             <DialogTitle className="text-2xl font-bold">{t(feature.title)}</DialogTitle>
                           </div>
                           <DialogDescription className="text-base leading-relaxed">
-                            {feature.description}
+                            {t(feature.description)}
                           </DialogDescription>
                         </DialogHeader>
                         
                         <div className="grid gap-3 py-4">
-                           <h4 className="font-semibold text-foreground mb-2">Ce que vous pouvez faire :</h4>
+                           <h4 className="font-semibold text-foreground mb-2">{t('mf_dialog_what_you_can')}</h4>
                            {feature.details?.map((detail) => (
                              <div key={detail} className="flex items-start gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                                <span className="text-muted-foreground">{detail}</span>
+                                <span className="text-muted-foreground">{t(detail)}</span>
                              </div>
                            ))}
                         </div>
 
                         <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4 pt-4 border-t border-border/50">
                             <Button variant="outline" asChild className="rounded-full">
-                                <Link href="/contact">Parler à un expert</Link>
+                                <Link href="/contact">{t('mf_talk_to_expert')}</Link>
                             </Button>
                             <Button asChild className="rounded-full">
-                                <Link href="/register">{feature.cta}</Link>
+                                <Link href="/register">{t(feature.cta)}</Link>
                             </Button>
                         </div>
                       </DialogContent>
@@ -214,7 +216,7 @@ export function MainFeatures() {
             asChild
           >
             <Link href="/register">
-              Tester sur mon groupe
+              {t('mf_cta')}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>

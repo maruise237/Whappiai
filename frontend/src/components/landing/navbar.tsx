@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import { useUser } from "@clerk/clerk-react"
+import { useTranslation } from "react-i18next"
 
 const navItems = [
-  { label: "Fonctionnalités", href: "/#features" },
-  { label: "Tarifs", href: "/#pricing" },
-  { label: "Témoignages", href: "/#testimonials" },
-  { label: "Documentation", href: "/docs" },
+  { label: "nav_features", href: "/#features" },
+  { label: "nav_pricing", href: "/#pricing" },
+  { label: "nav_testimonials", href: "/#testimonials" },
+  { label: "nav_docs", href: "/docs" },
 ]
 
 const getStoredDarkMode = () => {
@@ -25,6 +26,7 @@ const getStoredDarkMode = () => {
 }
 
 export function Navbar() {
+  const { t } = useTranslation('landing')
   const { isSignedIn } = useUser()
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -92,7 +94,7 @@ export function Navbar() {
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />
               )}
-              <span className="relative z-10">{item.label}</span>
+              <span className="relative z-10">{t(item.label)}</span>
             </Link>
           ))}
         </div>
@@ -107,10 +109,10 @@ export function Navbar() {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hover:bg-muted" asChild>
-            <Link href={isSignedIn ? "/dashboard" : "/login"}>{isSignedIn ? "Tableau de bord" : "Connexion"}</Link>
+            <Link href={isSignedIn ? "/dashboard" : "/login"}>{isSignedIn ? t('nav_dashboard') : t('nav_login')}</Link>
           </Button>
           <Button size="sm" className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full px-4" asChild>
-            <Link href="/register">Tester mon groupe</Link>
+            <Link href="/register">{t('nav_cta')}</Link>
           </Button>
         </div>
 
@@ -148,15 +150,15 @@ export function Navbar() {
                   className="px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {item.label}
+                  {t(item.label)}
                 </Link>
               ))}
               <hr className="border-border my-2" />
               <Button variant="ghost" className="justify-start text-muted-foreground hover:text-foreground w-full" asChild>
-                <Link href={isSignedIn ? "/dashboard" : "/login"}>{isSignedIn ? "Tableau de bord" : "Connexion"}</Link>
+                <Link href={isSignedIn ? "/dashboard" : "/login"}>{isSignedIn ? t('nav_dashboard') : t('nav_login')}</Link>
               </Button>
               <Button className="shimmer-btn bg-primary text-primary-foreground hover:bg-secondary rounded-full w-full" asChild>
-                <Link href="/register">Tester mon groupe</Link>
+                <Link href="/register">{t('nav_cta')}</Link>
               </Button>
             </div>
           </motion.div>

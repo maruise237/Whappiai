@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useAuth, useUser } from "@clerk/clerk-react"
+import { useTranslation } from "react-i18next"
 import confetti from "canvas-confetti"
 import {
   ArrowRight,
@@ -115,19 +116,19 @@ type ActivationGroupPair = {
   settings?: unknown
 }
 
-const sessionSchema = z.object({
-  sessionId: z
-    .string()
-    .min(3, "L'ID de session doit comporter au moins 3 caracteres")
-    .regex(/^[a-z0-9-]+$/, "Minuscules, chiffres et traits d'union uniquement"),
-  phoneNumber: z.string().optional(),
-})
-
 export default function DashboardPage() {
+  const { t } = useTranslation("dashboard")
   const { isLoaded, user } = useUser()
   const { getToken } = useAuth()
   const { lastMessage } = useWebSocket()
   const lastProcessedMessageRef = React.useRef("")
+  const sessionSchema = React.useMemo(() => z.object({
+    sessionId: z
+      .string()
+      .min(3, t("session_name_min_error"))
+      .regex(/^[a-z0-9-]+$/, t("session_name_format_error")),
+    phoneNumber: z.string().optional(),
+  }), [t])
 
   const [sessions, setSessions] = React.useState<SessionItem[]>([])
   const sessionsRef = React.useRef<SessionItem[]>([])
@@ -344,14 +345,14 @@ export default function DashboardPage() {
       if (needsRefresh) fetchSessions(false)
 
       celebratedSessions.forEach(sessionId => {
-        toast.success(`Session ${sessionId} connectee`)
+        toast.success(`${t("welcome")} — ${sessionId}`)
         confetti()
       })
 
       updates.forEach((update: SessionItem) => {
         if (!update) return
         if (update.status === "GENERATING_CODE" && update.pairingCode) {
-          toast.info(`Code d'appairage recu pour ${update.sessionId}`)
+          toast.info(`Code d'appairage reçu pour ${update.sessionId}`)
         }
       })
 
@@ -366,7 +367,7 @@ export default function DashboardPage() {
         }
       }
     }
-  }, [fetchSessions, lastMessage, selectedSessionId])
+  }, [fetchSessions, lastMessage, selectedSessionId, t])
 
   const selectedSession = sessions.find(s => ensureString(s.sessionId) === ensureString(selectedSessionId))
   const onboarding = React.useMemo(() => onboardingSteps({
@@ -375,13 +376,14 @@ export default function DashboardPage() {
     hasGroup: activationState.hasGroup,
     hasActiveRule: activationState.hasActiveRule,
     activityCount: Math.max(summary.totalActivities, recentActivities.length),
-  }), [activationState.hasActiveRule, activationState.hasGroup, recentActivities.length, sessions.length, summary.activeSessions, summary.totalActivities])
+    t,
+  }), [activationState.hasActiveRule, activationState.hasGroup, recentActivities.length, sessions.length, summary.activeSessions, summary.totalActivities, t])
   const onboardingDone = onboarding.filter(step => step.state === "done").length
 
   if (!isLoaded || loading) {
     return (
       <div className="grid min-h-[70dvh] place-items-center text-zinc-500">
-        Chargement du centre Whappi...
+        {t("loading")}
       </div>
     )
   }
@@ -395,40 +397,40 @@ export default function DashboardPage() {
               <div>
                 {showCenterBadge && (
                   <Badge className="gap-2 border-primary/15 bg-primary/10 pr-1 text-primary hover:bg-primary/10">
-                    Nouveau centre de controle
+                    {t("hero_badge_new")}
                     <button
                       type="button"
                       onClick={dismissCenterBadge}
                       className="rounded-full p-0.5 text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary"
-                      aria-label="Masquer l'annonce"
+                      aria-label={t("hero_badge_hide")}
                     >
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
                 )}
                 <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                  Pilotez vos groupes sans rester colle a WhatsApp.
+                  {t("hero_title")}
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Whappi fonctionne comme un co-admin : une session connectee, un groupe administre, une regle activee, puis une verification claire.
+                  {t("hero_desc")}
                 </p>
               </div>
               <Button onClick={() => setIsCreateOpen(true)} className="h-10 rounded-xl">
                 <Plus className="mr-2 h-4 w-4" />
-                Nouvelle session
+                {t("new_session")}
               </Button>
             </div>
           </div>
 
           <div className="grid gap-px bg-border md:grid-cols-4">
-            <MetricTile label="Sessions" value={sessions.length} sub={`${summary.activeSessions} connectee(s)`} />
-            <MetricTile label="Messages" value={summary.messagesSent} sub="Volume suivi" />
+            <MetricTile label={t("stat_sessions")} value={sessions.length} sub={`${summary.activeSessions} ${t("stat_connected")}`} />
+            <MetricTile label={t("stat_messages")} value={summary.messagesSent} sub={t("stat_volume")} />
             <MetricTile
-              label="Reussite"
-              value={successMetricValue(summary.messagesSent, summary.successRate)}
-              sub={successMetricSub(summary.messagesSent, summary.successRate)}
+              label={t("stat_success")}
+              value={successMetricValue(summary.messagesSent, summary.successRate, t)}
+              sub={successMetricSub(summary.messagesSent, summary.successRate, t)}
             />
-            <MetricTile label="Actions" value={summary.totalActivities} sub="Activite recente" />
+            <MetricTile label={t("stat_actions")} value={summary.totalActivities} sub={t("stat_recent")} />
           </div>
         </div>
 
@@ -436,10 +438,10 @@ export default function DashboardPage() {
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold">Parcours de prise en main</p>
-                <p className="mt-1 text-xs text-muted-foreground">Aucun vieux panneau technique ici.</p>
+                <p className="text-sm font-semibold">{t("onboarding_title")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("onboarding_desc")}</p>
               </div>
-              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{onboardingDone}/4 etapes</Badge>
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{onboardingDone}/4 {t("onboarding_steps")}</Badge>
             </div>
             <Progress value={(onboardingDone / 4) * 100} className="mt-4 h-1.5" />
             <div className="mt-5 space-y-3">
@@ -483,12 +485,12 @@ export default function DashboardPage() {
           <CardContent className="p-5 sm:p-6">
             <div className="flex flex-col gap-3 border-b pb-5 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm font-semibold">Session de travail</p>
-                <p className="mt-1 text-xs text-muted-foreground">Selectionnez le numero qui va administrer vos groupes.</p>
+                <p className="text-sm font-semibold">{t("session_work_title")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("session_work_desc")}</p>
               </div>
               <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
                 <SelectTrigger className="h-10 text-xs md:w-[220px]">
-                  <SelectValue placeholder="Choisir une session" />
+                  <SelectValue placeholder={t("choose_session")} />
                 </SelectTrigger>
                 <SelectContent>
                   {sessions.map(session => (
@@ -510,21 +512,21 @@ export default function DashboardPage() {
           <CardContent className="p-5 sm:p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold">Regles rapides</p>
-                <p className="mt-1 text-xs text-muted-foreground">Les vraies actions a configurer en premier.</p>
+                <p className="text-sm font-semibold">{t("rules_title")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("rules_desc")}</p>
               </div>
               <Button asChild variant="outline" className="h-9 text-xs">
                 <Link href="/dashboard/moderation">
-                  Ouvrir
+                  {t("rules_open")}
                   <ArrowRight className="ml-2 h-3.5 w-3.5" />
                 </Link>
               </Button>
             </div>
 
             <div className="grid gap-3">
-              <RuleRow icon={<Link2 className="h-4 w-4" />} title="Anti-liens" text="Bloquer pubs, arnaques et liens hors sujet." />
-              <RuleRow icon={<MessageCircle className="h-4 w-4" />} title="Bienvenue" text="Envoyer les regles quand un membre arrive." />
-              <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title="Avertissements" text="Prevenir avant exclusion pour garder le groupe calme." />
+              <RuleRow icon={<Link2 className="h-4 w-4" />} title={t("rule_anti_links")} text={t("rule_anti_links_desc")} />
+              <RuleRow icon={<MessageCircle className="h-4 w-4" />} title={t("rule_welcome")} text={t("rule_welcome_desc")} />
+              <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title={t("rule_warnings")} text={t("rule_warnings_desc")} />
             </div>
           </CardContent>
         </Card>
@@ -549,24 +551,24 @@ export default function DashboardPage() {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(async (value: z.infer<typeof sessionSchema>) => {
-                const toastId = toast.loading("Creation de la session...")
+                const toastId = toast.loading(t("session_creating"))
                 try {
                   const token = await getToken()
                   await api.sessions.create(value.sessionId, value.phoneNumber, token || undefined)
-                  toast.success("Session prete", { id: toastId })
+                  toast.success(t("session_ready"), { id: toastId })
                   setIsCreateOpen(false)
                   fetchSessions(true)
                 } catch (error) {
-                  const message = error instanceof Error ? error.message : "Erreur de creation"
+                  const message = error instanceof Error ? error.message : t("session_error")
                   toast.error(message, { id: toastId })
                 }
               })}
               className="space-y-6"
             >
               <DialogHeader>
-                <DialogTitle>Nouvelle session WhatsApp</DialogTitle>
+                <DialogTitle>{t("new_session_title")}</DialogTitle>
                 <DialogDescription>
-                  Choisissez un nom simple pour le numero qui servira de co-admin.
+                  {t("create_dialog_desc")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-5">
@@ -575,9 +577,9 @@ export default function DashboardPage() {
                   name="sessionId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nom de session</FormLabel>
+                      <FormLabel>{t("create_dialog_id_label")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="ex: tontine-douala" {...field} />
+                        <Input placeholder={t("create_dialog_id_placeholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -588,9 +590,9 @@ export default function DashboardPage() {
                   name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Numero dedie (optionnel)</FormLabel>
+                      <FormLabel>{t("create_dialog_phone_label")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="ex: 2376..." {...field} />
+                        <Input placeholder={t("create_dialog_phone_placeholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -599,7 +601,7 @@ export default function DashboardPage() {
               </div>
               <DialogFooter>
                 <Button type="submit" className="w-full">
-                  Creer la session
+                  {t("create_dialog_submit")}
                 </Button>
               </DialogFooter>
             </form>
@@ -635,19 +637,20 @@ function RuleRow({ icon, title, text }: { icon: React.ReactNode; title: string; 
 }
 
 function FirstRunPanel({ onCreate }: { onCreate: () => void }) {
+  const { t } = useTranslation("dashboard")
   return (
     <Card className="rounded-[28px] border-primary/30 bg-primary/10 shadow-none">
       <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center">
         <div>
-          <p className="text-sm font-semibold text-primary">Premiere activation</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">Creez une session, puis testez dans un groupe reel.</h2>
+          <p className="text-sm font-semibold text-primary">{t("first_run_title")}</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">{t("first_run_heading")}</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Le but n&apos;est pas de remplir des formulaires. Le but est de connecter un numero, le promouvoir admin, puis activer une premiere regle.
+            {t("first_run_desc")}
           </p>
         </div>
         <Button onClick={onCreate} className="h-11 rounded-xl">
           <Plus className="mr-2 h-4 w-4" />
-          Demarrer
+          {t("first_run_cta")}
         </Button>
       </CardContent>
     </Card>
@@ -655,17 +658,18 @@ function FirstRunPanel({ onCreate }: { onCreate: () => void }) {
 }
 
 function UserActivityPanel({ recentActivities }: { recentActivities: ActivityItem[] }) {
+  const { t } = useTranslation("dashboard")
   return (
     <Card className="rounded-xl border bg-card shadow-sm">
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold">Dernieres actions</p>
-            <p className="mt-1 text-xs text-muted-foreground">Vue limitee aux actions de vos sessions.</p>
+            <p className="text-sm font-semibold">{t("last_actions")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("activity_limit")}</p>
           </div>
           <History className="h-4 w-4 text-muted-foreground" />
         </div>
-        <ActivityTable recentActivities={recentActivities} emptyText="Aucune action recente. Activez une regle pour voir Whappi travailler." />
+        <ActivityTable recentActivities={recentActivities} emptyText={t("no_activity")} />
       </CardContent>
     </Card>
   )
@@ -680,23 +684,24 @@ function AdminPanel({
   analyticsData: AnalyticsPoint[]
   recentActivities: ActivityItem[]
 }) {
+  const { t } = useTranslation("dashboard")
   return (
     <Card className="rounded-[28px] bg-card shadow-none">
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold">Admin plateforme</p>
-            <p className="mt-1 text-xs text-muted-foreground">Visible uniquement pour les comptes admin.</p>
+            <p className="text-sm font-semibold">{t("admin_title")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("admin_desc")}</p>
           </div>
           <Button asChild variant="outline" className="h-9 text-xs">
-            <Link href="/dashboard/users">Utilisateurs</Link>
+            <Link href="/dashboard/users">{t("admin_users_btn")}</Link>
           </Button>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <MiniAdminStat icon={<Users className="h-4 w-4" />} label="Utilisateurs" value={adminStats?.users?.total || 0} />
-          <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label="Sessions" value={adminStats?.sessions?.total || 0} />
-          <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label="Actions" value={adminStats?.operations?.applied || 0} />
+          <MiniAdminStat icon={<Users className="h-4 w-4" />} label={t("admin_users")} value={adminStats?.users?.total || 0} />
+          <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label={t("admin_sessions")} value={adminStats?.sessions?.total || 0} />
+          <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label={t("admin_actions")} value={adminStats?.operations?.applied || 0} />
         </div>
 
         <div className="mt-5 h-[190px]">
@@ -718,7 +723,7 @@ function AdminPanel({
         </div>
 
         <div className="mt-5 grid gap-2">
-          <ActivityTable recentActivities={recentActivities.slice(0, 3)} emptyText="Aucune action plateforme recente." />
+          <ActivityTable recentActivities={recentActivities.slice(0, 3)} emptyText={t("admin_no_activity")} />
         </div>
       </CardContent>
     </Card>
@@ -736,11 +741,12 @@ function NextBestActionPanel({
   hasGroup: boolean
   hasActiveRule: boolean
 }) {
+  const { t } = useTranslation("dashboard")
   const steps = [
-    { label: "Session", done: sessionCount > 0 },
-    { label: "Connexion", done: activeSessions > 0 },
-    { label: "Groupe", done: activeSessions > 0 && hasGroup },
-    { label: "Regle", done: hasActiveRule },
+    { label: t("step_session"), done: sessionCount > 0 },
+    { label: t("step_connexion"), done: activeSessions > 0 },
+    { label: t("step_groupe"), done: activeSessions > 0 && hasGroup },
+    { label: t("step_regle"), done: hasActiveRule },
   ]
 
   const hasTodo = steps.some(step => !step.done)
@@ -749,8 +755,8 @@ function NextBestActionPanel({
     <Card className="bg-card shadow-none">
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5">
-          <p className="text-sm font-semibold">Prochaine action utile</p>
-          <p className="mt-1 text-xs text-muted-foreground">Le centre garde le cap sur l&apos;activation, pas sur une ancienne logique de solde.</p>
+          <p className="text-sm font-semibold">{t("next_action_title")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("next_action_desc")}</p>
         </div>
         <div className="space-y-3">
           {steps.map(step => (
@@ -760,13 +766,13 @@ function NextBestActionPanel({
                 {step.label}
               </span>
               <Badge className={step.done ? "bg-primary/10 text-primary hover:bg-primary/10" : "border border-state-warning/30 bg-state-warning-light text-state-warning hover:bg-state-warning-light"}>
-                {step.done ? "OK" : "A faire"}
+                {step.done ? t("next_action_ok") : t("next_action_todo")}
               </Badge>
             </div>
           ))}
         </div>
         <Button asChild className={cn("mt-5 w-full", hasTodo && "bg-state-warning text-white hover:bg-state-warning/90")} size="sm">
-          <Link href="/dashboard/moderation">Configurer les groupes</Link>
+          <Link href="/dashboard/moderation">{t("next_action_cta")}</Link>
         </Button>
       </CardContent>
     </Card>
@@ -784,6 +790,7 @@ function MiniAdminStat({ icon, label, value }: { icon: React.ReactNode; label: s
 }
 
 function ActivityTable({ recentActivities, emptyText }: { recentActivities: ActivityItem[]; emptyText: string }) {
+  const { t } = useTranslation("dashboard")
   if (recentActivities.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">
@@ -797,19 +804,19 @@ function ActivityTable({ recentActivities, emptyText }: { recentActivities: Acti
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-[10px]">Heure</TableHead>
-            <TableHead className="text-[10px]">Type</TableHead>
-            <TableHead className="text-[10px]">Groupe</TableHead>
-            <TableHead className="text-[10px]">Apercu</TableHead>
-            <TableHead className="text-[10px]">Statut</TableHead>
+            <TableHead className="text-[10px]">{t("table_time")}</TableHead>
+            <TableHead className="text-[10px]">{t("table_type")}</TableHead>
+            <TableHead className="text-[10px]">{t("table_group")}</TableHead>
+            <TableHead className="text-[10px]">{t("table_preview")}</TableHead>
+            <TableHead className="text-[10px]">{t("table_status")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {recentActivities.slice(0, 6).map(activity => (
             <TableRow key={ensureString(activity.id || activity.timestamp || activity.created_at)} className="hover:bg-surface-neutral">
               <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{activityTime(activity)}</TableCell>
-              <TableCell><Badge variant="outline" className="text-[10px]">{activityType(activity)}</Badge></TableCell>
-              <TableCell className="max-w-28 truncate text-xs">{safeRender(activity.resource_id || "Session")}</TableCell>
+              <TableCell><Badge variant="outline" className="text-[10px]">{activityType(activity, t)}</Badge></TableCell>
+              <TableCell className="max-w-28 truncate text-xs">{safeRender(activity.resource_id || t("session_fallback"))}</TableCell>
               <TableCell className="max-w-[200px] text-xs text-muted-foreground">
                 <span className="block truncate" title={activityPreview(activity)}>
                   {activityPreview(activity)}
@@ -822,7 +829,7 @@ function ActivityTable({ recentActivities, emptyText }: { recentActivities: Acti
                     ? "bg-primary/10 text-primary hover:bg-primary/10"
                     : "bg-destructive/10 text-destructive hover:bg-destructive/10"
                 )}>
-                  {activity.success === 1 || activity.success === true || activity.status === "success" ? "OK" : "Erreur"}
+                  {activity.success === 1 || activity.success === true || activity.status === "success" ? t("table_ok") : t("table_error")}
                 </Badge>
               </TableCell>
             </TableRow>
@@ -833,15 +840,15 @@ function ActivityTable({ recentActivities, emptyText }: { recentActivities: Acti
   )
 }
 
-function successMetricValue(totalMessages: number, successRate: number) {
-  if (totalMessages < 5) return `${totalMessages} envoi${totalMessages > 1 ? "s" : ""} reussi${totalMessages > 1 ? "s" : ""}`
+function successMetricValue(totalMessages: number, successRate: number, t: (key: string) => string) {
+  if (totalMessages < 5) return `${totalMessages} ${totalMessages > 1 ? t("metric_sent_plural") : t("metric_sent_singular")}`
   return `${Math.round(successRate)}%`
 }
 
-function successMetricSub(totalMessages: number, successRate: number) {
-  if (totalMessages < 5) return `${totalMessages} / ${totalMessages} message${totalMessages > 1 ? "s" : ""} (7 derniers jours)`
+function successMetricSub(totalMessages: number, successRate: number, t: (key: string) => string) {
+  if (totalMessages < 5) return `${totalMessages} / ${totalMessages} message${totalMessages > 1 ? "s" : ""} (${t("metric_7d")})`
   const successCount = Math.round((totalMessages * successRate) / 100)
-  return `${successCount} / ${totalMessages} reussis (7j)`
+  return `${successCount} / ${totalMessages} ${t("metric_ok_7d")}`
 }
 
 function onboardingSteps({
@@ -850,18 +857,20 @@ function onboardingSteps({
   hasGroup,
   hasActiveRule,
   activityCount,
+  t,
 }: {
   sessionCount: number
   activeSessions: number
   hasGroup: boolean
   hasActiveRule: boolean
   activityCount: number
+  t: (key: string) => string
 }) {
   const base = [
-    { title: "Connecter une session", text: "QR code ou code d'appairage", done: sessionCount > 0 },
-    { title: "Ajouter au groupe", text: "Le numero doit etre admin", done: activeSessions > 0 && hasGroup },
-    { title: "Activer une regle", text: "Anti-liens ou bienvenue", done: hasActiveRule },
-    { title: "Verifier les actions", text: "Voir ce qui a ete applique", done: activityCount > 0 },
+    { title: t("onb_step1_title"), text: t("onb_step1_text"), done: sessionCount > 0 },
+    { title: t("onb_step2_title"), text: t("onb_step2_text"), done: activeSessions > 0 && hasGroup },
+    { title: t("onb_step3_title"), text: t("onb_step3_text"), done: hasActiveRule },
+    { title: t("onb_step4_title"), text: t("onb_step4_text"), done: activityCount > 0 },
   ]
   const currentIndex = base.findIndex(step => !step.done)
   return base.map((step, index) => ({
@@ -894,17 +903,17 @@ function activityTime(activity: ActivityItem) {
   return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(date)
 }
 
-function activityType(activity: ActivityItem) {
+function activityType(activity: ActivityItem, t: (key: string) => string) {
   const action = ensureString(activity.action, "Action").replace(/_/g, " ")
-  if (action.toLowerCase().includes("welcome")) return "Bienvenue"
-  if (action.toLowerCase().includes("schedule")) return "Programme"
-  if (action.toLowerCase().includes("message")) return "Message"
+  if (action.toLowerCase().includes("welcome")) return t("type_welcome")
+  if (action.toLowerCase().includes("schedule")) return t("type_scheduled")
+  if (action.toLowerCase().includes("message")) return t("type_message")
   return action
 }
 
 function activityPreview(activity: ActivityItem) {
   const details = typeof activity.details === "string" ? activity.details : JSON.stringify(activity.details || "")
-  return formatApercu(details || activity.action || "Action executee")
+  return formatApercu(details || activity.action || "Action executée")
 }
 
 function formatApercu(raw: string) {
@@ -924,7 +933,7 @@ function formatApercu(raw: string) {
     const type = Object.keys(parsed.message || {})[0]
     if (type) return `[${type}]`
     if (parsed.recipient) return "Message WhatsApp"
-    return "Action executee"
+    return "Action executée"
   } catch {
     return readable
   }

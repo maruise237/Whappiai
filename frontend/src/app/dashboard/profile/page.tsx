@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 import {
   Bell,
   Building2,
@@ -75,6 +76,7 @@ type SubscriptionProfile = {
 }
 
 export default function ProfilePage() {
+  const { t } = useTranslation('profile')
   const { user, isLoaded } = useUser()
   const { getToken } = useAuth()
   const { signOut } = useClerk()
@@ -104,11 +106,11 @@ export default function ProfilePage() {
       setTimezone(nextUser?.timezone || "Africa/Douala")
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de charger les parametres")
+      toast.error(t('toast_load_error'))
     } finally {
       setLoading(false)
     }
-  }, [getToken])
+  }, [getToken, t])
 
   React.useEffect(() => {
     fetchProfile()
@@ -117,7 +119,7 @@ export default function ProfilePage() {
   if (!isLoaded) return null
 
   const userEmail = user?.primaryEmailAddress?.emailAddress || ""
-  const displayName = user?.fullName || userEmail.split("@")[0] || "Compte Whappi"
+  const displayName = user?.fullName || userEmail.split("@")[0] || t('default_display_name')
   const initials = getInitials(displayName)
   const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
   const planCode = getPlanCode(subscription?.plan_code || subscription?.plan_id || dbUser?.plan_id || "trial")
@@ -133,10 +135,10 @@ export default function ProfilePage() {
       const token = await getToken()
       await api.users.updateProfile({ organization_name: organisation, timezone }, token || undefined)
       setDbUser({ ...dbUser, organization_name: organisation, timezone })
-      toast.success("Parametres mis a jour")
+      toast.success(t('toast_save_success'))
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de mettre a jour les parametres")
+      toast.error(t('toast_save_error'))
     } finally {
       setSavingProfile(false)
     }
@@ -147,15 +149,15 @@ export default function ProfilePage() {
       const token = await getToken()
       await api.users.updateProfile({ sound_notifications: value ? 1 : 0 }, token || undefined)
       setDbUser({ ...dbUser, sound_notifications: value ? 1 : 0 })
-      toast.success("Notification sonore mise a jour")
+      toast.success(t('toast_sound_success'))
     } catch (error) {
       console.error(error)
-      toast.error("Erreur de mise a jour")
+      toast.error(t('toast_sound_error'))
     }
   }
 
   function handleDeleteAccount() {
-    toast.info("Demande de suppression recue. Le traitement definitif doit etre raccorde cote serveur.")
+    toast.info(t('toast_delete_info'))
     setDeleteDialogOpen(false)
     setConfirmEmail("")
   }
@@ -164,7 +166,7 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-5xl pb-20">
       <section className="relative overflow-hidden rounded-[28px] border border-primary/10 bg-[radial-gradient(circle_at_top,#dcfce7_0%,#f7fee7_32%,#ffffff_74%)] px-5 py-8 shadow-sm md:px-10 md:py-10 dark:bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18)_0%,rgba(20,83,45,0.12)_42%,rgba(15,23,42,0.4)_100%)]">
         <div className="absolute right-8 top-8 hidden rounded-full border border-primary/15 bg-white/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary shadow-sm backdrop-blur md:inline-flex">
-          Parametres du compte
+          {t('page_title')}
         </div>
 
         <div className="flex flex-col items-center text-center">
@@ -192,31 +194,31 @@ export default function ProfilePage() {
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
               <PlanBadge plan={planCode} active className="rounded-full px-3 py-1" />
               <Badge className={cn("rounded-full border px-3 py-1 text-[10px] font-semibold", statusTone(planStatus))}>
-                {statusLabel(planStatus)}
+                {statusLabel(planStatus, t)}
               </Badge>
               {isAdmin && (
                 <Badge className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] font-semibold text-primary">
-                  Admin
+                  {t('admin_badge')}
                 </Badge>
               )}
             </div>
           </div>
 
           <div className="mt-7 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
-            <ProfilePill icon={<CreditCard className="h-4 w-4" />} label="Forfait" value={getPlanLabel(planCode)} />
-            <ProfilePill icon={<CalendarClock className="h-4 w-4" />} label="Expiration" value={expiry ? safeDate(expiry, { day: "2-digit", month: "short" }) : "Essai"} />
-            <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label="Actions" value={messageLimit ? `${messageUsed}/${messageLimit}` : "Illimite"} />
+            <ProfilePill icon={<CreditCard className="h-4 w-4" />} label={t('plan_label')} value={getPlanLabel(planCode)} />
+            <ProfilePill icon={<CalendarClock className="h-4 w-4" />} label={t('expiry_label')} value={expiry ? safeDate(expiry, { day: "2-digit", month: "short" }) : t('expiry_trial')} />
+            <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label={t('actions_label')} value={messageLimit ? `${messageUsed}/${messageLimit}` : t('actions_unlimited')} />
           </div>
 
           <div className="mt-6 flex w-full max-w-xl flex-col gap-3 sm:flex-row">
             <Button asChild className="h-11 flex-1 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90">
               <Link href="/dashboard/billing">
-                <CreditCard className="mr-2 h-4 w-4" /> Gerer mon forfait
+                <CreditCard className="mr-2 h-4 w-4" /> {t('manage_plan')}
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-11 flex-1 rounded-full border-primary/30 text-primary hover:bg-primary/5">
               <Link href="/dashboard/moderation">
-                <ShieldCheck className="mr-2 h-4 w-4" /> Mes groupes
+                <ShieldCheck className="mr-2 h-4 w-4" /> {t('my_groups')}
               </Link>
             </Button>
           </div>
@@ -225,58 +227,58 @@ export default function ProfilePage() {
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
-          <SettingsBlock title="Identite Whappi" description="Informations utiles pour personnaliser votre espace et vos messages.">
+          <SettingsBlock title={t('identity_title')} description={t('identity_desc')}>
             <ReadOnlyRow
               icon={<UserRound className="h-4 w-4" />}
-              label="Nom public"
+              label={t('public_name_label')}
               value={displayName}
-              meta="Gere par Clerk"
+              meta={t('public_name_meta')}
             />
             <ReadOnlyRow
               icon={<Mail className="h-4 w-4" />}
-              label="Email principal"
+              label={t('email_label')}
               value={userEmail}
-              meta="Gere par Clerk"
+              meta={t('email_meta')}
             />
             <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
-              <Label className="text-xs font-semibold text-muted-foreground">Organisation</Label>
+              <Label className="text-xs font-semibold text-muted-foreground">{t('organisation_label')}</Label>
               <div className="mt-2 flex flex-col gap-3 sm:flex-row">
                 <Input
                   value={organisation}
                   onChange={event => setOrganisation(event.target.value)}
-                  placeholder="Ex: KAMTECH, Reseau Tontine Yaounde"
+                  placeholder={t('organisation_placeholder')}
                   className="h-11 rounded-xl border-primary/15 bg-background text-sm focus-visible:ring-primary/30"
                   disabled={loading}
                 />
                 {hasProfileChanges && (
                   <Button onClick={handleSaveProfile} disabled={savingProfile} className="h-11 rounded-xl">
                     <Save className="mr-2 h-4 w-4" />
-                    {savingProfile ? "Sauvegarde" : "Enregistrer"}
+                    {savingProfile ? t('saving_button') : t('save_button')}
                   </Button>
                 )}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Sert a personnaliser les messages automatiques dans vos groupes.
+                {t('organisation_hint')}
               </p>
             </div>
           </SettingsBlock>
 
-          <SettingsBlock title="Preferences" description="Controlez les alertes et les signaux utiles du tableau de bord.">
+          <SettingsBlock title={t('preferences_title')} description={t('preferences_desc')}>
             <ToggleRow
               icon={<Volume2 className="h-4 w-4" />}
-              label="Notifications sonores"
-              text="Jouer un son lors d'un evenement important."
+              label={t('sound_notifications_label')}
+              text={t('sound_notifications_text')}
               checked={Boolean(dbUser?.sound_notifications)}
               onCheckedChange={handleSoundToggle}
             />
             <ActionRow
               icon={<Bell className="h-4 w-4" />}
-              label="Centre de notifications"
-              text="Voir les rappels d'abonnement et les alertes systeme."
+              label={t('notification_center_label')}
+              text={t('notification_center_text')}
               href="/dashboard"
             />
             <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
-              <Label className="text-xs font-semibold text-muted-foreground">Fuseau horaire</Label>
+              <Label className="text-xs font-semibold text-muted-foreground">{t('timezone_label')}</Label>
               <div className="mt-2">
                 <select
                   value={timezone}
@@ -289,25 +291,25 @@ export default function ProfilePage() {
                 </select>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Les messages programmés respecteront ce fuseau.
+                {t('timezone_hint')}
               </p>
             </div>
           </SettingsBlock>
         </div>
 
         <aside className="space-y-6">
-          <SettingsBlock title="Securite" description="Clerk gere l'identite et les acces sensibles.">
+          <SettingsBlock title={t('security_title')} description={t('security_desc')}>
             <ActionRow
               icon={<LockKeyhole className="h-4 w-4" />}
-              label="Mot de passe et 2FA"
-              text="Ouvrir le centre de securite Clerk."
+              label={t('password_2fa_label')}
+              text={t('password_2fa_text')}
               external
               href="https://accounts.clerk.dev"
             />
             <ActionRow
               icon={<LifeBuoy className="h-4 w-4" />}
-              label="Aide et support"
-              text="Besoin d'aide sur un forfait ou un groupe."
+              label={t('help_support_label')}
+              text={t('help_support_text')}
               href="/dashboard"
             />
           </SettingsBlock>
@@ -322,7 +324,7 @@ export default function ProfilePage() {
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
                   <LogOut className="h-4 w-4" />
                 </span>
-                <span className="flex-1">Se deconnecter</span>
+                <span className="flex-1">{t('sign_out')}</span>
                 <ChevronRight className="h-4 w-4" />
               </button>
               <button
@@ -334,8 +336,8 @@ export default function ProfilePage() {
                   <Trash2 className="h-4 w-4" />
                 </span>
                 <span className="flex-1">
-                  Supprimer mon compte
-                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Action irreversible</span>
+                  {t('delete_account')}
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{t('delete_account_hint')}</span>
                 </span>
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -347,26 +349,26 @@ export default function ProfilePage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">Supprimer votre compte ?</AlertDialogTitle>
+            <AlertDialogTitle className="text-destructive">{t('delete_dialog_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irreversible. Toutes vos sessions WhatsApp, groupes configures et historiques seront definitivement effaces.
+              {t('delete_dialog_desc')}
               <br /><br />
-              Pour confirmer, tapez votre adresse email : <strong>{userEmail}</strong>
+              {t('delete_dialog_confirm')} <strong>{userEmail}</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Input
             value={confirmEmail}
             onChange={event => setConfirmEmail(event.target.value)}
-            placeholder={userEmail || "email@exemple.com"}
+            placeholder={userEmail || t('delete_dialog_placeholder')}
           />
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmEmail("")}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmEmail("")}>{t('delete_dialog_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               disabled={confirmEmail !== userEmail}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
               onClick={handleDeleteAccount}
             >
-              Supprimer definitivement
+              {t('delete_dialog_confirm_btn')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -491,11 +493,11 @@ function getInitials(name: string) {
     .join("") || "W"
 }
 
-function statusLabel(status: string) {
-  if (status === "expired") return "Expire"
-  if (status === "canceled" || status === "cancelled") return "Annule"
-  if (status === "trial") return "Essai actif"
-  return "Actif"
+function statusLabel(status: string, t: (key: string) => string) {
+  if (status === "expired") return t('status_expired')
+  if (status === "canceled" || status === "cancelled") return t('status_canceled')
+  if (status === "trial") return t('status_trial')
+  return t('status_active')
 }
 
 function statusTone(status: string) {

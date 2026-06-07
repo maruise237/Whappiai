@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { BellRing, CalendarClock, CreditCard, Gift, Info } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/pla
 import { cn } from "@/lib/utils"
 
 export default function BillingPage() {
+  const { t } = useTranslation("billing")
   const { getToken } = useAuth()
   const [activePlan, setActivePlan] = React.useState("trial")
   const [expiresAt, setExpiresAt] = React.useState<string | null>(null)
@@ -38,11 +40,11 @@ export default function BillingPage() {
     } catch {
       setActivePlan("trial")
       setExpiresAt(null)
-      setAccessState({ allowed: false, status: "unknown", message: "Impossible de verifier le forfait." })
+      setAccessState({ allowed: false, status: "unknown", message: t("error_verify") })
     } finally {
       setIsPlanLoading(false)
     }
-  }, [getToken])
+  }, [getToken, t])
 
   React.useEffect(() => {
     let mounted = true
@@ -83,14 +85,14 @@ export default function BillingPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            <CreditCard className="h-5 w-5 text-primary" /> Abonnement & plans
+            <CreditCard className="h-5 w-5 text-primary" /> {t("page_title")}
           </h1>
-          <p className="text-sm text-muted-foreground">Choisissez l&apos;offre adaptee au nombre de groupes WhatsApp a gerer.</p>
+          <p className="text-sm text-muted-foreground">{t("page_subtitle")}</p>
         </div>
 
         {isPlanLoading ? (
           <span className="h-auto rounded-full border px-4 py-1.5 text-[10px] font-semibold text-muted-foreground">
-            Synchronisation forfait...
+            {t("syncing_badge")}
           </span>
         ) : (
           <PlanBadge plan={activePlan} active className="h-auto rounded-full px-4 py-1.5" />
@@ -109,27 +111,27 @@ export default function BillingPage() {
               <Gift className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold text-primary">{isPlanLoading ? "Synchronisation du forfait" : billingBannerTitle(activePlan, accessState)}</p>
+              <p className="font-semibold text-primary">{isPlanLoading ? t("syncing_title") : billingBannerTitle(activePlan, accessState, t)}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {isPlanLoading ? "Whappi verifie le forfait actif de ce compte." : billingBannerText(activePlan, accessState)}
+                {isPlanLoading ? t("syncing_text") : billingBannerText(activePlan, accessState, t)}
               </p>
               {!isPlanLoading && expiresAt && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 font-medium">
                     <CalendarClock className={cn("h-3.5 w-3.5", isExpiredDate(expiresAt) ? "text-destructive" : "text-primary")} />
-                    {expirationDateLabel(expiresAt)}
+                    {expirationDateLabel(expiresAt, t)}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 font-medium">
                     <BellRing className="h-3.5 w-3.5 text-amber-500" />
-                    Rappels J-7, J-3, J-1 et jour J
+                    {t("reminder_badge")}
                   </span>
                 </div>
               )}
             </div>
           </div>
           <div className="rounded-2xl border bg-card px-4 py-3 text-left sm:text-right">
-            <p className="text-xs text-muted-foreground">{isPlanLoading ? "Statut" : "Expiration"}</p>
-            <p className="text-lg font-bold text-primary">{isPlanLoading ? "..." : getExpirationSummary(expiresAt, activePlan)}</p>
+            <p className="text-xs text-muted-foreground">{isPlanLoading ? t("status_label") : t("expiration_label")}</p>
+            <p className="text-lg font-bold text-primary">{isPlanLoading ? "..." : getExpirationSummary(expiresAt, activePlan, t)}</p>
             {!isPlanLoading && expiresAt && (
               <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 {accessState.allowed ? getPlanLabel(activePlan) : accessState.status}
@@ -141,9 +143,9 @@ export default function BillingPage() {
 
       <div className="space-y-6">
         <div className="mb-10 space-y-2 text-center">
-          <h2 className="text-2xl font-bold tracking-tight">Offres co-admin WhatsApp</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("plans_heading")}</h2>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            Starter pour tester, Pro pour plusieurs groupes, Organisation pour les communautes larges.
+            {t("plans_subtitle")}
           </p>
         </div>
 
@@ -156,30 +158,30 @@ export default function BillingPage() {
             <Info className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1 space-y-1 text-center md:text-left">
-            <h3 className="text-sm font-bold">Besoin d&apos;une solution sur-mesure ?</h3>
+            <h3 className="text-sm font-bold">{t("custom_title")}</h3>
             <p className="text-xs text-muted-foreground">
-              Pour les agences, reseaux de vente ou operations multi-pays, on peut adapter les sessions, les volumes et le suivi.
+              {t("custom_text")}
             </p>
           </div>
-          <Button variant="outline" size="sm" className="rounded-full">Contacter le support</Button>
+          <Button variant="outline" size="sm" className="rounded-full">{t("custom_cta")}</Button>
         </CardContent>
       </Card>
     </div>
   )
 }
 
-function billingBannerTitle(plan: string, accessState: { allowed: boolean }) {
-  if (!accessState.allowed) return `Forfait ${getPlanLabel(plan)} expire`
-  if (plan === "trial") return "Essai gratuit en cours"
-  return `Forfait ${getPlanLabel(plan)} actif`
+function billingBannerTitle(plan: string, accessState: { allowed: boolean }, t: (key: string, opts?: Record<string, unknown>) => string) {
+  if (!accessState.allowed) return t("banner_title_expired", { plan: getPlanLabel(plan) })
+  if (plan === "trial") return t("banner_title_trial")
+  return t("banner_title_active", { plan: getPlanLabel(plan) })
 }
 
-function billingBannerText(plan: string, accessState: { allowed: boolean; message: string }) {
-  if (!accessState.allowed) return accessState.message || "Renouvelez le forfait pour relancer les automatisations Whappi."
-  if (plan === "starter") return "Inclus : 1 groupe - 3 messages programmes - 20 mots interdits."
-  if (plan === "pro") return "Inclus : 5 groupes - messages programmes illimites - moderation complete."
-  if (plan === "business") return "Inclus : 20 groupes - support prioritaire - configuration avancee."
-  return "Inclus : 1 groupe - 3 messages programmes - toutes les regles de base."
+function billingBannerText(plan: string, accessState: { allowed: boolean; message: string }, t: (key: string, opts?: Record<string, unknown>) => string) {
+  if (!accessState.allowed) return accessState.message || t("banner_text_renew")
+  if (plan === "starter") return t("banner_text_starter")
+  if (plan === "pro") return t("banner_text_pro")
+  if (plan === "business") return t("banner_text_business")
+  return t("banner_text_trial")
 }
 
 type PlanSource = {
@@ -219,13 +221,13 @@ function formatExpirationDate(value: string) {
   })
 }
 
-function getExpirationSummary(value: string | null, plan: string) {
+function getExpirationSummary(value: string | null, plan: string, t: (key: string, opts?: Record<string, unknown>) => string) {
   const days = getDaysRemaining(value)
-  if (days === null) return plan === "trial" ? "7 jours" : getPlanLabel(plan)
-  if (days < 0) return "Expire"
-  if (days === 0) return "Aujourd'hui"
-  if (days === 1) return "1 jour"
-  return `${days} jours`
+  if (days === null) return plan === "trial" ? t("expiration_7_days") : getPlanLabel(plan)
+  if (days < 0) return t("expiration_expired")
+  if (days === 0) return t("expiration_today")
+  if (days === 1) return t("expiration_1_day")
+  return t("expiration_days", { count: days })
 }
 
 function getDaysRemaining(value: string | null) {
@@ -238,8 +240,8 @@ function getDaysRemaining(value: string | null) {
   return Math.ceil((expiryDay.getTime() - today.getTime()) / 86_400_000)
 }
 
-function expirationDateLabel(value: string) {
-  return `${isExpiredDate(value) ? "Expire depuis le" : "Expire le"} ${formatExpirationDate(value)}`
+function expirationDateLabel(value: string, t: (key: string, opts?: Record<string, unknown>) => string) {
+  return t(isExpiredDate(value) ? "expiration_since" : "expiration_on", { date: formatExpirationDate(value) })
 }
 
 function isExpiredDate(value: string | null) {

@@ -5,56 +5,58 @@ import { useState } from "react"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 
 const plans = [
   {
-    name: "Starter",
-    description: "Pour tester et gerer un seul groupe actif.",
-    price: { monthly: "3 500 FCFA", yearly: "33 600 FCFA", monthlyValue: 3500, yearlyValue: 33600 },
+    name: "pricing_plan_1_name",
+    description: "pricing_plan_1_desc",
+    price: { monthly: "pricing_plan_1_price_monthly", yearly: "pricing_plan_1_price_yearly", monthlyValue: 3500, yearlyValue: 33600 },
     features: [
-      "1 groupe connecte",
-      "Bienvenue dans le groupe",
-      "Filtre de mots interdits jusqu'a 20",
-      "Systeme avertissements + ban auto",
-      "3 messages programmes actifs",
+      "pricing_plan_1_feat_1",
+      "pricing_plan_1_feat_2",
+      "pricing_plan_1_feat_3",
+      "pricing_plan_1_feat_4",
+      "pricing_plan_1_feat_5",
     ],
-    cta: "Choisir Starter",
+    cta: "pricing_plan_1_cta",
     highlighted: false,
   },
   {
-    name: "Pro",
-    description: "Pour les admins serieux qui gerent plusieurs groupes actifs.",
-    price: { monthly: "8 000 FCFA", yearly: "76 800 FCFA", monthlyValue: 8000, yearlyValue: 76800 },
+    name: "pricing_plan_2_name",
+    description: "pricing_plan_2_desc",
+    price: { monthly: "pricing_plan_2_price_monthly", yearly: "pricing_plan_2_price_yearly", monthlyValue: 8000, yearlyValue: 76800 },
     features: [
-      "Jusqu'a 5 groupes connectes",
-      "Bienvenue dans le groupe",
-      "Filtre mots illimite + anti-liens",
-      "Messages programmes illimites",
-      "Dashboard complet + logs",
-      "Presets de configuration",
+      "pricing_plan_2_feat_1",
+      "pricing_plan_2_feat_2",
+      "pricing_plan_2_feat_3",
+      "pricing_plan_2_feat_4",
+      "pricing_plan_2_feat_5",
+      "pricing_plan_2_feat_6",
     ],
-    cta: "Choisir Pro",
+    cta: "pricing_plan_2_cta",
     highlighted: true,
   },
   {
-    name: "Organisation",
-    description: "Pour associations, medias, formations ou reseaux larges.",
-    price: { monthly: "18 000 FCFA", yearly: "172 800 FCFA", monthlyValue: 18000, yearlyValue: 172800 },
+    name: "pricing_plan_3_name",
+    description: "pricing_plan_3_desc",
+    price: { monthly: "pricing_plan_3_price_monthly", yearly: "pricing_plan_3_price_yearly", monthlyValue: 18000, yearlyValue: 172800 },
     features: [
-      "Jusqu'a 20 groupes connectes",
-      "Toutes les fonctionnalites Pro",
-      "Liste noire partagee entre groupes",
-      "Logs avances de moderation",
-      "Accompagnement configuration",
-      "Support prioritaire WhatsApp",
+      "pricing_plan_3_feat_1",
+      "pricing_plan_3_feat_2",
+      "pricing_plan_3_feat_3",
+      "pricing_plan_3_feat_4",
+      "pricing_plan_3_feat_5",
+      "pricing_plan_3_feat_6",
     ],
-    cta: "Choisir Organisation",
+    cta: "pricing_plan_3_cta",
     highlighted: false,
   },
 ]
 
 export function Pricing() {
+  const { t } = useTranslation('landing')
   const [isAnnual, setIsAnnual] = useState(false)
 
   return (
@@ -73,15 +75,15 @@ export function Pricing() {
           className="mb-16 text-center"
         >
           <h2 className="mb-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Des prix penses pour le terrain
+            {t('pricing_section_title')}
           </h2>
           <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground">
-            Payable en FCFA, adapte aux admins de groupes WhatsApp, avec 7 jours d&apos;essai pour voir la difference avant de payer.
+            {t('pricing_section_desc')}
           </p>
 
           <div className="mb-12 flex items-center justify-center gap-4">
             <span className={cn("text-sm font-medium transition-colors", !isAnnual ? "text-foreground" : "text-muted-foreground")}>
-              Mensuel
+              {t('pricing_monthly')}
             </span>
             <button
               aria-label="Toggle annual billing"
@@ -94,9 +96,9 @@ export function Pricing() {
               <span className={cn("pointer-events-none block h-6 w-6 rounded-full bg-background shadow-lg ring-0 transition-transform", isAnnual ? "translate-x-5" : "translate-x-0")} />
             </button>
             <span className={cn("flex items-center gap-2 text-sm font-medium transition-colors", isAnnual ? "text-foreground" : "text-muted-foreground")}>
-              Annuel
+              {t('pricing_yearly')}
               <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                -20%
+                {t('pricing_discount')}
               </span>
             </span>
           </div>
@@ -119,14 +121,15 @@ export function Pricing() {
             >
               {plan.highlighted && (
                 <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground shadow-lg">
-                  <span>★</span> 82% choisissent ce plan
+                  <span>★</span> {t('pricing_picked_by')}
                 </div>
               )}
 
               <div className="mb-8">
                 <h3 className={cn("mb-2 text-xl font-semibold", plan.highlighted ? "text-primary" : "text-foreground")}>
-                  {plan.name}
+                  {t(plan.name)}
                 </h3>
+                <p className="mb-2 text-sm text-muted-foreground">{t(plan.description)}</p>
                 <div className="mb-2 flex items-baseline gap-1">
                   {isAnnual && (
                     <span className="mr-2 text-lg text-muted-foreground line-through decoration-destructive/50">
@@ -134,11 +137,11 @@ export function Pricing() {
                     </span>
                   )}
                   <span className="text-4xl font-bold text-foreground">
-                    {isAnnual ? plan.price.yearly : plan.price.monthly}
+                    {isAnnual ? t(plan.price.yearly) : t(plan.price.monthly)}
                   </span>
-                  <span className="text-sm text-muted-foreground">/{isAnnual ? "an" : "mois"}</span>
+                  <span className="text-sm text-muted-foreground">{isAnnual ? t('pricing_per_year') : t('pricing_per_month')}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{isAnnual ? "Facture annuellement" : "Facture mensuellement"}</p>
+                <p className="text-sm text-muted-foreground">{isAnnual ? t('pricing_billed_yearly') : t('pricing_billed_monthly')}</p>
               </div>
 
               <div className="mb-8 space-y-4">
@@ -147,7 +150,7 @@ export function Pricing() {
                     <div className={cn("mt-1 shrink-0 rounded-full p-0.5", plan.highlighted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
                       <Check className="h-3 w-3" strokeWidth={3} />
                     </div>
-                    <span className="text-sm leading-tight text-foreground/90">{feature}</span>
+                    <span className="text-sm leading-tight text-foreground/90">{t(feature)}</span>
                   </div>
                 ))}
               </div>
@@ -157,10 +160,10 @@ export function Pricing() {
                 variant={plan.highlighted ? "default" : "secondary"}
                 asChild
               >
-                <Link href="/register">{plan.cta}</Link>
+                <Link href="/register">{t(plan.cta)}</Link>
               </Button>
 
-              {!plan.highlighted && <p className="mt-4 text-center text-xs text-muted-foreground">Parfait pour demarrer</p>}
+              {!plan.highlighted && <p className="mt-4 text-center text-xs text-muted-foreground">{t('pricing_perfect_to_start')}</p>}
             </motion.div>
           ))}
         </div>

@@ -6,6 +6,7 @@ import { Star, Quote } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { useTranslation } from "react-i18next"
 
 // --- Data Generation ---
 
@@ -167,6 +168,7 @@ const ALL_TESTIMONIALS = [
  }
 
  export function Testimonials() {
+   const { t } = useTranslation('landing')
    const containerRef = useRef<HTMLDivElement>(null)
    const isInView = useInView(containerRef, { once: true, margin: "-10%" })
 
@@ -187,7 +189,7 @@ const ALL_TESTIMONIALS = [
      <section
        ref={containerRef}
        className="py-24 relative overflow-hidden bg-background"
-       aria-label="Témoignages clients"
+       aria-label={t('testimonials_aria_label')}
      >
       <div className="container px-4 mx-auto relative z-10">
         {/* Header */}
@@ -198,13 +200,13 @@ const ALL_TESTIMONIALS = [
             transition={{ duration: 0.6 }}
           >
             <Badge variant="outline" className="mb-4 px-4 py-1 rounded-full bg-primary/5 text-primary border-primary/20">
-              Retours du terrain
+              {t('testimonials_badge')}
             </Badge>
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Les admins veulent surtout retrouver le contrôle
+              {t('testimonials_title')}
             </h2>
             <p className="text-muted-foreground text-lg mt-4 max-w-2xl mx-auto">
-              Des groupes plus propres, des règles appliquées et moins de temps perdu à supprimer des messages.
+              {t('testimonials_desc')}
             </p>
           </motion.div>
         </div>
