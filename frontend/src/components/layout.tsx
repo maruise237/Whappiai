@@ -373,47 +373,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 }
 
 function WappyMascotWrapper() {
-  const { state, setState } = useWappy()
-  const [retracted, setRetracted] = React.useState(true)
-  const prevStateRef = React.useRef(state)
-  const retractTimerRef = React.useRef(null)
-
-  // Expand on any non-idle state change
-  React.useEffect(() => {
-    if (state !== prevStateRef.current) {
-      prevStateRef.current = state
-      if (state !== "idle") {
-        setRetracted(false)
-        if (retractTimerRef.current) clearTimeout(retractTimerRef.current)
-      }
-    }
-  }, [state])
-
-  // Auto-retract after 12s of idle
-  React.useEffect(() => {
-    if (state === "idle") {
-      retractTimerRef.current = setTimeout(() => {
-        setRetracted(true)
-      }, 12000)
-    }
-    return () => {
-      if (retractTimerRef.current) clearTimeout(retractTimerRef.current)
-    }
-  }, [state])
-
-  const handleExpand = React.useCallback(() => {
-    setRetracted(false)
-    if (retractTimerRef.current) clearTimeout(retractTimerRef.current)
-    // Re-arm auto-retract
-    retractTimerRef.current = setTimeout(() => setRetracted(true), 12000)
-  }, [])
-
+  const { state } = useWappy()
   return (
     <WappyMascot
       state={state}
-      size={retracted ? 48 : 140}
-      compact={retracted}
-      onExpand={handleExpand}
+      size={140}
       className="fixed bottom-5 right-5 z-50 pointer-events-auto"
     />
   )
