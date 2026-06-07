@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react"
 
-// ════════════════════════════════════════
-// ÉTATS DE WAPPY
-// ════════════════════════════════════════
-export const WAPPY_STATES = {
+// ══════════════════════════════════════════════════
+// ÉTATS DE WAPPY — basés sur les events Whappi réels
+// ══════════════════════════════════════════════════
+const STATES = {
   idle: {
     fr: "Tranquille", emoji: "😊", color: "#22c55e",
     msg: null, trackEyes: true,
@@ -87,32 +87,32 @@ export const WAPPY_STATES = {
     blush: 0, anim: "float",
     extra: null
   },
-  protected: {
-    fr: "Protégé !", emoji: "🛡️", color: "#22c55e",
-    msg: "Groupe sécurisé ! Aucun lien suspect détecté.", trackEyes: false,
-    eye: { s: 1.08, dy: -1, closed: false },
-    mouth: { t: "arc", d: "M 83,150 Q 100,165 117,150" },
-    brow: ["M 53,30 Q 66,25 78,30", "M 122,30 Q 134,25 146,30"],
-    blush: 0.2, anim: "bounce",
-    extra: "shield"
-  },
   banning: {
-    fr: "Bannissement !", emoji: "🔨", color: "#ef4444",
-    msg: "Membre banni du groupe !", trackEyes: false,
-    eye: { s: 1.25, dy: 0, closed: false },
-    mouth: { t: "arc", d: "M 84,151 Q 100,160 116,151" },
-    brow: ["M 50,34 Q 66,26 81,42", "M 119,42 Q 134,26 150,34"],
-    blush: 0, anim: "shake",
-    extra: "hammer"
+    fr: "Modération", emoji: "🔨", color: "#ef4444",
+    msg: "Spammer détecté et exclu ! 🔨", trackEyes: true,
+    eye: { s: 1.1, dy: 2, closed: false },
+    mouth: { t: "arc", d: "M 85,158 Q 100,150 115,158" },
+    brow: ["M 51,25 Q 66,35 81,30", "M 119,30 Q 134,35 149,25"],
+    blush: 0, anim: "pound",
+    extra: "anger"
   },
   scheduled: {
-    fr: "Programmé", emoji: "⏰", color: "#22c55e",
-    msg: "Message programmé avec succès ! ⏰", trackEyes: false,
-    eye: { s: 1, dy: 0, closed: false },
-    mouth: { t: "arc", d: "M 85,150 Q 100,164 115,150" },
-    brow: ["M 54,31 Q 66,27 78,31", "M 122,31 Q 134,27 146,31"],
-    blush: 0.2, anim: "float",
-    extra: "clock"
+    fr: "Programmé", emoji: "📅", color: "#8b5cf6",
+    msg: "Message programmé envoyé avec succès !", trackEyes: false,
+    eye: { s: 0.9, dy: 0, closed: false },
+    mouth: { t: "arc", d: "M 88,152 Q 100,158 112,152" },
+brow: ["M 54,32 Q 66,29 77,32", "M 123,32 Q 134,29 145,32"],
+    blush: 0.2, anim: "ticktock",
+    extra: "clocks"
+  },
+  protected: {
+    fr: "Sécurisé", emoji: "🛡", color: "#06b6d4",
+    msg: "Aucun lien suspect ne passera. Groupe protégé !", trackEyes: true,
+    eye: { s: 1.05, dy: -1, closed: false },
+    mouth: { t: "arc", d: "M 84,150 Q 100,165 116,150" },
+    brow: ["M 54,28 Q 66,24 78,28", "M 122,28 Q 134,24 146,28"],
+    blush: 0.1, anim: "float",
+    extra: "shield"
   }
 }
 
@@ -125,24 +125,28 @@ const ANIMS = {
   breathe: "wappy-breathe 4.5s ease-in-out infinite",
   droop:   "wappy-droop 3s ease-in-out infinite",
   shake:   "wappy-shake 0.38s ease-in-out 4",
+  pound:   "wappy-pound 0.6s ease-in-out infinite",
+  ticktock:"wappy-ticktock 2s cubic-bezier(0.4, 0, 0.2, 1) infinite",
 }
 
-export default function WappyMascot({ state = "idle", size = 160, className = "", style = {} }) {
-  const [pupils, setPupils] = useState({ lx:0, ly:0, rx:0, ry:0 })
+export default function WappyMascot({ state = "idle", size = 180, className = "", style = {} }) {
+  const [key, setKey] = useState(state)
+  const [pupils, setPupils] = useState({ lx: 0, ly: 0, rx: 0, ry: 0 })
   const [blink, setBlink] = useState(false)
   const [showMsg, setShowMsg] = useState(false)
-  const [prevState, setPrevState] = useState(state)
+  const [animKey, setAnimKey] = useState(0)
   const ref = useRef(null)
-  const s = WAPPY_STATES[state] || WAPPY_STATES.idle
+  const s = STATES[key]
   const eyeClosed = s.eye.closed || blink
   const eScale = eyeClosed ? 0 : s.eye.s
   const eDy = eyeClosed ? 0 : s.eye.dy
 
-  // Show message when state changes
+  // Sync prop state
   useEffect(() => {
-    if (state !== prevState) {
-      setPrevState(state)
-      if (s.msg) {
+    if (STATES[state]) {
+      setKey(state)
+      setAnimKey(n => n + 1)
+      if (STATES[state].msg) { 
         setShowMsg(true)
         const t = setTimeout(() => setShowMsg(false), 4000)
         return () => clearTimeout(t)
@@ -150,7 +154,7 @@ export default function WappyMascot({ state = "idle", size = 160, className = ""
         setShowMsg(false)
       }
     }
-  }, [state, prevState, s.msg])
+  }, [state])
 
   // Eye tracking
   useEffect(() => {
@@ -158,11 +162,11 @@ export default function WappyMascot({ state = "idle", size = 160, className = ""
     const fn = (e) => {
       if (!ref.current) return
       const r = ref.current.getBoundingClientRect()
-      const W = r.width, H = r.height
-      const MAX = 5.5
+      const MAX = 5.5, W = 200, H = 225
       const get = (sx, sy) => {
-        const dx = (e.clientX - (r.left + sx/W * W)) * (200/W)
-        const dy = (e.clientY - (r.top  + sy/H * H)) * (225/H)
+        const scl = W / r.width
+        const dx = (e.clientX - (r.left + sx/W * r.width)) * scl
+        const dy = (e.clientY - (r.top  + sy/H * r.height)) * scl
         const d = Math.sqrt(dx*dx+dy*dy)||1
         const t = Math.min(1, MAX/d)
         return { x: dx*t, y: dy*t }
@@ -172,7 +176,7 @@ export default function WappyMascot({ state = "idle", size = 160, className = ""
     }
     window.addEventListener("mousemove", fn)
     return () => window.removeEventListener("mousemove", fn)
-  }, [state, s.trackEyes])
+  }, [key, s.trackEyes])
 
   // Auto-blink
   useEffect(() => {
@@ -186,11 +190,11 @@ export default function WappyMascot({ state = "idle", size = 160, className = ""
     }
     loop()
     return () => clearTimeout(t)
-  }, [state, s.eye.closed])
+  }, [key])
 
   // Idle random glance
   useEffect(() => {
-    if (state !== "idle") return
+    if (key !== "idle") return
     const iv = setInterval(() => {
       if (Math.random() > 0.6) {
         const a = Math.random()*Math.PI*2, d = 4
@@ -199,172 +203,300 @@ export default function WappyMascot({ state = "idle", size = 160, className = ""
       }
     }, 3000)
     return () => clearInterval(iv)
-  }, [state])
+  }, [key])
 
   return (
     <>
       <style>{`
         @keyframes wappy-float  { 0%,100%{transform:translateY(0)}     50%{transform:translateY(-14px)} }
-        @keyframes wappy-bounce { 0%,100%{transform:translateY(0)scaleY(1)scaleX(1)} 30%{transform:translateY(-24px)scaleY(1.07)scaleX(0.94)} 60%{transform:translateY(-8px)scaleY(0.96)scaleX(1.03)} 80%{transform:translateY(-16px)} }
+        @keyframes wappy-bounce { 0%,100%{transform:translateY(0) scaleY(1) scaleX(1)} 30%{transform:translateY(-24px) scaleY(1.07) scaleX(0.94)} 60%{transform:translateY(-8px) scaleY(0.96) scaleX(1.03)} 80%{transform:translateY(-16px)} }
         @keyframes wappy-sway   { 0%,100%{transform:rotate(0)translateY(0)} 30%{transform:rotate(-5deg)translateY(-5px)} 70%{transform:rotate(5deg)translateY(-5px)} }
         @keyframes wappy-jump   { 0%{transform:translateY(0)scale(1)}  20%{transform:translateY(-30px)scale(.94,1.1)} 40%{transform:translateY(5px)scale(1.06,.93)} 58%{transform:translateY(-13px)scale(1)} 74%{transform:translateY(2px)} 86%{transform:translateY(-6px)} 100%{transform:translateY(0)scale(1)} }
         @keyframes wappy-wave   { 0%,100%{transform:rotate(0)translateY(0)} 20%{transform:rotate(-11deg)translateY(-7px)} 45%{transform:rotate(11deg)translateY(-11px)} 65%{transform:rotate(-8deg)translateY(-5px)} 85%{transform:rotate(7deg)translateY(-3px)} }
         @keyframes wappy-breathe{ 0%,100%{transform:scale(1)translateY(0)} 50%{transform:scale(1.04)translateY(-4px)} }
         @keyframes wappy-droop  { 0%,100%{transform:translateY(0)rotate(0)} 50%{transform:translateY(10px)rotate(-2deg)} }
         @keyframes wappy-shake  { 0%,100%{transform:translateX(0)rotate(0)} 15%{transform:translateX(-10px)rotate(-3deg)} 30%{transform:translateX(10px)rotate(3deg)} 48%{transform:translateX(-8px)rotate(-2deg)} 62%{transform:translateX(8px)rotate(2deg)} 76%{transform:translateX(-4px)} 90%{transform:translateX(4px)} }
-        @keyframes wappy-bubble-in { 0%{opacity:0;transform:translateX(-50%)translateY(-85%)scale(.72)} 65%{transform:translateX(-50%)translateY(-103%)scale(1.04)} 100%{opacity:1;transform:translateX(-50%)translateY(-100%)scale(1)} }
-        @keyframes wappy-tear-fall { 0%{transform:translateY(0);opacity:1} 100%{transform:translateY(18px);opacity:0} }
-        @keyframes wappy-star-spin { 0%{transform:rotate(0)scale(1)} 50%{transform:rotate(180deg)scale(1.2)} 100%{transform:rotate(360deg)scale(1)} }
-        @keyframes wappy-dot-pulse { 0%,100%{opacity:.4;transform:scale(.8)} 50%{opacity:1;transform:scale(1.1)} }
+        @keyframes wappy-pound  { 0%,100%{transform:translateY(0) scaleY(1)} 20%{transform:translateY(-15px) scaleY(1.05)} 50%{transform:translateY(10px) scaleY(0.9)} 70%{transform:translateY(-5px) scaleY(1.02)} }
+        @keyframes wappy-ticktock { 0%,100%{transform:rotate(0)} 25%{transform:rotate(10deg)} 75%{transform:rotate(-10deg)} }
+        @keyframes bubble-in    { 0%{opacity:0;transform:translateX(-50%)translateY(-85%)scale(.72)} 65%{transform:translateX(-50%)translateY(-103%)scale(1.04)} 100%{opacity:1;transform:translateX(-50%)translateY(-100%)scale(1)} }
+        @keyframes tear-fall    { 0%{transform:translateY(0);opacity:1} 100%{transform:translateY(18px);opacity:0} }
+        @keyframes star-spin    { 0%{transform:rotate(0)scale(1)} 50%{transform:rotate(180deg)scale(1.2)} 100%{transform:rotate(360deg)scale(1)} }
+        @keyframes dot-pulse    { 0%,100%{opacity:.4;transform:scale(.8)} 50%{opacity:1;transform:scale(1.1)} }
+        @keyframes glow-pulse   { 0%,100%{opacity:.25} 50%{opacity:.45} }
+        @keyframes clock-spin   { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+        @keyframes shield-pulse { 0%,100%{opacity:0.25; transform:scale(1)} 50%{opacity:0.55; transform:scale(1.04)} }
       `}</style>
 
-      <div
-        ref={ref}
-        className={className}
-        style={{
-          width: size,
-          height: size,
-          animation: ANIMS[s.anim],
-          position: "relative",
-          pointerEvents: "auto",
-          userSelect: "none",
-          ...style
-        }}
-      >
+      <div className={className} style={{
+        position:"relative", display:"flex", flexDirection:"column", alignItems:"center",
+        fontFamily:"'DM Sans',system-ui,sans-serif",
+        width: size, ...style
+      }}>
+        {/* Ambient glow */}
+        <div style={{
+          position:"absolute", bottom:"20px", left:"50%",
+          transform:"translateX(-50%)",
+          width: "200px", height:"60px",
+          background:`radial-gradient(ellipse, ${s.color}30, transparent 70%)`,
+          filter:"blur(18px)",
+          transition:"background .6s ease",
+          animation:"glow-pulse 3s ease-in-out infinite",
+          pointerEvents:"none"
+        }}/>
+
         {/* Speech bubble */}
         {showMsg && s.msg && (
           <div style={{
             position:"absolute", top:0, left:"50%",
             transform:"translateX(-50%) translateY(-100%)",
             background:"#ffffff", color:"#0f1f0f",
-            padding:"8px 14px", borderRadius:"16px",
+            padding:"11px 18px", borderRadius:"18px",
             borderBottomLeftRadius:"5px",
-            fontSize:"12px", fontWeight:600, lineHeight:1.4,
-            maxWidth:"240px", textAlign:"center",
-            boxShadow:"0 8px 30px rgba(0,0,0,.35)",
-            animation:"wappy-bubble-in .4s cubic-bezier(.175,.885,.32,1.275) forwards",
-            zIndex:30, whiteSpace:"normal",
+            fontSize:"13px", fontWeight:600, lineHeight:1.45,
+            maxWidth:"270px", textAlign:"center",
+            boxShadow:"0 10px 40px rgba(0,0,0,.5)",
+            animation:"bubble-in .4s cubic-bezier(.175,.885,.32,1.275) forwards",
+            zIndex:20, whiteSpace:"normal",
             border:"1px solid #e0f2e9"
           }}>
             {s.msg}
             <div style={{
               position:"absolute", bottom:-7, left:"20px",
               width:0,height:0,
-              borderLeft:"7px solid transparent",
-              borderRight:"7px solid transparent",
-              borderTop:"7px solid white"
+              borderLeft:"8px solid transparent",
+              borderRight:"8px solid transparent",
+              borderTop:"8px solid white"
             }}/>
           </div>
         )}
 
-        <svg viewBox="0 0 200 225" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-          <defs>
-            <linearGradient id="wG" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"  stopColor="#6ef08a"/>
-              <stop offset="45%" stopColor="#22c55e"/>
-              <stop offset="100%" stopColor="#14532d"/>
-            </linearGradient>
-            <radialGradient id="scl" cx="38%" cy="32%">
-              <stop offset="0%" stopColor="#f8fff8"/>
-              <stop offset="100%" stopColor="#e8f5ea"/>
-            </radialGradient>
-            <radialGradient id="iris" cx="32%" cy="28%">
-              <stop offset="0%" stopColor="#4ade80"/>
-              <stop offset="100%" stopColor="#166534"/>
-            </radialGradient>
-            <filter id="bShadow" x="-22%" y="-12%" width="144%" height="138%">
-              <feDropShadow dx="0" dy="10" stdDeviation="14" floodColor="#166534" floodOpacity=".38"/>
-            </filter>
-            <filter id="eGlow" x="-55%" y="-55%" width="210%" height="210%">
-              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#22c55e" floodOpacity=".55"/>
-            </filter>
-            <filter id="redGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#ef4444" floodOpacity=".7"/>
-            </filter>
-          </defs>
+        {/* SVG CHARACTER */}
+        <div
+          ref={ref}
+          key={animKey}
+          style={{
+            width:"100%",
+            height:"auto",
+            aspectRatio: "200/225",
+            animation: ANIMS[s.anim],
+            position:"relative", zIndex:10,
+            userSelect:"none"
+          }}
+        >
+          <svg viewBox="0 0 200 225" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+            <defs>
+              {/* W body gradient */}
+              <linearGradient id="wG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"  stopColor="#6ef08a"/>
+                <stop offset="45%" stopColor="#22c55e"/>
+                <stop offset="100%" stopColor="#14532d"/>
+              </linearGradient>
+              {/* Eye sclera */}
+              <radialGradient id="scl" cx="38%" cy="32%">
+                <stop offset="0%" stopColor="#f8fff8"/>
+                <stop offset="100%" stopColor="#e8f5ea"/>
+              </radialGradient>
+              {/* Iris */}
+              <radialGradient id="iris" cx="32%" cy="28%">
+                <stop offset="0%" stopColor="#4ade80"/>
+                <stop offset="100%" stopColor="#166534"/>
+              </radialGradient>
+              {/* Body shadow */}
+              <filter id="bShadow" x="-22%" y="-12%" width="144%" height="138%">
+                <feDropShadow dx="0" dy="10" stdDeviation="14" floodColor="#166534" floodOpacity=".38"/>
+              </filter>
+              {/* Eye glow */}
+              <filter id="eGlow" x="-55%" y="-55%" width="210%" height="210%">
+                <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#22c55e" floodOpacity=".55"/>
+              </filter>
+              {/* Alert glow */}
+              <filter id="redGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#ef4444" floodOpacity=".7"/>
+              </filter>
+            </defs>
 
-          {/* W BODY */}
-          <path d={`M 18,222 C 18,222 20,148 34,120 C 44,100 53,86 64,80 C 68,84 73,97 82,112 C 89,125 93,138 100,143 C 107,138 111,125 118,112 C 127,97 132,84 136,80 C 147,86 156,100 166,120 C 180,148 182,222 182,222 Z`}
-            fill="url(#wG)" filter="url(#bShadow)"/>
-
-          {/* BLUSH */}
-          {s.blush > 0 && <>
-            <ellipse cx="51" cy="105" rx="13" ry="9" fill="#f9a8c9" opacity={s.blush} style={{transition:"opacity .4s"}}/>
-            <ellipse cx="149" cy="105" rx="13" ry="9" fill="#f9a8c9" opacity={s.blush} style={{transition:"opacity .4s"}}/>
-          </>}
-
-          {/* LEFT EYE */}
-          <g filter="url(#eGlow)">
-            <circle cx="66" cy="45" r="21" fill="url(#scl)"/>
-            {!eyeClosed ? <>
-              <circle cx={66+pupils.lx} cy={45+eDy+pupils.ly} r={14.5*eScale} fill="url(#iris)"/>
-              <circle cx={66+pupils.lx} cy={45+eDy+pupils.ly} r={9*eScale} fill="#091409"/>
-              <circle cx={71+pupils.lx*.35} cy={40+eDy+pupils.ly*.35} r="3.4" fill="white" opacity=".95"/>
-              <circle cx={60+pupils.lx*.2}  cy={50+eDy+pupils.ly*.2}  r="1.6" fill="white" opacity=".45"/>
-            </> : <path d="M 47,45 Q 66,55 85,45" stroke="#15803d" strokeWidth="3.8" fill="none" strokeLinecap="round"/>}
-          </g>
-
-          {/* RIGHT EYE */}
-          <g filter="url(#eGlow)">
-            <circle cx="134" cy="45" r="21" fill="url(#scl)"/>
-            {!eyeClosed ? <>
-              <circle cx={134+pupils.rx} cy={45+eDy+pupils.ry} r={14.5*eScale} fill="url(#iris)"/>
-              <circle cx={134+pupils.rx} cy={45+eDy+pupils.ry} r={9*eScale} fill="#091409"/>
-              <circle cx={139+pupils.rx*.35} cy={40+eDy+pupils.ry*.35} r="3.4" fill="white" opacity=".95"/>
-              <circle cx={128+pupils.rx*.2}  cy={50+eDy+pupils.ry*.2}  r="1.6" fill="white" opacity=".45"/>
-            </> : <path d="M 115,45 Q 134,55 153,45" stroke="#15803d" strokeWidth="3.8" fill="none" strokeLinecap="round"/>}
-          </g>
-
-          {/* BROWS */}
-          <path d={s.brow[0]} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>
-          <path d={s.brow[1]} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>
-
-          {/* MOUTH */}
-          {s.mouth.t === "arc"  && <path d={s.mouth.d} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>}
-          {s.mouth.t === "oval" && <ellipse cx={s.mouth.cx} cy={s.mouth.cy} rx={s.mouth.rx} ry={s.mouth.ry} fill="#134e1b"/>}
-          {s.mouth.t === "line" && <path d={s.mouth.d} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>}
-
-          {/* ZZZ sleeping */}
-          {state === "sleeping" && (
-            <g fill="#9ca3af" fontFamily="Syne,system-ui" fontWeight="800">
-              <text x="152" y="52" fontSize="14" opacity=".5">z</text>
-              <text x="163" y="39" fontSize="18" opacity=".7">z</text>
-              <text x="177" y="23" fontSize="24" opacity=".9">Z</text>
-            </g>
-          )}
-
-          {/* ! alert / surprised */}
-          {(state === "alert" || state === "surprised") && (
-            <g filter={state==="alert"?"url(#redGlow)":undefined}>
-              <circle cx="100" cy="22" r="13" fill={state==="alert"?"#ef4444":"#f59e0b"} opacity=".95"/>
-              <text x="100" y="28" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="system-ui">!</text>
-            </g>
-          )}
-
-          {/* Thinking dots */}
-          {state === "thinking" && [
-            {x:153,y:52,r:5,delay:"0s"},
-            {x:164,y:38,r:7,delay:".15s"},
-            {x:178,y:22,r:9,delay:".3s"}
-          ].map((d,i) => (
-            <circle key={i} cx={d.x} cy={d.y} r={d.r}
-              fill="#fbbf24" opacity=".85"
-              style={{ animation:"wappy-dot-pulse 1.2s ease-in-out infinite", animationDelay:d.delay }}
+            {/* ── W BODY (stroke) ── */}
+            <path
+              d="M 24,75 C 24,180 42,205 66,205 C 86,205 100,150 100,125 C 100,150 114,205 134,205 C 158,205 176,180 176,75"
+              stroke="url(#wG)"
+              strokeWidth="38"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              filter="url(#bShadow)"
             />
-          ))}
 
-          {/* Stars - happy */}
-          {state === "happy" && <>
-            <text x="22" y="48" fontSize="18" style={{ animation:"wappy-star-spin 3s linear infinite", transformOrigin:"30px 40px" }}>✦</text>
-            <text x="160" y="46" fontSize="14" style={{ animation:"wappy-star-spin 2s linear infinite reverse", transformOrigin:"167px 39px" }}>✦</text>
-          </>}
+            {/* ── BLUSH ── */}
+            {s.blush > 0 && <>
+              <ellipse cx="66" cy="80" rx="13" ry="9"
+                fill="#f9a8c9" opacity={s.blush}
+                style={{ transition:"opacity .4s" }}/>
+              <ellipse cx="134" cy="80" rx="13" ry="9"
+                fill="#f9a8c9" opacity={s.blush}
+                style={{ transition:"opacity .4s" }}/>
+            </>}
 
-          {/* Tear - sad */}
-          {state === "sad" && (
-            <ellipse cx="78" cy="70" rx="4" ry="6" fill="#93c5fd" opacity=".8"
-              style={{ animation:"wappy-tear-fall 1.8s ease-in infinite" }}/>
-          )}
-        </svg>
+            {/* ── LEFT EYE ── */}
+            <g filter="url(#eGlow)">
+              <circle cx="66" cy="45" r="21" fill="url(#scl)"/>
+              {!eyeClosed ? <>
+                <circle
+                  cx={66 + pupils.lx} cy={45 + eDy + pupils.ly}
+                  r={14.5 * eScale} fill="url(#iris)"
+                  style={{ transition:"r .12s" }}
+                />
+                <circle
+                  cx={66 + pupils.lx} cy={45 + eDy + pupils.ly}
+                  r={9 * eScale} fill="#091409"
+                  style={{ transition:"r .12s" }}
+                />
+                <circle cx={71 + pupils.lx*.35} cy={40 + eDy + pupils.ly*.35} r="3.4" fill="white" opacity=".95"/>
+                <circle cx={60 + pupils.lx*.2}  cy={50 + eDy + pupils.ly*.2}  r="1.6" fill="white" opacity=".45"/>
+              </> :
+                <path d="M 47,45 Q 66,55 85,45" stroke="#15803d" strokeWidth="3.8" fill="none" strokeLinecap="round"/>
+              }
+            </g>
+
+            {/* ── RIGHT EYE ── */}
+            <g filter="url(#eGlow)">
+              <circle cx="134" cy="45" r="21" fill="url(#scl)"/>
+              {!eyeClosed ? <>
+                <circle
+                  cx={134 + pupils.rx} cy={45 + eDy + pupils.ry}
+                  r={14.5 * eScale} fill="url(#iris)"
+                  style={{ transition:"r .12s" }}
+                />
+                <circle
+                  cx={134 + pupils.rx} cy={45 + eDy + pupils.ry}
+                  r={9 * eScale} fill="#091409"
+                  style={{ transition:"r .12s" }}
+                />
+                <circle cx={139 + pupils.rx*.35} cy={40 + eDy + pupils.ry*.35} r="3.4" fill="white" opacity=".95"/>
+                <circle cx={128 + pupils.rx*.2}  cy={50 + eDy + pupils.ry*.2}  r="1.6" fill="white" opacity=".45"/>
+              </> :
+                <path d="M 115,45 Q 134,55 153,45" stroke="#15803d" strokeWidth="3.8" fill="none" strokeLinecap="round"/>
+              }
+            </g>
+
+            {/* ── BROWS ── */}
+            <path d={s.brow[0]} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>
+            <path d={s.brow[1]} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>
+
+            {/* ── MOUTH ── */}
+            {s.mouth.t === "arc"  && <path d={s.mouth.d} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>}
+            {s.mouth.t === "oval" && <ellipse cx={s.mouth.cx} cy={s.mouth.cy} rx={s.mouth.rx} ry={s.mouth.ry} fill="#134e1b"/>}
+            {s.mouth.t === "line" && <path d={s.mouth.d} stroke="#134e1b" strokeWidth="4" fill="none" strokeLinecap="round"/>}
+
+            {/* ── EXTRAS ── */}
+
+            {/* ZZZ - sleeping */}
+            {key === "sleeping" && (
+              <g fill="#9ca3af" fontFamily="Syne,system-ui" fontWeight="800">
+                <text x="152" y="52" fontSize="14" opacity=".5">z</text>
+                <text x="163" y="39" fontSize="18" opacity=".7">z</text>
+                <text x="177" y="23" fontSize="24" opacity=".9">Z</text>
+              </g>
+            )}
+
+            {/* ! - alert / surprised */}
+            {(key === "alert" || key === "surprised") && (
+              <g filter={key==="alert"?"url(#redGlow)":undefined}>
+                <circle cx="100" cy="22" r="13" fill={key==="alert"?"#ef4444":"#f59e0b"} opacity=".95"/>
+                <text x="100" y="28" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="system-ui">!</text>
+              </g>
+            )}
+
+            {/* Thinking dots */}
+            {key === "thinking" && [
+              {x:153,y:52,r:5,delay:"0s"},
+              {x:164,y:38,r:7,delay:".15s"},
+              {x:178,y:22,r:9,delay:".3s"}
+            ].map((d,i) => (
+              <circle key={i} cx={d.x} cy={d.y} r={d.r}
+                fill="#fbbf24" opacity=".85"
+                style={{ animation:`dot-pulse 1.2s ease-in-out infinite`, animationDelay:d.delay }}
+              />
+            ))}
+
+            {/* Stars - happy */}
+            {key === "happy" && <>
+              <text x="22" y="48" fontSize="18"
+                style={{ animation:"star-spin 3s linear infinite", transformOrigin:"30px 40px" }}>
+                ✦
+              </text>
+              <text x="160" y="46" fontSize="14"
+                style={{ animation:"star-spin 2s linear infinite reverse", transformOrigin:"167px 39px" }}>
+                ✦
+              </text>
+            </>}
+
+            {/* Tear - sad */}
+            {key === "sad" && (
+              <ellipse cx="78" cy="70" rx="4" ry="6"
+                fill="#93c5fd" opacity=".8"
+                style={{ animation:"tear-fall 1.8s ease-in infinite" }}
+              />
+            )}
+
+            {/* Shield - protected */}
+            {key === "protected" && (
+              <g style={{ animation:"shield-pulse 2.5s ease-in-out infinite", transformOrigin:"100px 115px" }}>
+                <path d="M 100,5 L 180,35 L 180,105 C 180,165 100,215 100,215 C 100,215 20,165 20,105 L 20,35 Z" 
+                  fill="none" stroke="#06b6d4" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+                <path d="M 100,18 L 165,42 L 165,100 C 165,150 100,195 100,195 C 100,195 35,150 35,100 L 35,42 Z" 
+                  fill="none" stroke="#22d3ee" strokeWidth="3" strokeDasharray="8 8" opacity="0.5" />
+              </g>
+            )}
+
+            {/* Clocks - scheduled */}
+            {key === "scheduled" && <>
+              <g style={{ animation:"clock-spin 3s linear infinite", transformOrigin:"165px 35px" }}>
+                <circle cx="165" cy="35" r="14" fill="#8b5cf6" opacity="0.9" />
+                <circle cx="165" cy="35" r="11" fill="#fff" />
+                <path d="M 165,35 L 165,27 M 165,35 L 170,38" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" />
+              </g>
+              <g style={{ animation:"clock-spin 4s linear infinite", transformOrigin:"35px 55px" }}>
+                <circle cx="35" cy="55" r="10" fill="#a78bfa" opacity="0.9" />
+                <circle cx="35" cy="55" r="7.5" fill="#fff" />
+                <path d="M 35,55 L 35,50 M 35,55 L 38,57" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" />
+              </g>
+            </>}
+
+            {/* Anger marks - banning */}
+            {key === "banning" && (
+              <g>
+                <path d="M 135,15 L 150,25 M 150,15 L 135,25" stroke="#ef4444" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+                <path d="M 50,15 L 65,25 M 65,15 L 50,25" stroke="#ef4444" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+              </g>
+            )}
+
+            {/* WhatsApp Notification Badge (on alert and banning) */}
+            {(key === "alert" || key === "banning") && (
+              <g style={{ animation:"wappy-bounce 1s infinite", transformOrigin:"175px 25px" }}>
+                <circle cx="175" cy="25" r="14" fill="#ef4444" stroke="#070c07" strokeWidth="3" />
+                <text x="175" y="30" fill="#fff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="system-ui">1</text>
+              </g>
+            )}
+          </svg>
+        </div>
+
+        {/* Name + state badge */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"6px", marginTop:"2px" }}>
+          <span style={{
+            fontFamily:"'Syne',sans-serif", fontWeight:700,
+            fontSize:"10px", color:"#2d4a2d", letterSpacing:"3.5px",
+            textTransform:"uppercase"
+          }}>WAPPY</span>
+          <div style={{
+            background:`${s.color}16`,
+            border:`1px solid ${s.color}3a`,
+            color: s.color, padding:"5px 16px",
+            borderRadius:"20px", fontSize:"12px", fontWeight:700,
+            transition:"all .35s ease", letterSpacing:".3px"
+          }}>
+            {s.emoji} {s.fr}
+          </div>
+        </div>
       </div>
     </>
   )
