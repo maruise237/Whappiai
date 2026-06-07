@@ -556,7 +556,8 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         senderJid,
                         warnings: currentCount
                     }, 'ERROR');
-                    await sock.groupParticipantsUpdate(groupId, [senderJid], 'remove');
+
+                    // Send exclusion message BEFORE removing (sinon le message ne part pas)
                     const exclusionMsg = WarningService.composeExclusionMessage({
                         senderJid,
                         currentCount,
@@ -567,6 +568,9 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         text: exclusionMsg,
                         mentions: [senderJid]
                     }, { priority: 'high' });
+
+                    // Remove member ONLY after message is sent
+                    await sock.groupParticipantsUpdate(groupId, [senderJid], 'remove');
 
                     // Log activity
                     const session = Session.findById(sessionId);
@@ -723,6 +727,15 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
 
         // Auto-kick if threshold reached
         if (settings.auto_kick_enabled === 1 && newCount >= maxWarnings) {
+            // Send exclusion message before removing
+            const exclusionMsg = WarningService.composeExclusionMessage({
+                senderJid: resolvedJid,
+                currentCount: newCount,
+                maxWarnings,
+                reason: violation
+            });
+            await provider.sendTextMessage(sessionId, { jid: groupId, text: exclusionMsg, mentions: [resolvedJid] });
+
             await provider.groupUpdateParticipant(sessionId, {
                 groupJid: groupId,
                 action: 'remove',
