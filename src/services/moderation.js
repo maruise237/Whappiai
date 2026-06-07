@@ -683,7 +683,11 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         const provider = require('./SessionService').getProvider();
 
         // Delete the violating message
-        await provider.deleteMessage(sessionId, { id: msg.key.id, remoteJid: groupId, fromMe: false });
+        const msgId = msg.key && msg.key.id;
+        log(`Tentative suppression message ${groupId}: id=${msgId}`, sessionId, {
+            event: 'moderation-delete', groupId, msgId
+        }, 'DEBUG');
+        await provider.deleteMessage(sessionId, { id: msgId, remoteJid: groupId, fromMe: false });
 
         if (settings.warnings_enabled === 0) return true;
 
@@ -703,7 +707,7 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         // Send warning message
         const template = settings.warning_template || '@{{name}} votre message a ete supprime: {{reason}}. Merci de respecter les regles du groupe.';
         const warningText = template
-            .replace('{{name}}', `@${senderJid.split('@')[0]}`)
+            .replace('{{name}}', `${senderJid.split('@')[0]}`)
             .replace('{{reason}}', violation)
             .replace('{{count}}', String(newCount))
             .replace('{{max}}', String(maxWarnings))

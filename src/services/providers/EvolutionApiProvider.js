@@ -31,12 +31,21 @@ class EvolutionApiProvider extends WhatsAppProvider {
      * @param {string} method
      * @param {string} path
      * @param {Object} [body]
+     * @param {boolean} [useInstanceKey=false] - use instance token instead of global API key
+     * @param {string} [instanceId] - required if useInstanceKey is true
      */
-    async _request(method, path, body) {
+    async _request(method, path, body, useInstanceKey = false, instanceId) {
         const url = `${this.baseUrl}${path}`;
+        let apiKey = this.apiKey;
+        if (useInstanceKey) {
+            if (!instanceId) throw new Error('instanceId required with useInstanceKey');
+            const name = this._instanceName(instanceId);
+            const token = await this._getInstanceToken(name);
+            if (token) apiKey = token;
+        }
         const headers = {
             'Content-Type': 'application/json',
-            'apikey': this.apiKey
+            'apikey': apiKey
         };
         const res = await fetch(url, {
             method,
@@ -52,6 +61,26 @@ class EvolutionApiProvider extends WhatsAppProvider {
             return { ok: false, status: res.status, error: (payload && payload.message) || (payload && payload.response && payload.response.message) || text || `HTTP ${res.status}` };
         }
         return { ok: true, status: res.status, payload };
+    }
+
+    _instanceTokenCache = {};
+
+    async _getInstanceToken(name) {
+        if (this._instanceTokenCache[name]) return this._instanceTokenCache[name];
+        const res = await fetch(`${this.baseUrl}/instance/fetchInstances`, {
+            headers: { 'apikey': this.apiKey }
+        });
+        if (!res.ok) return null;
+        const text = await res.text();
+        let instances;
+        try { instances = JSON.parse(text); } catch { return null; }
+        if (!Array.isArray(instances)) return null;
+        const match = instances.find(i => i.name === name);
+        if (match && match.token) {
+            this._instanceTokenCache[name] = match.token;
+            return match.token;
+        }
+        return null;
     }
 
     _instanceName(instanceId) {
