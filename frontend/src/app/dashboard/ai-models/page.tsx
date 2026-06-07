@@ -69,7 +69,7 @@ export default function AIModelsPage() {
     setError("")
     try {
       const data = await apiFetch("/api/v1/admin/ai-models")
-      setModels(data.models || data || [])
+      setModels(Array.isArray(data.models) ? data.models : Array.isArray(data) ? data : [])
     } catch (e: any) {
       setError(e.message)
     } finally {
