@@ -758,4 +758,4 @@ const gracefulShutdown = async (signal) => {
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-module.exports = { app, server, wss };
+module.exports = { app, server, wss, wsClients };

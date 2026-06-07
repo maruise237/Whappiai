@@ -17,8 +17,27 @@ class NotificationService {
         
         log(`Notification created for ${userId}: ${type}`, 'SYSTEM');
         
-        // Real-time push via WebSocket could be added here
-        // websocketService.sendToUser(userId, 'notification', { ... });
+        // Real-time push via WebSocket
+        try {
+            const { wsClients } = require('../..');
+            for (const [client, userInfo] of wsClients) {
+                if (client.readyState === 1 && userInfo && userInfo.id === userId) {
+                    client.send(JSON.stringify({
+                        type: 'notification',
+                        id,
+                        userId,
+                        type,
+                        title,
+                        message,
+                        metadata,
+                        created_at: new Date().toISOString(),
+                        is_read: 0
+                    }));
+                }
+            }
+        } catch (err) {
+            // WebSocket not available, notifications will be fetched via API
+        }
         
         return id;
     }
