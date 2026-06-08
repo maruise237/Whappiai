@@ -1,404 +1,323 @@
 /**
- * Activity Log Model
- * SQLite-based activity logging
+ * Activity Log Model — SQLite-based activity logging with async batching
+ *
+ * Instead of writing every entry synchronously to SQLite, entries are
+ * buffered in memory and flushed in batches every 5 seconds (or 100 entries).
+ * This keeps the hot path fast and reduces SQLite write contention.
+ *
+ * Public API unchanged: ActivityLog.log(data), .logSessionCreate(...), etc.
+ * All remain synchronous (the buffer is flushed async).
  */
 
 const { db } = require('../config/database');
 const { log } = require('../utils/logger');
 
-class ActivityLog {
-    /**
-     * Log an activity
-     * @param {object} data - Activity data
-     * @returns {object} Created log entry
-     */
-    static log(data) {
-        const stmt = db.prepare(`
-            INSERT INTO activity_logs (
-                user_email, action, resource, resource_id, details, ip, user_agent, success, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-        `);
+const BATCH_INTERVAL_MS = 5000;     // Flush every 5 seconds
+const BATCH_MAX_SIZE = 100;          // Or flush when buffer hits 100 entries
 
-        const result = stmt.run(
-            data.userEmail || null,
-            data.action,
-            data.resource || null,
-            data.resourceId || null,
-            data.details ? JSON.stringify(data.details) : null,
-            data.ip || null,
-            data.userAgent || null,
-            data.success !== false ? 1 : 0
+let buffer = [];
+let flushTimer = null;
+let isShuttingDown = false;
+
+/**
+ * Flush buffered entries to SQLite in a single transaction
+ */
+function flush() {
+  if (buffer.length === 0) return;
+
+  const batch = buffer.splice(0, BATCH_MAX_SIZE);
+  const insert = db.prepare(`
+    INSERT INTO activity_logs (
+      user_email, action, resource, resource_id, details, ip, user_agent, success, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `);
+
+  try {
+    const flushMany = db.transaction((entries) => {
+      for (const entry of entries) {
+        insert.run(
+          entry.userEmail || null,
+          entry.action,
+          entry.resource || null,
+          entry.resourceId || null,
+          entry.details ? JSON.stringify(entry.details) : null,
+          entry.ip || null,
+          entry.userAgent || null,
+          entry.success !== false ? 1 : 0
         );
+      }
+    });
 
-        return { id: result.lastInsertRowid };
+    flushMany(batch);
+
+    if (batch.length > 1) {
+      log(`[ActivityLog] Flushed ${batch.length} entries`, 'SYSTEM', { count: batch.length }, 'DEBUG');
     }
-
-    /**
-     * Get activities with optional filters
-     * @param {object} options - Filter options
-     * @returns {array} Array of activities
-     */
-    static getAll(options = {}) {
-        const { userEmail, action, resource, startDate, endDate, limit = 100, offset = 0 } = options;
-
-        let sql = 'SELECT * FROM activity_logs WHERE 1=1';
-        const params = [];
-
-        if (userEmail) {
-            sql += ' AND user_email = ?';
-            params.push(userEmail);
-        }
-
-        if (action) {
-            sql += ' AND action = ?';
-            params.push(action);
-        }
-
-        if (resource) {
-            sql += ' AND resource = ?';
-            params.push(resource);
-        }
-
-        if (startDate) {
-            sql += ' AND created_at >= ?';
-            params.push(startDate);
-        }
-
-        if (endDate) {
-            sql += ' AND created_at <= ?';
-            params.push(endDate);
-        }
-
-        sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-        params.push(limit);
-        params.push(offset);
-
-        const stmt = db.prepare(sql);
-        return stmt.all(...params).map(row => ({
-            ...row,
-            timestamp: row.created_at, // Frontend expects timestamp
-            status: row.success === 1 ? 'success' : 'failure', // Frontend expects status
-            details: row.details ? JSON.parse(row.details) : null
-        }));
-    }
-
-    /**
-     * Get all logs with pagination (Alias for api.js)
-     */
-    static getLogs(limit = 100, offset = 0) {
-        return this.getAll({ limit, offset });
-    }
-
-    /**
-     * Get user specific logs with pagination (Alias for api.js)
-     */
-    static getUserLogs(userEmail, limit = 100, offset = 0) {
-        return this.getAll({ userEmail, limit, offset });
-    }
-
-    /**
-     * Get activity summary for dashboard
-     * @param {string} userEmail - Filter by user (optional)
-     * @param {number} days - Number of days to look back
-     * @returns {object} Summary statistics
-     */
-    static getSummary(userEmail = null, days = 7) {
-        // Calculate date limit in JS to ensure cross-env consistency
-        const date = new Date();
-        date.setDate(date.getDate() - (parseInt(days) || 7));
-        const dateLimit = date.toISOString().replace('T', ' ').split('.')[0];
-
-        log(`[ActivityLog] Génération du résumé pour ${days} jours (depuis ${dateLimit} UTC)`, 'SYSTEM', { days, since: dateLimit }, 'DEBUG');
-
-        let sqlBase = `FROM activity_logs WHERE created_at >= ?`;
-        const params = [dateLimit];
-        if (userEmail) {
-            sqlBase += ' AND user_email = ?';
-            params.push(userEmail);
-        }
-
-        try {
-            // 1. Total activities in range
-            const totalStmt = db.prepare(`SELECT COUNT(*) as count ${sqlBase}`);
-            const totalResult = totalStmt.get(...params);
-            const totalActivities = totalResult ? totalResult.count : 0;
-
-            log(`[ActivityLog] Total des activités dans la période: ${totalActivities}`, 'SYSTEM', { totalActivities }, 'DEBUG');
-
-            // 2. Group by action (with normalization for cards)
-            const actionStmt = db.prepare(`SELECT action, COUNT(*) as count ${sqlBase} GROUP BY action`);
-            const actionRows = actionStmt.all(...params);
-
-            const byAction = actionRows.reduce((acc, row) => {
-                let key = row.action.toLowerCase();
-                // Normalized keys for standard frontend cards
-                if (key.includes('message_send') || key.includes('campaign_message')) {
-                    acc['send_message'] = (acc['send_message'] || 0) + row.count;
-                }
-                if (key.includes('session_create') || key === 'create') {
-                    acc['create'] = (acc['create'] || 0) + row.count;
-                }
-
-                // Keep the raw key for details
-                acc[key] = (acc[key] || 0) + row.count;
-                return acc;
-            }, {});
-
-            // 3. Group by user
-            const userStmt = db.prepare(`SELECT user_email, COUNT(*) as count ${sqlBase} GROUP BY user_email`);
-            const userRows = userStmt.all(...params);
-            const byUser = userRows.reduce((acc, row) => {
-                acc[row.user_email || 'anonymous'] = row.count;
-                return acc;
-            }, {});
-
-            // 4. Success rate
-            const successStmt = db.prepare(`SELECT COUNT(*) as count ${sqlBase} AND success = 1`);
-            const successResult = successStmt.get(...params);
-            const successCount = successResult ? successResult.count : 0;
-            const successRate = totalActivities > 0 ? Math.round((successCount / totalActivities) * 100) : 100;
-
-            return {
-                totalActivities,
-                successRate,
-                byUser,
-                byAction
-            };
-        } catch (error) {
-            log(`[ActivityLog] ERREUR dans getSummary: ${error.message}`, 'SYSTEM', { error: error.message }, 'ERROR');
-            return { totalActivities: 0, byUser: {}, byAction: {} };
-        }
-    }
-
-    /**
-     * Helper: Log login attempt
-     */
-    static logLogin(userEmail, ip, userAgent, success = true) {
-        return this.log({
-            userEmail,
-            action: 'LOGIN',
-            resource: 'auth',
-            ip,
-            userAgent,
-            success
-        });
-    }
-
-    /**
-     * Helper: Log session creation
-     */
-    static logSessionCreate(userEmail, sessionId, ip, userAgent) {
-        return this.log({
-            userEmail,
-            action: 'SESSION_CREATE',
-            resource: 'session',
-            resourceId: sessionId,
-            ip,
-            userAgent
-        });
-    }
-
-    /**
-     * Helper: Log session deletion
-     */
-    static logSessionDelete(userEmail, sessionId, ip, userAgent) {
-        return this.log({
-            userEmail,
-            action: 'SESSION_DELETE',
-            resource: 'session',
-            resourceId: sessionId,
-            ip,
-            userAgent
-        });
-    }
-
-    /**
-     * Helper: Log message send
-     */
-    static logMessageSend(userEmail, sessionId, recipient, messageType, ip, userAgent) {
-        return this.log({
-            userEmail,
-            action: 'MESSAGE_SEND',
-            resource: 'message',
-            resourceId: sessionId,
-            details: { recipient, messageType },
-            ip,
-            userAgent
-        });
-    }
-
-    /**
-     * Helper: Log campaign action
-     */
-    static logCampaign(userEmail, action, campaignId, details = null) {
-        return this.log({
-            userEmail,
-            action: `CAMPAIGN_${action.toUpperCase()}`,
-            resource: 'campaign',
-            resourceId: campaignId,
-            details
-        });
-    }
-
-    static logCampaignCreate(userEmail, campaignId, name, recipientCount) {
-        return this.logCampaign(userEmail, 'CREATE', campaignId, { name, recipientCount });
-    }
-
-    static logCampaignUpdate(userEmail, campaignId, name, changes) {
-        return this.logCampaign(userEmail, 'UPDATE', campaignId, { name, changes });
-    }
-
-    static logCampaignDelete(userEmail, campaignId, name) {
-        return this.logCampaign(userEmail, 'DELETE', campaignId, { name });
-    }
-
-    static logCampaignStart(userEmail, campaignId, name, recipientCount) {
-        return this.logCampaign(userEmail, 'START', campaignId, { name, recipientCount });
-    }
-
-    static logCampaignPause(userEmail, campaignId, reason) {
-        return this.logCampaign(userEmail, 'PAUSE', campaignId, { reason });
-    }
-
-    static logCampaignResume(userEmail, campaignId, name) {
-        return this.logCampaign(userEmail, 'RESUME', campaignId, { name });
-    }
-
-    static logCampaignComplete(userEmail, campaignId, name, statistics) {
-        return this.logCampaign(userEmail, 'COMPLETE', campaignId, { name, statistics });
-    }
-
-    static logCampaignRetry(userEmail, campaignId, name, retryCount) {
-        return this.logCampaign(userEmail, 'RETRY', campaignId, { name, retryCount });
-    }
-
-    static logCampaignMessage(userEmail, campaignId, recipient, status, error = null) {
-        return this.logCampaign(userEmail, 'MESSAGE', campaignId, { recipient, status, error });
-    }
-
-    /**
-     * Helper: Log AI Model management action
-     */
-    static logAIModel(userEmail, action, modelId, details = null) {
-        return this.log({
-            userEmail,
-            action: `AI_MODEL_${action.toUpperCase()}`,
-            resource: 'ai_model',
-            resourceId: modelId,
-            details
-        });
-    }
-
-    /**
-     * Helper: Log user management action
-     */
-    static logUserAction(userEmail, action, resource, resourceId, details) {
-        return this.log({
-            userEmail,
-            action,
-            resource,
-            resourceId,
-            details
-        });
-    }
-
-    /**
-     * Get daily analytics for a user
-     * Optimized version: Uses GROUP BY to reduce query count from O(n) to O(1)
-     * @param {string} userEmail - User email
-     * @param {number} days - Number of days
-     * @returns {array} Daily data points
-     */
-    static getAnalytics(userEmail = null, days = 7) {
-        const daysBack = (parseInt(days) || 7) - 1;
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - daysBack);
-        const startDateStr = startDate.toISOString().split('T')[0] + ' 00:00:00';
-
-        // 1. Fetch all activity logs stats in one query
-        let logSql = `
-            SELECT
-                date(created_at) as log_date,
-                COUNT(CASE WHEN action IN ('MESSAGE_SEND', 'CAMPAIGN_MESSAGE', 'send_message') THEN 1 END) as messages,
-                COUNT(CASE WHEN action LIKE 'AI_%' OR action LIKE 'ai_%' THEN 1 END) as ai_total,
-                COUNT(CASE WHEN (action LIKE 'AI_%' OR action LIKE 'ai_%') AND success = 1 THEN 1 END) as ai_success
-            FROM activity_logs
-            WHERE created_at >= ?
-        `;
-        const logParams = [startDateStr];
-        if (userEmail) {
-            logSql += ' AND user_email = ?';
-            logParams.push(userEmail);
-        }
-        logSql += ' GROUP BY log_date';
-
-        const logRows = db.prepare(logSql).all(...logParams);
-        const logMap = logRows.reduce((acc, row) => {
-            acc[row.log_date] = row;
-            return acc;
-        }, {});
-
-        // 2. Fetch all credit usage in one query
-        let creditSql = `
-            SELECT
-                date(created_at) as credit_date,
-                SUM(amount) as total_credits
-            FROM credit_history
-            WHERE created_at >= ? AND type = 'debit'
-        `;
-        const creditParams = [startDateStr];
-        if (userEmail) {
-            const user = db.prepare('SELECT id FROM users WHERE email = ?').get(userEmail);
-            if (user) {
-                creditSql += ' AND user_id = ?';
-                creditParams.push(user.id);
-            } else {
-                creditSql += ' AND 1=0';
-            }
-        }
-        creditSql += ' GROUP BY credit_date';
-
-        const creditRows = db.prepare(creditSql).all(...creditParams);
-        const creditMap = creditRows.reduce((acc, row) => {
-            acc[row.credit_date] = row.total_credits;
-            return acc;
-        }, {});
-
-        // 3. Assemble final data array for all requested days
-        const data = [];
-        const now = new Date();
-        for (let i = daysBack; i >= 0; i--) {
-            const d = new Date(now);
-            d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-
-            const logData = logMap[dateStr] || { messages: 0, ai_total: 0, ai_success: 0 };
-            const aiRate = logData.ai_total > 0 ? Math.round((logData.ai_success / logData.ai_total) * 100) : 100;
-
-            data.push({
-                date: dateStr,
-                messages: logData.messages,
-                aiRate: aiRate,
-                credits: creditMap[dateStr] || 0
-            });
-        }
-
-        return data;
-    }
-
-    /**
-     * Clean old logs
-     * @param {number} daysToKeep - Number of days to keep
-     * @returns {number} Number of deleted logs
-     */
-    static cleanOld(daysToKeep = 30) {
-        const stmt = db.prepare(`
-            DELETE FROM activity_logs 
-            WHERE created_at < datetime('now', '-' || ? || ' days')
-        `);
-        const result = stmt.run(daysToKeep);
-        return result.changes;
-    }
+  } catch (err) {
+    log(`[ActivityLog] Flush error: ${err.message}`, 'SYSTEM', { event: 'activity-log-flush-error' }, 'ERROR');
+    // Re-queue entries that failed to write (to avoid data loss)
+    buffer.unshift(...batch);
+  }
 }
+
+/**
+ * Start the periodic flush timer
+ */
+function startFlushTimer() {
+  if (flushTimer) return;
+  flushTimer = setInterval(() => {
+    if (!isShuttingDown) flush();
+  }, BATCH_INTERVAL_MS);
+  // Unref so it doesn't keep the process alive
+  if (flushTimer.unref) flushTimer.unref();
+}
+
+/**
+ * Force-flush all remaining entries (call on shutdown)
+ */
+function flushAll() {
+  isShuttingDown = true;
+  if (flushTimer) {
+    clearInterval(flushTimer);
+    flushTimer = null;
+  }
+  while (buffer.length > 0) {
+    flush();
+  }
+}
+
+class ActivityLog {
+  /**
+   * Log an activity (buffered — does NOT write to DB immediately)
+   * @param {object} data - Activity data
+   * @returns {object} { id: null } — ID is assigned at flush time
+   */
+  static log(data) {
+    buffer.push({
+      userEmail: data.userEmail,
+      action: data.action,
+      resource: data.resource || null,
+      resourceId: data.resourceId || null,
+      details: data.details,
+      ip: data.ip || null,
+      userAgent: data.userAgent || null,
+      success: data.success !== false,
+    });
+
+    // Auto-flush if buffer is large enough
+    if (buffer.length >= BATCH_MAX_SIZE) {
+      flush();
+    }
+
+    // Start timer on first entry
+    if (!flushTimer) {
+      startFlushTimer();
+    }
+
+    return { id: null }; // Callers don't use the ID
+  }
+
+  /**
+   * Get activities with optional filters
+   */
+  static getAll(options = {}) {
+    const { userEmail, action, resource, startDate, endDate, limit = 100, offset = 0 } = options;
+
+    let sql = 'SELECT * FROM activity_logs WHERE 1=1';
+    const params = [];
+
+    if (userEmail) {
+      sql += ' AND user_email = ?';
+      params.push(userEmail);
+    }
+
+    if (action) {
+      sql += ' AND action = ?';
+      params.push(action);
+    }
+
+    if (resource) {
+      sql += ' AND resource = ?';
+      params.push(resource);
+    }
+
+    if (startDate) {
+      sql += ' AND created_at >= ?';
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      sql += ' AND created_at <= ?';
+      params.push(endDate);
+    }
+
+    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(limit);
+    params.push(offset);
+
+    const stmt = db.prepare(sql);
+    return stmt.all(...params).map(row => ({
+      ...row,
+      timestamp: row.created_at,
+      status: row.success === 1 ? 'success' : 'failure',
+      details: row.details ? JSON.parse(row.details) : null
+    }));
+  }
+
+  /**
+   * Get all logs with pagination
+   */
+  static getLogs(limit = 100, offset = 0) {
+    return this.getAll({ limit, offset });
+  }
+
+  /**
+   * Get user specific logs with pagination
+   */
+  static getUserLogs(userEmail, limit = 100, offset = 0) {
+    return this.getAll({ userEmail, limit, offset });
+  }
+
+  /**
+   * Get activity summary for dashboard
+   */
+  static getSummary(userEmail = null, days = 7) {
+    const date = new Date();
+    date.setDate(date.getDate() - (parseInt(days) || 7));
+    const dateLimit = date.toISOString().replace('T', ' ').split('.')[0];
+
+    let sqlBase = 'FROM activity_logs WHERE created_at >= ?';
+    const params = [dateLimit];
+    if (userEmail) {
+      sqlBase += ' AND user_email = ?';
+      params.push(userEmail);
+    }
+
+    try {
+      const totalStmt = db.prepare(`SELECT COUNT(*) as count ${sqlBase}`);
+      const totalResult = totalStmt.get(...params);
+      const totalActivities = totalResult ? totalResult.count : 0;
+
+      const actionStmt = db.prepare(`SELECT action, COUNT(*) as count ${sqlBase} GROUP BY action`);
+      const actionRows = actionStmt.all(...params);
+
+      const byAction = actionRows.reduce((acc, row) => {
+        let key = row.action.toLowerCase();
+        if (key.includes('message_send') || key.includes('campaign_message')) {
+          acc['send_message'] = (acc['send_message'] || 0) + row.count;
+        }
+        if (key.includes('session_create') || key === 'create') {
+          acc['create'] = (acc['create'] || 0) + row.count;
+        }
+        acc[key] = (acc[key] || 0) + row.count;
+        return acc;
+      }, {});
+
+      const userStmt = db.prepare(`SELECT user_email, COUNT(*) as count ${sqlBase} GROUP BY user_email`);
+      const userRows = userStmt.all(...params);
+      const byUser = userRows.reduce((acc, row) => {
+        acc[row.user_email || 'anonymous'] = row.count;
+        return acc;
+      }, {});
+
+      const successStmt = db.prepare(`SELECT COUNT(*) as count ${sqlBase} AND success = 1`);
+      const successResult = successStmt.get(...params);
+      const successCount = successResult ? successResult.count : 0;
+      const successRate = totalActivities > 0 ? Math.round((successCount / totalActivities) * 100) : 100;
+
+      log(`[ActivityLog] Résumé généré: ${totalActivities} activités, ${successRate}% succès`, 'SYSTEM',
+        { totalActivities, successRate }, 'DEBUG');
+
+      return {
+        totalActivities,
+        byAction,
+        byUser,
+        successRate,
+        period: { days: parseInt(days) || 7, since: dateLimit }
+      };
+    } catch (err) {
+      log(`[ActivityLog] Erreur lors de la génération du résumé: ${err.message}`, 'SYSTEM',
+        { event: 'summary-error', error: err.message }, 'ERROR');
+      return { totalActivities: 0, byAction: {}, byUser: {}, successRate: 100, period: { days: parseInt(days) || 7, since: dateLimit } };
+    }
+  }
+
+  // ── Helper methods (delegate to log) ────────────────────────
+
+  static logSessionCreate(userEmail, sessionId, ip, userAgent) {
+    return this.log({
+      userEmail,
+      action: 'SESSION_CREATE',
+      resource: 'session',
+      resourceId: sessionId,
+      ip,
+      userAgent
+    });
+  }
+
+  static logSessionDelete(userEmail, sessionId, ip, userAgent) {
+    return this.log({
+      userEmail,
+      action: 'SESSION_DELETE',
+      resource: 'session',
+      resourceId: sessionId,
+      ip,
+      userAgent
+    });
+  }
+
+  static logMessageSend(userEmail, sessionId, recipient, messageType, ip, userAgent) {
+    return this.log({
+      userEmail,
+      action: 'MESSAGE_SEND',
+      resource: 'message',
+      resourceId: sessionId,
+      details: { recipient, messageType },
+      ip,
+      userAgent
+    });
+  }
+
+  static logCampaign(userEmail, action, campaignId, details = null) {
+    return this.log({
+      userEmail,
+      action,
+      resource: 'campaign',
+      resourceId: campaignId,
+      details
+    });
+  }
+
+  static logCreditChange(userEmail, amount, balance, reason, details = null) {
+    return this.log({
+      userEmail,
+      action: amount > 0 ? 'CREDIT_ADD' : 'CREDIT_DEDUCT',
+      resource: 'credit',
+      details: { amount, balance, reason, ...(details || {}) }
+    });
+  }
+
+  static logAIAction(userEmail, sessionId, action, details = null) {
+    return this.log({
+      userEmail,
+      action: `AI_${action}`,
+      resource: 'ai',
+      resourceId: sessionId,
+      details
+    });
+  }
+
+  static logModerationAction(sessionId, action, details = null) {
+    return this.log({
+      action: `MODERATION_${action}`,
+      resource: 'moderation',
+      resourceId: sessionId,
+      details
+    });
+  }
+}
+
+// Export the flush function so index.js can call it on shutdown
+ActivityLog.flushAll = flushAll;
 
 module.exports = ActivityLog;

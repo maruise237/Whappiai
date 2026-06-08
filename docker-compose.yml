@@ -23,7 +23,8 @@ services:
       - ADMIN_DASHBOARD_PASSWORD=${ADMIN_DASHBOARD_PASSWORD}
       - MASTER_ADMIN_EMAIL=${MASTER_ADMIN_EMAIL}
       - MASTER_API_KEY=${MASTER_API_KEY}
-      - REDIS_URL=${REDIS_URL}
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgres://whappi:whappi_dev@postgres:5432/whappi
       - CAL_CLIENT_ID=${CAL_CLIENT_ID}
       - CAL_CLIENT_SECRET=${CAL_CLIENT_SECRET}
       - CAL_REDIRECT_URI=${CAL_REDIRECT_URI}
@@ -36,12 +37,21 @@ services:
       - EVOLUTION_WEBHOOK_SECRET=${EVOLUTION_WEBHOOK_SECRET}
     volumes:
       - whappi-data:/app/data
-      - whappi-sessions:/app/sessions
       - whappi-media:/app/media
     networks:
       - dokploy-network
       - default
     labels:
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.rule=Host(`whappi.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.entrypoints=web
+      - traefik.http.services.whappi-whappi-sypalq-7-web.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.service=whappi-whappi-sypalq-7-web
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.rule=Host(`whappi.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.entrypoints=websecure
+      - traefik.http.services.whappi-whappi-sypalq-7-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.service=whappi-whappi-sypalq-7-websecure
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.tls.certresolver=letsencrypt
       - traefik.http.routers.whappi-whappi-sypalq-7-web.rule=Host(`whappi.kamtech.online`)
       - traefik.http.routers.whappi-whappi-sypalq-7-web.entrypoints=web
       - traefik.http.services.whappi-whappi-sypalq-7-web.loadbalancer.server.port=3000
@@ -105,6 +115,16 @@ services:
       - traefik.http.services.whappi-whappi-sypalq-37-websecure.loadbalancer.server.port=3000
       - traefik.http.routers.whappi-whappi-sypalq-37-websecure.service=whappi-whappi-sypalq-37-websecure
       - traefik.http.routers.whappi-whappi-sypalq-37-websecure.tls.certresolver=letsencrypt
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.rule=Host(`whappi-bck.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.entrypoints=web
+      - traefik.http.services.whappi-whappi-sypalq-37-web.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.service=whappi-whappi-sypalq-37-web
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.rule=Host(`whappi-bck.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.entrypoints=websecure
+      - traefik.http.services.whappi-whappi-sypalq-37-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.service=whappi-whappi-sypalq-37-websecure
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.tls.certresolver=letsencrypt
       - traefik.docker.network=dokploy-network
       - traefik.http.routers.whappi-whappi-sypalq-37-web.rule=Host(`whappi-bck.kamtech.online`)
       - traefik.http.routers.whappi-whappi-sypalq-37-web.entrypoints=web
@@ -117,10 +137,45 @@ services:
       - traefik.http.routers.whappi-whappi-sypalq-37-websecure.service=whappi-whappi-sypalq-37-websecure
       - traefik.http.routers.whappi-whappi-sypalq-37-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    expose:
+      - "6379"
+    volumes:
+      - whappi-redis:/data
+    networks:
+      - dokploy-network
+      - default
+    command: redis-server --appendonly yes --save 300 10 --save 60 10000
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: whappi
+      POSTGRES_USER: whappi
+      POSTGRES_PASSWORD: whappi_dev
+    volumes:
+      - whappi-postgres:/var/lib/postgresql/data
+    networks:
+      - dokploy-network
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whappi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  whappi-data: null
-  whappi-sessions: null
-  whappi-media: null
+  whappi-data:
+  whappi-redis:
+  whappi-postgres:
+  whappi-media:
+
 networks:
   dokploy-network:
     external: true

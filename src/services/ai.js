@@ -8,7 +8,7 @@ const { User, Session, ActivityLog, AIModel } = require('../models');
 const CreditService = require('./CreditService');
 const KnowledgeService = require('./KnowledgeService');
 const WebhookService = require('./WebhookService');
-const QueueService = require('./QueueService');
+const { enqueue } = require('./QueueService');
 const { log } = require('../utils/logger');
 const { db } = require('../config/database');
 
@@ -888,7 +888,7 @@ class AIService {
             log(`Envoi de la réponse automatique à ${jid} (Session: ${sessionId})`, sessionId, { event: 'ai-sending', jid }, 'INFO');
             
             // Note: We delegate typing simulation and human delays to QueueService to prevent blocking the worker
-            const result = await QueueService.enqueue(sessionId, sock, jid, { text: formattedText }, {
+            const result = await enqueue(sessionId, sock, jid, { text: formattedText }, {
                 skipTyping: false
             });
             

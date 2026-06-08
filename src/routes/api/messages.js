@@ -5,7 +5,7 @@
 
 const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const CreditService = require('../../services/CreditService');
-const QueueService = require('../../services/QueueService');
+const { enqueue } = require('../../services/QueueService');
 const ActivityLog = require('../../models/ActivityLog');
 const SessionService = require('../../services/SessionService');
 
@@ -39,7 +39,7 @@ function initializeMessageRoutes(routerInstance, dependencies) {
                 }
                 result = { key: { id: providerResult.messageId || `evo-${Date.now()}` } };
             } else {
-                result = await QueueService.enqueue(sessionId, sock, jid, message, {
+                result = await enqueue(sessionId, sock, jid, message, {
                     priority: 'high'
                 });
             }

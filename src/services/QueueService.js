@@ -1,150 +1,227 @@
 /**
- * Outbound Queue Service
- * Manages all outgoing WhatsApp messages to ensure "human-like" delays
- * and protect against account banning.
+ * QueueService — BullMQ-backed outbound message queue
+ *
+ * Replaces the in-memory activeQueues Map with a persistent Redis queue.
+ * Supports both Baileys (sock) and Evolution API (provider) send modes.
+ *
+ * Features:
+ *   - Queue survives crashes/restarts
+ *   - Anti-ban delays (configurable per session)
+ *   - Priority handling (high p1, normal p2)
+ *   - Worker processes jobs asynchronously
+ *   - Works with Evolution API provider when sock is null
  */
 
+const { Queue, Worker, QueueEvents } = require('bullmq');
 const { log } = require('../utils/logger');
 const { db } = require('../config/database');
 
-// In-memory queue state
-const activeQueues = new Map(); // sessionId -> Array of tasks
+// Lazy-init connection (set up by init())
+let connection = null;
+let sendQueue = null;
+let worker = null;
+let queueEvents = null;
+let providerResolver = null;
+const pendingJobs = new Map();
 
-class QueueService {
-    /**
-     * Add a message to the outbound queue
-     * @param {string} sessionId
-     * @param {object} sock - Baileys socket
-     * @param {string} to - Destination JID
-     * @param {object} content - Baileys message content
-     * @param {object} options - Priority, label, etc.
-     */
-    static enqueue(sessionId, sock, to, content, options = {}) {
-        if (!activeQueues.has(sessionId)) {
-            activeQueues.set(sessionId, []);
+/**
+ * Initialize the BullMQ connection (call once at startup)
+ * @param {Function} getProviderFn - async function that returns the WhatsApp provider
+ */
+function init(getProviderFn) {
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    log('[QueueService] No REDIS_URL — queue disabled, using direct sends', 'SYSTEM', { event: 'queue-no-redis' }, 'WARN');
+    return;
+  }
+
+  try {
+    // Dynamic import of IORedis — bullmq requires it
+    const IORedis = require('ioredis');
+    connection = new IORedis(redisUrl, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    });
+
+    sendQueue = new Queue('whappi-outbound', { connection });
+    queueEvents = new QueueEvents('whappi-outbound', { connection });
+
+    providerResolver = getProviderFn || null;
+
+    // Create the worker that processes send jobs
+    worker = new Worker('whappi-outbound', async (job) => {
+      const { sessionId, to, content, options } = job.data;
+
+      try {
+        const result = await processJob(sessionId, to, content, options);
+
+        // Resolve the pending promise if the caller is still waiting
+        const pending = pendingJobs.get(job.id);
+        if (pending) {
+          pendingJobs.delete(job.id);
+          pending.resolve(result);
         }
 
-        const queue = activeQueues.get(sessionId);
-        const task = {
-            to,
-            content,
-            options,
-            timestamp: Date.now(),
-            resolve: null,
-            reject: null
-        };
-
-        // Return a promise that resolves when the message is actually sent
-        return new Promise((resolve, reject) => {
-            task.resolve = resolve;
-            task.reject = reject;
-
-            // Priority handling (optional)
-            if (options.priority === 'high') {
-                queue.unshift(task);
-            } else {
-                queue.push(task);
-            }
-
-            log(`Message enfilé pour ${to} (Session: ${sessionId}, File: ${queue.length})`, sessionId, { event: 'queue-enqueue', to }, 'DEBUG');
-
-            // Toujours tenter de lancer le processeur (il s'arrêtera s'il tourne déjà)
-            this.processQueue(sessionId, sock);
-        });
-    }
-
-    /**
-     * Process tasks from the queue for a specific session
-     */
-    static async processQueue(sessionId, sock) {
-        // Prevent concurrent processing of the same session queue
-        const queueKey = `processing:${sessionId}`;
-        if (activeQueues.get(queueKey)) return;
-        activeQueues.set(queueKey, true);
-
-        try {
-            while (true) {
-                const queue = activeQueues.get(sessionId);
-                if (!queue || queue.length === 0) break;
-
-                // Check if socket is still active
-                if (!sock || !sock.user) {
-                    log(`Socket déconnecté, arrêt du traitement de la file pour ${sessionId}`, sessionId, { event: 'queue-stop-offline' }, 'WARN');
-                    break;
-                }
-
-                const task = queue.shift();
-
-                try {
-                    // 1. Human-like delay BEFORE sending
-                    // Fetch session config for customized anti-ban delays
-                    const session = db.prepare('SELECT ai_delay_min, ai_delay_max FROM whatsapp_sessions WHERE id = ?').get(sessionId);
-                    const min = (session?.ai_delay_min ?? 1) * 1000;
-                    const max = (session?.ai_delay_max ?? 5) * 1000;
-
-                    // Base delay from config (default 1-5s) + bonus for long queues
-                    const baseDelay = min + Math.random() * (max - min);
-                    const queueCongestionBonus = Math.min(queue.length * 500, 5000);
-                    const totalDelay = baseDelay + queueCongestionBonus;
-
-                    log(`Attente anti-ban : ${Math.round(totalDelay/100)/10}s pour ${task.to}`, sessionId, { event: 'queue-delay', delay: totalDelay, range: `${min/1000}-${max/1000}s` }, 'DEBUG');
-                    await new Promise(resolve => setTimeout(resolve, totalDelay));
-
-                    // 2. Typing simulation (optional based on content)
-                    if (task.content.text && !task.options.skipTyping) {
-                        try {
-                            await sock.presenceSubscribe(task.to);
-                            await sock.sendPresenceUpdate('composing', task.to);
-                            // Typing speed simulation: ~50ms per char
-                            const typingDelay = Math.min(Math.max(task.content.text.length * 50, 1000), 10000);
-                            await new Promise(resolve => setTimeout(resolve, typingDelay));
-                            await sock.sendPresenceUpdate('paused', task.to);
-                        } catch (e) {}
-                    }
-
-                    // 3. ACTUAL SEND (with timeout protection)
-                    const result = await Promise.race([
-                        sock.sendMessage(task.to, task.content),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp send timeout (30s)')), 30000))
-                    ]);
-
-                    log(`Message envoyé via file d'attente à ${task.to}`, sessionId, { event: 'queue-sent', to: task.to, messageId: result?.key?.id }, 'INFO');
-
-                    // CRITICAL: Track bot-sent messages to avoid auto-pausing the AI (Human Priority logic)
-                    try {
-                        const aiService = require('./ai');
-                        if (result?.key?.id) {
-                            aiService.trackBotSent(sessionId, result.key.id);
-                        }
-                    } catch (e) {
-                        // Ignore circular dependency or other tracking issues
-                    }
-
-                    if (task.resolve) task.resolve(result);
-                } catch (err) {
-                    log(`Échec envoi via file d'attente pour ${task.to}: ${err.message}`, sessionId, { event: 'queue-error', error: err.message }, 'ERROR');
-                    if (task.reject) task.reject(err);
-                }
-            }
-        } finally {
-            activeQueues.delete(queueKey);
-            // If queue was empty, we can cleanup the session entry
-            if (activeQueues.get(sessionId)?.length === 0) {
-                activeQueues.delete(sessionId);
-            }
+        return result;
+      } catch (err) {
+        const pending = pendingJobs.get(job.id);
+        if (pending) {
+          pendingJobs.delete(job.id);
+          pending.reject(err);
         }
-    }
+        throw err;
+      }
+    }, {
+      connection,
+      concurrency: 5, // Process up to 5 jobs concurrently
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 50 },
+    });
 
-    /**
-     * Get queue stats
-     */
-    static getStats(sessionId) {
-        const queue = activeQueues.get(sessionId);
-        return {
-            pending: queue ? queue.length : 0,
-            isProcessing: !!activeQueues.get(`processing:${sessionId}`)
-        };
-    }
+    worker.on('error', (err) => {
+      log(`[QueueService] Worker error: ${err.message}`, 'SYSTEM', { event: 'queue-worker-error' }, 'ERROR');
+    });
+
+    log('[QueueService] BullMQ initialized', 'SYSTEM', { event: 'queue-init' }, 'INFO');
+  } catch (err) {
+    log(`[QueueService] Init failed: ${err.message}`, 'SYSTEM', { event: 'queue-init-error' }, 'ERROR');
+    connection = null;
+    sendQueue = null;
+    worker = null;
+    queueEvents = null;
+  }
 }
 
-module.exports = QueueService;
+/**
+ * Process a single send job
+ */
+async function processJob(sessionId, to, content, options = {}) {
+  // 1. Anti-ban delay
+  const session = db.prepare('SELECT ai_delay_min, ai_delay_max FROM whatsapp_sessions WHERE id = ?').get(sessionId);
+  const delayMin = (session?.ai_delay_min ?? 1) * 1000;
+  const delayMax = (session?.ai_delay_max ?? 5) * 1000;
+  const baseDelay = delayMin + Math.random() * (delayMax - delayMin);
+  await new Promise(resolve => setTimeout(resolve, baseDelay));
+
+  // 2. Try provider (Evolution API mode)
+  let provider = null;
+  if (providerResolver) {
+    try {
+      provider = await providerResolver();
+    } catch (e) {}
+  }
+
+  if (provider && typeof provider.sendTextMessage === 'function' && content.text) {
+    return provider.sendTextMessage(sessionId, {
+      jid: to,
+      text: content.text,
+      mentions: options.mentions || content.mentions,
+    });
+  }
+
+  throw new Error('No provider available for send — enqueue requires an active WhatsApp provider');
+}
+
+/**
+ * Add a message to the outbound queue
+ * @param {string} sessionId
+ * @param {object|null} sock - kept for API compatibility (ignored in Evolution mode)
+ * @param {string} to - Destination JID
+ * @param {object} content - Message content
+ * @param {object} options - Priority, label, etc.
+ * @returns {Promise<object>} Send result
+ */
+async function enqueue(sessionId, sock, to, content, options = {}) {
+  // If no queue initialized, fall through to direct send
+  if (!sendQueue || !connection) {
+    return sendDirect(sessionId, to, content, options);
+  }
+
+  const job = await sendQueue.add('send', {
+    sessionId,
+    to,
+    content,
+    options,
+    timestamp: Date.now(),
+  }, {
+    priority: options.priority === 'high' ? 1 : 2,
+  });
+
+  // Return a promise that resolves when the worker completes this job
+  return new Promise((resolve, reject) => {
+    pendingJobs.set(job.id, { resolve, reject });
+
+    // Safety timeout
+    setTimeout(() => {
+      if (pendingJobs.has(job.id)) {
+        pendingJobs.delete(job.id);
+        reject(new Error(`Queue timeout (60s) for job ${job.id}`));
+      }
+    }, 60000);
+  });
+}
+
+/**
+ * Direct send fallback (bypasses queue)
+ */
+async function sendDirect(sessionId, to, content, options = {}) {
+  let provider = null;
+  if (providerResolver) {
+    try {
+      provider = await providerResolver();
+    } catch (e) {}
+  }
+
+  if (provider && typeof provider.sendTextMessage === 'function' && content.text) {
+    return provider.sendTextMessage(sessionId, {
+      jid: to,
+      text: content.text,
+      mentions: options.mentions || content.mentions,
+    });
+  }
+
+  throw new Error('No provider available for send');
+}
+
+/**
+ * Get queue stats
+ */
+async function getStats(sessionId) {
+  if (!sendQueue) {
+    return { pending: 0, waiting: 0, active: 0, delayed: 0, isProcessing: false };
+  }
+
+  const counts = await sendQueue.getJobCounts('waiting', 'active', 'delayed');
+  return {
+    pending: (counts.waiting || 0) + (counts.active || 0),
+    waiting: counts.waiting || 0,
+    active: counts.active || 0,
+    delayed: counts.delayed || 0,
+    isProcessing: (counts.active || 0) > 0,
+  };
+}
+
+/**
+ * Graceful shutdown
+ */
+async function shutdown() {
+  if (worker) {
+    await worker.close();
+    worker = null;
+  }
+  if (queueEvents) {
+    await queueEvents.close();
+    queueEvents = null;
+  }
+  if (sendQueue) {
+    await sendQueue.close();
+    sendQueue = null;
+  }
+  if (connection) {
+    await connection.quit();
+    connection = null;
+  }
+  log('[QueueService] Shutdown complete', 'SYSTEM', { event: 'queue-shutdown' }, 'INFO');
+}
+
+module.exports = { init, enqueue, getStats, shutdown };

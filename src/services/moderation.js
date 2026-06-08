@@ -4,7 +4,7 @@ const { Session, ActivityLog, User } = require('../models');
 const { log } = require('../utils/logger');
 const wappy = require('./WappyEventBroadcaster');
 const CreditService = require('./CreditService');
-const QueueService = require('./QueueService');
+const { enqueue } = require('./QueueService');
 const WarningService = require('./warnings');
 
 /**
@@ -364,7 +364,7 @@ async function handleParticipantUpdate(sock, sessionId, update) {
 
             try {
                 // Formatting is now handled in QueueService or before enqueue
-                await QueueService.enqueue(sessionId, sock, groupId, {
+                await enqueue(sessionId, sock, groupId, {
                     text: message,
                     mentions: [jid]
                 });
@@ -519,7 +519,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
             
             try {
                 // 1. Delete Message (High priority for moderation)
-                await QueueService.enqueue(sessionId, sock, groupId, { delete: msg.key }, { priority: 'high' });
+                await enqueue(sessionId, sock, groupId, { delete: msg.key }, { priority: 'high' });
                 wappy.linkBlocked(groupId, sessionId);
 
                 if (settings.warnings_enabled === 0) {
@@ -571,7 +571,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         maxWarnings,
                         reason: violation
                     });
-                    await QueueService.enqueue(sessionId, sock, groupId, {
+                    await enqueue(sessionId, sock, groupId, {
                         text: exclusionMsg,
                         mentions: [senderJid]
                     }, { priority: 'high' });
@@ -603,7 +603,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         reason: violation
                     });
 
-                    await QueueService.enqueue(sessionId, sock, groupId, {
+                    await enqueue(sessionId, sock, groupId, {
                         text: warningMsg,
                         mentions: [senderJid]
                     }, { priority: 'high' });

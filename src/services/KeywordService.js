@@ -5,7 +5,7 @@
 
 const { KeywordResponder } = require('../models');
 const { log } = require('../utils/logger');
-const QueueService = require('./QueueService');
+const { enqueue } = require('./QueueService');
 
 class KeywordService {
     /**
@@ -97,7 +97,7 @@ class KeywordService {
                 message = { video: { url: content } };
             }
 
-            const result = await QueueService.enqueue(sessionId, sock, jid, message);
+            const result = await enqueue(sessionId, sock, jid, message);
 
             if (result) {
                 log(`Réponse automatique par mot-clé envoyée à ${jid}`, sessionId, { event: 'keyword-sent', ruleId: rule.id }, 'INFO');

@@ -25,7 +25,6 @@ const { WebSocketServer } = require('ws');
 const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
-const FileStore = require('session-file-store')(session);
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -52,6 +51,8 @@ const evolutionWebhookRouter = require('./src/services/EvolutionWebhookHandler')
 const { log, setBroadcastFn } = require('./src/utils/logger');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middleware/errorHandler');
 const redisService = require('./src/services/redis');
+const whappiSessionStore = require('./src/services/SessionStore');
+const queueService = require('./src/services/QueueService');
 
 // API v1
 const { initializeApi } = require('./src/routes/api');
@@ -134,20 +135,23 @@ const wsClients = new Map();
 const isProduction = process.env.NODE_ENV === 'production';
 const sessionSecret = _clean(process.env.SESSION_SECRET) || 'dev-secret-change-me';
 
-// Ensure sessions directory exists for FileStore
+// Use FileStore as default; Redis will be swapped in after async connect
+const FileStore = require('session-file-store')(session);
+
+// Ensure sessions directory exists for FileStore fallback
 const sessionsDir = path.join(__dirname, 'sessions');
 if (!fs.existsSync(sessionsDir)) {
     fs.mkdirSync(sessionsDir, { recursive: true });
 }
 
-const sessionStore = new FileStore({
+const fallbackSessionStore = new FileStore({
     path: './sessions',
     logFn: (msg) => {
         if (msg && !msg.includes('OK')) {
             log(`[SessionStore] ${msg}`, 'SYSTEM', { event: 'session-store-warning', message: msg }, 'WARN');
         }
     },
-    retries: 10, // Increased retries for Windows stability
+    retries: 10,
     factor: 1.5,
     minTimeout: 100,
     maxTimeout: 1000,
@@ -155,6 +159,9 @@ const sessionStore = new FileStore({
     ttl: 86400,
     reapInterval: 3600
 });
+
+// Will be upgraded to RedisStore after async connect succeeds
+let activeSessionStore = fallbackSessionStore;
 
 // Middleware
 app.use(cookieParser());
@@ -207,29 +214,82 @@ app.use(helmet({
 }));
 
 // Rate Limiting with tiered approach
+const RateLimitStore = require('./src/services/rateLimitStore');
+
+// Redis-backed rate limit stores (initialized lazily)
+let rlStoresInitialized = false;
+let generalStore = null;
+let authStore = null;
+let webhookStore = null;
+let apiStore = null;
+
+async function initRateLimitStores() {
+  if (rlStoresInitialized) return;
+  rlStoresInitialized = true;
+
+  generalStore = new RateLimitStore({ prefix: 'rl:general:', windowMs: 60000 });
+  authStore = new RateLimitStore({ prefix: 'rl:auth:', windowMs: 900000 });
+  webhookStore = new RateLimitStore({ prefix: 'rl:webhook:', windowMs: 1000 });  // 1s window
+  apiStore = new RateLimitStore({ prefix: 'rl:api:', windowMs: 60000 });
+
+  await Promise.all([
+    generalStore.init(),
+    authStore.init(),
+    webhookStore.init(),
+    apiStore.init(),
+  ]);
+}
+
+// General limiter (all routes) — 60 req/min
 const generalLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 100,
+    max: 60,
     message: { status: 'error', message: 'Too many requests' },
     standardHeaders: true,
     legacyHeaders: false,
-    validate: { trustProxy: false }
+    validate: { trustProxy: false },
+    store: generalStore
 });
 
-// Stricter limiter for authentication endpoints
+// Stricter limiter for authentication endpoints — 10 req/15min
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20,
+    max: 10,
     message: { status: 'error', message: 'Too many authentication attempts' },
     standardHeaders: true,
     legacyHeaders: false,
-    validate: { trustProxy: false }
+    validate: { trustProxy: false },
+    store: authStore
+});
+
+// Evolution webhook limiter — 30 req/s per session
+const evolutionWebhookLimiter = rateLimit({
+    windowMs: 1000,
+    max: 30,
+    message: { status: 'error', message: 'Too many webhook requests' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: false },
+    store: webhookStore,
+    keyGenerator: (req) => req.headers['x-evolution-instance'] || req.ip
+});
+
+// API limiter (per user) — 200 req/min per user
+const apiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 200,
+    message: { status: 'error', message: 'API rate limit exceeded' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: false },
+    store: apiStore,
+    keyGenerator: (req) => req.currentUser?.email || req.ip
 });
 
 app.use(generalLimiter);
 
 app.use(session({
-    store: sessionStore,
+    store: activeSessionStore,
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
@@ -478,6 +538,8 @@ const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
 
     if (session.token) {
         sessionTokens.set(sessionId, session.token);
+        // Also persist to Redis for multi-instance support
+        whappiSessionStore.setToken(sessionId, session.token).catch(() => {});
     }
     return session;
 };
@@ -486,6 +548,8 @@ const deleteSessionWrapper = async (sessionId) => {
     log(`Demande de suppression complète pour la session: ${sessionId}`, 'SYSTEM', { sessionId }, 'INFO');
 
     sessionTokens.delete(sessionId);
+    // Also remove from Redis
+    whappiSessionStore.deleteToken(sessionId).catch(() => {});
     if (SessionService.isProviderActive()) {
         await SessionService.deleteSessionProvider(sessionId);
     }
@@ -587,9 +651,9 @@ app.use('/api/v1/subscriptions', authLimiter, subscriptionRoutes);
 app.use('/api/v1/credits', authLimiter, creditRoutes);
 app.use('/api/v1/notifications', authLimiter, notificationRoutes);
 app.use('/api/v1/cal', authLimiter, calRoutes);
-app.use('/api/v1/webhooks', evolutionWebhookRouter);
+app.use('/api/v1/webhooks', evolutionWebhookLimiter, evolutionWebhookRouter);
 app.use('/api/v1', publicRoutes);  // public, no auth
-app.use('/api/v1', apiRouter);
+app.use('/api/v1', apiLimiter, apiRouter);
 
 // Serve modern UI
 const frontendPath = path.join(__dirname, 'frontend', 'out');
@@ -705,6 +769,10 @@ if (require.main === module) {
         for (const session of existingSessions) {
             if (session.token) {
                 sessionTokens.set(session.id, session.token);
+                // Warm Redis cache on startup
+                if (whappiSessionStore.isConnected) {
+                    whappiSessionStore.setToken(session.id, session.token).catch(() => {});
+                }
             }
         }
 
@@ -720,10 +788,50 @@ if (require.main === module) {
 // Start server
 const PORT = process.env.PORT || 3000;
 
-// Initialize Redis cache (optional, non-blocking)
+// Initialize Redis session store and token store (optional, non-blocking)
 (async () => {
     if (process.env.REDIS_URL) {
         await redisService.connect();
+        const result = await whappiSessionStore.connect(session);
+        if (result.isConnected && result.store) {
+            activeSessionStore = result.store;
+            log('Session store upgraded to Redis', 'SYSTEM', { event: 'session-store-redis' }, 'INFO');
+        }
+
+        // Load tokens from Redis into local Map (for sessions created by other instances)
+        if (result.isConnected) {
+            const tokenKeys = await whappiSessionStore.listTokens();
+            for (const sid of tokenKeys) {
+                if (!sessionTokens.has(sid)) {
+                    const token = await whappiSessionStore.getToken(sid);
+                    if (token) sessionTokens.set(sid, token);
+                }
+            }
+            if (tokenKeys.length > 0) {
+                log(`Loaded ${tokenKeys.length} token(s) from Redis`, 'SYSTEM', { count: tokenKeys.length }, 'INFO');
+            }
+
+            // Also persist any tokens from local Map to Redis (for offline-first sessions)
+            let persisted = 0;
+            for (const [sid, token] of sessionTokens) {
+                if (!tokenKeys.includes(sid)) {
+                    await whappiSessionStore.setToken(sid, token);
+                    persisted++;
+                }
+            }
+            if (persisted > 0) {
+                log(`Persisted ${persisted} local token(s) to Redis`, 'SYSTEM', { count: persisted }, 'INFO');
+            }
+        }
+
+        // Initialize BullMQ queue for outbound messages
+        const SessionService = require('./src/services/SessionService');
+        queueService.init(() => SessionService.getProvider());
+
+        // Initialize Redis-backed rate limit stores
+        initRateLimitStores().catch(err => {
+            log(`Rate limit store init error: ${err.message}`, 'SYSTEM', { event: 'rate-limit-init-error' }, 'WARN');
+        });
     }
 })();
 
@@ -738,9 +846,22 @@ if (require.main === module) {
 const gracefulShutdown = async (signal) => {
     log(`Signal ${signal} reçu. Arrêt en cours...`, 'SYSTEM', { signal }, 'INFO');
 
-    // Close Redis connection
+    // Close Redis connections
     if (redisService.isConnected) {
         await redisService.disconnect();
+    }
+    if (whappiSessionStore.isConnected) {
+        await whappiSessionStore.disconnect();
+    }
+    await queueService.shutdown();
+
+    // Flush pending activity logs before exit
+    const ActivityLog = require('./src/models/ActivityLog');
+    ActivityLog.flushAll();
+
+    // Close rate limit stores
+    for (const store of [generalStore, authStore, webhookStore, apiStore]) {
+        if (store && store.close) store.close().catch(() => {});
     }
 
     server.close(() => {

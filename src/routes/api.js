@@ -18,7 +18,7 @@ const KeywordResponder = require('../models/KeywordResponder');
 const ActivityLog = require('../models/ActivityLog');
 const CreditService = require('../services/CreditService');
 const AccountAccessService = require('../services/AccountAccessService');
-const QueueService = require('../services/QueueService');
+const { enqueue } = require('../services/QueueService');
 const { db } = require('../config/database');
 // Security: csurf removed (deprecated) - use modern CSRF protection if needed
 
@@ -1367,7 +1367,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // Log message structure for debugging
             log(`[API] Structure du message: ${JSON.stringify(message)}`, 'SYSTEM', { message }, 'DEBUG');
 
-            const result = await QueueService.enqueue(sessionId, sock, jid, message, {
+            const result = await enqueue(sessionId, sock, jid, message, {
                 priority: 'high' // Manual messages get high priority
             });
 
