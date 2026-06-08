@@ -13,7 +13,7 @@ const navItems = [
   { label: "nav_features", href: "/#features" },
   { label: "nav_pricing", href: "/#pricing" },
   { label: "nav_testimonials", href: "/#testimonials" },
-  { label: "nav_docs", href: "/docs" },
+  { label: "cta_signup", href: "/register" },
 ]
 
 const getStoredDarkMode = () => {

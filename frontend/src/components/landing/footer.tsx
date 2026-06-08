@@ -15,7 +15,6 @@ const footerLinks = {
     { label: "footer_link_register", href: "/register" },
   ],
   footer_section_ressources: [
-    { label: "footer_link_docs", href: "/docs" },
     { label: "footer_link_guides", href: "/guides" },
     { label: "footer_link_blog", href: "/blog" },
     { label: "footer_link_community", href: "/community" },
