@@ -1,4 +1,4 @@
-const { db } = require('../config/database');
+const db = require('../db/query');
 const crypto = require('crypto');
 const { log } = require('../utils/logger');
 const PricingService = require('./PricingService');
@@ -10,16 +10,16 @@ class SubscriptionService {
      * Subscribe user to a plan.
      */
     static async subscribe(userId, planCode) {
-        const plan = PricingService.getPlanByCode(planCode);
+        const plan = await PricingService.getPlanByCode(planCode);
         if (!plan) throw new Error('Plan not found');
 
-        const existingSub = this.getCurrentSubscription(userId);
+        const existingSub = await this.getCurrentSubscription(userId);
         if (existingSub) {
-            db.prepare(`
+            await db.run(`
                 UPDATE subscriptions
-                SET status = 'canceled', cancel_at_period_end = 0, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            `).run(existingSub.id);
+                SET status = 'canceled', cancel_at_period_end = 0, updated_at = NOW()
+                WHERE id = $1
+            `, [existingSub.id]);
         }
 
         const subId = crypto.randomUUID();
@@ -27,21 +27,21 @@ class SubscriptionService {
         const periodEnd = new Date(now);
         periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-        db.prepare(`
+        await db.run(`
             INSERT INTO subscriptions (
                 id, user_id, plan_id, status,
                 current_period_start, current_period_end
             )
-            VALUES (?, ?, ?, 'active', ?, ?)
-        `).run(subId, userId, plan.id, now.toISOString(), periodEnd.toISOString());
+            VALUES ($1, $2, $3, 'active', $4, $5)
+        `, [subId, userId, plan.id, now.toISOString(), periodEnd.toISOString()]);
 
-        db.prepare(`
+        await db.run(`
             UPDATE users
-            SET plan_id = ?, plan_status = ?, subscription_expiry = ?
-            WHERE id = ?
-        `).run(plan.id, 'active', periodEnd.toISOString(), userId);
+            SET plan_id = $1, plan_status = $2, subscription_expiry = $3
+            WHERE id = $4
+        `, [plan.id, 'active', periodEnd.toISOString(), userId]);
 
-        CreditService.resetMonthlyCredits(userId, plan.message_limit);
+        await CreditService.resetMonthlyCredits(userId, plan.message_limit);
 
         NotificationService.create({
             userId,
@@ -56,36 +56,36 @@ class SubscriptionService {
     /**
      * Get current active subscription for a user.
      */
-    static getCurrentSubscription(userId) {
-        return db.prepare(`
+    static async getCurrentSubscription(userId) {
+        return await db.get(`
             SELECT s.*, p.name as plan_name, p.code as plan_code, p.message_limit
             FROM subscriptions s
             JOIN pricing_plans p ON s.plan_id = p.id
-            WHERE s.user_id = ? AND s.status = 'active'
+            WHERE s.user_id = $1 AND s.status = 'active'
             ORDER BY s.created_at DESC
             LIMIT 1
-        `).get(userId);
+        `, [userId]);
     }
 
     /**
      * Cancel subscription and stop access at account level.
      */
     static async cancel(userId) {
-        const sub = this.getCurrentSubscription(userId);
+        const sub = await this.getCurrentSubscription(userId);
 
         if (sub) {
-            db.prepare(`
+            await db.run(`
                 UPDATE subscriptions
-                SET status = 'canceled', cancel_at_period_end = 1, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            `).run(sub.id);
+                SET status = 'canceled', cancel_at_period_end = 1, updated_at = NOW()
+                WHERE id = $1
+            `, [sub.id]);
         }
 
-        db.prepare(`
+        await db.run(`
             UPDATE users
             SET plan_status = 'canceled', message_limit = 0
-            WHERE id = ?
-        `).run(userId);
+            WHERE id = $1
+        `, [userId]);
 
         NotificationService.create({
             userId,
@@ -100,18 +100,18 @@ class SubscriptionService {
     /**
      * Check for expiring subscriptions.
      */
-    static checkExpirations() {
+    static async checkExpirations() {
         const now = new Date();
         const threeDaysFromNow = new Date(now);
         threeDaysFromNow.setDate(now.getDate() + 3);
 
-        const expiring = db.prepare(`
+        const expiring = await db.all(`
             SELECT s.*, u.email
             FROM subscriptions s
             JOIN users u ON s.user_id = u.id
             WHERE s.status = 'active'
-            AND s.current_period_end BETWEEN ? AND ?
-        `).all(now.toISOString(), threeDaysFromNow.toISOString());
+            AND s.current_period_end BETWEEN $1 AND $2
+        `, [now.toISOString(), threeDaysFromNow.toISOString()]);
 
         for (const sub of expiring) {
             NotificationService.createOncePerDay({
@@ -128,21 +128,21 @@ class SubscriptionService {
      * Expire subscription or trial and stop automations until renewal.
      */
     static async expire(userId) {
-        const sub = this.getCurrentSubscription(userId);
+        const sub = await this.getCurrentSubscription(userId);
 
         if (sub) {
-            db.prepare(`
+            await db.run(`
                 UPDATE subscriptions
-                SET status = 'expired', updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            `).run(sub.id);
+                SET status = 'expired', updated_at = NOW()
+                WHERE id = $1
+            `, [sub.id]);
         }
 
-        db.prepare(`
+        await db.run(`
             UPDATE users
             SET plan_status = 'expired', message_limit = 0
-            WHERE id = ?
-        `).run(userId);
+            WHERE id = $1
+        `, [userId]);
 
         NotificationService.createOncePerDay({
             userId,

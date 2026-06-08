@@ -104,7 +104,7 @@ async function requireClerkAuth(req, res, next) {
     }
 
     // Sync with local SQLite user
-    let localUser = User.findById(clerkUser.id) || User.findByEmail(email);
+    let localUser = await User.findById(clerkUser.id) || await User.findByEmail(email);
     
     // Auto-create or update user from Clerk
     // This ensures that anyone authenticated via Clerk has a local record
@@ -118,7 +118,7 @@ async function requireClerkAuth(req, res, next) {
         role: targetRole // Use targetRole which includes auto-promotion
     });
 
-    localUser = User.findById(clerkUser.id);
+    localUser = await User.findById(clerkUser.id);
 
     if (!localUser) {
         log(`Failed to sync/create local user for ${email}`, 'AUTH', null, 'ERROR');

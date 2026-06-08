@@ -11,10 +11,10 @@ router.get('/', ClerkExpressWithAuth(), async (req, res) => {
         const userId = req.auth.userId;
         if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
 
-        const user = User.findById(userId);
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
 
-        const history = User.getCreditHistory(userId);
+        const history = await User.getCreditHistory(userId);
         res.json({
             status: 'success',
             data: {
@@ -36,7 +36,7 @@ router.get('/balance', ClerkExpressWithAuth(), async (req, res) => {
         const userId = req.auth.userId;
         if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
 
-        const balance = CreditService.getBalance(userId);
+        const balance = await CreditService.getBalance(userId);
         res.json({ status: 'success', data: { balance } });
     } catch (error) {
         log('Error fetching credit balance', 'CREDITS', { error: error.message }, 'ERROR');
@@ -50,7 +50,7 @@ router.get('/history', ClerkExpressWithAuth(), async (req, res) => {
         const userId = req.auth.userId;
         if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
 
-        const history = CreditService.getHistory(userId);
+        const history = await CreditService.getHistory(userId);
         res.json({ status: 'success', data: history });
     } catch (error) {
         log('Error fetching credit history', 'CREDITS', { error: error.message }, 'ERROR');
@@ -65,7 +65,7 @@ router.get('/stats', ClerkExpressWithAuth(), async (req, res) => {
         if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
 
         const days = parseInt(req.query.days) || 7;
-        const stats = CreditService.getUsageStats(userId, days);
+        const stats = await CreditService.getUsageStats(userId, days);
         res.json({ status: 'success', data: stats });
     } catch (error) {
         log('Error fetching credit stats', 'CREDITS', { error: error.message }, 'ERROR');
@@ -79,7 +79,7 @@ router.post('/claim-welcome', ClerkExpressWithAuth(), async (req, res) => {
         const userId = req.auth.userId;
         if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
 
-        const result = CreditService.giveWelcomeCredits(userId, 60);
+        const result = await CreditService.giveWelcomeCredits(userId, 60);
         if (result) {
             res.json({ status: 'success', message: '60 crédits de bienvenue ont été ajoutés à votre compte 🎉' });
         } else {

@@ -1,9 +1,4 @@
-/**
- * Group Management & Moderation Routes
- * Handles group profiles, links, moderation settings, and engagement tasks
- */
-
-const { db } = require('../../config/database');
+const db = require('../../db/query');
 const CreditService = require('../../services/CreditService');
 const AccountAccessService = require('../../services/AccountAccessService');
 
@@ -30,7 +25,7 @@ function initializeGroupRoutes(routerInstance, dependencies) {
             const groups = await moderationService.getAdminGroups(sessionData.sock, sessionId);
             res.json({ status: 'success', data: groups });
         } catch (err) {
-            log(`Erreur lors de la récupération des groupes pour ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+            log(`Erreur lors de la r�cup�ration des groupes pour ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
@@ -39,7 +34,7 @@ function initializeGroupRoutes(routerInstance, dependencies) {
     routerInstance.get('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
-            const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+            const settings = await db.get('SELECT * FROM group_settings WHERE group_id = $1 AND session_id = $2', [groupId, sessionId]);
             res.json({
                 status: 'success',
                 data: settings || {
@@ -59,7 +54,7 @@ function initializeGroupRoutes(routerInstance, dependencies) {
                 }
             });
         } catch (err) {
-            log(`Erreur lors de la récupération des réglages pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
+            log(`Erreur lors de la r�cup�ration des r�glages pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
@@ -72,7 +67,7 @@ function initializeGroupRoutes(routerInstance, dependencies) {
             moderationService.updateGroupSettings(sessionId, groupId, req.body);
             res.json({ status: 'success', message: 'Settings updated' });
         } catch (err) {
-            log(`Échec de la mise à jour de la modération pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
+            log(`�chec de la mise � jour de la mod�ration pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
@@ -172,7 +167,7 @@ function initializeGroupRoutes(routerInstance, dependencies) {
                 return res.status(401).json({ status: 'error', message: 'Compte utilisateur requis pour programmer un message.' });
             }
 
-            const access = AccountAccessService.canCreateScheduledTask(req.currentUser.id);
+            const access = await AccountAccessService.canCreateScheduledTask(req.currentUser.id);
             if (!access.allowed) {
                 return res.status(403).json({
                     status: 'error',
@@ -201,7 +196,7 @@ function initializeGroupRoutes(routerInstance, dependencies) {
         try {
             const engagementService = require('../../services/engagement');
             engagementService.deleteTask(taskId);
-            res.json({ status: 'success', message: 'Tâche supprimée' });
+            res.json({ status: 'success', message: 'T�che supprim�e' });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
         }

@@ -18,7 +18,7 @@ function initializeStatsRoutes(routerInstance, dependencies) {
         try {
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
             const summary = ActivityLog.getSummary(userEmail, 7);
-            const user = User.findById(req.currentUser.id);
+            const user = await User.findById(req.currentUser.id);
 
             let sessionCount = 0;
             if (req.currentUser.role === 'admin') {
@@ -107,12 +107,12 @@ function initializeStatsRoutes(routerInstance, dependencies) {
     // Get credit history
     routerInstance.get('/credits', checkSessionOrTokenAuth, (req, res) => {
         try {
-            const user = User.findById(req.currentUser.id);
+            const user = await User.findById(req.currentUser.id);
             if (!user) {
                 return res.status(404).json({ status: 'error', message: 'Utilisateur non trouvé' });
             }
 
-            const history = User.getCreditHistory(req.currentUser.id);
+            const history = await User.getCreditHistory(req.currentUser.id);
             res.json({
                 status: 'success',
                 data: {

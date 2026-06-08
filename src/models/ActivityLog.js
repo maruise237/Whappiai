@@ -1,15 +1,15 @@
 /**
- * Activity Log Model — SQLite-based activity logging with async batching
+ * Activity Log Model — Postgres-based activity logging with async batching
  *
- * Instead of writing every entry synchronously to SQLite, entries are
+ * Instead of writing every entry synchronously to Postgres, entries are
  * buffered in memory and flushed in batches every 5 seconds (or 100 entries).
- * This keeps the hot path fast and reduces SQLite write contention.
+ * This keeps the hot path fast and reduces write contention.
  *
  * Public API unchanged: ActivityLog.log(data), .logSessionCreate(...), etc.
- * All remain synchronous (the buffer is flushed async).
+ * All are synchronous (the buffer is flushed async).
  */
 
-const { db } = require('../config/database');
+const db = require('../db/query');
 const { log } = require('../utils/logger');
 
 const BATCH_INTERVAL_MS = 5000;     // Flush every 5 seconds
@@ -20,22 +20,21 @@ let flushTimer = null;
 let isShuttingDown = false;
 
 /**
- * Flush buffered entries to SQLite in a single transaction
+ * Flush buffered entries to Postgres in a single transaction
  */
-function flush() {
+async function flush() {
   if (buffer.length === 0) return;
 
   const batch = buffer.splice(0, BATCH_MAX_SIZE);
-  const insert = db.prepare(`
-    INSERT INTO activity_logs (
-      user_email, action, resource, resource_id, details, ip, user_agent, success, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-  `);
 
   try {
-    const flushMany = db.transaction((entries) => {
-      for (const entry of entries) {
-        insert.run(
+    await db.transaction(async (tDb) => {
+      for (const entry of batch) {
+        await tDb.run(`
+          INSERT INTO activity_logs (
+            user_email, action, resource, resource_id, details, ip, user_agent, success, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        `, [
           entry.userEmail || null,
           entry.action,
           entry.resource || null,
@@ -44,11 +43,9 @@ function flush() {
           entry.ip || null,
           entry.userAgent || null,
           entry.success !== false ? 1 : 0
-        );
+        ]);
       }
     });
-
-    flushMany(batch);
 
     if (batch.length > 1) {
       log(`[ActivityLog] Flushed ${batch.length} entries`, 'SYSTEM', { count: batch.length }, 'DEBUG');
@@ -75,14 +72,14 @@ function startFlushTimer() {
 /**
  * Force-flush all remaining entries (call on shutdown)
  */
-function flushAll() {
+async function flushAll() {
   isShuttingDown = true;
   if (flushTimer) {
     clearInterval(flushTimer);
     flushTimer = null;
   }
   while (buffer.length > 0) {
-    flush();
+    await flush();
   }
 }
 
@@ -120,43 +117,44 @@ class ActivityLog {
   /**
    * Get activities with optional filters
    */
-  static getAll(options = {}) {
+  static async getAll(options = {}) {
     const { userEmail, action, resource, startDate, endDate, limit = 100, offset = 0 } = options;
 
     let sql = 'SELECT * FROM activity_logs WHERE 1=1';
     const params = [];
+    let paramIndex = 1;
 
     if (userEmail) {
-      sql += ' AND user_email = ?';
+      sql += ` AND user_email = $${paramIndex++}`;
       params.push(userEmail);
     }
 
     if (action) {
-      sql += ' AND action = ?';
+      sql += ` AND action = $${paramIndex++}`;
       params.push(action);
     }
 
     if (resource) {
-      sql += ' AND resource = ?';
+      sql += ` AND resource = $${paramIndex++}`;
       params.push(resource);
     }
 
     if (startDate) {
-      sql += ' AND created_at >= ?';
+      sql += ` AND created_at >= $${paramIndex++}`;
       params.push(startDate);
     }
 
     if (endDate) {
-      sql += ' AND created_at <= ?';
+      sql += ` AND created_at <= $${paramIndex++}`;
       params.push(endDate);
     }
 
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    sql += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
     params.push(limit);
     params.push(offset);
 
-    const stmt = db.prepare(sql);
-    return stmt.all(...params).map(row => ({
+    const rows = await db.all(sql, params);
+    return rows.map(row => ({
       ...row,
       timestamp: row.created_at,
       status: row.success === 1 ? 'success' : 'failure',
@@ -167,62 +165,68 @@ class ActivityLog {
   /**
    * Get all logs with pagination
    */
-  static getLogs(limit = 100, offset = 0) {
+  static async getLogs(limit = 100, offset = 0) {
     return this.getAll({ limit, offset });
   }
 
   /**
    * Get user specific logs with pagination
    */
-  static getUserLogs(userEmail, limit = 100, offset = 0) {
+  static async getUserLogs(userEmail, limit = 100, offset = 0) {
     return this.getAll({ userEmail, limit, offset });
   }
 
   /**
    * Get activity summary for dashboard
    */
-  static getSummary(userEmail = null, days = 7) {
+  static async getSummary(userEmail = null, days = 7) {
     const date = new Date();
     date.setDate(date.getDate() - (parseInt(days) || 7));
     const dateLimit = date.toISOString().replace('T', ' ').split('.')[0];
 
-    let sqlBase = 'FROM activity_logs WHERE created_at >= ?';
+    let sqlBase = 'FROM activity_logs WHERE created_at >= $1';
     const params = [dateLimit];
+    let paramIndex = 2;
     if (userEmail) {
-      sqlBase += ' AND user_email = ?';
+      sqlBase += ` AND user_email = $${paramIndex++}`;
       params.push(userEmail);
     }
 
     try {
-      const totalStmt = db.prepare(`SELECT COUNT(*) as count ${sqlBase}`);
-      const totalResult = totalStmt.get(...params);
-      const totalActivities = totalResult ? totalResult.count : 0;
+      const totalResult = await db.get(`SELECT COUNT(*) as count ${sqlBase}`, params);
+      const totalActivities = totalResult ? Number(totalResult.count) : 0;
 
-      const actionStmt = db.prepare(`SELECT action, COUNT(*) as count ${sqlBase} GROUP BY action`);
-      const actionRows = actionStmt.all(...params);
+      const actionRows = await db.all(`SELECT action, COUNT(*) as count ${sqlBase} GROUP BY action`, params);
 
       const byAction = actionRows.reduce((acc, row) => {
         let key = row.action.toLowerCase();
         if (key.includes('message_send') || key.includes('campaign_message')) {
-          acc['send_message'] = (acc['send_message'] || 0) + row.count;
+          acc['send_message'] = (acc['send_message'] || 0) + Number(row.count);
         }
         if (key.includes('session_create') || key === 'create') {
-          acc['create'] = (acc['create'] || 0) + row.count;
+          acc['create'] = (acc['create'] || 0) + Number(row.count);
         }
-        acc[key] = (acc[key] || 0) + row.count;
+        acc[key] = (acc[key] || 0) + Number(row.count);
         return acc;
       }, {});
 
-      const userStmt = db.prepare(`SELECT user_email, COUNT(*) as count ${sqlBase} GROUP BY user_email`);
-      const userRows = userStmt.all(...params);
+      const userRows = await db.all(`SELECT user_email, COUNT(*) as count ${sqlBase} GROUP BY user_email`, params);
       const byUser = userRows.reduce((acc, row) => {
-        acc[row.user_email || 'anonymous'] = row.count;
+        acc[row.user_email || 'anonymous'] = Number(row.count);
         return acc;
       }, {});
 
-      const successStmt = db.prepare(`SELECT COUNT(*) as count ${sqlBase} AND success = 1`);
-      const successResult = successStmt.get(...params);
-      const successCount = successResult ? successResult.count : 0;
+      // For success count, we need to add the extra condition
+      let successSqlBase = 'FROM activity_logs WHERE created_at >= $1';
+      let successParams = [dateLimit];
+      let successIdx = 2;
+      if (userEmail) {
+        successSqlBase += ` AND user_email = $${successIdx++}`;
+        successParams.push(userEmail);
+      }
+      successSqlBase += ' AND success = 1';
+      const successResult = await db.get(`SELECT COUNT(*) as count ${successSqlBase}`, successParams);
+      const successCount = successResult ? Number(successResult.count) : 0;
       const successRate = totalActivities > 0 ? Math.round((successCount / totalActivities) * 100) : 100;
 
       log(`[ActivityLog] Résumé généré: ${totalActivities} activités, ${successRate}% succès`, 'SYSTEM',

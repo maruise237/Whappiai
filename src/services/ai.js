@@ -10,7 +10,7 @@ const KnowledgeService = require('./KnowledgeService');
 const WebhookService = require('./WebhookService');
 const { enqueue } = require('./QueueService');
 const { log } = require('../utils/logger');
-const { db } = require('../config/database');
+const db = require('../db/query');
 
 // Memory-only flags to temporarily pause AI for specific conversations
 const pausedConversations = new Map();
@@ -162,21 +162,21 @@ class AIService {
      */
     static async storeMemory(userId, remoteJid, role, content) {
         try {
-            db.prepare(`
+            await db.run(`
                 INSERT INTO conversation_memory (session_id, remote_jid, role, content)
-                VALUES (?, ?, ?, ?)
-            `).run(userId, remoteJid, role, content);
+                VALUES ($1, $2, $3, $4)
+            `, [userId, remoteJid, role, content]);
             
             // Maintenance: keep only last 20 messages per conversation to optimize storage
-            db.prepare(`
+            await db.run(`
                 DELETE FROM conversation_memory 
                 WHERE id IN (
                     SELECT id FROM conversation_memory 
-                    WHERE session_id = ? AND remote_jid = ? 
+                    WHERE session_id = $1 AND remote_jid = $2 
                     ORDER BY created_at DESC 
-                    LIMIT -1 OFFSET 20
+                    OFFSET 20
                 )
-            `).run(userId, remoteJid);
+            `, [userId, remoteJid]);
         } catch (err) {
             log(`Erreur stockage mémoire conversationnelle: ${err.message}`, userId, { remoteJid, role }, 'ERROR');
         }
@@ -189,14 +189,14 @@ class AIService {
      * @param {number} limit 
      * @returns {Array} List of messages
      */
-    static getMemory(userId, remoteJid, limit = 10) {
+    static async getMemory(userId, remoteJid, limit = 10) {
         try {
-            return db.prepare(`
+            return await db.all(`
                 SELECT role, content FROM conversation_memory 
-                WHERE session_id = ? AND remote_jid = ? 
+                WHERE session_id = $1 AND remote_jid = $2 
                 ORDER BY created_at ASC 
-                LIMIT ?
-            `).all(userId, remoteJid, limit);
+                LIMIT $3
+            `, [userId, remoteJid, limit]);
         } catch (err) {
             log(`Erreur récupération mémoire conversationnelle: ${err.message}`, userId, { remoteJid }, 'ERROR');
             return [];
@@ -351,14 +351,15 @@ class AIService {
                     log(`Traitement du message ignoré précédemment pour ${remoteJid}`, sessionId, { event: 'ai-retry-ignored', remoteJid }, 'INFO');
                     
                     // Check if conversation still needs response (no new messages from AI or human since then)
-                    const history = this.getMemory(sessionId, remoteJid, 1);
-                    if (history.length > 0 && history[history.length - 1].role === 'user' && history[history.length - 1].content === messageText) {
-                        this.handleIncomingMessage(sock, sessionId, msg, isGroupMode, true).catch(err => {
-                            log(`Erreur lors du retry du message ignoré: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
-                        });
-                    } else {
-                        log(`Annulation du retry pour ${remoteJid} : Nouveau message détecté dans l'historique`, sessionId, { event: 'ai-retry-cancelled' }, 'DEBUG');
-                    }
+                    this.getMemory(sessionId, remoteJid, 1).then(history => {
+                        if (history.length > 0 && history[history.length - 1].role === 'user' && history[history.length - 1].content === messageText) {
+                            this.handleIncomingMessage(sock, sessionId, msg, isGroupMode, true).catch(err => {
+                                log(`Erreur lors du retry du message ignoré: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
+                            });
+                        } else {
+                            log(`Annulation du retry pour ${remoteJid} : Nouveau message détecté dans l'historique`, sessionId, { event: 'ai-retry-cancelled' }, 'DEBUG');
+                        }
+                    });
                 }, retryDelay * 1000);
 
                 pendingRetries.set(retryKey, timeout);
@@ -464,7 +465,7 @@ class AIService {
             }, 'INFO');
 
             // Prepare AI call with memory
-            const history = this.getMemory(sessionId, remoteJid);
+            const history = await this.getMemory(sessionId, remoteJid);
             
             let systemPrompt = null;
             if (isGroupMode) {
@@ -498,7 +499,7 @@ class AIService {
 
             // Intercept Cal.com commands
             let finalResponse = response;
-            const user = session.owner_email ? User.findByEmail(session.owner_email) : null;
+            const user = session.owner_email ? await User.findByEmail(session.owner_email) : null;
 
             if (user && user.ai_cal_enabled && user.cal_access_token) {
                 const CalService = require('./CalService');
@@ -783,7 +784,7 @@ class AIService {
             ${additionalInfo ? `Informations complémentaires à inclure : ${additionalInfo}` : ''}`;
 
             // Get conversation memory for the group to maintain context
-            const history = this.getMemory(userId, groupId, 5);
+            const history = await this.getMemory(userId, groupId, 5);
             log(`Génération de message de groupe pour ${groupId} avec ${history.length} messages de contexte`, userId, { event: 'ai-group-gen-context', historyCount: history.length }, 'DEBUG');
 
             return await this.callAI(session, userPrompt, systemPrompt, history);
@@ -866,10 +867,10 @@ class AIService {
             // Check Credits before sending
             const session = Session.findById(sessionId);
             if (session && session.owner_email) {
-                const user = User.findByEmail(session.owner_email);
+                const user = await User.findByEmail(session.owner_email);
                 if (user) {
                     userId = user.id;
-                    const hasCredit = CreditService.deduct(userId, 1, `AI Auto-Response to ${jid}`);
+                    const hasCredit = await CreditService.deduct(userId, 1, `AI Auto-Response to ${jid}`);
                     if (!hasCredit) {
                         log(`Insufficient credits for AI response to ${jid} (Session: ${sessionId})`, sessionId, { event: 'ai-insufficient-credits' }, 'WARN');
                         return; // Stop sending
@@ -915,7 +916,7 @@ class AIService {
                 
                 // Refund if credit deducted but send failed
                 if (creditDeducted && userId) {
-                    CreditService.add(userId, 1, 'credit', `Remboursement: échec envoi IA vers ${jid}`);
+                    await CreditService.add(userId, 1, 'credit', `Remboursement: échec envoi IA vers ${jid}`);
                 }
             }
         } catch (error) {
@@ -924,7 +925,7 @@ class AIService {
 
             // Refund if credit deducted but send failed with error
             if (creditDeducted && userId) {
-                CreditService.add(userId, 1, 'credit', `Remboursement: erreur envoi IA vers ${jid}`);
+                await CreditService.add(userId, 1, 'credit', `Remboursement: erreur envoi IA vers ${jid}`);
             }
         }
     }

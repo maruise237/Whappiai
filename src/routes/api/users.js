@@ -14,7 +14,7 @@ function initializeUserRoutes(routerInstance, dependencies) {
 
     // Get current user info
     routerInstance.get('/me', checkSessionOrTokenAuth, (req, res) => {
-        const freshUser = User.findById(req.currentUser.id) || User.findByEmail(req.currentUser.email);
+        const freshUser = await User.findById(req.currentUser.id) || await User.findByEmail(req.currentUser.email);
         res.json({
             status: 'success',
             data: {
@@ -41,7 +41,7 @@ function initializeUserRoutes(routerInstance, dependencies) {
 
             log(`Syncing user ${email} (ID: ${id})`, 'AUTH');
 
-            const existingUser = User.findById(id) || User.findByEmail(email);
+            const existingUser = await User.findById(id) || await User.findByEmail(email);
             const isNewUser = !existingUser;
 
             const user = await User.create({
@@ -54,7 +54,7 @@ function initializeUserRoutes(routerInstance, dependencies) {
 
             if (isNewUser && role !== 'admin') {
                 try {
-                    const granted = CreditService.giveWelcomeCredits(id);
+                    const granted = await CreditService.giveWelcomeCredits(id);
                     if (granted) {
                         log(`Welcome credits granted to new user ${email}`, 'CREDITS');
                     }

@@ -1,10 +1,10 @@
 /**
  * WhatsApp Session Model
- * SQLite-based session metadata management
+ * Postgres-based session metadata management
  * Session transport is provider-managed (Evolution API)
  */
 
-const { db } = require('../config/database');
+const db = require('../db/query');
 const crypto = require('crypto');
 const { log } = require('../utils/logger');
 const { encrypt, decrypt } = require('../utils/crypto');
@@ -48,12 +48,14 @@ class Session {
         return this.getOwnerAliases(owner).includes(ownerEmail);
     }
 
-    static updateOwner(sessionId, ownerEmail) {
+    static async updateOwner(sessionId, ownerEmail) {
         const normalized = this.normalizeOwnerEmail(ownerEmail);
         if (!normalized) return this.findById(sessionId);
 
-        const stmt = db.prepare('UPDATE whatsapp_sessions SET owner_email = ?, updated_at = datetime(\'now\') WHERE id = ?');
-        stmt.run(normalized, sessionId);
+        await db.run(
+            'UPDATE whatsapp_sessions SET owner_email = $1, updated_at = NOW() WHERE id = $2',
+            [normalized, sessionId]
+        );
         return this.findById(sessionId);
     }
     /**
@@ -62,8 +64,8 @@ class Session {
      * @param {string} ownerEmail - Owner's email
      * @returns {object} Created session
      */
-    static create(sessionId, ownerEmail = null) {
-        const existingSession = this.findById(sessionId);
+    static async create(sessionId, ownerEmail = null) {
+        const existingSession = await this.findById(sessionId);
         const normalizedOwner = this.normalizeOwnerEmail(ownerEmail);
         if (existingSession) {
             // If the session exists but has no owner or is owned by admin@localhost,
@@ -77,12 +79,10 @@ class Session {
 
         const token = crypto.randomUUID();
 
-        const stmt = db.prepare(`
+        await db.run(`
             INSERT INTO whatsapp_sessions (id, owner_email, token, status, created_at, updated_at)
-            VALUES (?, ?, ?, 'DISCONNECTED', datetime('now'), datetime('now'))
-        `);
-
-        stmt.run(sessionId, normalizedOwner || null, token);
+            VALUES ($1, $2, $3, 'DISCONNECTED', NOW(), NOW())
+        `, [sessionId, normalizedOwner || null, token]);
 
         return this.findById(sessionId);
     }
@@ -92,9 +92,8 @@ class Session {
      * @param {string} email - Owner email
      * @returns {object|null} Session object or null
      */
-    static findByOwnerEmail(email) {
-        const stmt = db.prepare('SELECT * FROM whatsapp_sessions WHERE owner_email = ?');
-        return stmt.get(email?.toLowerCase());
+    static async findByOwnerEmail(email) {
+        return db.get('SELECT * FROM whatsapp_sessions WHERE owner_email = $1', [email?.toLowerCase()]);
     }
 
     /**
@@ -102,9 +101,8 @@ class Session {
      * @param {string} sessionId - Session ID
      * @returns {object|null} Session object or null
      */
-    static findById(sessionId) {
-        const stmt = db.prepare('SELECT * FROM whatsapp_sessions WHERE id = ?');
-        const session = stmt.get(sessionId);
+    static async findById(sessionId) {
+        const session = await db.get('SELECT * FROM whatsapp_sessions WHERE id = $1', [sessionId]);
 
         if (session && session.ai_key && session.ai_key.includes(':')) {
             try {
@@ -123,9 +121,8 @@ class Session {
      * @param {string} token - Session token
      * @returns {object|null} Session object or null
      */
-    static findByToken(token) {
-        const stmt = db.prepare('SELECT * FROM whatsapp_sessions WHERE token = ?');
-        return stmt.get(token);
+    static async findByToken(token) {
+        return db.get('SELECT * FROM whatsapp_sessions WHERE token = $1', [token]);
     }
 
     /**
@@ -134,12 +131,11 @@ class Session {
      * @param {boolean} isAdmin - If true, return all sessions
      * @returns {array} Array of sessions
      */
-    static getAll(ownerEmail = null, isAdmin = false) {
+    static async getAll(ownerEmail = null, isAdmin = false) {
         // SECURITY: Only admins (with explicit isAdmin=true) can see all sessions.
         // If ownerEmail is null/empty AND not admin → return EMPTY list to prevent data leak.
         if (isAdmin === true) {
-            const stmt = db.prepare('SELECT * FROM whatsapp_sessions ORDER BY created_at DESC');
-            return stmt.all();
+            return db.all('SELECT * FROM whatsapp_sessions ORDER BY created_at DESC');
         }
 
         if (!ownerEmail || typeof ownerEmail !== 'string' || ownerEmail.trim() === '') {
@@ -147,8 +143,7 @@ class Session {
             return [];
         }
 
-        const stmt = db.prepare('SELECT * FROM whatsapp_sessions WHERE owner_email = ? ORDER BY created_at DESC');
-        return stmt.all(ownerEmail.toLowerCase().trim());
+        return db.all('SELECT * FROM whatsapp_sessions WHERE owner_email = $1 ORDER BY created_at DESC', [ownerEmail.toLowerCase().trim()]);
     }
 
     /**
@@ -159,8 +154,8 @@ class Session {
      * @param {string} pairingCode - Optional pairing code
      * @returns {object} Updated session
      */
-    static updateStatus(sessionId, status, detail = null, pairingCode = undefined, qrCode = undefined) {
-        const existing = this.findById(sessionId);
+    static async updateStatus(sessionId, status, detail = null, pairingCode = undefined, qrCode = undefined) {
+        const existing = await this.findById(sessionId);
         if (!existing) return null;
 
         // Partial update: only update if value is not undefined
@@ -175,12 +170,11 @@ class Session {
             newQrCode = null;
         }
 
-        const stmt = db.prepare(`
+        await db.run(`
             UPDATE whatsapp_sessions
-            SET status = ?, detail = ?, pairing_code = ?, qr_code = ?, updated_at = datetime('now')
-            WHERE id = ?
-        `);
-        stmt.run(newStatus, newDetail, newPairingCode, newQrCode, sessionId);
+            SET status = $1, detail = $2, pairing_code = $3, qr_code = $4, updated_at = NOW()
+            WHERE id = $5
+        `, [newStatus, newDetail, newPairingCode, newQrCode, sessionId]);
         return this.findById(sessionId);
     }
 
@@ -190,7 +184,7 @@ class Session {
      * @param {object} aiConfig - AI configuration object
      * @returns {object} Updated session
      */
-    static updateAIConfig(sessionId, aiConfig) {
+    static async updateAIConfig(sessionId, aiConfig) {
         // Map common aliases from frontend
         const enabled = aiConfig.enabled !== undefined ? aiConfig.enabled : aiConfig.ai_enabled;
         const endpoint = aiConfig.endpoint || aiConfig.api_endpoint || aiConfig.ai_endpoint;
@@ -206,7 +200,7 @@ class Session {
         } = aiConfig;
 
         // Handle undefined values to prevent overwriting existing ones with null if not provided
-        const existing = this.findById(sessionId);
+        const existing = await this.findById(sessionId);
         if (!existing) return null;
 
         // Secure key storage: encrypt before saving
@@ -215,20 +209,18 @@ class Session {
             encryptedKey = encrypt(key, ENCRYPTION_KEY);
         }
 
-        const stmt = db.prepare(`
+        await db.run(`
             UPDATE whatsapp_sessions 
-            SET ai_enabled = ?, ai_endpoint = ?, ai_key = ?, ai_model = ?, ai_prompt = ?, ai_mode = ?, 
-                ai_temperature = ?, ai_max_tokens = ?, 
-                ai_deactivate_on_typing = ?, ai_deactivate_on_read = ?, ai_trigger_keywords = ?,
-                ai_reply_delay = ?, ai_read_on_reply = ?, ai_reject_calls = ?,
-                ai_random_protection_enabled = ?, ai_random_protection_rate = ?,
-                ai_constraints = ?, ai_session_window = ?, ai_respond_to_tags = ?,
-                ai_delay_min = ?, ai_delay_max = ?,
-                updated_at = datetime('now')
-            WHERE id = ?
-        `);
-
-        stmt.run(
+            SET ai_enabled = $1, ai_endpoint = $2, ai_key = $3, ai_model = $4, ai_prompt = $5, ai_mode = $6, 
+                ai_temperature = $7, ai_max_tokens = $8, 
+                ai_deactivate_on_typing = $9, ai_deactivate_on_read = $10, ai_trigger_keywords = $11,
+                ai_reply_delay = $12, ai_read_on_reply = $13, ai_reject_calls = $14,
+                ai_random_protection_enabled = $15, ai_random_protection_rate = $16,
+                ai_constraints = $17, ai_session_window = $18, ai_respond_to_tags = $19,
+                ai_delay_min = $20, ai_delay_max = $21,
+                updated_at = NOW()
+            WHERE id = $22
+        `, [
             enabled !== undefined ? (enabled ? 1 : 0) : existing.ai_enabled,
             endpoint !== undefined ? endpoint : existing.ai_endpoint,
             encryptedKey !== undefined ? encryptedKey : existing.ai_key,
@@ -251,7 +243,7 @@ class Session {
             delay_min !== undefined ? delay_min : (existing.ai_delay_min ?? 1),
             delay_max !== undefined ? delay_max : (existing.ai_delay_max ?? 5),
             sessionId
-        );
+        ]);
         return this.findById(sessionId);
     }
 
@@ -261,33 +253,30 @@ class Session {
      * @param {string} type - 'received' or 'sent'
      * @param {string} error - Optional error message
      */
-    static updateAIStats(sessionId, type, error = null) {
+    static async updateAIStats(sessionId, type, error = null) {
         if (type === 'received') {
-            const stmt = db.prepare(`
+            await db.run(`
                 UPDATE whatsapp_sessions 
                 SET ai_messages_received = ai_messages_received + 1,
-                    ai_last_message_at = datetime('now'),
-                    updated_at = datetime('now')
-                WHERE id = ?
-            `);
-            stmt.run(sessionId);
+                    ai_last_message_at = NOW(),
+                    updated_at = NOW()
+                WHERE id = $1
+            `, [sessionId]);
         } else if (type === 'sent') {
-            const stmt = db.prepare(`
+            await db.run(`
                 UPDATE whatsapp_sessions 
                 SET ai_messages_sent = ai_messages_sent + 1,
-                    updated_at = datetime('now')
-                WHERE id = ?
-            `);
-            stmt.run(sessionId);
+                    updated_at = NOW()
+                WHERE id = $1
+            `, [sessionId]);
         }
 
         if (error) {
-            const stmt = db.prepare(`
+            await db.run(`
                 UPDATE whatsapp_sessions 
-                SET ai_last_error = ?, updated_at = datetime('now')
-                WHERE id = ?
-            `);
-            stmt.run(error, sessionId);
+                SET ai_last_error = $1, updated_at = NOW()
+                WHERE id = $2
+            `, [error, sessionId]);
         }
     }
 
@@ -296,9 +285,8 @@ class Session {
      * @param {string} sessionId - Session ID
      * @returns {boolean} True if deleted
      */
-    static delete(sessionId) {
-        const stmt = db.prepare('DELETE FROM whatsapp_sessions WHERE id = ?');
-        const result = stmt.run(sessionId);
+    static async delete(sessionId) {
+        const result = await db.run('DELETE FROM whatsapp_sessions WHERE id = $1', [sessionId]);
         return result.changes > 0;
     }
 
@@ -307,8 +295,8 @@ class Session {
      * @param {string} sessionId - Session ID
      * @returns {string|null} Token or null
      */
-    static getToken(sessionId) {
-        const session = this.findById(sessionId);
+    static async getToken(sessionId) {
+        const session = await this.findById(sessionId);
         return session ? session.token : null;
     }
 
@@ -318,8 +306,8 @@ class Session {
      * @param {string} token - Token to validate
      * @returns {boolean} True if valid
      */
-    static validateToken(sessionId, token) {
-        const session = this.findById(sessionId);
+    static async validateToken(sessionId, token) {
+        const session = await this.findById(sessionId);
         return session && session.token === token;
     }
 
@@ -327,12 +315,12 @@ class Session {
      * Count active sessions
      * @returns {number} Count of non-disconnected sessions
      */
-    static countActive() {
-        const stmt = db.prepare(`
+    static async countActive() {
+        const result = await db.get(`
             SELECT COUNT(*) as count FROM whatsapp_sessions 
             WHERE status NOT IN ('DISCONNECTED', 'DELETED')
         `);
-        return stmt.get().count;
+        return Number(result.count);
     }
 
     /**
@@ -340,9 +328,9 @@ class Session {
      * @param {string} ownerEmail - Owner's email
      * @returns {array} Array of session IDs
      */
-    static getSessionIdsByOwner(ownerEmail) {
-        const stmt = db.prepare('SELECT id FROM whatsapp_sessions WHERE owner_email = ?');
-        return stmt.all(this.normalizeOwnerEmail(ownerEmail)).map(s => s.id);
+    static async getSessionIdsByOwner(ownerEmail) {
+        const rows = await db.all('SELECT id FROM whatsapp_sessions WHERE owner_email = $1', [this.normalizeOwnerEmail(ownerEmail)]);
+        return rows.map(s => s.id);
     }
 
     /**

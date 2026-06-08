@@ -1,4 +1,4 @@
-const { db } = require('../config/database');
+const db = require('../db/query');
 const { log } = require('../utils/logger');
 const { Session, ActivityLog } = require('../models');
 const User = require('../models/User');
@@ -55,14 +55,14 @@ class EngagementService {
             if (!db) return;
 
             // Utilisation d'une transaction pour garantir l'atomicité de la sélection et du marquage
-            const tasks = db.transaction(() => {
+            const tasks = await db.transaction(async (txDb) => {
                 const now = new Date();
                 
                 // Sélection de toutes les tâches en attente
-                const allPending = db.prepare(`
+                const allPending = await txDb.all(`
                     SELECT * FROM group_engagement_tasks
                     WHERE status = 'pending'
-                `).all();
+                `);
 
                 // Filtrage des tâches dont l'heure est passée
                 const tasksToExecute = allPending.filter(task => {
@@ -72,13 +72,13 @@ class EngagementService {
 
                 // Marquage immédiat en 'processing' pour éviter les doublons lors de la prochaine boucle
                 if (tasksToExecute.length > 0) {
-                    const placeholders = tasksToExecute.map(() => '?').join(',');
+                    const placeholders = tasksToExecute.map((_, i) => `$${i + 1}`).join(',');
                     const ids = tasksToExecute.map(t => t.id);
-                    db.prepare(`UPDATE group_engagement_tasks SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids);
+                    await txDb.run(`UPDATE group_engagement_tasks SET status = 'processing', updated_at = NOW() WHERE id IN (${placeholders})`, ids);
                 }
 
                 return tasksToExecute;
-            })();
+            });
 
             if (tasks.length > 0) {
                 log(`${tasks.length} tâches d'engagement détectées pour exécution`, 'SYSTEM', { count: tasks.length }, 'DEBUG');
@@ -114,7 +114,7 @@ class EngagementService {
                 const normalizedState = String(providerState.state || '').toLowerCase();
                 if (!providerState.ok || !['open', 'connected'].includes(normalizedState)) {
                     const retryAt = new Date(Date.now() + 15 * 60 * 1000);
-                    db.prepare("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(retryAt.toISOString(), id);
+                    await db.run("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = $1, updated_at = NOW() WHERE id = $2", [retryAt.toISOString(), id]);
                     throw new Error('Session non active ou non connectée. Tâche remise en attente.');
                 }
             }
@@ -122,10 +122,10 @@ class EngagementService {
             // Vérification et déduction des crédits
             const session = Session.findById(session_id);
             if (session && session.owner_email) {
-                const user = User.findByEmail(session.owner_email);
+                const user = await User.findByEmail(session.owner_email);
                 if (user) {
                     sessionOwnerId = user.id;
-                    const hasCredit = CreditService.deduct(user.id, 1, `Envoi message programmé vers ${group_id}`);
+                    const hasCredit = await CreditService.deduct(user.id, 1, `Envoi message programmé vers ${group_id}`);
                     if (!hasCredit) {
                         throw new Error('Crédits insuffisants pour envoyer le message d\'engagement programmé.');
                     }
@@ -186,9 +186,9 @@ class EngagementService {
             Session.updateAIStats(session_id, 'sent');
 
             // Mise à jour finale du statut et gestion de la récurrence
-            db.transaction(() => {
+            await db.transaction(async (txDb) => {
                 if (recurrence === 'none') {
-                    db.prepare("UPDATE group_engagement_tasks SET status = 'completed', last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+                    await txDb.run("UPDATE group_engagement_tasks SET status = 'completed', last_run_at = NOW(), updated_at = NOW() WHERE id = $1", [id]);
                 } else {
                     let nextRun = new Date(task.scheduled_at);
                     const now = new Date();
@@ -202,23 +202,23 @@ class EngagementService {
                         }
                     }
                     
-                    db.prepare("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = ?, last_run_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(nextRun.toISOString(), id);
+                    await txDb.run("UPDATE group_engagement_tasks SET status = 'pending', scheduled_at = $1, last_run_at = NOW(), updated_at = NOW() WHERE id = $2", [nextRun.toISOString(), id]);
                     log(`Tâche récurrente d'engagement ${id} replanifiée pour ${nextRun.toISOString()}`, session_id, { taskId: id }, 'INFO');
                 }
-            })();
+            });
 
             log(`Message d'engagement programmé ${id} envoyé avec succès`, session_id, { event: 'engagement-exec-success', taskId: id }, 'INFO');
             wappy.messageScheduled(session_id);
 
         } catch (err) {
             if (creditDeducted && sessionOwnerId) {
-                CreditService.add(sessionOwnerId, 1, 'credit', `Remboursement: échec envoi d'engagement programmé vers ${group_id}`);
+                await CreditService.add(sessionOwnerId, 1, 'credit', `Remboursement: échec envoi d'engagement programmé vers ${group_id}`);
             }
 
             log(`Échec d'envoi pour la tâche d'engagement ${id}: ${err.message}`, session_id, { event: 'engagement-exec-error', taskId: id, error: err.message }, 'ERROR');
             
             if (!err.message.includes('Session non active')) {
-                db.prepare("UPDATE group_engagement_tasks SET status = 'failed', error_message = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(err.message, id);
+                await db.run("UPDATE group_engagement_tasks SET status = 'failed', error_message = $1, updated_at = NOW() WHERE id = $2", [err.message, id]);
             }
         }
     }
@@ -226,99 +226,101 @@ class EngagementService {
     /**
      * Get a single task by ID
      */
-    getTaskById(id) {
-        return db.prepare("SELECT * FROM group_engagement_tasks WHERE id = ?").get(id);
+    async getTaskById(id) {
+        return await db.get("SELECT * FROM group_engagement_tasks WHERE id = $1", [id]);
     }
 
     /**
      * Update an existing task
      */
-    updateTask(id, data) {
+    async updateTask(id, data) {
         const { message_content, media_url, media_type, scheduled_at, recurrence } = data;
         
-        return db.transaction(() => {
-            const task = db.prepare("SELECT status FROM group_engagement_tasks WHERE id = ?").get(id);
+        return await db.transaction(async (txDb) => {
+            const task = await txDb.get("SELECT status FROM group_engagement_tasks WHERE id = $1", [id]);
             
             if (!task) throw new Error('Tâche d\'engagement non trouvée');
             if (task.status !== 'pending') throw new Error(`Modification impossible : la tâche est déjà en statut ${task.status}`);
 
-            const result = db.prepare(`
+            const result = await txDb.run(`
                 UPDATE group_engagement_tasks
-                SET message_content = ?, 
-                    media_url = ?, 
-                    media_type = ?, 
-                    scheduled_at = ?, 
-                    recurrence = ?, 
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ? AND status = 'pending'
-            `).run(message_content, media_url, media_type, scheduled_at, recurrence, id);
+                SET message_content = $1, 
+                    media_url = $2, 
+                    media_type = $3, 
+                    scheduled_at = $4, 
+                    recurrence = $5, 
+                    updated_at = NOW()
+                WHERE id = $6 AND status = 'pending'
+            `, [message_content, media_url, media_type, scheduled_at, recurrence, id]);
 
             if (result.changes === 0) {
                 throw new Error('Échec de la modification');
             }
             
             return true;
-        })();
+        });
     }
 
     /**
      * Get task history with filters
      */
-    getHistory(filters = {}) {
+    async getHistory(filters = {}) {
         let query = "SELECT * FROM group_engagement_tasks WHERE 1=1";
         const params = [];
+        let paramIndex = 1;
 
         if (filters.session_id) {
-            query += " AND session_id = ?";
+            query += ` AND session_id = $${paramIndex++}`;
             params.push(filters.session_id);
         }
         if (filters.group_id) {
-            query += " AND group_id = ?";
+            query += ` AND group_id = $${paramIndex++}`;
             params.push(filters.group_id);
         }
         if (filters.status) {
-            query += " AND status = ?";
+            query += ` AND status = $${paramIndex++}`;
             params.push(filters.status);
         }
         if (filters.startDate) {
-            query += " AND scheduled_at >= ?";
+            query += ` AND scheduled_at >= $${paramIndex++}`;
             params.push(filters.startDate);
         }
         if (filters.endDate) {
-            query += " AND scheduled_at <= ?";
+            query += ` AND scheduled_at <= $${paramIndex++}`;
             params.push(filters.endDate);
         }
 
         query += " ORDER BY updated_at DESC LIMIT 100";
-        return db.prepare(query).all(...params);
+        return await db.all(query, params);
     }
 
     /**
      * Add a new task
      */
-    addTask(data) {
+    async addTask(data) {
         const { group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence } = data;
         
-        const result = db.prepare(`
+        const result = await db.get(`
             INSERT INTO group_engagement_tasks (group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-        `).run(group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence);
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+            RETURNING id
+        `, [group_id, session_id, message_content, media_url, media_type, scheduled_at, recurrence]);
         
-        return result.lastInsertRowid;
+        return result ? result.id : null;
     }
 
     /**
      * Get tasks for a group
      */
-    getTasks(session_id, group_id) {
-        return db.prepare("SELECT * FROM group_engagement_tasks WHERE session_id = ? AND group_id = ? ORDER BY scheduled_at ASC").all(session_id, group_id);
+    async getTasks(session_id, group_id) {
+        return await db.all("SELECT * FROM group_engagement_tasks WHERE session_id = $1 AND group_id = $2 ORDER BY scheduled_at ASC", [session_id, group_id]);
     }
 
     /**
      * Delete a task
      */
-    deleteTask(id) {
-        return db.prepare("DELETE FROM group_engagement_tasks WHERE id = ?").run(id);
+    async deleteTask(id) {
+        return await db.run("DELETE FROM group_engagement_tasks WHERE id = $1", [id]);
     }
 }
 

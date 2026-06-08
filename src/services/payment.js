@@ -50,7 +50,7 @@ async function handleLicenseEvent(event, payload) {
         throw new Error('Missing email');
     }
 
-    const user = User.findByEmail(customer_email);
+    const user = await User.findByEmail(customer_email);
     if (!user) {
         log(`User not found for payment event: ${customer_email}`, 'AUTH', null, 'WARN');
         return { success: false, error: 'User not found' };
@@ -67,13 +67,13 @@ async function handleLicenseEvent(event, payload) {
         if (plan && plan.interval === 'one_time') {
             try {
                 // Ajout des crédits
-                const newBalance = CreditService.add(user.id, plan.message_limit, 'purchase', `Achat: ${plan.name}`);
+                const newBalance = await CreditService.add(user.id, plan.message_limit, 'purchase', `Achat: ${plan.name}`);
                 log(`Credit pack added for ${customer_email}: ${plan.message_limit} credits. New balance: ${newBalance}`, 'PAYMENT');
                 
                 // Mise à jour User (Legacy & Display)
                 // On garde le plan actuel mais on met à jour le statut si nécessaire
                 // Note: On ne change pas plan_id pour un pack de crédits
-                User.updateSubscription(customer_email, {
+                await User.updateSubscription(customer_email, {
                     planId: user.plan_id, 
                     status: user.plan_status, // Garde le statut actuel (ex: active ou free)
                     licenseKey: license_key,
@@ -105,7 +105,7 @@ async function handleLicenseEvent(event, payload) {
                 await SubscriptionService.subscribe(user.id, planCode);
                 
                 // Mise à jour User (Legacy & Display) pour compatibilité frontend
-                User.updateSubscription(customer_email, {
+                await User.updateSubscription(customer_email, {
                     planId: plan ? plan.id : planCode,
                     status: 'active',
                     licenseKey: license_key,
@@ -138,7 +138,7 @@ async function handleLicenseEvent(event, payload) {
             await SubscriptionService.cancel(user.id);
 
             // Mise à jour User (Legacy)
-            User.updateSubscription(customer_email, {
+            await User.updateSubscription(customer_email, {
                 planId: 'free',
                 status: 'expired',
                 licenseKey: null,

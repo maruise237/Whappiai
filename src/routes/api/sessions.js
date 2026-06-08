@@ -14,6 +14,7 @@ const ActivityLog = require('../../models/ActivityLog');
 const User = require('../../models/User');
 const SessionService = require('../../services/SessionService');
 const AccountAccessService = require('../../services/AccountAccessService');
+const db = require('../../db/query');
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
     } = dependencies;
 
     // ------------------------------------------------------------------
-    // POST /sessions  — create a new session
+    // POST /sessions  -- create a new session
     // ------------------------------------------------------------------
     routerInstance.post('/sessions', checkSessionOrTokenAuth, async (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl, body: req.body }, 'DEBUG');
@@ -54,11 +55,11 @@ function initializeSessionRoutes(routerInstance, dependencies) {
             const isClaimable = existing && Session.isClaimable(existing);
 
             if (existing && !isExistingOwned && !isClaimable && currentUser?.role !== 'admin') {
-                return res.status(403).json({ status: 'error', message: 'Cette session appartient déjà à un autre utilisateur' });
+                return res.status(403).json({ status: 'error', message: 'Cette session appartient d�j� � un autre utilisateur' });
             }
 
             if (!existing || (!isExistingOwned && isClaimable)) {
-                const user = currentUser?.id ? User.findById(currentUser.id) : User.findByEmail(currentUser?.email);
+                const user = currentUser?.id ? await User.findById(currentUser.id) : await User.findByEmail(currentUser?.email);
                 const currentSessions = Session.getSessionIdsByOwner(currentUser?.email || '');
                 const access = AccountAccessService.canCreateSession(user || currentUser, currentSessions.length);
 
@@ -104,7 +105,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
             });
             res.status(201).json({
                 status: 'success',
-                message: `Session ${sanitizedSessionId} prête.`,
+                message: `Session ${sanitizedSessionId} pr�te.`,
                 token,
                 provider: process.env.WHATSAPP_PROVIDER || 'evolution'
             });
@@ -117,7 +118,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
     });
 
     // ------------------------------------------------------------------
-    // GET /sessions  — list
+    // GET /sessions  -- list
     // ------------------------------------------------------------------
     routerInstance.get('/sessions', checkSessionOrTokenAuth, async (req, res) => {
         log('API request', 'SYSTEM', { event: 'api-request', method: req.method, endpoint: req.originalUrl }, 'DEBUG');
@@ -148,7 +149,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
     });
 
     // ------------------------------------------------------------------
-    // GET /sessions/:id/qr  — refresh the QR / pairing code via provider
+    // GET /sessions/:id/qr  -- refresh the QR / pairing code via provider
     // ------------------------------------------------------------------
     routerInstance.get('/sessions/:sessionId/qr', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
@@ -176,7 +177,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
     });
 
     // ------------------------------------------------------------------
-    // POST /sessions/:id/pairing-code  — request a pairing code by phone
+    // POST /sessions/:id/pairing-code  -- request a pairing code by phone
     // ------------------------------------------------------------------
     routerInstance.post('/sessions/:sessionId/pairing-code', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
@@ -210,7 +211,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
     });
 
     // ------------------------------------------------------------------
-    // GET /sessions/:id/status  — connection status from the provider
+    // GET /sessions/:id/status  -- connection status from the provider
     // ------------------------------------------------------------------
     routerInstance.get('/sessions/:sessionId/status', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
@@ -270,8 +271,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
                 }
             }
 
-            const db = require('../../config/database').db;
-            db.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
+            await db.run('DELETE FROM sessions WHERE id = $1', [sessionId]);
 
             const sessions = dependencies.sessions;
             if (sessions && sessions.delete) {

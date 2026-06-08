@@ -20,7 +20,7 @@ const ActivityLog = require('../models/ActivityLog');
 // Import services
 const CreditService = require('../services/CreditService');
 const QueueService = require('../services/QueueService');
-const { db } = require('../config/database');
+const db = require('../../db/query');
 
 // Import validation utilities
 const { isValidId, sanitizeId, validateAIModel } = require('../utils/validation');
@@ -152,9 +152,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         // 1. Try Clerk Auth
         if (req.auth && req.auth.userId) {
             try {
-                let user = User.findById(req.auth.userId);
+                let user = await User.findById(req.auth.userId);
                 if (!user && req.auth.sessionClaims?.email) {
-                    user = User.findByEmail(req.auth.sessionClaims.email);
+                    user = await User.findByEmail(req.auth.sessionClaims.email);
                 }
 
                 const emailFromClerk = req.auth.sessionClaims?.email;
@@ -202,7 +202,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         if (req.session && req.session.adminAuthed) {
             const sessionEmail = (req.session.userEmail || '').toLowerCase();
             const sessionRole = isAdminEmail(sessionEmail) ? 'admin' : (req.session.userRole || 'user');
-            const user = User.findByEmail(sessionEmail);
+            const user = await User.findByEmail(sessionEmail);
 
             req.currentUser = buildCurrentUser(user, {
                 email: sessionEmail,
@@ -232,7 +232,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 const session = sessions.get(sessionId) || Session.findById(sessionId);
 
                 if (session && session.owner_email) {
-                    const user = User.findByEmail(session.owner_email);
+                    const user = await User.findByEmail(session.owner_email);
                     if (user) {
                         userId = user.id;
                         userRole = user.role;

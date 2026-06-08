@@ -145,7 +145,7 @@ function initializeMessageRoutes(routerInstance, dependencies) {
                 }
 
                 try {
-                    const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
+                    const hasCredit = await CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
 
                     if (!hasCredit) {
                         results.push({ status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' });
@@ -175,13 +175,13 @@ function initializeMessageRoutes(routerInstance, dependencies) {
                 }
 
                 if (result.status === 'error' && creditDeducted) {
-                    CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
+                    await CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
                 }
 
                 results.push(result);
             } catch (error) {
                 if (creditDeducted) {
-                    CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
+                    await CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
                 }
                 results.push({ status: 'error', message: error.message });
             }

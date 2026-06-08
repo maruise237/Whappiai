@@ -1,77 +1,80 @@
-const { db } = require('../config/database');
+const db = require('../db/query');
 const { log } = require('../utils/logger');
 
 class GroupService {
     /**
      * Get group profile
      */
-    getProfile(sessionId, groupId) {
-        return db.prepare('SELECT * FROM group_profiles WHERE session_id = ? AND group_id = ?').get(sessionId, groupId);
+    async getProfile(sessionId, groupId) {
+        return await db.get('SELECT * FROM group_profiles WHERE session_id = $1 AND group_id = $2', [sessionId, groupId]);
     }
 
     /**
      * Update group profile
      */
-    updateProfile(sessionId, groupId, profile) {
+    async updateProfile(sessionId, groupId, profile) {
         const { mission, objectives, rules, theme } = profile;
-        const stmt = db.prepare(`
+        await db.run(`
             INSERT INTO group_profiles (session_id, group_id, mission, objectives, rules, theme, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            VALUES ($1, $2, $3, $4, $5, $6, NOW())
             ON CONFLICT(session_id, group_id) DO UPDATE SET
             mission = excluded.mission,
             objectives = excluded.objectives,
             rules = excluded.rules,
             theme = excluded.theme,
-            updated_at = CURRENT_TIMESTAMP
-        `);
-        stmt.run(sessionId, groupId, mission, objectives, rules, theme);
+            updated_at = NOW()
+        `, [sessionId, groupId, mission, objectives, rules, theme]);
     }
 
     /**
      * Get product links for a group
      */
-    getProductLinks(sessionId, groupId) {
-        return db.prepare('SELECT * FROM group_product_links WHERE session_id = ? AND group_id = ? ORDER BY created_at ASC').all(sessionId, groupId);
+    async getProductLinks(sessionId, groupId) {
+        return await db.all('SELECT * FROM group_product_links WHERE session_id = $1 AND group_id = $2 ORDER BY created_at ASC', [sessionId, groupId]);
     }
 
     /**
      * Update product links for a group (replaces all)
      */
-    updateProductLinks(sessionId, groupId, links) {
-        db.transaction(() => {
+    async updateProductLinks(sessionId, groupId, links) {
+        await db.run('BEGIN');
+        try {
             // Delete existing
-            db.prepare('DELETE FROM group_product_links WHERE session_id = ? AND group_id = ?').run(sessionId, groupId);
-            
+            await db.run('DELETE FROM group_product_links WHERE session_id = $1 AND group_id = $2', [sessionId, groupId]);
+
             // Insert new
-            const stmt = db.prepare(`
-                INSERT INTO group_product_links (session_id, group_id, title, description, url, cta)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `);
-            
             for (const link of links) {
-                stmt.run(sessionId, groupId, link.title, link.description, link.url, link.cta);
+                await db.run(`
+                    INSERT INTO group_product_links (session_id, group_id, title, description, url, cta)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                `, [sessionId, groupId, link.title, link.description, link.url, link.cta]);
             }
-        })();
+
+            await db.run('COMMIT');
+        } catch (err) {
+            await db.run('ROLLBACK');
+            throw err;
+        }
     }
 
     /**
      * Add a single product link
      */
-    addProductLink(sessionId, groupId, link) {
+    async addProductLink(sessionId, groupId, link) {
         const { title, description, url, cta } = link;
-        const stmt = db.prepare(`
+        const result = await db.get(`
             INSERT INTO group_product_links (session_id, group_id, title, description, url, cta)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `);
-        const result = stmt.run(sessionId, groupId, title, description, url, cta);
-        return result.lastInsertRowid;
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+        `, [sessionId, groupId, title, description, url, cta]);
+        return result.id;
     }
 
     /**
      * Delete a product link
      */
-    deleteProductLink(id) {
-        return db.prepare('DELETE FROM group_product_links WHERE id = ?').run(id);
+    async deleteProductLink(id) {
+        await db.run('DELETE FROM group_product_links WHERE id = $1', [id]);
     }
 }
 

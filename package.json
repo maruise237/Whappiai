@@ -25,7 +25,6 @@
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "axios": "^1.13.5",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^12.10.0",
     "body-parser": "^1.20.4",
     "bullmq": "^5.78.0",
     "compression": "^1.8.1",

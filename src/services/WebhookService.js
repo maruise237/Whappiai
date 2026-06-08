@@ -3,7 +3,7 @@
  * Handles event dispatching to external URLs.
  */
 
-const { db } = require('../config/database');
+const db = require('../db/query');
 const { log } = require('../utils/logger');
 const axios = require('axios');
 const crypto = require('crypto');
@@ -14,12 +14,11 @@ class WebhookService {
      */
     static async dispatch(sessionId, event, data) {
         try {
-            const webhooks = db.prepare(`
-                SELECT * FROM webhooks WHERE session_id = ? AND is_active = 1
-            `).all(sessionId);
+            const webhooks = await db.all(`
+                SELECT * FROM webhooks WHERE session_id = $1 AND is_active = 1
+            `, [sessionId]);
 
             for (const webhook of webhooks) {
-                // Check if event is subscribed
                 const subscribedEvents = JSON.parse(webhook.events || '[]');
                 if (subscribedEvents.length > 0 && !subscribedEvents.includes(event)) {
                     continue;
@@ -67,21 +66,22 @@ class WebhookService {
     /**
      * Management methods
      */
-    static list(sessionId) {
-        return db.prepare('SELECT * FROM webhooks WHERE session_id = ?').all(sessionId);
+    static async list(sessionId) {
+        return await db.all('SELECT * FROM webhooks WHERE session_id = $1', [sessionId]);
     }
 
-    static add(sessionId, url, events = [], secret = null) {
+    static async add(sessionId, url, events = [], secret = null) {
         const id = crypto.randomUUID();
-        db.prepare(`
+        await db.run(`
             INSERT INTO webhooks (id, session_id, url, events, secret)
-            VALUES (?, ?, ?, ?, ?)
-        `).run(id, sessionId, url, JSON.stringify(events), secret || crypto.randomBytes(16).toString('hex'));
+            VALUES ($1, $2, $3, $4, $5)
+        `, [id, sessionId, url, JSON.stringify(events), secret || crypto.randomBytes(16).toString('hex')]);
         return id;
     }
 
-    static delete(id, sessionId) {
-        return db.prepare('DELETE FROM webhooks WHERE id = ? AND session_id = ?').run(id, sessionId).changes > 0;
+    static async delete(id, sessionId) {
+        const result = await db.run('DELETE FROM webhooks WHERE id = $1 AND session_id = $2', [id, sessionId]);
+        return result.rowCount > 0;
     }
 }
 

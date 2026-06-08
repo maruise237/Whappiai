@@ -25,9 +25,9 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
         if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
 
         const email = req.auth.sessionClaims?.email || req.auth.sessionClaims?.primary_email_address;
-        const user = User.findById(userId) || User.findByEmail(email);
+        const user = await User.findById(userId) || await User.findByEmail(email);
         const subscription = SubscriptionService.getCurrentSubscription(user?.id || userId);
-        const access = AccountAccessService.getStatus(user);
+        const access = await AccountAccessService.getStatus(user);
 
         res.json({
             status: 'success',

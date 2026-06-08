@@ -126,7 +126,7 @@ class CalService {
      * @param {string} userId
      */
     async refreshToken(userId) {
-        const user = User.findById(userId);
+        const user = await User.findById(userId);
         if (!user || !user.cal_refresh_token) throw new Error('No refresh token found');
 
         try {

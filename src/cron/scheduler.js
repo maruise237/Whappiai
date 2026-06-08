@@ -1,4 +1,4 @@
-const { db } = require('../config/database');
+const db = require('../db/query');
 const { log } = require('../utils/logger');
 const NotificationService = require('../services/NotificationService');
 const SubscriptionService = require('../services/SubscriptionService');
@@ -66,18 +66,18 @@ class Scheduler {
         const daysToCheck = [7, 3, 1, 0];
 
         for (const days of daysToCheck) {
-            const users = db.prepare(`
+            const users = await db.all(`
                 SELECT * FROM users
                 WHERE plan_status = 'active'
-                AND date(subscription_expiry) = date('now', '+' || ? || ' days')
+                AND subscription_expiry::date = CURRENT_DATE + ($1 || ' days')::INTERVAL
                 AND NOT EXISTS (
                     SELECT 1 FROM user_notifications n
                     WHERE n.user_id = users.id
                     AND n.type = 'subscription_expiring'
-                    AND n.metadata LIKE ?
-                    AND date(n.created_at) = date('now')
+                    AND n.metadata LIKE $2
+                    AND n.created_at::date = CURRENT_DATE
                 )
-            `).all(days, `%"days_remaining":${days}%`);
+            `, [days, `%"days_remaining":${days}%`]);
 
             log(`Checking expiring subscriptions for +${days} days. Found ${users.length} users.`, 'DEBUG');
 
@@ -96,7 +96,7 @@ class Scheduler {
     }
 
     async checkLowCredits() {
-        const users = db.prepare(`
+        const users = await db.all(`
             SELECT u.* FROM users u
             WHERE u.plan_status = 'active'
             AND u.role != 'admin'
@@ -106,9 +106,9 @@ class Scheduler {
                 SELECT 1 FROM user_notifications n
                 WHERE n.user_id = u.id
                 AND n.type = 'credit_low'
-                AND n.created_at > datetime('now', '-1 day')
+                AND n.created_at > NOW() - INTERVAL '1 day'
             )
-        `).all();
+        `);
 
         log(`Checking low credits. Found ${users.length} users.`, 'DEBUG');
 
@@ -129,11 +129,11 @@ class Scheduler {
     }
 
     async processRenewals() {
-        const expiredUsers = db.prepare(`
+        const expiredUsers = await db.all(`
             SELECT * FROM users
             WHERE plan_status IN ('active', 'trialing')
-            AND subscription_expiry < datetime('now')
-        `).all();
+            AND subscription_expiry < NOW()
+        `);
 
         await Promise.all(expiredUsers.map(async (user) => {
             try {
@@ -147,42 +147,42 @@ class Scheduler {
 
     async checkScheduledMaintenance() {
         try {
-            const settings = db.prepare('SELECT * FROM maintenance_settings WHERE id = 1').get();
+            const settings = await db.get('SELECT * FROM maintenance_settings WHERE id = 1');
             if (!settings) return;
 
             const now = new Date().toISOString();
 
             if (!settings.enabled && settings.scheduled_start_at && settings.scheduled_start_at <= now) {
                 if (settings.scheduled_end_at && settings.scheduled_end_at <= now) {
-                    db.prepare(`
+                    await db.run(`
                         UPDATE maintenance_settings SET
                             scheduled_start_at = NULL,
                             scheduled_end_at = NULL,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE id = 1
-                    `).run();
+                    `);
                     log('Maintenance schedule expired, cleared', 'CRON');
                     return;
                 }
 
-                db.prepare(`
+                await db.run(`
                     UPDATE maintenance_settings SET
                         enabled = 1,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = 1
-                `).run();
+                `);
                 log('Maintenance auto-activated from schedule', 'CRON');
             }
 
             if (settings.enabled && settings.scheduled_end_at && settings.scheduled_end_at <= now) {
-                db.prepare(`
+                await db.run(`
                     UPDATE maintenance_settings SET
                         enabled = 0,
                         scheduled_start_at = NULL,
                         scheduled_end_at = NULL,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = 1
-                `).run();
+                `);
                 log('Maintenance auto-deactivated: end time reached', 'CRON');
             }
         } catch (error) {

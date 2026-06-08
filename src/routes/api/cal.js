@@ -15,7 +15,7 @@ function initializeCalRoutes(routerInstance, dependencies) {
     routerInstance.get('/cal/status', checkSessionOrTokenAuth, async (req, res) => {
         try {
             const CalService = require('../../services/CalService');
-            const user = User.findById(req.currentUser.id);
+            const user = await User.findById(req.currentUser.id);
             if (!user) {
                 return res.json({ status: 'success', data: { isConnected: false, ai_cal_enabled: false, ai_cal_video_allowed: false, eventTypes: [] } });
             }

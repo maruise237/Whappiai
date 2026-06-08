@@ -72,6 +72,16 @@ services:
       - traefik.http.services.whappi-whappi-sypalq-7-websecure.loadbalancer.server.port=3000
       - traefik.http.routers.whappi-whappi-sypalq-7-websecure.service=whappi-whappi-sypalq-7-websecure
       - traefik.http.routers.whappi-whappi-sypalq-7-websecure.tls.certresolver=letsencrypt
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.rule=Host(`whappi.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.entrypoints=web
+      - traefik.http.services.whappi-whappi-sypalq-7-web.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.service=whappi-whappi-sypalq-7-web
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.rule=Host(`whappi.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.entrypoints=websecure
+      - traefik.http.services.whappi-whappi-sypalq-7-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.service=whappi-whappi-sypalq-7-websecure
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.tls.certresolver=letsencrypt
       - traefik.docker.network=dokploy-network
       - traefik.http.routers.whappi-whappi-sypalq-7-web.rule=Host(`whappi.kamtech.online`)
       - traefik.http.routers.whappi-whappi-sypalq-7-web.entrypoints=web
@@ -125,6 +135,16 @@ services:
       - traefik.http.services.whappi-whappi-sypalq-37-websecure.loadbalancer.server.port=3000
       - traefik.http.routers.whappi-whappi-sypalq-37-websecure.service=whappi-whappi-sypalq-37-websecure
       - traefik.http.routers.whappi-whappi-sypalq-37-websecure.tls.certresolver=letsencrypt
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.rule=Host(`whappi-bck.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.entrypoints=web
+      - traefik.http.services.whappi-whappi-sypalq-37-web.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.service=whappi-whappi-sypalq-37-web
+      - traefik.http.routers.whappi-whappi-sypalq-37-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.rule=Host(`whappi-bck.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.entrypoints=websecure
+      - traefik.http.services.whappi-whappi-sypalq-37-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.service=whappi-whappi-sypalq-37-websecure
+      - traefik.http.routers.whappi-whappi-sypalq-37-websecure.tls.certresolver=letsencrypt
       - traefik.docker.network=dokploy-network
       - traefik.http.routers.whappi-whappi-sypalq-37-web.rule=Host(`whappi-bck.kamtech.online`)
       - traefik.http.routers.whappi-whappi-sypalq-37-web.entrypoints=web
@@ -137,7 +157,6 @@ services:
       - traefik.http.routers.whappi-whappi-sypalq-37-websecure.service=whappi-whappi-sypalq-37-websecure
       - traefik.http.routers.whappi-whappi-sypalq-37-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
-
   redis:
     image: redis:7-alpine
     restart: always
@@ -149,7 +168,6 @@ services:
       - dokploy-network
       - default
     command: redis-server --appendonly yes --save 300 10 --save 60 10000
-
   postgres:
     image: postgres:16-alpine
     restart: always
@@ -165,17 +183,17 @@ services:
       - dokploy-network
       - default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U whappi"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U whappi
       interval: 5s
       timeout: 5s
       retries: 5
-
 volumes:
-  whappi-data:
-  whappi-redis:
-  whappi-postgres:
-  whappi-media:
-
+  whappi-data: null
+  whappi-redis: null
+  whappi-postgres: null
+  whappi-media: null
 networks:
   dokploy-network:
     external: true

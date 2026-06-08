@@ -32,7 +32,7 @@ const cors = require('cors');
 const { createClerkClient, ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 
 // Import new modules
-const { db } = require('./src/config/database');
+const pg = require('./src/config/postgres');
 const { User, Session, ActivityLog, AIModel } = require('./src/models');
 const { encrypt, decrypt, isValidKey } = require('./src/utils/crypto');
 const response = require('./src/utils/response');
@@ -721,7 +721,7 @@ if (fs.existsSync(frontendPath)) {
 app.get('/api/health', async (req, res) => {
     try {
         // Check database connectivity
-        db.prepare('SELECT 1').get();
+        await pg.query('SELECT 1');
         
         // Get version from package.json
         const packageJson = require('./package.json');

@@ -3,7 +3,7 @@
  * Admin-configured AI models for users to choose from
  */
 
-const { db } = require('../config/database');
+const db = require('../db/query');
 const { randomUUID } = require('crypto');
 const { log } = require('../utils/logger');
 const { encrypt, decrypt } = require('../utils/crypto');
@@ -16,7 +16,7 @@ class AIModel {
      * @param {object} data - Model data
      * @returns {object} Created model
      */
-    static create(data) {
+    static async create(data) {
         const id = randomUUID();
 
         // Support field name aliases from frontend
@@ -35,27 +35,25 @@ class AIModel {
             api_key = encrypt(api_key, ENCRYPTION_KEY);
         }
 
-        // Normalize booleans for SQLite
+        // Normalize booleans for Postgres
         is_active = is_active === true || is_active === 1 || is_active === '1' ? 1 : 0;
         is_default = is_default === true || is_default === 1 || is_default === '1' ? 1 : 0;
 
         // If this is set as default, unset other defaults
         if (is_default) {
-            db.prepare('UPDATE ai_models SET is_default = 0').run();
+            await db.run('UPDATE ai_models SET is_default = 0');
         }
 
-        const stmt = db.prepare(`
+        await db.run(`
             INSERT INTO ai_models (
                 id, name, provider, endpoint, api_key, model_name, 
                 description, is_active, is_default, temperature, max_tokens
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        stmt.run(
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `, [
             id, name, provider, endpoint, api_key, model_name, 
             description, is_active, is_default, temperature, max_tokens
-        );
+        ]);
 
         return this.findById(id);
     }
@@ -65,9 +63,8 @@ class AIModel {
      * @param {string} id - Model ID
      * @returns {object|null} Model object or null
      */
-    static findById(id) {
-        const stmt = db.prepare('SELECT * FROM ai_models WHERE id = ?');
-        const model = stmt.get(id);
+    static async findById(id) {
+        const model = await db.get('SELECT * FROM ai_models WHERE id = $1', [id]);
 
         if (model && model.api_key && model.api_key.includes(':')) {
             try {
@@ -85,24 +82,23 @@ class AIModel {
      * @param {boolean} onlyActive - Only return active models
      * @returns {array} Array of models
      */
-    static getAll(onlyActive = false) {
+    static async getAll(onlyActive = false) {
         let query = 'SELECT * FROM ai_models';
+        const params = [];
         if (onlyActive) {
             query += ' WHERE is_active = 1';
         }
         query += ' ORDER BY is_default DESC, name ASC';
         
-        const stmt = db.prepare(query);
-        return stmt.all();
+        return db.all(query, params);
     }
 
     /**
      * Get default AI model
      * @returns {object|null} Default model or null
      */
-    static getDefault() {
-        const stmt = db.prepare('SELECT * FROM ai_models WHERE is_default = 1 AND is_active = 1 LIMIT 1');
-        const model = stmt.get();
+    static async getDefault() {
+        const model = await db.get('SELECT * FROM ai_models WHERE is_default = 1 AND is_active = 1 LIMIT 1');
         if (model) {
             return this.findById(model.id); // Ensure decryption
         }
@@ -115,13 +111,13 @@ class AIModel {
      * @param {object} data - New data
      * @returns {object} Updated model
      */
-    static update(id, data) {
-        const existing = this.findById(id);
+    static async update(id, data) {
+        const existing = await this.findById(id);
         if (!existing) return null;
 
         // Handle is_default logic
         if (data.is_default) {
-            db.prepare('UPDATE ai_models SET is_default = 0 WHERE id != ?').run(id);
+            await db.run('UPDATE ai_models SET is_default = 0 WHERE id != $1', [id]);
         }
 
         // Support field name aliases from frontend (endpoint -> api_endpoint etc if needed)
@@ -137,10 +133,10 @@ class AIModel {
 
         for (const field of allowedFields) {
             if (Object.prototype.hasOwnProperty.call(mappedData, field)) {
-                fieldsToUpdate.push(field);
+                fieldsToUpdate.push(`"${field}"`);
 
                 let val = mappedData[field];
-                // Normalize booleans for SQLite
+                // Normalize booleans for Postgres
                 if (field === 'is_active' || field === 'is_default') {
                     val = (val === true || val === 1 || val === '1') ? 1 : 0;
                 }
@@ -155,16 +151,14 @@ class AIModel {
 
         if (fieldsToUpdate.length === 0) return existing;
 
-        const setClause = fieldsToUpdate.map(f => `"${f}" = ?`).join(', ');
+        const setClause = fieldsToUpdate.map((f, i) => `${f} = $${i + 1}`).join(', ');
         values.push(id);
 
-        const stmt = db.prepare(`
+        await db.run(`
             UPDATE ai_models 
-            SET ${setClause}, updated_at = datetime('now')
-            WHERE id = ?
-        `);
-
-        stmt.run(...values);
+            SET ${setClause}, updated_at = NOW()
+            WHERE id = $${fieldsToUpdate.length + 1}
+        `, values);
         return this.findById(id);
     }
 
@@ -173,9 +167,8 @@ class AIModel {
      * @param {string} id - Model ID
      * @returns {boolean} Success
      */
-    static delete(id) {
-        const stmt = db.prepare('DELETE FROM ai_models WHERE id = ?');
-        const result = stmt.run(id);
+    static async delete(id) {
+        const result = await db.run('DELETE FROM ai_models WHERE id = $1', [id]);
         return result.changes > 0;
     }
 
@@ -183,10 +176,10 @@ class AIModel {
      * Ensure DeepSeek is configured as the default "Whappi AI" model
      * This is called on startup to guarantee a default model exists
      */
-    static ensureDefaultDeepSeek() {
+    static async ensureDefaultDeepSeek() {
         try {
             // Check if any default model already exists
-            const existingDefault = this.getDefault();
+            const existingDefault = await this.getDefault();
             if (existingDefault) {
                 // If it's already "Whappi AI", we're good
                 if (existingDefault.name === 'Whappi AI') {
@@ -198,12 +191,12 @@ class AIModel {
             }
 
             // Check if "Whappi AI" exists at all
-            const whappiAI = db.prepare('SELECT * FROM ai_models WHERE name = ?').get('Whappi AI');
+            const whappiAI = await db.get('SELECT * FROM ai_models WHERE name = $1', ['Whappi AI']);
             
             if (whappiAI) {
                 // If it exists but is not default, make it default
                 if (!whappiAI.is_default) {
-                    this.update(whappiAI.id, { is_default: 1 });
+                    await this.update(whappiAI.id, { is_default: 1 });
                 }
                 return this.findById(whappiAI.id);
             }

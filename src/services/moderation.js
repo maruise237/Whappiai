@@ -1,4 +1,4 @@
-const { db } = require('../config/database');
+const db = require('../db/query');
 const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const { Session, ActivityLog, User } = require('../models');
 const { log } = require('../utils/logger');
@@ -206,9 +206,9 @@ async function getAdminGroups(sock, sessionId) {
             const chunkSize = 500;
             for (let i = 0; i < adminGroupIds.length; i += chunkSize) {
                 const chunk = adminGroupIds.slice(i, i + chunkSize);
-                const placeholders = chunk.map(() => '?').join(',');
-                const query = `SELECT * FROM group_settings WHERE session_id = ? AND group_id IN (${placeholders})`;
-                const chunkSettings = db.prepare(query).all(sessionId, ...chunk);
+                const placeholders = chunk.map((_, idx) => `$${idx + 2}`).join(',');
+                const query = `SELECT * FROM group_settings WHERE session_id = $1 AND group_id IN (${placeholders})`;
+                const chunkSettings = await db.all(query, [sessionId, ...chunk]);
                 for (const setting of chunkSettings) {
                     settingsMap.set(setting.group_id, setting);
                 }
@@ -257,7 +257,7 @@ async function getAdminGroups(sock, sessionId) {
  * @param {string} groupId 
  * @param {object} settings 
  */
-function updateGroupSettings(sessionId, groupId, settings) {
+async function updateGroupSettings(sessionId, groupId, settings) {
     // Map frontend fields (warning_threshold, banned_words, welcome_message) to DB columns
     const is_active = settings.is_active ? 1 : 0;
     const anti_link = settings.anti_link ? 1 : 0;
@@ -278,9 +278,9 @@ function updateGroupSettings(sessionId, groupId, settings) {
         settings: { is_active, anti_link, bad_words, warnings_enabled, auto_kick_enabled, max_warnings, welcome_enabled, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days }
     }, 'INFO');
 
-    const stmt = db.prepare(`
+    await db.run(`
         INSERT INTO group_settings (group_id, session_id, is_active, anti_link, bad_words, warning_template, warnings_enabled, auto_kick_enabled, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP)
         ON CONFLICT(group_id, session_id) DO UPDATE SET
         is_active = excluded.is_active,
         anti_link = excluded.anti_link,
@@ -296,9 +296,7 @@ function updateGroupSettings(sessionId, groupId, settings) {
         ai_assistant_enabled = excluded.ai_assistant_enabled,
         warning_reset_days = excluded.warning_reset_days,
         updated_at = CURRENT_TIMESTAMP
-    `);
-    
-    stmt.run(groupId, sessionId, is_active, anti_link, bad_words, warning_template, warnings_enabled, auto_kick_enabled, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days);
+    `, [groupId, sessionId, is_active, anti_link, bad_words, warning_template, warnings_enabled, auto_kick_enabled, max_warnings, welcome_enabled, welcome_template, welcome_digest_enabled, welcome_digest_time, ai_assistant_enabled, warning_reset_days]);
 }
 
 /**
@@ -313,7 +311,7 @@ async function handleParticipantUpdate(sock, sessionId, update) {
     if (action !== 'add') return;
     
     try {
-        const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+        const settings = await db.get('SELECT * FROM group_settings WHERE group_id = $1 AND session_id = $2', [groupId, sessionId]);
         
         if (!settings || !settings.welcome_enabled || !settings.welcome_template) {
             return;
@@ -328,13 +326,13 @@ async function handleParticipantUpdate(sock, sessionId, update) {
         const session = Session.findById(sessionId);
         let user = null;
         if (session && session.owner_email) {
-            user = User.findByEmail(session.owner_email);
+            user = await User.findByEmail(session.owner_email);
         }
 
         for (const jid of participants) {
             let creditDeducted = false;
             if (user) {
-                const hasCredit = CreditService.deduct(user.id, 1, `Moderation: Welcome message to ${jid}`);
+                const hasCredit = await CreditService.deduct(user.id, 1, `Moderation: Welcome message to ${jid}`);
                 if (!hasCredit) {
                     log(`Insufficient credits for welcome message to ${jid} (Session: ${sessionId})`, sessionId, { event: 'moderation-insufficient-credits' }, 'WARN');
                     continue; // Skip this user
@@ -389,7 +387,7 @@ async function handleParticipantUpdate(sock, sessionId, update) {
                 log(`Failed to send welcome message to ${jid}: ${sendErr.message}`, sessionId, { event: 'moderation-welcome-send-error', error: sendErr.message }, 'ERROR');
                 // Refund if failed
                 if (creditDeducted && user) {
-                    CreditService.add(user.id, 1, 'credit', `Remboursement: échec bienvenue ${jid}`);
+                    await CreditService.add(user.id, 1, 'credit', `Remboursement: échec bienvenue ${jid}`);
                 }
             }
         }
@@ -413,7 +411,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
     const senderJid = jidNormalizedUser(msg.key.participant || msg.participant || msg.key.remoteJid);
     
     // 1. Get Settings
-    const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+    const settings = await db.get('SELECT * FROM group_settings WHERE group_id = $1 AND session_id = $2', [groupId, sessionId]);
 
     const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
     const isTagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(myJid);
@@ -440,7 +438,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
     const session = Session.findById(sessionId);
     let user = null;
     if (session && session.owner_email) {
-        user = User.findByEmail(session.owner_email);
+        user = await User.findByEmail(session.owner_email);
     }
 
     log(`[Modération] Vérification pour ${senderJid} dans ${groupId}`, sessionId, { event: 'moderation-check' }, 'INFO');
@@ -509,7 +507,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
             // CREDIT DEDUCTION
             let creditDeducted = false;
             if (user) {
-                const hasCredit = CreditService.deduct(user.id, 1, `Moderation: Action on ${senderJid} in ${groupId}`);
+                const hasCredit = await CreditService.deduct(user.id, 1, `Moderation: Action on ${senderJid} in ${groupId}`);
                 if (!hasCredit) {
                     log(`Insufficient credits for moderation action on ${senderJid} (Session: ${sessionId})`, sessionId, { event: 'moderation-insufficient-credits' }, 'WARN');
                     return false; // Stop moderation
@@ -532,25 +530,25 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                 let warningInfo;
                 if (resetDays > 0) {
                     // Check if we should reset
-                    const lastWarn = db.prepare("SELECT last_warning_at, count FROM user_warnings WHERE group_id = ? AND session_id = ? AND user_id = ?").get(groupId, sessionId, senderJid);
+                    const lastWarn = await db.get("SELECT last_warning_at, count FROM user_warnings WHERE group_id = $1 AND session_id = $2 AND user_id = $3", [groupId, sessionId, senderJid]);
                     if (lastWarn) {
                         const lastDate = new Date(lastWarn.last_warning_at);
                         const diffDays = (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
                         if (diffDays >= resetDays) {
                             log(`Remise à 0 des avertissements pour ${senderJid} (${diffDays.toFixed(1)} jours écoulés)`, sessionId, { groupId });
-                            db.prepare("UPDATE user_warnings SET count = 0 WHERE group_id = ? AND session_id = ? AND user_id = ?").run(groupId, sessionId, senderJid);
+                            await db.run("UPDATE user_warnings SET count = 0 WHERE group_id = $1 AND session_id = $2 AND user_id = $3", [groupId, sessionId, senderJid]);
                         }
                     }
                 }
 
-                warningInfo = db.prepare(`
+                warningInfo = await db.get(`
                     INSERT INTO user_warnings (group_id, session_id, user_id, count, last_warning_at)
-                    VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+                    VALUES ($1, $2, $3, 1, CURRENT_TIMESTAMP)
                     ON CONFLICT(group_id, session_id, user_id) DO UPDATE SET
-                    count = count + 1,
+                    count = user_warnings.count + 1,
                     last_warning_at = CURRENT_TIMESTAMP
                     RETURNING count
-                `).get(groupId, sessionId, senderJid);
+                `, [groupId, sessionId, senderJid]);
                 
                 const currentCount = warningInfo.count;
                 const maxWarnings = settings.max_warnings || 3;
@@ -628,7 +626,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                 
                 // Refund if failed
                 if (creditDeducted && user) {
-                    CreditService.add(user.id, 1, 'credit', `Remboursement: échec modération ${groupId}`);
+                    await CreditService.add(user.id, 1, 'credit', `Remboursement: échec modération ${groupId}`);
                 }
             }
 
@@ -665,7 +663,7 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
     if (!groupId.endsWith('@g.us')) return false;
 
     try {
-        const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+        const settings = await db.get('SELECT * FROM group_settings WHERE group_id = $1 AND session_id = $2', [groupId, sessionId]);
         if (!settings || !settings.is_active) return false;
 
         const senderJid = extra.senderJid || (msg.key && msg.key.participant) || (msg.key && msg.key.remoteJid) || '';
@@ -739,16 +737,16 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         if (settings.warnings_enabled === 0) return true;
 
         // Increment warnings
-        const existing = db.prepare('SELECT * FROM user_warnings WHERE session_id = ? AND group_id = ? AND user_id = ?').get(sessionId, groupId, resolvedJid);
+        const existing = await db.get('SELECT * FROM user_warnings WHERE session_id = $1 AND group_id = $2 AND user_id = $3', [sessionId, groupId, resolvedJid]);
         const currentCount = existing ? existing.count : 0;
         const newCount = currentCount + 1;
         const maxWarnings = settings.auto_kick_threshold || 3;
         const remaining = maxWarnings - newCount;
 
         if (existing) {
-            db.prepare("UPDATE user_warnings SET count = ?, last_warning_at = datetime('now') WHERE group_id = ? AND session_id = ? AND user_id = ?").run(newCount, groupId, sessionId, resolvedJid);
+            await db.run("UPDATE user_warnings SET count = $1, last_warning_at = NOW() WHERE group_id = $2 AND session_id = $3 AND user_id = $4", [newCount, groupId, sessionId, resolvedJid]);
         } else {
-            db.prepare('INSERT INTO user_warnings (session_id, group_id, user_id, count) VALUES (?, ?, ?, ?)').run(sessionId, groupId, resolvedJid, newCount);
+            await db.run('INSERT INTO user_warnings (session_id, group_id, user_id, count) VALUES ($1, $2, $3, $4)', [sessionId, groupId, resolvedJid, newCount]);
         }
 
         // Send warning message
@@ -802,7 +800,7 @@ async function handleParticipantUpdateProvider(sessionId, data) {
     if (action !== 'add') return;
 
     try {
-        const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+        const settings = await db.get('SELECT * FROM group_settings WHERE group_id = $1 AND session_id = $2', [groupId, sessionId]);
         if (!settings || !settings.welcome_enabled || !settings.welcome_template) return;
 
         const SessionService = require('./SessionService');
@@ -821,13 +819,13 @@ async function handleParticipantUpdateProvider(sessionId, data) {
         const session = Session.findById(sessionId);
         let user = null;
         if (session && session.owner_email) {
-            user = User.findByEmail(session.owner_email);
+            user = await User.findByEmail(session.owner_email);
         }
 
         for (const jid of participants) {
             let creditDeducted = false;
             if (user) {
-                const hasCredit = CreditService.deduct(user.id, 1, `Moderation: Welcome message to ${jid}`);
+                const hasCredit = await CreditService.deduct(user.id, 1, `Moderation: Welcome message to ${jid}`);
                 if (!hasCredit) {
                     log(`Insufficient credits for welcome message to ${jid} (Session: ${sessionId})`, sessionId, { event: 'moderation-insufficient-credits' }, 'WARN');
                     continue;
@@ -872,7 +870,7 @@ async function handleParticipantUpdateProvider(sessionId, data) {
             } catch (sendErr) {
                 log(`Failed to send welcome message to ${jid}: ${sendErr.message}`, sessionId, { event: 'moderation-welcome-send-error', error: sendErr.message }, 'ERROR');
                 if (creditDeducted && user) {
-                    CreditService.add(user.id, 1, 'credit', `Remboursement: échec bienvenue ${jid}`);
+                    await CreditService.add(user.id, 1, 'credit', `Remboursement: échec bienvenue ${jid}`);
                 }
             }
         }

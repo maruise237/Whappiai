@@ -19,7 +19,7 @@ const ActivityLog = require('../models/ActivityLog');
 const CreditService = require('../services/CreditService');
 const AccountAccessService = require('../services/AccountAccessService');
 const { enqueue } = require('../services/QueueService');
-const { db } = require('../config/database');
+const db = require('../db/query');
 // Security: csurf removed (deprecated) - use modern CSRF protection if needed
 
 const router = express.Router();
@@ -142,11 +142,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         if (req.auth && req.auth.userId) {
             try {
                 // Get user from local DB to get their role
-                let user = User.findById(req.auth.userId);
+                let user = await User.findById(req.auth.userId);
 
                 // Fallback to find by email if ID sync is pending
                 if (!user && req.auth.sessionClaims?.email) {
-                    user = User.findByEmail(req.auth.sessionClaims.email);
+                    user = await User.findByEmail(req.auth.sessionClaims.email);
                 }
 
                 const emailFromClerk = req.auth.sessionClaims?.email;
@@ -207,7 +207,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             const sessionRole = isAdminEmail(sessionEmail) ? 'admin' : (req.session.userRole || 'user');
 
             // Try to resolve user ID from DB
-            const user = User.findByEmail(sessionEmail);
+            const user = await User.findByEmail(sessionEmail);
 
             req.currentUser = {
                 email: sessionEmail,
@@ -243,7 +243,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 const session = sessions.get(sessionId) || Session.findById(sessionId);
 
                 if (session && session.owner_email) {
-                    const user = User.findByEmail(session.owner_email);
+                    const user = await User.findByEmail(session.owner_email);
                     if (user) {
                         userId = user.id;
                         userRole = user.role;
@@ -298,7 +298,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             log(`Syncing user ${email} (ID: ${id})`, 'AUTH');
 
             // Check if user already exists before creating
-            const existingUser = User.findById(id) || User.findByEmail(email);
+            const existingUser = await User.findById(id) || await User.findByEmail(email);
             const isNewUser = !existingUser;
 
             const user = await User.create({
@@ -312,7 +312,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // Give welcome credits to new users (idempotent - safe to call each time)
             if (isNewUser && role !== 'admin') {
                 try {
-                    const granted = CreditService.giveWelcomeCredits(id);
+                    const granted = await CreditService.giveWelcomeCredits(id);
                     if (granted) {
                         log(`Welcome credits granted to new user ${email}`, 'CREDITS');
                     }
@@ -373,8 +373,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             // If claiming an orphaned session, we still need to check the quota
             if (isOrphaned && !isOwner && !isAdmin && !isMasterKey) {
-                const user = User.findByEmail(currentEmail);
-                const access = AccountAccessService.getStatus(user);
+                const user = await User.findByEmail(currentEmail);
+                const access = await AccountAccessService.getStatus(user);
                 const planId = access.plan || user?.plan_id || 'trial';
                 const quotas = { trial: 1, free: 0, starter: 1, pro: 5, business: 20 };
                 const limit = access.allowed ? (quotas[planId] ?? 1) : 0;
@@ -393,8 +393,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         } else {
             // New session quota
             if (!isAdmin && !isMasterKey) {
-                const user = User.findByEmail(currentEmail);
-                const access = AccountAccessService.getStatus(user);
+                const user = await User.findByEmail(currentEmail);
+                const access = await AccountAccessService.getStatus(user);
                 const planId = access.plan || user?.plan_id || 'trial';
                 const quotas = { trial: 1, free: 0, starter: 1, pro: 5, business: 20 };
                 const limit = access.allowed ? (quotas[planId] ?? 1) : 0;
@@ -612,7 +612,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/cal/status', checkSessionOrTokenAuth, async (req, res) => {
         try {
             const CalService = require('../services/CalService');
-            const user = User.findById(req.currentUser.id);
+            const user = await User.findById(req.currentUser.id);
             if (!user) {
                 return res.json({ status: 'success', data: { isConnected: false, ai_cal_enabled: false, ai_cal_video_allowed: false, eventTypes: [] } });
             }
@@ -767,7 +767,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
-            const settings = db.prepare('SELECT * FROM group_settings WHERE group_id = ? AND session_id = ?').get(groupId, sessionId);
+            const settings = await db.get('SELECT * FROM group_settings WHERE group_id = $1 AND session_id = $2', [groupId, sessionId]);
             res.json({
                 status: 'success',
                 data: settings || {
@@ -808,7 +808,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         try {
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
             const summary = ActivityLog.getSummary(userEmail, 7);
-            const user = User.findById(req.currentUser.id);
+            const user = await User.findById(req.currentUser.id);
 
             // Count user sessions
             let sessionCount = 0;
@@ -889,7 +889,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     return res.status(400).json({ status: 'error', message: 'User account required for credit deduction.' });
                 }
 
-                const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Génération IA pour groupe ${groupId}`);
+                const hasCredit = await CreditService.deduct(req.currentUser.id, 1, `Génération IA pour groupe ${groupId}`);
                 if (!hasCredit) {
                     return res.status(402).json({ status: 'error', message: 'Crédits insuffisants.' });
                 }
@@ -950,7 +950,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 return res.status(401).json({ status: 'error', message: 'Compte utilisateur requis pour programmer un message.' });
             }
 
-            const access = AccountAccessService.canCreateScheduledTask(req.currentUser.id);
+            const access = await AccountAccessService.canCreateScheduledTask(req.currentUser.id);
             if (!access.allowed) {
                 return res.status(403).json({
                     status: 'error',
@@ -1461,12 +1461,12 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Get credit history
     router.get('/credits', checkSessionOrTokenAuth, (req, res) => {
         try {
-            const user = User.findById(req.currentUser.id);
+            const user = await User.findById(req.currentUser.id);
             if (!user) {
                 return res.status(404).json({ status: 'error', message: 'Utilisateur non trouvé' });
             }
 
-            const history = User.getCreditHistory(req.currentUser.id);
+            const history = await User.getCreditHistory(req.currentUser.id);
             res.json({
                 status: 'success',
                 data: {
@@ -1545,7 +1545,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     }
 
                     try {
-                        const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
+                        const hasCredit = await CreditService.deduct(req.currentUser.id, 1, `Envoi message vers ${to}`);
 
                         if (!hasCredit) {
                             return { status: 'error', message: 'Crédits insuffisants. Veuillez recharger votre compte.' };
@@ -1574,13 +1574,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                     }
 
                     if (result.status === 'error' && creditDeducted) {
-                        CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
+                        await CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: échec envoi vers ${to}`);
                     }
 
                     return result;
                 } catch (error) {
                     if (creditDeducted) {
-                        CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
+                        await CreditService.add(req.currentUser.id, 1, 'credit', `Remboursement: erreur système vers ${to}`);
                     }
                     return { status: 'error', message: error.message };
                 }

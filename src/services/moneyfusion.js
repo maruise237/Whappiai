@@ -1,6 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const { db } = require('../config/database');
+const db = require('../db/query');
 const { log } = require('../utils/logger');
 const User = require('../models/User');
 const ActivityLog = require('../models/ActivityLog');
@@ -86,40 +86,40 @@ function extractMoneyFusionToken(payload = {}) {
     return payload.tokenPay || payload.token || payload.data?.tokenPay || payload.data?.token || null;
 }
 
-function findTransactionByTokenOrOrder(token, orderId) {
+async function findTransactionByTokenOrOrder(token, orderId) {
     if (token) {
-        const byToken = db.prepare('SELECT * FROM payment_transactions WHERE provider_token = ?').get(token);
+        const byToken = await db.get('SELECT * FROM payment_transactions WHERE provider_token = $1', [token]);
         if (byToken) return byToken;
     }
     if (orderId) {
-        return db.prepare('SELECT * FROM payment_transactions WHERE id = ?').get(orderId);
+        return await db.get('SELECT * FROM payment_transactions WHERE id = $1', [orderId]);
     }
     return null;
 }
 
-function saveTransactionUpdate({ id, providerToken, status, providerPayload, checkoutUrl }) {
-    const existing = findTransactionByTokenOrOrder(providerToken, id);
+async function saveTransactionUpdate({ id, providerToken, status, providerPayload, checkoutUrl }) {
+    const existing = await findTransactionByTokenOrOrder(providerToken, id);
     const payload = JSON.stringify(providerPayload || {});
 
     if (existing) {
-        db.prepare(`
+        await db.run(`
             UPDATE payment_transactions
-            SET provider_token = COALESCE(?, provider_token),
-                status = ?,
-                provider_payload = ?,
-                checkout_url = COALESCE(?, checkout_url),
+            SET provider_token = COALESCE($1, provider_token),
+                status = $2,
+                provider_payload = $3,
+                checkout_url = COALESCE($4, checkout_url),
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        `).run(providerToken, status, payload, checkoutUrl || null, existing.id);
+            WHERE id = $5
+        `, [providerToken, status, payload, checkoutUrl || null, existing.id]);
         return existing.id;
     }
 
-    db.prepare(`
+    await db.run(`
         INSERT INTO payment_transactions (
             id, provider, provider_token, user_id, plan_id, amount, currency, status, checkout_url, provider_payload
         )
-        VALUES (?, 'moneyfusion', ?, ?, ?, ?, 'XAF', ?, ?, ?)
-    `).run(id, providerToken, providerPayload.userId || null, providerPayload.planId || null, providerPayload.amount || 0, status, checkoutUrl || null, payload);
+        VALUES ($1, 'moneyfusion', $2, $3, $4, $5, 'XAF', $6, $7, $8)
+    `, [id, providerToken, providerPayload.userId || null, providerPayload.planId || null, providerPayload.amount || 0, status, checkoutUrl || null, payload]);
 
     return id;
 }
@@ -147,12 +147,12 @@ async function createMoneyFusionCheckout(user, planCode, { phoneNumber, customer
         webhookUrl
     });
 
-    db.prepare(`
+    await db.run(`
         INSERT INTO payment_transactions (
             id, provider, user_id, plan_id, amount, currency, status, provider_payload
         )
-        VALUES (?, 'moneyfusion', ?, ?, ?, 'XAF', 'created', ?)
-    `).run(orderId, user.id, plan.id, plan.price, JSON.stringify(paymentData));
+        VALUES ($1, 'moneyfusion', $2, $3, $4, 'XAF', 'created', $5)
+    `, [orderId, user.id, plan.id, plan.price, JSON.stringify(paymentData)]);
 
     const response = await axios.post(apiUrl, paymentData, {
         headers: { 'Content-Type': 'application/json' },
@@ -163,11 +163,11 @@ async function createMoneyFusionCheckout(user, planCode, { phoneNumber, customer
         throw new Error(response.data?.message || 'MoneyFusion a refuse la demande de paiement');
     }
 
-    db.prepare(`
+    await db.run(`
         UPDATE payment_transactions
-        SET provider_token = ?, status = 'pending', checkout_url = ?, provider_payload = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-    `).run(response.data.token, response.data.url, JSON.stringify({ request: paymentData, response: response.data }), orderId);
+        SET provider_token = $1, status = 'pending', checkout_url = $2, provider_payload = $3, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $4
+    `, [response.data.token, response.data.url, JSON.stringify({ request: paymentData, response: response.data }), orderId]);
 
     log(`MoneyFusion checkout created for ${user.email}`, 'PAYMENT', { orderId, planCode, tokenPay: response.data.token }, 'INFO');
 
@@ -185,7 +185,7 @@ async function applyMoneyFusionPayment(payload = {}) {
     const token = extractMoneyFusionToken(payload);
     const personalInfo = extractMoneyFusionPersonalInfo(payload);
     const orderId = personalInfo.orderId;
-    const transaction = findTransactionByTokenOrOrder(token, orderId);
+    const transaction = await findTransactionByTokenOrOrder(token, orderId);
     const previousStatus = transaction?.status || null;
 
     if (previousStatus === status || (previousStatus === 'completed' && status === 'completed')) {
@@ -199,7 +199,7 @@ async function applyMoneyFusionPayment(payload = {}) {
         amount: payload.Montant || payload.data?.Montant || payload.amount || transaction?.amount || 0
     };
 
-    const transactionId = saveTransactionUpdate({
+    const transactionId = await saveTransactionUpdate({
         id: orderId || crypto.randomUUID(),
         providerToken: token,
         status,
@@ -210,7 +210,7 @@ async function applyMoneyFusionPayment(payload = {}) {
         return { success: true, action: 'status_updated', status, token, transactionId };
     }
 
-    const user = (personalInfo.userId && User.findById(personalInfo.userId)) || (personalInfo.email && User.findByEmail(personalInfo.email));
+    const user = (personalInfo.userId && await User.findById(personalInfo.userId)) || (personalInfo.email && await User.findByEmail(personalInfo.email));
     if (!user) throw new Error('Utilisateur MoneyFusion introuvable');
 
     const planCode = personalInfo.planCode || transaction?.plan_id;

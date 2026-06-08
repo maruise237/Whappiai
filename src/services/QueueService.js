@@ -14,7 +14,7 @@
 
 const { Queue, Worker, QueueEvents } = require('bullmq');
 const { log } = require('../utils/logger');
-const { db } = require('../config/database');
+const db = require('../db/query');
 
 // Lazy-init connection (set up by init())
 let connection = null;
@@ -97,7 +97,7 @@ function init(getProviderFn) {
  */
 async function processJob(sessionId, to, content, options = {}) {
   // 1. Anti-ban delay
-  const session = db.prepare('SELECT ai_delay_min, ai_delay_max FROM whatsapp_sessions WHERE id = ?').get(sessionId);
+  const session = await db.get('SELECT ai_delay_min, ai_delay_max FROM whatsapp_sessions WHERE id = $1', [sessionId]);
   const delayMin = (session?.ai_delay_min ?? 1) * 1000;
   const delayMax = (session?.ai_delay_max ?? 5) * 1000;
   const baseDelay = delayMin + Math.random() * (delayMax - delayMin);

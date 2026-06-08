@@ -17,7 +17,7 @@ const response = require('../utils/response');
  */
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
     const currentUser = getCurrentUser(req);
-    let users = User.getAll();
+    let users = await User.getAll();
     
     // Non-admins only see users they created
     if (currentUser.role !== 'admin') {
@@ -33,7 +33,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
  */
 router.get('/profile', requireAuth, asyncHandler(async (req, res) => {
     const currentUser = getCurrentUser(req);
-    const user = User.findById(currentUser.id);
+    const user = await User.findById(currentUser.id);
     
     if (!user) {
         const { log } = require('../utils/logger');
@@ -80,7 +80,7 @@ router.put('/profile', requireAuth, asyncHandler(async (req, res) => {
         }
 
         // Check if email is already taken by another user
-        const existingUser = User.findByEmail(filteredUpdates.email);
+        const existingUser = await User.findByEmail(filteredUpdates.email);
         if (existingUser && existingUser.id !== currentUser.id) {
             return response.error(res, 'Cette adresse email est déjà utilisée', 409);
         }
@@ -114,7 +114,7 @@ router.post('/profile/ai', requireAuth, asyncHandler(async (req, res) => {
     const currentUser = getCurrentUser(req);
     const { enabled, prompt, model } = req.body;
 
-    const user = User.updateAIConfig(currentUser.id, {
+    const user = await User.updateAIConfig(currentUser.id, {
         enabled: !!enabled,
         prompt,
         model: model || 'deepseek-chat'
@@ -193,7 +193,7 @@ router.put('/:email', requireAuth, asyncHandler(async (req, res) => {
     const updates = req.body;
     const currentUser = getCurrentUser(req);
 
-    const existingUser = User.findByEmail(email);
+    const existingUser = await User.findByEmail(email);
     if (!existingUser) {
         return response.notFound(res, 'User not found');
     }
@@ -237,7 +237,7 @@ router.delete('/:email', requireAuth, asyncHandler(async (req, res) => {
     const { email } = req.params;
     const currentUser = getCurrentUser(req);
 
-    const existingUser = User.findByEmail(email);
+    const existingUser = await User.findByEmail(email);
     if (!existingUser) {
         return response.notFound(res, 'User not found');
     }
@@ -253,7 +253,7 @@ router.delete('/:email', requireAuth, asyncHandler(async (req, res) => {
     }
 
     try {
-        User.delete(existingUser.id);
+        await User.delete(existingUser.id);
 
         await ActivityLog.log({
             userEmail: currentUser.email,

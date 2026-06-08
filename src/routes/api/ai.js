@@ -155,7 +155,7 @@ function initializeAIRoutes(routerInstance, dependencies) {
                     return res.status(400).json({ status: 'error', message: 'User account required for credit deduction.' });
                 }
 
-                const hasCredit = CreditService.deduct(req.currentUser.id, 1, `Génération IA pour groupe ${groupId}`);
+                const hasCredit = await CreditService.deduct(req.currentUser.id, 1, `Génération IA pour groupe ${groupId}`);
                 if (!hasCredit) {
                     return res.status(402).json({ status: 'error', message: 'Crédits insuffisants.' });
                 }

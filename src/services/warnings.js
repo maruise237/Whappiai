@@ -2,7 +2,7 @@
  * Warning counters for WhatsApp group members.
  */
 
-const { db } = require('../config/database');
+const db = require('../db/query');
 
 function formatPhone(userId) {
     return String(userId || '').split('@')[0];
@@ -48,13 +48,13 @@ function composeExclusionMessage({ senderJid, currentCount, maxWarnings, reason 
     return `@${phone} a ete exclu du groupe. Motif: ${motif}. Total: ${count}/${max} avertissements recus.`;
 }
 
-function listByGroup(sessionId, groupId) {
-    const rows = db.prepare(`
+async function listByGroup(sessionId, groupId) {
+    const rows = await db.all(`
         SELECT user_id, count, last_warning_at
         FROM user_warnings
-        WHERE session_id = ? AND group_id = ? AND count > 0
+        WHERE session_id = $1 AND group_id = $2 AND count > 0
         ORDER BY count DESC, last_warning_at DESC
-    `).all(sessionId, groupId);
+    `, [sessionId, groupId]);
 
     return rows.map(row => ({
         userId: row.user_id,
@@ -65,11 +65,12 @@ function listByGroup(sessionId, groupId) {
     }));
 }
 
-function resetMember(sessionId, groupId, userId) {
-    return db.prepare(`
+async function resetMember(sessionId, groupId, userId) {
+    const result = await db.run(`
         DELETE FROM user_warnings
-        WHERE session_id = ? AND group_id = ? AND user_id = ?
-    `).run(sessionId, groupId, userId);
+        WHERE session_id = $1 AND group_id = $2 AND user_id = $3
+    `, [sessionId, groupId, userId]);
+    return result;
 }
 
 module.exports = {

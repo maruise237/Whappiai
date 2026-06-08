@@ -83,9 +83,9 @@ router.post('/clerk', express.raw({ type: 'application/json' }), async (req, res
     if (eventType === 'user.deleted') {
         const { id } = evt.data;
         try {
-            const user = User.findById(id);
+            const user = await User.findById(id);
             if (user) {
-                User.delete(id);
+                await User.delete(id);
                 log(`User deleted via Clerk webhook: ${user.email}`, 'AUTH');
             }
         } catch (err) {

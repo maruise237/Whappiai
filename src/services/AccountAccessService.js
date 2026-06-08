@@ -1,4 +1,4 @@
-const { db } = require('../config/database');
+const db = require('../db/query');
 const User = require('../models/User');
 const NotificationService = require('./NotificationService');
 
@@ -71,8 +71,8 @@ class AccountAccessService {
         return { allowed: true, code: 'active', message: 'Acces actif', plan, status, entitlements };
     }
 
-    static canConsumeAction(userId, amount = 1) {
-        const user = User.findById(userId);
+    static async canConsumeAction(userId, amount = 1) {
+        const user = await User.findById(userId);
         const status = this.getStatus(user);
 
         if (!status.allowed) {
@@ -114,16 +114,16 @@ class AccountAccessService {
         return { ...status, limit, current: currentCount };
     }
 
-    static canCreateScheduledTask(userId) {
-        const user = User.findById(userId);
+    static async canCreateScheduledTask(userId) {
+        const user = await User.findById(userId);
         const status = this.getStatus(user);
         if (!status.allowed) return status;
         if (user.role === 'admin') return status;
 
         const limit = status.entitlements.scheduledMessages;
-        if (!Number.isFinite(limit)) return { ...status, limit, current: this.countActiveScheduledTasks(userId) };
+        if (!Number.isFinite(limit)) return { ...status, limit, current: await this.countActiveScheduledTasks(userId) };
 
-        const current = this.countActiveScheduledTasks(userId);
+        const current = await this.countActiveScheduledTasks(userId);
         if (current >= limit) {
             const blocked = {
                 ...status,
@@ -140,17 +140,17 @@ class AccountAccessService {
         return { ...status, limit, current };
     }
 
-    static countActiveScheduledTasks(userId) {
-        const user = User.findById(userId);
+    static async countActiveScheduledTasks(userId) {
+        const user = await User.findById(userId);
         if (!user?.email) return 0;
 
-        const row = db.prepare(`
+        const row = await db.get(`
             SELECT count(*) as count
             FROM group_engagement_tasks t
             JOIN whatsapp_sessions s ON s.id = t.session_id
-            WHERE lower(s.owner_email) = lower(?)
+            WHERE lower(s.owner_email) = lower($1)
             AND t.status IN ('pending', 'processing')
-        `).get(user.email);
+        `, [user.email]);
 
         return row?.count || 0;
     }
