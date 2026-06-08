@@ -8,6 +8,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useUser } from "@clerk/clerk-react"
 import { useTranslation } from "react-i18next"
+import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 
 const navItems = [
   { label: "nav_features", href: "/#features" },
@@ -100,6 +101,7 @@ export function Navbar() {
 
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center gap-3">
+          <LanguageSwitcher />
           <button
             onClick={toggleDarkMode}
             className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
@@ -117,6 +119,7 @@ export function Navbar() {
 
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center gap-2">
+          <LanguageSwitcher />
           <button
             onClick={toggleDarkMode}
             className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
