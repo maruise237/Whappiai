@@ -7,15 +7,17 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+
 import { api } from "@/lib/api"
 import { showConfirm } from "@/lib/swal"
-import { cn, copyToClipboard as copyUtil, ensureString, safeRender, safeDate } from "@/lib/utils"
+import { cn, copyToClipboard as copyUtil, ensureString, safeRender } from "@/lib/utils"
 import { toast } from "sonner"
 import { useAuth } from "@clerk/clerk-react"
+import { useTranslation } from "react-i18next"
 
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
   const { getToken } = useAuth()
+  const { t } = useTranslation("dashboard")
   const [loading, setLoading] = React.useState(false)
   const [phoneNumber, setPhoneNumber] = React.useState("")
   const [localQrCode, setLocalQrCode] = React.useState<string | null>(null)
@@ -47,12 +49,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   const handleRequestPairingCode = async () => {
     if (!phoneNumber) {
-      toast.error("Veuillez saisir un numéro de téléphone")
+      toast.error(t("session_phone_required") || "Veuillez saisir un numéro de téléphone")
       return
     }
 
     setLoading(true)
-    const toastId = toast.loading("Génération du code d'appairage...")
+    const toastId = toast.loading(t("session_generating_pairing") || "Génération du code d'appairage...")
 
     try {
       const token = await getToken()
@@ -68,14 +70,14 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
       if (response && response.pairingCode) {
         setLocalPairingCode(response.pairingCode)
-        toast.success("Code d'appairage reçu", { id: toastId })
+        toast.success(t("session_pairing_received") || "Code d'appairage reçu", { id: toastId })
       } else {
-        toast.success("Demande envoyée, attendez le code...", { id: toastId })
+        toast.success(t("session_pairing_sent") || "Demande envoyée, attendez le code...", { id: toastId })
       }
     } catch (error: any) {
-      toast.error("Échec de la demande", {
+      toast.error(t("session_pairing_failed") || "Échec de la demande", {
         id: toastId,
-        description: error.message || "Impossible de générer le code"
+        description: error.message || t("session_pairing_impossible") || "Impossible de générer le code"
       })
     } finally {
       setLoading(false)
@@ -85,7 +87,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
   const copyToClipboard = async (text: string, label: string) => {
     const success = await copyUtil(text)
     if (success) {
-      toast.success(`${label} copié`)
+      toast.success(`${label} ${t("session_copied") || "copié"}`)
     }
   }
 
@@ -96,22 +98,22 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
 
     setLoading(true)
-    const toastId = toast.loading("Génération du QR Code...")
+    const toastId = toast.loading(t("session_generating_qr") || "Génération du QR Code...")
 
     try {
       const token = await getToken()
       const response = await api.sessions.qr(session.sessionId, token || undefined)
       if (response && response.qr) {
         setLocalQrCode(response.qr)
-        toast.success("QR Code généré", { id: toastId })
+        toast.success(t("session_qr_generated") || "QR Code généré", { id: toastId })
       } else {
         // We do not need to refresh, the WebSocket will update the QR code
-        toast.success("Demande de QR Code envoyée", { id: toastId })
+        toast.success(t("session_qr_sent") || "Demande de QR Code envoyée", { id: toastId })
       }
     } catch (error: any) {
-      toast.error("Échec de la génération", {
+      toast.error(t("session_qr_failed") || "Échec de la génération", {
         id: toastId,
-        description: error.message || "Impossible de générer le QR Code"
+        description: error.message || t("session_qr_impossible") || "Impossible de générer le QR Code"
       })
     } finally {
       setLoading(false)
@@ -122,22 +124,22 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     if (!session) return
 
     const result = await showConfirm(
-      "Supprimer la session ?",
-      `Voulez-vous vraiment supprimer la session "${ensureString(session.sessionId)}" ?`,
+      t("session_delete_confirm") || "Supprimer la session ?",
+      `${t("session_delete_warning") || "Voulez-vous vraiment supprimer la session"} "${ensureString(session.sessionId)}" ?`,
       "warning"
     )
 
     if (!result.isConfirmed) return
 
     setLoading(true)
-    const toastId = toast.loading("Suppression...")
+    const toastId = toast.loading(t("session_deleting") || "Suppression...")
     try {
       const token = await getToken()
       await api.sessions.delete(session.sessionId, token || undefined)
       onRefresh()
-      toast.success("Session supprimée", { id: toastId })
+      toast.success(t("session_deleted") || "Session supprimée", { id: toastId })
     } catch (error: any) {
-      toast.error("Échec de la suppression", { id: toastId })
+      toast.error(t("session_delete_failed") || "Échec de la suppression", { id: toastId })
     } finally {
       setLoading(false)
     }
@@ -157,10 +159,10 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
       <Card className="border-border bg-card">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <Smartphone className="h-8 w-8 text-muted-foreground/40 mb-3" />
-          <h3 className="text-sm font-medium mb-1">Aucune session sélectionnée</h3>
-          <p className="text-xs text-muted-foreground max-w-xs mb-4">Sélectionnez une session existante ou créez-en une nouvelle pour commencer.</p>
+          <h3 className="text-sm font-medium mb-1">{t("session_no_selection")}</h3>
+          <p className="text-xs text-muted-foreground max-w-xs mb-4">{t("session_no_selection_desc")}</p>
           <Button size="sm" onClick={onCreate}>
-            Créer une session
+            {t("session_create_new")}
           </Button>
         </CardContent>
       </Card>
@@ -178,12 +180,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
             <div>
               <p className="text-sm font-medium">{safeRender(session.sessionId)}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs text-muted-foreground">Session WhatsApp</p>
+                <p className="text-xs text-muted-foreground">{t("session_whatsapp")}</p>
                 <button
                   onClick={() => copyToClipboard(session.sessionId, "ID")}
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Copier l'ID de session"
-                  title="Copier l'ID de session"
+                  aria-label={t("session_copy_id")}
+                  title={t("session_copy_id")}
                 >
                   <Copy className="h-3 w-3" />
                 </button>
@@ -196,11 +198,11 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
                 : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
               }>
-                {isConnected ? "Connecté" : "Déconnecté"}
+                {isConnected ? t("session_connected") : t("session_disconnected")}
               </Badge>
               {session?.detail && !isConnected && (
                  <span className="text-[9px] text-destructive font-bold uppercase tracking-tight">
-                    {ensureString(session.detail).includes('conflict') ? 'Conflit (ouvert ailleurs)' : safeRender(session.detail)}
+                    {ensureString(session.detail).includes('conflict') ? t("session_conflict") : safeRender(session.detail)}
                  </span>
               )}
             </div>
@@ -209,8 +211,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               size="icon"
               className="h-8 w-8 text-destructive"
               onClick={handleDelete}
-              aria-label="Options de la session"
-              title="Options de la session"
+              aria-label={t("session_options")}
+              title={t("session_options")}
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -223,8 +225,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="qr" className="text-xs">QR Code</TabsTrigger>
-                <TabsTrigger value="code" className="text-xs">Pairing Code</TabsTrigger>
+                <TabsTrigger value="qr" className="text-xs">{t("session_qr")}</TabsTrigger>
+                <TabsTrigger value="code" className="text-xs">{t("session_pairing_code")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="qr" className="flex flex-col items-center space-y-4 pt-4">
@@ -234,13 +236,13 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
                       <RefreshCw className={cn("h-6 w-6", loading && "animate-spin")} />
-                      <span className="text-[10px] font-medium">{loading ? "Génération..." : "Cliquez sur actualiser pour obtenir un QR code"}</span>
+                      <span className="text-[10px] font-medium">{loading ? t("session_generating") : t("session_click_refresh")}</span>
                     </div>
                   )}
                 </div>
                 <Button size="sm" variant="outline" className="h-9 px-6" onClick={handleRefreshQr} disabled={loading}>
                   <RefreshCw className={cn("h-3.5 w-3.5 mr-2", loading && "animate-spin")} />
-                  Actualiser QR
+                  {t("session_refresh_qr")}
                 </Button>
               </TabsContent>
 
@@ -248,7 +250,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                 {pairingCode ? (
                   <>
                     <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Votre code d'appairage</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("session_pairing_code_label")}</p>
                       <div className="flex flex-wrap justify-center gap-1.5">
                         {ensureString(pairingCode).split('').map((char: string, i: number) => (
                           <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
@@ -258,41 +260,41 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => copyToClipboard(pairingCode, "Code")}>
                         <Copy className="h-3.5 w-3.5 mr-2" />
-                        Copier le code
+                        {t("session_copy_code")}
                       </Button>
                     </div>
                     <details className="text-xs text-muted-foreground">
-                      <summary className="cursor-pointer hover:text-foreground font-medium">Modifier le numéro</summary>
+                      <summary className="cursor-pointer hover:text-foreground font-medium">{t("session_change_number")}</summary>
                       <div className="flex gap-2 mt-3">
                         <Input
-                          placeholder="ex: 237600000000"
+                          placeholder={t("session_phone_placeholder")}
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
                           className="h-9 text-sm"
                         />
                         <Button size="sm" className="h-9 px-3 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
-                          Regénérer
+                          {t("session_regenerate")}
                         </Button>
                       </div>
                     </details>
                   </>
                 ) : (
                   <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Numéro de téléphone</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">{t("session_phone_label")}</label>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="ex: 237600000000"
+                        placeholder={t("session_phone_placeholder")}
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         className="h-10 text-sm"
                       />
                       <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
-                        Obtenir le code
+                        {t("session_get_code")}
                       </Button>
                     </div>
                     <div className="p-8 text-center border border-dashed rounded-lg bg-muted/20">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                        {loading ? "Demande de code..." : "Entrez un numéro pour lier manuellement"}
+                        {loading ? t("session_requesting_code") : t("session_enter_number")}
                       </p>
                     </div>
                   </div>
@@ -305,8 +307,8 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
             <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
               <Check className="h-6 w-6 text-green-600" />
             </div>
-            <h4 className="text-sm font-medium">Session Opérationnelle</h4>
-            <p className="text-xs text-muted-foreground mt-1">L'instance est prête à envoyer et recevoir des messages.</p>
+            <h4 className="text-sm font-medium">{t("session_operational")}</h4>
+            <p className="text-xs text-muted-foreground mt-1">{t("session_operational_desc")}</p>
 
             <div className="w-full mt-6 space-y-2">
             </div>

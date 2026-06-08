@@ -352,7 +352,7 @@ export default function DashboardPage() {
       updates.forEach((update: SessionItem) => {
         if (!update) return
         if (update.status === "GENERATING_CODE" && update.pairingCode) {
-          toast.info(`Code d'appairage reçu pour ${update.sessionId}`)
+          toast.info(`${t("session_pairing_received") || "Code d'appairage reçu"} pour ${update.sessionId}`)
         }
       })
 
@@ -790,7 +790,7 @@ function MiniAdminStat({ icon, label, value }: { icon: React.ReactNode; label: s
 }
 
 function ActivityTable({ recentActivities, emptyText }: { recentActivities: ActivityItem[]; emptyText: string }) {
-  const { t } = useTranslation("dashboard")
+  const { t, i18n } = useTranslation("dashboard")
   if (recentActivities.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">
@@ -814,7 +814,7 @@ function ActivityTable({ recentActivities, emptyText }: { recentActivities: Acti
         <TableBody>
           {recentActivities.slice(0, 6).map(activity => (
             <TableRow key={ensureString(activity.id || activity.timestamp || activity.created_at)} className="hover:bg-surface-neutral">
-              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{activityTime(activity)}</TableCell>
+              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{activityTime(activity, i18n.language)}</TableCell>
               <TableCell><Badge variant="outline" className="text-[10px]">{activityType(activity, t)}</Badge></TableCell>
               <TableCell className="max-w-28 truncate text-xs">{safeRender(activity.resource_id || t("session_fallback"))}</TableCell>
               <TableCell className="max-w-[200px] text-xs text-muted-foreground">
@@ -895,12 +895,12 @@ function hasActiveModerationRule(settings: unknown) {
   )
 }
 
-function activityTime(activity: ActivityItem) {
+function activityTime(activity: ActivityItem, locale = "fr-FR") {
   const raw = activity.created_at || activity.timestamp
   if (!raw) return "--:--"
   const date = new Date(raw)
   if (Number.isNaN(date.getTime())) return "--:--"
-  return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(date)
+  return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(date)
 }
 
 function activityType(activity: ActivityItem, t: (key: string) => string) {
@@ -913,7 +913,7 @@ function activityType(activity: ActivityItem, t: (key: string) => string) {
 
 function activityPreview(activity: ActivityItem) {
   const details = typeof activity.details === "string" ? activity.details : JSON.stringify(activity.details || "")
-  return formatApercu(details || activity.action || "Action executée")
+  return formatApercu(details || activity.action || "Action executed")
 }
 
 function formatApercu(raw: string) {
