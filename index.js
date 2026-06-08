@@ -380,7 +380,7 @@ wss.on('connection', async (ws, req) => {
             }
 
             // Get local user info for role
-            const localUser = User.findById(clerkUser.id) || User.findByEmail(email);
+            const localUser = await User.findById(clerkUser.id) || await User.findByEmail(email);
 
             userInfo = {
                 id: clerkUser.id,
@@ -481,8 +481,8 @@ setBroadcastFn(broadcastToClients);
 
 // User manager utility
 const userManager = {
-    getSessionOwner: (sessionId) => {
-        const s = Session.findById(sessionId);
+    getSessionOwner: async (sessionId) => {
+        const s = await Session.findById(sessionId);
         return s ? { email: s.owner_email } : null;
     }
 };
@@ -492,13 +492,13 @@ const sessionTokens = new Map();
 
 // Helper to broadcast session updates
 // Exposed globally so EvolutionWebhookHandler can call it without circular require
-const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
+const broadcastSessionUpdate = async (id, status, detail, qrOrCode) => {
     const isPairingCode = status === 'GENERATING_CODE';
     const isQR = status === 'GENERATING_QR';
 
     // CRITICAL: We pass undefined instead of null to prevent clearing existing code/qr when status updates
     // EXCEPT when status is DISCONNECTED, in which case we clear them.
-    Session.updateStatus(
+    await Session.updateStatus(
         id,
         status,
         detail,
@@ -510,7 +510,7 @@ const broadcastSessionUpdate = (id, status, detail, qrOrCode) => {
         sessionId: id,
         status,
         detail,
-        token: Session.findById(id)?.token
+        token: await Session.findById(id)?.token
     };
 
     // Only include QR or pairingCode if they are provided, to avoid clearing them on the frontend during status transitions
@@ -534,7 +534,7 @@ global._broadcastSessionUpdate = broadcastSessionUpdate;
 const createSessionWrapper = async (sessionId, email, phoneNumber = null) => {
     const session = SessionService.isProviderActive()
         ? await SessionService.createSessionProvider(sessionId, email, phoneNumber)
-        : Session.create(sessionId, email);
+        : await Session.create(sessionId, email);
 
     if (session.token) {
         sessionTokens.set(sessionId, session.token);
@@ -553,7 +553,7 @@ const deleteSessionWrapper = async (sessionId) => {
     if (SessionService.isProviderActive()) {
         await SessionService.deleteSessionProvider(sessionId);
     }
-    Session.delete(sessionId);
+    await Session.delete(sessionId);
 
     broadcastToClients({
         type: 'session-deleted',
@@ -567,7 +567,7 @@ const getSessionsDetailsWrapper = async (email, isAdmin) => {
         await SessionService.reconcileSessionsStatus(email, isAdmin);
     }
 
-    const sessions = Session.getAll(email, isAdmin);
+    const sessions = await Session.getAll(email, isAdmin);
 
     return sessions.map(s => ({
         ...s,
@@ -580,7 +580,7 @@ const getSessionsDetailsWrapper = async (email, isAdmin) => {
 };
 
 const triggerQRWrapper = async (sessionId) => {
-    const session = Session.findById(sessionId);
+    const session = await Session.findById(sessionId);
     if (!session) {
         log(`TriggerQR: Session ${sessionId} non trouvée dans la DB`, 'SYSTEM', { sessionId }, 'WARN');
         return false;
@@ -604,8 +604,8 @@ const triggerQRWrapper = async (sessionId) => {
 // Session Proxy backed by local DB rows. In Evolution mode there is no local
 // Baileys socket in-process; the transport lives in the provider.
 const sessionsProxy = {
-    get: (sessionId) => {
-        const session = Session.findById(sessionId);
+    get: async (sessionId) => {
+        const session = await Session.findById(sessionId);
         if (!session) return null;
         return {
             sock: null,
@@ -614,10 +614,10 @@ const sessionsProxy = {
             detail: session.detail
         };
     },
-    has: (sessionId) => Session.findById(sessionId) !== null,
+    has: async (sessionId) => Session.findById(sessionId) !== null,
     keys: () => Session.getAll().map(s => s.id),
-    forEach: (callback) => {
-        const dbSessions = Session.getAll();
+    forEach: async (callback) => {
+        const dbSessions = await Session.getAll();
         dbSessions.forEach(s => {
             callback({
                 sock: null,
@@ -755,15 +755,15 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Ensure default admin exists
-User.ensureAdmin(process.env.ADMIN_DASHBOARD_PASSWORD);
 
 // Ensure default AI model exists
-AIModel.ensureDefaultDeepSeek();
 
 // Initialize existing sessions on startup
 if (require.main === module) {
     (async () => {
-        const existingSessions = Session.getAll(null, true);
+        await AIModel.ensureDefaultDeepSeek();
+        await User.ensureAdmin(process.env.ADMIN_DASHBOARD_PASSWORD);
+        const existingSessions = await Session.getAll(null, true);
         log(`Trouvé ${existingSessions.length} session(s) existante(s)`, 'SYSTEM', { count: existingSessions.length }, 'INFO');
 
         for (const session of existingSessions) {

@@ -13,8 +13,7 @@ function initializeUserRoutes(routerInstance, dependencies) {
     const { checkSessionOrTokenAuth, log } = dependencies;
 
     // Get current user info
-    routerInstance.get('/me', checkSessionOrTokenAuth, (req, res) => {
-        const freshUser = await User.findById(req.currentUser.id) || await User.findByEmail(req.currentUser.email);
+       routerInstance.get('/me', checkSessionOrTokenAuth, async (req, res) => {        const freshUser = await User.findById(req.currentUser.id) || await User.findByEmail(req.currentUser.email);
         res.json({
             status: 'success',
             data: {

@@ -1459,8 +1459,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     });
 
     // Get credit history
-    router.get('/credits', checkSessionOrTokenAuth, (req, res) => {
-        try {
+       router.get('/credits', checkSessionOrTokenAuth, async (req, res) => {        try {
             const user = await User.findById(req.currentUser.id);
             if (!user) {
                 return res.status(404).json({ status: 'error', message: 'Utilisateur non trouvé' });

@@ -276,7 +276,7 @@ router.post('/maintenance/deactivate', requireAdmin, asyncHandler(async (req, re
         userAgent: req.headers['user-agent']
     });
 
-    return response.success(res, { status: 'deactivated' }));
+    return response.success(res, { status: 'deactivated' });
 }));
 
 module.exports = router;

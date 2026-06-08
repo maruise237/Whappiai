@@ -105,8 +105,7 @@ function initializeStatsRoutes(routerInstance, dependencies) {
     });
 
     // Get credit history
-    routerInstance.get('/credits', checkSessionOrTokenAuth, (req, res) => {
-        try {
+       routerInstance.get('/credits', checkSessionOrTokenAuth, async (req, res) => {        try {
             const user = await User.findById(req.currentUser.id);
             if (!user) {
                 return res.status(404).json({ status: 'error', message: 'Utilisateur non trouvé' });
