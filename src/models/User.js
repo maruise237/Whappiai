@@ -39,7 +39,13 @@ class User {
             )
             VALUES ($1, $2, $3, 'CLERK_EXTERNAL_AUTH', $4, $5, $6, NOW(), 1, 1,
                 'trial', 'active', 60, 0, NOW() + INTERVAL '7 days'
-            )`,
+            )
+            ON CONFLICT (id) DO UPDATE SET
+                email = EXCLUDED.email,
+                name = EXCLUDED.name,
+                role = GREATEST(users.role::text, EXCLUDED.role::text)::user_role,
+                image_url = EXCLUDED.image_url,
+                updated_at = NOW()`,
             [userId, normalizedEmail, name, targetRole, imageUrl, createdBy]
         );
 

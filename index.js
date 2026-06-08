@@ -134,34 +134,60 @@ const wsClients = new Map();
 // Session configuration
 const isProduction = process.env.NODE_ENV === 'production';
 const sessionSecret = _clean(process.env.SESSION_SECRET) || 'dev-secret-change-me';
+// Session store: starts as MemoryStore, upgrades to Redis after async connect
+// Use a stable proxy object so Express holds the same reference throughout
+const EventEmitter = require('events');
+class UpgradeableStore extends EventEmitter {
+    constructor() {
+        super();
+        this.delegate = new session.MemoryStore();
+        this.redisStore = null;
+    }
 
-// Use FileStore as default; Redis will be swapped in after async connect
-const FileStore = require('session-file-store')(session);
+    async upgrade(redisStore) {
+        this.redisStore = redisStore;
+        this.delegate = redisStore;
+        // Forward disconnect events from RedisStore to UpgradeableStore
+        redisStore.on('disconnect', () => this.emit('disconnect'));
+        redisStore.on('connect', () => this.emit('connect'));
+        log('[SessionStore] Upgraded to Redis', 'SYSTEM', { event: 'session-store-upgrade' }, 'INFO');
+        // Migrate MemoryStore entries to Redis (if any)
+        if (this._memoryEntries && this._memoryEntries.size > 0) {
+            for (const [sid, sess] of this._memoryEntries) {
+                redisStore.set(sid, sess, () => {});
+            }
+            this._memoryEntries.clear();
+            log(`[SessionStore] Migrated ${this._memoryEntries.size} sessions to Redis`, 'SYSTEM', null, 'INFO');
+        }
+    }
 
-// Ensure sessions directory exists for FileStore fallback
-const sessionsDir = path.join(__dirname, 'sessions');
-if (!fs.existsSync(sessionsDir)) {
-    fs.mkdirSync(sessionsDir, { recursive: true });
+    get(sid, cb) {
+        this.delegate.get(sid, cb);
+    }
+    set(sid, sess, cb) {
+        if (this.delegate === this.redisStore) {
+            this.delegate.set(sid, sess, cb);
+        } else {
+            // Track in-memory entries for potential migration
+            if (!this._memoryEntries) this._memoryEntries = new Map();
+            this._memoryEntries.set(sid, sess);
+            this.delegate.set(sid, sess, cb);
+        }
+    }
+    destroy(sid, cb) {
+        if (this._memoryEntries) this._memoryEntries.delete(sid);
+        this.delegate.destroy(sid, cb);
+    }
+    touch(sid, sess, cb) {
+        if (typeof this.delegate.touch === 'function') {
+            this.delegate.touch(sid, sess, cb);
+        } else {
+            cb();
+        }
+    }
 }
 
-const fallbackSessionStore = new FileStore({
-    path: './sessions',
-    logFn: (msg) => {
-        if (msg && !msg.includes('OK')) {
-            log(`[SessionStore] ${msg}`, 'SYSTEM', { event: 'session-store-warning', message: msg }, 'WARN');
-        }
-    },
-    retries: 10,
-    factor: 1.5,
-    minTimeout: 100,
-    maxTimeout: 1000,
-    fileExtension: '.json',
-    ttl: 86400,
-    reapInterval: 3600
-});
-
-// Will be upgraded to RedisStore after async connect succeeds
-let activeSessionStore = fallbackSessionStore;
+const activeSessionStore = new UpgradeableStore();
 
 // Middleware
 app.use(cookieParser());
@@ -794,7 +820,7 @@ const PORT = process.env.PORT || 3000;
         await redisService.connect();
         const result = await whappiSessionStore.connect(session);
         if (result.isConnected && result.store) {
-            activeSessionStore = result.store;
+            activeSessionStore.upgrade(result.store);
             log('Session store upgraded to Redis', 'SYSTEM', { event: 'session-store-redis' }, 'INFO');
         }
 
