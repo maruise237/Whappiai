@@ -136,8 +136,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 const sessionSecret = _clean(process.env.SESSION_SECRET) || 'dev-secret-change-me';
 // Session store: starts as MemoryStore, upgrades to Redis after async connect
 // Use a stable proxy object so Express holds the same reference throughout
-const EventEmitter = require('events');
-class UpgradeableStore extends EventEmitter {
+const Store = require('express-session/session/store');
+class UpgradeableStore extends Store {
     constructor() {
         super();
         this.delegate = new session.MemoryStore();
