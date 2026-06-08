@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, Smartphone, QrCode, Trash2, MoreHorizontal, Eye, EyeOff, Copy, Check } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { RefreshCw, Smartphone, MoreHorizontal, Copy, Check } from "lucide-react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,6 @@ import { useAuth } from "@clerk/clerk-react"
 export function SessionCard({ session, onRefresh, onCreate }: { session?: any, onRefresh: () => void, onCreate: () => void }) {
   const { getToken } = useAuth()
   const [loading, setLoading] = React.useState(false)
-  const [showToken, setShowToken] = React.useState(false)
   const [phoneNumber, setPhoneNumber] = React.useState("")
   const [localQrCode, setLocalQrCode] = React.useState<string | null>(null)
   const [localPairingCode, setLocalPairingCode] = React.useState<string | null>(null)
@@ -310,33 +309,6 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
             <p className="text-xs text-muted-foreground mt-1">L'instance est prête à envoyer et recevoir des messages.</p>
 
             <div className="w-full mt-6 space-y-2">
-              <div className="flex items-center justify-between p-2 rounded-md border bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium">Token de Session</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {showToken ? (typeof session.token === 'string' ? session.token : ensureString(session.token)) : "••••••••••••"}
-                  </span>
-                  <button
-                    onClick={() => setShowToken(!showToken)}
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label={showToken ? "Masquer le token" : "Afficher le token"}
-                    title={showToken ? "Masquer le token" : "Afficher le token"}
-                  >
-                    {showToken ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                  </button>
-                  <button
-                    onClick={() => copyToClipboard(session.token, "Token")}
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label="Copier le token"
-                    title="Copier le token"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         )}
