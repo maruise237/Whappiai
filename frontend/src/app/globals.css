@@ -127,6 +127,18 @@
     font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.6;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* iOS: empecher le zoom automatique au focus des inputs */
+  input, textarea, select {
+    font-size: 16px;
+  }
+  @media (min-width: 768px) {
+    input, textarea, select {
+      font-size: 14px;
+    }
   }
 
   h1,

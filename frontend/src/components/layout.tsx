@@ -291,7 +291,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </aside>
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="flex h-16 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-xl sm:px-6">
+            <header className="flex h-14 items-center justify-between border-b border-border bg-background/90 px-3 backdrop-blur-xl sm:h-16 sm:px-6">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="lg:hidden">
                   <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

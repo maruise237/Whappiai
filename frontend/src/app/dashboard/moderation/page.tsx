@@ -761,7 +761,7 @@ export default function ModerationPage() {
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                  className="size-8 sm:size-7 text-muted-foreground hover:text-primary"
                                   onClick={() => resetMemberWarnings(groupId, member)}
                                   disabled={resettingWarningId === `${groupId}:${ensureString(member.userId)}`}
                                   title={t("warned_members_reset")}
@@ -813,7 +813,7 @@ export default function ModerationPage() {
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                  className="size-8 sm:size-7 shrink-0 text-muted-foreground hover:text-destructive"
                                   onClick={() => deleteScheduledTask(groupId, task.id)}
                                   disabled={schedulingGroupId === groupId}
                                 >
