@@ -740,7 +740,7 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
         const existing = await db.get('SELECT * FROM user_warnings WHERE session_id = $1 AND group_id = $2 AND user_id = $3', [sessionId, groupId, resolvedJid]);
         const currentCount = existing ? existing.count : 0;
         const newCount = currentCount + 1;
-        const maxWarnings = settings.auto_kick_threshold || 3;
+        const maxWarnings = settings.max_warnings || settings.auto_kick_threshold || 3;
         const remaining = maxWarnings - newCount;
 
         if (existing) {

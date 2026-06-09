@@ -820,7 +820,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId, groupId } = req.params;
         try {
             const moderationService = require('../services/moderation');
-            moderationService.updateGroupSettings(sessionId, groupId, req.body);
+            await moderationService.updateGroupSettings(sessionId, groupId, req.body);
             res.json({ status: 'success', message: 'Settings updated' });
         } catch (err) {
             log(`Échec de la mise à jour de la modération pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
