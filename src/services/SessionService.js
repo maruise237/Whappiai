@@ -218,7 +218,7 @@ async function resolveParticipantJidProvider(sessionId, lidJid) {
 async function reconcileSessionsStatus(ownerEmail = null, isAdmin = false) {
     if (!isProviderActive()) return;
 
-    const sessions = Session.getAll(ownerEmail, isAdmin);
+    const sessions = await Session.getAll(ownerEmail, isAdmin);
     const provider = getProvider();
 
     const stateMap = {
