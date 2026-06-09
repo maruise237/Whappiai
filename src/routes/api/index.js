@@ -279,7 +279,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             return res.status(403).json({ status: 'error', message: 'Token does not match session' });
         }
 
-        const sessionOwner = userManager ? userManager.getSessionOwner(sessionId) : { email: Session.findById(sessionId)?.owner_email };
+        const sessionOwner = userManager ? await userManager.getSessionOwner(sessionId) : { email: (await Session.findById(sessionId))?.owner_email };
         if (!sessionOwner || !sessionOwner.email) {
             return res.status(404).json({ status: 'error', message: 'Session not found or has no owner' });
         }
