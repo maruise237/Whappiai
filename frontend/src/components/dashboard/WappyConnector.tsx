@@ -38,14 +38,54 @@ export function WappyConnector() {
       setState("alert", 4000)
     }
 
+    // Modération: avertissement donné
+    if (d.type === "moderation" && d.action === "member-warned") {
+      setState("alert", 3000)
+    }
+
     // Modération: bannissement
     if (d.type === "moderation" && d.action === "member-banned") {
       setState("banning", 4000)
     }
 
+    // Modération: avertissements remis à zéro
+    if (d.type === "moderation" && d.action === "warnings-reset") {
+      setState("happy", 3000)
+    }
+
+    // Modération: règle mise à jour
+    if (d.type === "moderation" && d.action === "rule-updated") {
+      setState("happy", 2000)
+    }
+
+    // Modération: nouveau membre accueilli
+    if (d.type === "moderation" && d.action === "member-joined") {
+      setState("happy", 3000)
+    }
+
     // Message programmé
     if (d.type === "engagement" && d.action === "scheduled") {
       setState("scheduled", 4000)
+    }
+
+    // Message programmé envoyé
+    if (d.type === "engagement" && d.action === "sent") {
+      setState("happy", 3000)
+    }
+
+    // IA: message envoyé
+    if (d.type === "ai" && d.action === "message-sent") {
+      setState("working", 2500)
+    }
+
+    // Crédits modifiés
+    if (d.type === "credits" && d.action === "changed") {
+      const amount = d.amount || 0
+      if (amount > 0) {
+        setState("happy", 3000)
+      } else {
+        setState("sad", 2500)
+      }
     }
 
     // Notification système

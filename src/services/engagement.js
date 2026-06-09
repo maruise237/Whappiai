@@ -209,6 +209,7 @@ class EngagementService {
 
             log(`Message d'engagement programmé ${id} envoyé avec succès`, session_id, { event: 'engagement-exec-success', taskId: id }, 'INFO');
             wappy.messageScheduled(session_id);
+            wappy.scheduledMessageSent(session_id, group_id);
 
         } catch (err) {
             if (creditDeducted && sessionOwnerId) {

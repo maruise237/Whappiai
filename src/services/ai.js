@@ -910,6 +910,9 @@ class AIService {
                         'AI Assistant'
                     );
                 }
+                // Wappy event
+                const wappy = require('./WappyEventBroadcaster');
+                wappy.aiMessageSent(sessionId, jid);
             } else {
                 log(`sock.sendMessage a retourné null pour ${jid}`, sessionId, { event: 'ai-send-failed', jid }, 'WARN');
                 Session.updateAIStats(sessionId, 'error', 'Message sending failed (null result)');

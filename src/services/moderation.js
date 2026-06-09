@@ -772,6 +772,8 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
                 details: { groupId, senderJid: resolvedJid, violation, warnings: newCount, max: maxWarnings }
             });
         }
+        // Wappy event
+        wappy.memberWarned(groupId, sessionId, resolvedJid, newCount, maxWarnings);
 
         // Auto-kick if threshold reached
         if (settings.auto_kick_enabled === 1 && newCount >= maxWarnings) {
@@ -892,6 +894,8 @@ async function handleParticipantUpdateProvider(sessionId, data) {
                 Session.updateAIStats(sessionId, 'sent');
 
                 log(`[Bienvenue] Message envoyé à ${jid} dans ${groupId}`, sessionId, { event: 'moderation-welcome-sent' }, 'INFO');
+                // Wappy event for provider welcome
+                if (typeof wappy !== 'undefined') wappy.memberJoined(groupId, sessionId, jid);
             } catch (sendErr) {
                 log(`Failed to send welcome message to ${jid}: ${sendErr.message}`, sessionId, { event: 'moderation-welcome-send-error', error: sendErr.message }, 'ERROR');
                 if (creditDeducted && user) {

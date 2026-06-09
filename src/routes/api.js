@@ -819,8 +819,11 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.post('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
-            const moderationService = require('../services/moderation');
+            const wappy = require('./WappyEventBroadcaster');
+            const moderationService = require('./moderation');
             await moderationService.updateGroupSettings(sessionId, groupId, req.body);
+            // Wappy event: règle mise à jour
+            wappy.ruleUpdated(groupId, sessionId);
             res.json({ status: 'success', message: 'Settings updated' });
         } catch (err) {
             log(`Échec de la mise à jour de la modération pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
@@ -949,6 +952,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             const warningService = require('../services/warnings');
             const decodedUserId = decodeURIComponent(userId);
             const result = await warningService.resetMember(sessionId, groupId, decodedUserId);
+            // Wappy event
+            const wappy = require('../services/WappyEventBroadcaster');
+            wappy.warningsReset(groupId, sessionId, decodedUserId);
             res.json({ status: 'success', data: { reset: true, changes: result.changes || 0 } });
         } catch (err) {
             log(`Erreur remise a zero avertissements pour ${groupId}: ${err.message}`, sessionId, { groupId, userId, error: err.message }, 'ERROR');
