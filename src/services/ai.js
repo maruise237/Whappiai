@@ -249,9 +249,9 @@ class AIService {
     static async handleIncomingMessage(sock, sessionId, msg, isGroupMode = false, isRetry = false) {
         try {
             // Get session config from DB
-            const session = Session.findById(sessionId);
+            const session = await Session.findById(userId);
             if (!session) {
-                log(`Session non trouvée dans la base de données`, sessionId, { event: 'ai-error', reason: 'session-not-found' }, 'ERROR');
+                log(`Session ${userId} introuvable pour le suivi de réponse`, sessionId, { event: 'followup-ai-session-not-found', userId }, 'ERROR');
                 return;
             }
 
@@ -434,7 +434,7 @@ class AIService {
             }
 
             // Increment received counter
-            Session.updateAIStats(sessionId, 'received');
+            await Session.updateAIStats(sessionId, 'received');
             
             // Handle group vs private messages
             if (isGroup) {
@@ -493,7 +493,7 @@ class AIService {
                     event: 'ai-error',
                     reason: 'empty-response'
                 }, 'ERROR');
-                Session.updateAIStats(sessionId, 'error', 'Empty AI response or API error');
+                await Session.updateAIStats(sessionId, 'error', 'Empty AI response or API error');
                 return;
             }
 
@@ -585,7 +585,7 @@ class AIService {
 
         } catch (error) {
             log(`Erreur AIService pour l'utilisateur ${sessionId}: ${error.message}`, sessionId, { event: 'ai-service-error', error: error.message }, 'ERROR');
-            if (Session.findById(sessionId)) Session.updateAIStats(sessionId, 'error', error.message);
+            if (await Session.findById(sessionId)) await Session.updateAIStats(sessionId, 'error', error.message);
         }
     }
 
@@ -895,11 +895,11 @@ class AIService {
             
             if (result) {
                 log(`Message envoyé avec succès à ${jid}`, sessionId, { event: 'ai-sent', jid }, 'INFO');
-                Session.updateAIStats(sessionId, 'sent');
+                await Session.updateAIStats(sessionId, 'sent');
                 this.recordAIResponse(sessionId, jid);
 
                 // Log to activity log if available
-                const session = Session.findById(sessionId);
+                const session = await Session.findById(sessionId);
                 if (ActivityLog && session) {
                     await ActivityLog.logMessageSend(
                         session.owner_email || 'ai-assistant',
