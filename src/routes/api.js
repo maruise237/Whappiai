@@ -960,7 +960,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId, groupId } = req.params;
         try {
             const engagementService = require('../services/engagement');
-            const tasks = engagementService.getTasks(sessionId, groupId);
+            const tasks = await engagementService.getTasks(sessionId, groupId);
             res.json({ status: 'success', data: tasks });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -986,7 +986,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             }
 
             const engagementService = require('../services/engagement');
-            const taskId = engagementService.addTask({
+            const taskId = await engagementService.addTask({
                 ...req.body,
                 session_id: sessionId,
                 group_id: groupId
@@ -1001,7 +1001,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { taskId } = req.params;
         try {
             const engagementService = require('../services/engagement');
-            engagementService.deleteTask(taskId);
+            await engagementService.deleteTask(taskId);
             res.json({ status: 'success', message: 'Tâche supprimée' });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -1013,7 +1013,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { taskId } = req.params;
         try {
             const engagementService = require('../services/engagement');
-            const updated = engagementService.updateTask(taskId, req.body);
+            const updated = await engagementService.updateTask(taskId, req.body);
             res.json({ status: 'success', data: updated });
         } catch (err) {
             res.status(400).json({ status: 'error', message: err.message });
@@ -1025,7 +1025,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId, groupId } = req.params;
         try {
             const engagementService = require('../services/engagement');
-            const history = engagementService.getHistory({
+            const history = await engagementService.getHistory({
                 session_id: sessionId,
                 group_id: groupId,
                 ...req.query

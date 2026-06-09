@@ -120,7 +120,7 @@ class EngagementService {
             }
             
             // Vérification et déduction des crédits
-            const session = Session.findById(session_id);
+            const session = await Session.findById(session_id);
             if (session && session.owner_email) {
                 const user = await User.findByEmail(session.owner_email);
                 if (user) {
@@ -183,7 +183,7 @@ class EngagementService {
             }
 
             // Update session stats
-            Session.updateAIStats(session_id, 'sent');
+            await Session.updateAIStats(session_id, 'sent');
 
             // Mise à jour finale du statut et gestion de la récurrence
             await db.transaction(async (txDb) => {
