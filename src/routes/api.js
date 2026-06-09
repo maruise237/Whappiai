@@ -730,39 +730,63 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
         try {
             const SessionService = require('../services/SessionService');
+            const GroupCache = require('../services/GroupCacheService');
             const provider = SessionService.getProvider();
 
-            // Get owner JID to identify 'me' in group participants
+            // 1. Get owner JID to filter admin groups
             const status = await provider.getStatus(sessionId);
             const ownerJid = status.ok ? (status.phoneNumber || '') : '';
 
+            // 2. Try cache first — instant response
+            const cached = await GroupCache.getCachedGroups(sessionId);
+            if (cached && cached.groups.length > 0) {
+                const groups = filterAdminGroups(cached.groups, ownerJid);
+                log(`[GroupCache] serving ${groups.length} groups from cache for ${sessionId} (stale: ${cached.stale})`, sessionId, null, 'INFO');
+                // 3. If stale, trigger background refresh (don't await — user gets instant response)
+                if (cached.stale) {
+                    GroupCache.refreshGroups(sessionId, provider);
+                }
+                return res.json({ status: 'success', data: groups });
+            }
+
+            // 4. No cache — fetch fresh (slow path, first load only)
+            log(`[GroupCache] no cache for ${sessionId}, fetching fresh...`, sessionId, null, 'INFO');
             const result = await provider.fetchGroups(sessionId);
             if (!result.ok) {
                 throw new Error(result.error || 'Échec de récupération des groupes');
             }
 
-            const groups = (result.groups || [])
-                .filter(g => {
-                    // Only include groups where current user is admin/superadmin
-                    if (!g.participants || !ownerJid) return false;
-                    const me = g.participants.find(p =>
-                        p.phoneNumber === ownerJid || p.id === ownerJid
-                    );
-                    return me && (me.admin === 'admin' || me.admin === 'superadmin');
-                })
-                .map(g => ({
-                    id: g.id,
-                    subject: g.subject || g.name || 'Sans nom',
-                    admin: true,
-                    size: g.size || g.participants?.length || 0,
-                    participants: g.participants || []
-                }));
+            const groups = filterAdminGroups(result.groups, ownerJid);
+            // Save to cache for next time
+            GroupCache.saveGroups(sessionId, result.groups).catch(() => {});
+
             res.json({ status: 'success', data: groups });
         } catch (err) {
             log(`Erreur lors de la récupération des groupes pour ${sessionId}: ${err.message}`, sessionId, { error: err.message }, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
         }
     });
+
+    /**
+     * Filter groups where current user is admin/superadmin
+     */
+    function filterAdminGroups(allGroups, ownerJid) {
+        return (allGroups || [])
+            .filter(g => {
+                if (!g.participants || !ownerJid) return false;
+                const me = g.participants.find(p =>
+                    p.phoneNumber === ownerJid || p.id === ownerJid
+                );
+                return me && (me.admin === 'admin' || me.admin === 'superadmin');
+            })
+            .map(g => ({
+                id: g.id,
+                subject: g.subject || g.name || 'Sans nom',
+                admin: true,
+                size: g.size || g.participants?.length || 0,
+                participants: g.participants || []
+            }));
+    }
 
     router.get('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
