@@ -820,7 +820,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId, groupId } = req.params;
         try {
             const wappy = require('../services/WappyEventBroadcaster');
-            const moderationService = require('./moderation');
+            const moderationService = require('../services/moderation');
             await moderationService.updateGroupSettings(sessionId, groupId, req.body);
             // Wappy event: règle mise à jour
             wappy.ruleUpdated(groupId, sessionId);
