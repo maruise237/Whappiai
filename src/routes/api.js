@@ -107,7 +107,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         }
 
         // User ownership check — normalize emails to prevent casing mismatches
-        const sessionOwner = userManager ? userManager.getSessionOwner(sessionId) : { email: Session.findById(sessionId)?.owner_email };
+        const sessionOwner = userManager ? await userManager.getSessionOwner(sessionId) : { email: (await Session.findById(sessionId))?.owner_email };
         if (!sessionOwner || !sessionOwner.email) {
             return res.status(404).json({ status: 'error', message: 'Session not found or has no owner' });
         }
