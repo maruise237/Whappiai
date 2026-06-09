@@ -760,6 +760,19 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
 
         await provider.sendTextMessage(sessionId, { jid: groupId, text: warningText, mentions: [resolvedJid] });
 
+        // Log activity
+        if (ActivityLog) {
+            const session = await Session.findById(sessionId);
+            ActivityLog.log({
+                userEmail: session?.owner_email || 'moderation',
+                action: 'MODERATION_WARN',
+                resource: 'moderation',
+                resourceId: sessionId,
+                success: true,
+                details: { groupId, senderJid: resolvedJid, violation, warnings: newCount, max: maxWarnings }
+            });
+        }
+
         // Auto-kick if threshold reached
         if (settings.auto_kick_enabled === 1 && newCount >= maxWarnings) {
             // Send exclusion message before removing
@@ -779,6 +792,18 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
             log(`Membre ${senderJid} exclu de ${groupId} (${newCount}/${maxWarnings})`, sessionId, {
                 event: 'moderation-kick', groupId, senderJid, warnings: newCount
             }, 'INFO');
+            // Log kick activity
+            if (ActivityLog) {
+                const session = await Session.findById(sessionId);
+                ActivityLog.log({
+                    userEmail: session?.owner_email || 'moderation',
+                    action: 'MODERATION_KICK',
+                    resource: 'moderation',
+                    resourceId: sessionId,
+                    success: true,
+                    details: { groupId, senderJid: resolvedJid, violation, warnings: newCount, max: maxWarnings }
+                });
+            }
             wappy.memberBanned(groupId, sessionId, senderJid);
         }
 
