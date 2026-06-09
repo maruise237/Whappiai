@@ -375,36 +375,67 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 }
 
 function WappyMascotWrapper() {
-  const { state } = useWappy()
+  const { state, setState } = useWappy()
   const [mounted, setMounted] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
   const [scrollY, setScrollY] = React.useState(0)
+  const [reducedMotion, setReducedMotion] = React.useState(false)
+  const lastClick = React.useRef(0)
 
   React.useEffect(() => {
     setMounted(true)
+
     const onResize = () => setIsMobile(window.innerWidth < 768)
     const onScroll = () => setScrollY(window.scrollY)
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const onMotionChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches)
+
+    setReducedMotion(motionQuery.matches)
     onResize()
     onScroll()
+
     window.addEventListener("resize", onResize)
     window.addEventListener("scroll", onScroll, { passive: true })
+    motionQuery.addEventListener("change", onMotionChange)
     return () => {
       window.removeEventListener("resize", onResize)
       window.removeEventListener("scroll", onScroll)
+      motionQuery.removeEventListener("change", onMotionChange)
     }
   }, [])
 
+  // Wave on click/double-tap
+  const handleClick = React.useCallback(() => {
+    const now = Date.now()
+    if (now - lastClick.current < 400) {
+      // Double-click -> surprised
+      setState("surprised", 2500)
+    } else {
+      // Single click -> wave
+      setState("waving", 3000)
+    }
+    lastClick.current = now
+  }, [setState])
+
   if (!mounted) return null
 
-  const baseSize = isMobile ? 100 : 140
+  // Taille responsive optimisée SaaS (recherche web juin 2026)
+  const baseSize = isMobile ? 80 : 150
   const scrollOpacity = Math.max(0.3, 1 - scrollY / 600)
 
   return (
     <WappyMascot
       state={state}
       size={baseSize}
+      onClick={handleClick}
+      reducedMotion={reducedMotion}
       style={{ opacity: scrollOpacity }}
-      className="fixed bottom-5 right-5 z-50 pointer-events-auto transition-opacity duration-300"
+      className={cn(
+        "fixed z-50 pointer-events-auto transition-opacity duration-300",
+        "bottom-4 right-4",
+        "md:bottom-6 md:right-6",
+        reducedMotion && "motion-reduce"
+      )}
     />
   )
 }

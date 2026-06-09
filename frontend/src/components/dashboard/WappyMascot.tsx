@@ -129,7 +129,16 @@ const ANIMS = {
   ticktock:"wappy-ticktock 2s cubic-bezier(0.4, 0, 0.2, 1) infinite",
 }
 
-export default function WappyMascot({ state = "idle", size = 180, className = "", style = {} }) {
+type MascotProps = {
+  state?: string
+  size?: number
+  className?: string
+  style?: React.CSSProperties
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
+  reducedMotion?: boolean
+}
+
+export default function WappyMascot({ state = "idle", size = 180, className = "", style = {}, onClick, reducedMotion = false }: MascotProps) {
   const [key, setKey] = useState(state)
   const [pupils, setPupils] = useState({ lx: 0, ly: 0, rx: 0, ry: 0 })
   const [blink, setBlink] = useState(false)
@@ -227,12 +236,19 @@ export default function WappyMascot({ state = "idle", size = 180, className = ""
         @keyframes shield-pulse { 0%,100%{opacity:0.25; transform:scale(1)} 50%{opacity:0.55; transform:scale(1.04)} }
       `}</style>
 
-      {/* OUTER: className fixe le positionnement (fixed, bottom, right) — pas de position ici */}
-      <div className={className} style={{
-        display:"flex", flexDirection:"column", alignItems:"center",
-        fontFamily:"'DM Sans',system-ui,sans-serif",
-        width: size, ...style
-      }}>
+      {/* OUTER: clickable, accessible mascot */}
+      <button
+        className={className}
+        onClick={onClick}
+        aria-label="Whappi Assistant - mascotte interactive"
+        tabIndex={0}
+        style={{
+          display:"flex", flexDirection:"column", alignItems:"center",
+          fontFamily:"'DM Sans',system-ui,sans-serif",
+          width: size, ...style,
+          animation: reducedMotion ? "none" : ANIMS[s.anim],
+          cursor: "pointer", background:"none", border:"none", padding:0
+        }}>
         {/* INNER: conteneur positionné pour les enfants absolute */}
         <div style={{ position:"relative", display:"flex", flexDirection:"column", alignItems:"center", width:"100%" }}>
           {/* Ambient glow */}
@@ -440,7 +456,7 @@ export default function WappyMascot({ state = "idle", size = 180, className = ""
             </div>
           </div>
         </div>
-      </div>
+      </button>
     </>
   )
 }
