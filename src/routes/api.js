@@ -935,7 +935,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId, groupId } = req.params;
         try {
             const warningService = require('../services/warnings');
-            const warnedMembers = warningService.listByGroup(sessionId, groupId);
+            const warnedMembers = await warningService.listByGroup(sessionId, groupId);
             res.json({ status: 'success', data: warnedMembers });
         } catch (err) {
             log(`Erreur lors de la recuperation des membres avertis pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
@@ -948,7 +948,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         try {
             const warningService = require('../services/warnings');
             const decodedUserId = decodeURIComponent(userId);
-            const result = warningService.resetMember(sessionId, groupId, decodedUserId);
+            const result = await warningService.resetMember(sessionId, groupId, decodedUserId);
             res.json({ status: 'success', data: { reset: true, changes: result.changes || 0 } });
         } catch (err) {
             log(`Erreur remise a zero avertissements pour ${groupId}: ${err.message}`, sessionId, { groupId, userId, error: err.message }, 'ERROR');
@@ -1077,7 +1077,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
     router.delete('/sessions/:sessionId/keywords/:id', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         try {
-            KeywordResponder.delete(req.params.id);
+            await KeywordResponder.delete(req.params.id);
             res.json({ status: 'success', message: 'Règle supprimée' });
         } catch (error) {
             res.status(500).json({ status: 'error', message: error.message });
