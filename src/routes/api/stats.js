@@ -17,14 +17,14 @@ function initializeStatsRoutes(routerInstance, dependencies) {
     routerInstance.get('/stats', checkSessionOrTokenAuth, async (req, res) => {
         try {
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
-            const summary = ActivityLog.getSummary(userEmail, 7);
+            const summary = await ActivityLog.getSummary(userEmail, 7);
             const user = await User.findById(req.currentUser.id);
 
             let sessionCount = 0;
             if (req.currentUser.role === 'admin') {
-                sessionCount = Session.countActive();
+                sessionCount = await Session.countActive();
             } else {
-                sessionCount = Session.getSessionIdsByOwner(req.currentUser.email).length;
+                sessionCount = (await Session.getSessionIdsByOwner(req.currentUser.email)).length;
             }
 
             res.json({
@@ -58,9 +58,9 @@ function initializeStatsRoutes(routerInstance, dependencies) {
 
             let logs;
             if (req.currentUser.role === 'admin') {
-                logs = ActivityLog.getLogs(limit, offset);
+                logs = await ActivityLog.getLogs(limit, offset);
             } else {
-                logs = ActivityLog.getUserLogs(req.currentUser.email, limit, offset);
+                logs = await ActivityLog.getUserLogs(req.currentUser.email, limit, offset);
             }
 
             res.json({ status: 'success', data: logs });
@@ -76,7 +76,7 @@ function initializeStatsRoutes(routerInstance, dependencies) {
             const days = parseInt(req.query.days) || 7;
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
 
-            const data = ActivityLog.getAnalytics(userEmail, days);
+            const data = await ActivityLog.getAnalytics(userEmail, days);
             res.json({ status: 'success', data });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -95,7 +95,7 @@ function initializeStatsRoutes(routerInstance, dependencies) {
             log(`[API] Résumé activités pour ${req.currentUser.email} (${days} jours)`, 'SYSTEM');
 
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
-            const summary = ActivityLog.getSummary(userEmail, days);
+            const summary = await ActivityLog.getSummary(userEmail, days);
 
             res.json({ status: 'success', data: summary });
         } catch (err) {

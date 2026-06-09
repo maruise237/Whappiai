@@ -831,15 +831,15 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.get('/stats', checkSessionOrTokenAuth, async (req, res) => {
         try {
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
-            const summary = ActivityLog.getSummary(userEmail, 7);
+            const summary = await ActivityLog.getSummary(userEmail, 7);
             const user = await User.findById(req.currentUser.id);
 
             // Count user sessions
             let sessionCount = 0;
             if (req.currentUser.role === 'admin') {
-                sessionCount = Session.countActive();
+                sessionCount = await Session.countActive();
             } else {
-                sessionCount = Session.getSessionIdsByOwner(req.currentUser.email).length;
+                sessionCount = (await Session.getSessionIdsByOwner(req.currentUser.email)).length;
             }
 
             res.json({
@@ -1131,7 +1131,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.put('/notifications/:id/read', checkSessionOrTokenAuth, async (req, res) => {
         try {
             const NotificationService = require('../services/NotificationService');
-            NotificationService.markAsRead(req.params.id, req.currentUser.id);
+            await NotificationService.markAsRead(req.params.id, req.currentUser.id);
             res.json({ status: 'success', message: 'Marqué comme lu' });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -1141,7 +1141,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.put('/notifications/read-all', checkSessionOrTokenAuth, async (req, res) => {
         try {
             const NotificationService = require('../services/NotificationService');
-            NotificationService.markAllAsRead(req.currentUser.id);
+            await NotificationService.markAllAsRead(req.currentUser.id);
             res.json({ status: 'success', message: 'Tout a été marqué comme lu' });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
@@ -1163,9 +1163,9 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             let logs;
             if (req.currentUser.role === 'admin') {
-                logs = ActivityLog.getLogs(limit, offset);
+                logs = await ActivityLog.getLogs(limit, offset);
             } else {
-                logs = ActivityLog.getUserLogs(req.currentUser.email, limit, offset);
+                logs = await ActivityLog.getUserLogs(req.currentUser.email, limit, offset);
             }
 
             res.json({ status: 'success', data: logs });
