@@ -29,6 +29,12 @@ Couche d'abstraction entre Whappi et les providers WhatsApp (Evolution API, Bail
   - Timeout 15s sur chaque requête fetch, 10s sur `_getInstanceToken`
   - Les réponses en cache sont marquées `cached: true` dans le retour
   - Surcharger le TTL via `EVOLUTION_CACHE_TTL_MS` (ms)
+- **Cache groupes PostgreSQL** (`GroupCacheService.js`) :
+  - `getCachedGroups()` → retourne les groupes depuis PostgreSQL en < 10ms
+  - `refreshGroups()` → refresh WhatsApp en arrière-plan (l'utilisateur attend pas)
+  - Données considérées stale après 2 min → refresh auto au prochain appel
+  - Données expirées après 10 min → refresh forcé
+  - Configurable via `GROUP_CACHE_STALE_MS` et `GROUP_CACHE_TTL_MS`
 - **Health check** : `scripts/evolution-health-check.sh` tourne toutes les 2min en crontab.
   Vérifie que Evolution API répond HTTP 200. Redémarre le conteneur Docker après 2 checks
   consécutifs échoués. Crontab : `*/2 * * * * /home/ubuntu/Whappiai/scripts/evolution-health-check.sh`

@@ -54,6 +54,7 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
   - `moderation.js` - Group moderation (blacklists, welcome messages)
   - `engagement.js` - Scheduled group messaging and engagement tasks
   - `groups.js` - Group profile and product link management
+  - `GroupCacheService.js` - Group cache PostgreSQL (instant load + background refresh)
 - **`src/utils/`**: Crypto, validation, phone number normalization, logging, response helpers
 - **`src/middleware/`**: Auth checks, error handling
 
