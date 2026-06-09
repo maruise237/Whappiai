@@ -240,7 +240,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 let userRole = 'api';
 
                 // We need to find the session owner
-                const session = sessions.get(sessionId) || Session.findById(sessionId);
+                const session = await sessions.get(sessionId) || await Session.findById(sessionId);
 
                 if (session && session.owner_email) {
                     const user = await User.findByEmail(session.owner_email);
@@ -719,7 +719,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Group Moderation Endpoints
     router.get('/sessions/:sessionId/moderation/groups', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
-        const sessionData = sessions.get(sessionId);
+        const sessionData = await sessions.get(sessionId);
 
         if (!sessionData || sessionData.status !== 'CONNECTED') {
             return res.status(400).json({
@@ -1488,7 +1488,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             log('API error', 'SYSTEM', { event: 'api-error', error: 'sessionId query parameter is required', endpoint: req.originalUrl });
             return res.status(400).json({ status: 'error', message: 'sessionId query parameter is required' });
         }
-        const session = sessions.get(sessionId);
+        const session = await sessions.get(sessionId);
         log(`[API] Requête de message pour la session ${sessionId}`, sessionId, {
             exists: !!session,
             status: session?.status,
