@@ -7,6 +7,37 @@ import { useWebSocket } from "@/providers/websocket-provider"
 /**
  * WappyConnector - pont entre les événements de l'app et l'état de Wappy
  * Écoute les WebSocket et les events DOM pour animer la mascotte
+ *
+ * Carte complète des événements connectés :
+ *   type           | action             | animation       | source
+ *   ───────────────|────────────────────|─────────────────|─────────────────────
+ *   session-update | connected          | happy           | EvolutionWebhook
+ *   session-update | disconnected       | sad             | EvolutionWebhook
+ *   session-update | connecting         | working         | EvolutionWebhook
+ *   session        | connected          | happy           | WappyBroadcaster
+ *   session        | disconnected       | sad             | WappyBroadcaster
+ *   session        | connecting         | working         | WappyBroadcaster
+ *   session        | deleted            | sad             | WappyBroadcaster
+ *   moderation     | link-blocked       | alert           | WappyBroadcaster
+ *   moderation     | member-warned      | alert           | WappyBroadcaster
+ *   moderation     | member-banned      | banning         | WappyBroadcaster
+ *   moderation     | warnings-reset     | happy           | WappyBroadcaster
+ *   moderation     | rule-updated       | happy           | WappyBroadcaster
+ *   moderation     | member-joined      | happy           | WappyBroadcaster
+ *   moderation     | member-left        | sad             | WappyBroadcaster
+ *   messaging      | incoming           | thinking        | WappyBroadcaster
+ *   engagement     | scheduled          | scheduled       | WappyBroadcaster
+ *   engagement     | sent               | happy           | WappyBroadcaster
+ *   engagement     | task-created       | working         | WappyBroadcaster
+ *   engagement     | task-deleted       | sad             | WappyBroadcaster
+ *   ai             | message-sent       | working         | WappyBroadcaster
+ *   credits        | changed (>0)       | happy           | WappyBroadcaster
+ *   credits        | changed (<0)       | sad             | WappyBroadcaster
+ *   billing        | plan-changed       | happy           | WappyBroadcaster
+ *   system         | error              | alert           | WappyBroadcaster
+ *   log            | level=error/fatal  | alert           | serveur
+ *   notification   | alert/warning      | alert           | serveur
+ *   notification   | success/credit     | happy           | serveur
  */
 export function WappyConnector() {
   const { setState } = useWappy()
@@ -18,7 +49,8 @@ export function WappyConnector() {
 
     const d = lastMessage
 
-    // Connexion/déconnexion Evolution
+    // ── Session ──────────────────────────────────────────────
+    // 1) broadcastSessionUpdate() envoie { type, data: { status, ... } }
     if (d.type === "session-update") {
       const data = Array.isArray(d.data) ? d.data : [d.data]
       for (const update of data) {
@@ -31,64 +63,81 @@ export function WappyConnector() {
           setState("working", 3000)
         }
       }
+      return // évite double-réaction avec le bloc session ci-dessous
     }
 
-    // Modération: lien bloqué
-    if (d.type === "moderation" && d.action === "link-blocked") {
-      setState("alert", 4000)
+    // 2) WappyEventBroadcaster envoie { type, action, status, ... }
+    if (d.type === "session") {
+      const s = (d.status || "").toLowerCase()
+      if (s === "connected") {
+        setState("happy", 4000)
+      } else if (s === "disconnected") {
+        setState("sad", 5000)
+      } else if (s === "connecting") {
+        setState("working", 3000)
+      } else if (d.action === "deleted") {
+        setState("sad", 3500)
+      }
+      return
     }
 
-    // Modération: avertissement donné
-    if (d.type === "moderation" && d.action === "member-warned") {
-      setState("alert", 3000)
+    // ── Modération ───────────────────────────────────────────
+    if (d.type === "moderation") {
+      switch (d.action) {
+        case "link-blocked":   setState("alert", 4000); break
+        case "member-warned":  setState("alert", 3000); break
+        case "member-banned":  setState("banning", 4000); break
+        case "warnings-reset": setState("happy", 3000); break
+        case "rule-updated":   setState("happy", 2000); break
+        case "member-joined":  setState("happy", 3000); break
+        case "member-left":    setState("sad", 3000); break
+      }
+      return
     }
 
-    // Modération: bannissement
-    if (d.type === "moderation" && d.action === "member-banned") {
-      setState("banning", 4000)
+    // ── Messaging ────────────────────────────────────────────
+    if (d.type === "messaging" && d.action === "incoming") {
+      setState("thinking", 2000)
+      return
     }
 
-    // Modération: avertissements remis à zéro
-    if (d.type === "moderation" && d.action === "warnings-reset") {
-      setState("happy", 3000)
+    // ── Engagement ───────────────────────────────────────────
+    if (d.type === "engagement") {
+      switch (d.action) {
+        case "scheduled":    setState("scheduled", 4000); break
+        case "sent":         setState("happy", 3000); break
+        case "task-created": setState("working", 2500); break
+        case "task-deleted": setState("sad", 2000); break
+      }
+      return
     }
 
-    // Modération: règle mise à jour
-    if (d.type === "moderation" && d.action === "rule-updated") {
-      setState("happy", 2000)
-    }
-
-    // Modération: nouveau membre accueilli
-    if (d.type === "moderation" && d.action === "member-joined") {
-      setState("happy", 3000)
-    }
-
-    // Message programmé
-    if (d.type === "engagement" && d.action === "scheduled") {
-      setState("scheduled", 4000)
-    }
-
-    // Message programmé envoyé
-    if (d.type === "engagement" && d.action === "sent") {
-      setState("happy", 3000)
-    }
-
-    // IA: message envoyé
+    // ── IA ───────────────────────────────────────────────────
     if (d.type === "ai" && d.action === "message-sent") {
       setState("working", 2500)
+      return
     }
 
-    // Crédits modifiés
+    // ── Crédits ──────────────────────────────────────────────
     if (d.type === "credits" && d.action === "changed") {
       const amount = d.amount || 0
-      if (amount > 0) {
-        setState("happy", 3000)
-      } else {
-        setState("sad", 2500)
-      }
+      setState(amount > 0 ? "happy" : "sad", 3000)
+      return
     }
 
-    // Notification système
+    // ── Billing / Plan ───────────────────────────────────────
+    if (d.type === "billing" && d.action === "plan-changed") {
+      setState("happy", 3500)
+      return
+    }
+
+    // ── Système / Erreur ─────────────────────────────────────
+    if (d.type === "system" && d.action === "error") {
+      setState("alert", 4000)
+      return
+    }
+
+    // ── Notification ─────────────────────────────────────────
     if (d.type === "notification") {
       const nType = (d.notification_type || "").toLowerCase()
       if (nType.includes("alert") || nType.includes("warning") || nType.includes("expir")) {
@@ -96,14 +145,16 @@ export function WappyConnector() {
       } else if (nType.includes("success") || nType.includes("credit")) {
         setState("happy", 3000)
       }
+      return
     }
 
-    // Logs: erreur
+    // ── Logs ─────────────────────────────────────────────────
     if (d.type === "log") {
       const level = (d.level || "").toLowerCase()
       if (level === "error" || level === "fatal") {
         setState("alert", 3000)
       }
+      return
     }
   }, [lastMessage, setState])
 

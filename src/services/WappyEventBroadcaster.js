@@ -68,6 +68,22 @@ module.exports = {
   },
 
   /**
+   * Membre quitte le groupe
+   */
+  memberLeft(groupId, sessionId, memberJid) {
+    broadcast('moderation', 'member-left', { groupId, sessionId, memberJid });
+    log(`[Wappy] member-left - ${memberJid} a quitté ${groupId}`, sessionId, null, 'DEBUG');
+  },
+
+  /**
+   * Message entrant analysé par la modération
+   */
+  messageIncoming(groupId, sessionId) {
+    broadcast('messaging', 'incoming', { groupId, sessionId });
+    log(`[Wappy] message reçu dans ${groupId}`, sessionId, null, 'DEBUG');
+  },
+
+  /**
    * Message programmé
    */
   messageScheduled(sessionId) {
@@ -84,19 +100,54 @@ module.exports = {
   },
 
   /**
+   * Tâche d'engagement créée
+   */
+  taskCreated(sessionId, groupId) {
+    broadcast('engagement', 'task-created', { sessionId, groupId });
+    log(`[Wappy] task - tâche d'engagement créée`, sessionId, null, 'DEBUG');
+  },
+
+  /**
+   * Tâche d'engagement supprimée
+   */
+  taskDeleted(sessionId, groupId) {
+    broadcast('engagement', 'task-deleted', { sessionId, groupId });
+    log(`[Wappy] task - tâche d'engagement supprimée`, sessionId, null, 'DEBUG');
+  },
+
+  /**
    * Session connectée
    */
   sessionConnected(sessionId) {
+    broadcast('session', 'connected', { sessionId, status: 'connected' });
     broadcast('session-update', 'connected', { sessionId, status: 'connected' });
     log(`[Wappy] happy - session connectée ${sessionId}`, sessionId, null, 'DEBUG');
+  },
+
+  /**
+   * Session en cours de connexion (QR code affiché)
+   */
+  sessionConnecting(sessionId) {
+    broadcast('session', 'connecting', { sessionId, status: 'connecting' });
+    broadcast('session-update', 'connecting', { sessionId, status: 'connecting' });
+    log(`[Wappy] working - session en connexion ${sessionId}`, sessionId, null, 'DEBUG');
   },
 
   /**
    * Session déconnectée
    */
   sessionDisconnected(sessionId) {
+    broadcast('session', 'disconnected', { sessionId, status: 'disconnected' });
     broadcast('session-update', 'disconnected', { sessionId, status: 'disconnected' });
     log(`[Wappy] sad - session déconnectée ${sessionId}`, sessionId, null, 'DEBUG');
+  },
+
+  /**
+   * Session supprimée
+   */
+  sessionDeleted(sessionId) {
+    broadcast('session', 'deleted', { sessionId });
+    log(`[Wappy] sad - session supprimée ${sessionId}`, sessionId, null, 'DEBUG');
   },
 
   /**
@@ -113,5 +164,21 @@ module.exports = {
   creditsChanged(userId, amount, balance) {
     broadcast('credits', 'changed', { userId, amount, balance });
     log(`[Wappy] credits - ${amount > 0 ? 'ajout' : 'déduction'} de ${Math.abs(amount)} crédits`, userId, null, 'DEBUG');
+  },
+
+  /**
+   * Plan/abonnement changé
+   */
+  planChanged(userId, plan) {
+    broadcast('billing', 'plan-changed', { userId, plan });
+    log(`[Wappy] plan - changement vers ${plan}`, userId, null, 'DEBUG');
+  },
+
+  /**
+   * Erreur système
+   */
+  errorOccurred(sessionId, errorType) {
+    broadcast('system', 'error', { sessionId, errorType });
+    log(`[Wappy] error - ${errorType}`, sessionId, null, 'DEBUG');
   }
 };
