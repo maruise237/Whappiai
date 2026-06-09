@@ -53,16 +53,16 @@ async function createSessionProvider(sessionId, ownerInput, phoneNumber = null, 
     const owner = normalizeOwner(ownerInput);
     const allowAdoptProviderOrphan = options.allowAdoptProviderOrphan === true || owner.role === 'admin';
 
-    let session = Session.findById(sessionId);
+    let session = await Session.findById(sessionId);
     const hadLocalSession = Boolean(session);
 
     if (session) {
         if (Session.isClaimable(session) && owner.email) {
-            session = Session.updateOwner(sessionId, owner.email);
+            session = await Session.updateOwner(sessionId, owner.email);
         } else if (!Session.isOwnedBy(session, owner)) {
             throw buildError('SESSION_OWNERSHIP_CONFLICT', 'Cette session appartient déjà à un autre utilisateur', 403);
         } else if (owner.email && Session.normalizeOwnerEmail(session.owner_email) !== Session.normalizeOwnerEmail(owner.email)) {
-            session = Session.updateOwner(sessionId, owner.email);
+            session = await Session.updateOwner(sessionId, owner.email);
             log(`Session ${sessionId} owner normalized to ${owner.email}`, 'SESSION', { sessionId, ownerId: owner.id }, 'INFO');
         }
     }
@@ -76,7 +76,7 @@ async function createSessionProvider(sessionId, ownerInput, phoneNumber = null, 
             throw buildError('SESSION_NAME_TAKEN', `Ce nom de session est déjà utilisé. Choisissez un autre nom.`, 409);
         }
 
-        session = Session.create(sessionId, owner.email);
+        session = await Session.create(sessionId, owner.email);
 
         if (providerExists && allowAdoptProviderOrphan) {
             log(`Provider-only session ${sessionId} adopted locally by ${owner.email || owner.id || 'unknown-user'}`, 'SESSION', { sessionId, owner }, 'WARN');
@@ -92,7 +92,7 @@ async function createSessionProvider(sessionId, ownerInput, phoneNumber = null, 
         if (!r.ok) {
             log(`Provider createInstance failed for ${sessionId}: ${r.error}`, 'SESSION', null, 'ERROR');
             if (!hadLocalSession) {
-                try { Session.delete(sessionId); } catch (_) { /* ignore */ }
+                try { await Session.delete(sessionId); } catch (_) { /* ignore */ }
             }
             throw buildError('PROVIDER_CREATE_ERROR', `Provider error: ${r.error || r.status}`, 502, { providerResult: r });
         }
@@ -102,7 +102,7 @@ async function createSessionProvider(sessionId, ownerInput, phoneNumber = null, 
     try {
         const pair = await provider.getQr(sessionId);
         if (pair && pair.ok && pair.qr) {
-            Session.updateStatus(
+            await Session.updateStatus(
                 sessionId,
                 'CONNECTING',
                 phoneNumber ? 'Pairing code issued' : 'QR issued',
@@ -110,13 +110,13 @@ async function createSessionProvider(sessionId, ownerInput, phoneNumber = null, 
                 pair.qr.base64 || pair.qr.code || undefined
             );
         } else if (providerExists) {
-            Session.updateStatus(sessionId, 'CONNECTING', 'Provider instance found');
+            await Session.updateStatus(sessionId, 'CONNECTING', 'Provider instance found');
         }
     } catch (e) {
         log(`QR/pairing fetch failed for ${sessionId}: ${e.message}`, 'SESSION', null, 'WARN');
     }
 
-    return Session.findById(sessionId);
+    return await Session.findById(sessionId);
 }
 
 /**
