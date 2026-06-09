@@ -178,6 +178,7 @@ class ActivityLog {
 
   /**
    * Get activity summary for dashboard
+   * Optimized to combine multiple count queries into a single roundtrip.
    */
   static async getSummary(userEmail = null, days = 7) {
     const date = new Date();
@@ -193,10 +194,24 @@ class ActivityLog {
     }
 
     try {
-      const totalResult = await db.get(`SELECT COUNT(*) as count ${sqlBase}`, params);
-      const totalActivities = totalResult ? Number(totalResult.count) : 0;
+      // Use conditional aggregation to get total and success counts in one go
+      // Note: FILTER (WHERE ...) is standard Postgres but we use CASE for cross-DB compatibility if needed.
+      // Since the app uses better-sqlite3 (SQLite) and pg (Postgres), we use CASE.
+      const counts = await db.get(`
+        SELECT
+          COUNT(*) as total,
+          COUNT(CASE WHEN success = 1 THEN 1 END) as success
+        ${sqlBase}
+      `, params);
 
-      const actionRows = await db.all(`SELECT action, COUNT(*) as count ${sqlBase} GROUP BY action`, params);
+      const totalActivities = counts ? Number(counts.total) : 0;
+      const successCount = counts ? Number(counts.success) : 0;
+
+      // Parallelize remaining aggregate queries
+      const [actionRows, userRows] = await Promise.all([
+        db.all(`SELECT action, COUNT(*) as count ${sqlBase} GROUP BY action`, params),
+        db.all(`SELECT user_email, COUNT(*) as count ${sqlBase} GROUP BY user_email`, params)
+      ]);
 
       const byAction = actionRows.reduce((acc, row) => {
         let key = row.action.toLowerCase();
@@ -210,23 +225,11 @@ class ActivityLog {
         return acc;
       }, {});
 
-      const userRows = await db.all(`SELECT user_email, COUNT(*) as count ${sqlBase} GROUP BY user_email`, params);
       const byUser = userRows.reduce((acc, row) => {
         acc[row.user_email || 'anonymous'] = Number(row.count);
         return acc;
       }, {});
 
-      // For success count, we need to add the extra condition
-      let successSqlBase = 'FROM activity_logs WHERE created_at >= $1';
-      let successParams = [dateLimit];
-      let successIdx = 2;
-      if (userEmail) {
-        successSqlBase += ` AND user_email = $${successIdx++}`;
-        successParams.push(userEmail);
-      }
-      successSqlBase += ' AND success = 1';
-      const successResult = await db.get(`SELECT COUNT(*) as count ${successSqlBase}`, successParams);
-      const successCount = successResult ? Number(successResult.count) : 0;
       const successRate = totalActivities > 0 ? Math.round((successCount / totalActivities) * 100) : 100;
 
       log(`[ActivityLog] Résumé généré: ${totalActivities} activités, ${successRate}% succès`, 'SYSTEM',
@@ -243,6 +246,43 @@ class ActivityLog {
       log(`[ActivityLog] Erreur lors de la génération du résumé: ${err.message}`, 'SYSTEM',
         { event: 'summary-error', error: err.message }, 'ERROR');
       return { totalActivities: 0, byAction: {}, byUser: {}, successRate: 100, period: { days: parseInt(days) || 7, since: dateLimit } };
+    }
+  }
+
+  /**
+   * Get time-series analytics for dashboard (O(1) database complexity)
+   * Groups by date in SQL to provide efficient daily message counts.
+   */
+  static async getAnalytics(userEmail = null, days = 7) {
+    const date = new Date();
+    date.setDate(date.getDate() - (parseInt(days) || 7));
+    const dateLimit = date.toISOString().replace('T', ' ').split('.')[0];
+
+    // date(created_at) works in both SQLite and Postgres
+    let sql = `
+      SELECT date(created_at) as date, COUNT(*) as count
+      FROM activity_logs
+      WHERE created_at >= $1
+      AND (action = 'MESSAGE_SEND' OR action LIKE 'AI_%' OR action = 'CAMPAIGN_MESSAGE_SENT')
+    `;
+    const params = [dateLimit];
+
+    if (userEmail) {
+      sql += ' AND user_email = $2';
+      params.push(userEmail);
+    }
+
+    sql += ' GROUP BY date(created_at) ORDER BY date ASC';
+
+    try {
+      const rows = await db.all(sql, params);
+      return rows.map(row => ({
+        date: row.date,
+        messages: Number(row.count)
+      }));
+    } catch (err) {
+      log(`[ActivityLog] Analytics error: ${err.message}`, 'SYSTEM', { error: err.message }, 'ERROR');
+      return [];
     }
   }
 

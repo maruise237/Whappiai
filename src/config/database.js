@@ -640,7 +640,8 @@ function addPerformanceIndexes() {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email_role ON users(email, role)`);
     
     // Index for activity logs by action type
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_activity_action ON activity_logs(action, created_at)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_activity_action ON activity_logs(action, created_at, user_email)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)`);
     
     // Index for keyword responders by session and active status
     db.exec(`CREATE INDEX IF NOT EXISTS idx_keywords_session_active ON keyword_responders(session_id, is_active)`);
