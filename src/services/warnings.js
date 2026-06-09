@@ -30,9 +30,16 @@ function composeWarningMessage({ template, senderJid, currentCount, maxWarnings,
 
     // Si l'exclusion auto est desactivee, retirer toute mention de "avant exclusion" du message
     if (!autoKickEnabled) {
-        message = message.replace(/\.?\s*Il reste \d+ avertissement\(s\) avant exclusion\.?\s*/gi, '').trim();
-        // Nettoyer les doubles points/virgules
+        message = message.replace(/\.?\s*Il reste \d+ avertissement\(s\)? avant exclusion\.?\s*/gi, '').trim();
+        // Nettoyer les doubles points
         message = message.replace(/\.\./g, '.').replace(/\s*\.\s*$/, '.');
+    } else {
+        // Corriger le pluriel : "1 avertissements" -> "1 avertissement", "3 avertissement" -> "3 avertissements"
+        // Doit aussi capturer le (s) residuel des templates
+        message = message.replace(
+            new RegExp(`Il reste ${remaining} avertissement\\(?\\)?s?\\(?s?\\)?`, 'i'),
+            `Il reste ${remaining} avertissement${remaining > 1 ? 's' : ''}`
+        );
     }
 
     if (!message.includes(`${count}/${max}`)) {
@@ -40,7 +47,7 @@ function composeWarningMessage({ template, senderJid, currentCount, maxWarnings,
     }
 
     if (autoKickEnabled && !/avant exclusion/i.test(message)) {
-        message = `${message} Il reste ${remaining} avertissement(s) avant exclusion.`;
+        message = `${message} Il reste ${remaining} avertissement${remaining > 1 ? 's' : ''} avant exclusion.`;
     }
 
     return message;
