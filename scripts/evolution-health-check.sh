@@ -1,16 +1,14 @@
 #!/bin/bash
 # Health monitor for Evolution API container
-# Runs every 30s via cron. Restarts the container if unresponsive for 2 consecutive checks.
+# Runs via crontab. Restarts the container if unresponsive for 2 consecutive checks.
 # Designed for Dokploy-managed deployments — non-invasive, just pings + restart.
-
-set -e
 
 CONTAINER_NAME="kamtech-evolutionapi-d2tsfh-evolution-api-1"
 CHECK_URL="https://evolutionapi.kamtech.online/instance/connectionState/kamtech"
 FLAG_FILE="/tmp/evo-health-fail"
 
 # Read API key from the running container's environment
-API_KEY=$(sudo docker exec "$CONTAINER_NAME" sh -c 'echo $AUTHENTICATION_API_KEY' 2>/dev/null || echo "")
+API_KEY=$(sudo docker exec "$CONTAINER_NAME" sh -c 'echo $AUTHENTICATION_API_KEY' 2>/dev/null || true)
 if [ -z "$API_KEY" ]; then
   logger -t evo-health "Cannot read Evolution API key from container — container may be down"
   exit 0
