@@ -14,7 +14,7 @@ function getRisk(count) {
     return 'low';
 }
 
-function composeWarningMessage({ template, senderJid, currentCount, maxWarnings, reason }) {
+function composeWarningMessage({ template, senderJid, currentCount, maxWarnings, reason, autoKickEnabled = false }) {
     const phone = formatPhone(senderJid);
     const count = Number(currentCount) || 0;
     const max = Math.max(1, Number(maxWarnings) || 1);
@@ -28,11 +28,18 @@ function composeWarningMessage({ template, senderJid, currentCount, maxWarnings,
         .replace(/{{remaining}}/g, String(remaining))
         .replace(/{{reason}}/g, reason || 'Regle du groupe');
 
+    // Si l'exclusion auto est desactivee, retirer toute mention de "avant exclusion" du message
+    if (!autoKickEnabled) {
+        message = message.replace(/\.?\s*Il reste \d+ avertissement\(s\) avant exclusion\.?\s*/gi, '').trim();
+        // Nettoyer les doubles points/virgules
+        message = message.replace(/\.\./g, '.').replace(/\s*\.\s*$/, '.');
+    }
+
     if (!message.includes(`${count}/${max}`)) {
         message = `${message} Avertissement ${count}/${max}.`;
     }
 
-    if (!/avant exclusion/i.test(message)) {
+    if (autoKickEnabled && !/avant exclusion/i.test(message)) {
         message = `${message} Il reste ${remaining} avertissement(s) avant exclusion.`;
     }
 

@@ -598,7 +598,8 @@ async function handleIncomingMessage(sock, sessionId, msg) {
                         senderJid,
                         currentCount,
                         maxWarnings,
-                        reason: violation
+                        reason: violation,
+                        autoKickEnabled: !!settings.auto_kick_enabled
                     });
 
                     await enqueue(sessionId, sock, groupId, {
