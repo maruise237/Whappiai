@@ -6,6 +6,32 @@
 const WhatsAppProvider = require('./WhatsAppProvider');
 const { log } = require('../../utils/logger');
 
+/**
+ * TTL cache — stores last successful API response.
+ * Served when Evolution is temporarily unreachable (crash, restart, network glitch).
+ */
+class TtlCache {
+    constructor(ttlMs) {
+        this._store = new Map();
+        this._ttl = ttlMs;
+    }
+    get(key) {
+        const entry = this._store.get(key);
+        if (!entry) return null;
+        if (Date.now() - entry.ts > this._ttl) {
+            this._store.delete(key);
+            return null;
+        }
+        return entry.data;
+    }
+    set(key, data) {
+        this._store.set(key, { data, ts: Date.now() });
+    }
+    has(key) {
+        return this.get(key) !== null;
+    }
+}
+
 class EvolutionApiProvider extends WhatsAppProvider {
     /**
      * @param {Object} [config]
@@ -24,6 +50,9 @@ class EvolutionApiProvider extends WhatsAppProvider {
             // eslint-disable-next-line no-console
             console.warn('[evolution] EVOLUTION_API_URL is not set');
         }
+        // Resilience cache — TTL in ms (default 5 min). Set EVOLUTION_CACHE_TTL_MS to override.
+        const cacheTtl = parseInt(process.env.EVOLUTION_CACHE_TTL_MS, 10) || 300000;
+        this._cache = new TtlCache(cacheTtl);
     }
 
     /**
@@ -47,11 +76,20 @@ class EvolutionApiProvider extends WhatsAppProvider {
             'Content-Type': 'application/json',
             'apikey': apiKey
         };
-        const res = await fetch(url, {
-            method,
-            headers,
-            body: body ? JSON.stringify(body) : undefined
-        });
+        let res;
+        try {
+            res = await fetch(url, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : undefined,
+                signal: AbortSignal.timeout(15000) // 15s timeout
+            });
+        } catch (err) {
+            // Network error (connection refused, DNS fail, timeout, etc.)
+            const errorMsg = err.name === 'TimeoutError' ? 'Evolution API timeout' : `Evolution API unreachable: ${err.message}`;
+            log(`[evolution] ${method} ${path} failed — ${errorMsg}`, null, { url }, 'WARN');
+            return { ok: false, status: 0, error: errorMsg, networkError: true };
+        }
         const text = await res.text();
         let payload = null;
         if (text) {
@@ -67,9 +105,15 @@ class EvolutionApiProvider extends WhatsAppProvider {
 
     async _getInstanceToken(name) {
         if (this._instanceTokenCache[name]) return this._instanceTokenCache[name];
-        const res = await fetch(`${this.baseUrl}/instance/fetchInstances`, {
-            headers: { 'apikey': this.apiKey }
-        });
+        let res;
+        try {
+            res = await fetch(`${this.baseUrl}/instance/fetchInstances`, {
+                headers: { 'apikey': this.apiKey },
+                signal: AbortSignal.timeout(10000)
+            });
+        } catch {
+            return null; // network error — no fallback cached token needed
+        }
         if (!res.ok) return null;
         const text = await res.text();
         let instances;
@@ -130,7 +174,15 @@ class EvolutionApiProvider extends WhatsAppProvider {
     async getStatus(instanceId) {
         const name = this._instanceName(instanceId);
         const res = await this._request('GET', `/instance/connectionState/${name}`);
-        if (!res.ok) return res;
+        if (!res.ok) {
+            // Evolution down — serve cached status
+            const cached = this._cache.get(`status:${instanceId}`);
+            if (cached) {
+                log(`[evolution] getStatus fallback to cache for ${instanceId}`, instanceId, null, 'INFO');
+                return { ok: true, state: cached.state, phoneNumber: cached.phoneNumber, cached: true };
+            }
+            return res;
+        }
         const state = (res.payload && (res.payload.state || res.payload.instance && res.payload.instance.state)) || 'unknown';
         let phoneNumber = (res.payload && (res.payload.phoneNumber || res.payload.instance && res.payload.instance.ownerJid)) || null;
         // connectionState doesn't always return ownerJid; try fetchInstances as fallback
@@ -141,6 +193,8 @@ class EvolutionApiProvider extends WhatsAppProvider {
                 if (match && match.ownerJid) phoneNumber = match.ownerJid;
             }
         }
+        // Cache on success
+        this._cache.set(`status:${instanceId}`, { state, phoneNumber });
         return { ok: true, state, phoneNumber };
     }
 
@@ -277,8 +331,18 @@ class EvolutionApiProvider extends WhatsAppProvider {
     async fetchGroups(instanceId) {
         const name = this._instanceName(instanceId);
         const res = await this._request('GET', `/group/fetchAllGroups/${name}?getParticipants=true`);
-        if (!res.ok) return res;
+        if (!res.ok) {
+            // Evolution down — serve cached groups
+            const cached = this._cache.get(`groups:${instanceId}`);
+            if (cached) {
+                log(`[evolution] fetchGroups fallback to cache for ${instanceId}`, instanceId, null, 'INFO');
+                return { ok: true, groups: cached, cached: true };
+            }
+            return res;
+        }
         const groups = Array.isArray(res.payload) ? res.payload : [];
+        // Cache on success
+        this._cache.set(`groups:${instanceId}`, groups);
         return { ok: true, groups };
     }
 
