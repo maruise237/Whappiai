@@ -176,6 +176,9 @@ export default function ModerationPage() {
   const [presetByGroup, setPresetByGroup] = React.useState<Record<string, string>>({})
   const [activePlan, setActivePlan] = React.useState("trial")
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [savedGroupIds, setSavedGroupIds] = React.useState<Record<string, boolean>>({})
+  const groupDataRef = React.useRef<GroupItem[]>([])
+  const debounceTimers = React.useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   const connectedSessions = sessions.filter(session => session.isConnected || session.status === "CONNECTED")
 
@@ -291,6 +294,18 @@ export default function ModerationPage() {
     }
   }, [fetchSessions, lastMessage])
 
+  // Keep groupDataRef in sync for auto-save debounce
+  React.useEffect(() => {
+    groupDataRef.current = groups
+  }, [groups])
+
+  // Cleanup debounce timers on unmount
+  React.useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(clearTimeout)
+    }
+  }, [])
+
   const updateLocalGroup = (groupId: string, patch: Partial<GroupSettings>) => {
     setGroups(prev => prev.map(group => {
       const currentId = ensureString(group.id || group.jid)
@@ -303,6 +318,21 @@ export default function ModerationPage() {
         },
       }
     }))
+
+    // Debounced auto-save: reset timer on each change, save after 2s of inactivity
+    if (debounceTimers.current[groupId]) {
+      clearTimeout(debounceTimers.current[groupId])
+    }
+    debounceTimers.current[groupId] = setTimeout(() => {
+      const group = groupDataRef.current.find(g => ensureString(g.id || g.jid) === groupId)
+      if (group) {
+        saveGroup(group)
+        setSavedGroupIds(prev => ({ ...prev, [groupId]: true }))
+        setTimeout(() => {
+          setSavedGroupIds(prev => ({ ...prev, [groupId]: false }))
+        }, 2000)
+      }
+    }, 2000)
   }
 
   const applyPreset = (groupId: string, preset: { name: string; patch: Partial<GroupSettings> }) => {
@@ -609,15 +639,10 @@ export default function ModerationPage() {
                       <p className="truncate text-sm font-semibold">{groupName}</p>
                       <p className="text-xs text-muted-foreground">{t("preset_active")} : {activePreset || t("preset_none")}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      className="h-9 shrink-0"
-                      onClick={() => saveGroup(group)}
-                      disabled={savingGroupId === groupId}
-                    >
-                      {savingGroupId === groupId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {savingGroupId === groupId ? t("saving_button") : t("save_button")}
-                    </Button>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                      {activeRuleLabel(activeCount, t)}
+                    </div>
                   </div>
                   <div className="space-y-4 p-4 sm:p-5">
                   <div className="rounded-2xl border bg-background/60 p-4">
@@ -915,15 +940,12 @@ export default function ModerationPage() {
                       <CheckCircle2 className="h-4 w-4 text-primary" />
                       {activeRuleLabel(activeCount, t)}
                     </div>
-                    <Button
-                      size="sm"
-                      className="h-9"
-                      onClick={() => saveGroup(group)}
-                      disabled={savingGroupId === groupId}
-                    >
-                      {savingGroupId === groupId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {savingGroupId === groupId ? t("saving_button") : t("save_button")}
-                    </Button>
+                    {savedGroupIds[groupId] ? (
+                      <div className="flex items-center gap-1.5 text-xs text-green-600">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {t("saved_indicator")}
+                      </div>
+                    ) : null}
                   </div>
                   </div>
                 </AccordionContent>
