@@ -1199,7 +1199,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
 
             // If admin, show global summary, else show user-specific summary
             const userEmail = req.currentUser.role === 'admin' ? null : req.currentUser.email;
-            const summary = ActivityLog.getSummary(userEmail, days);
+            const summary = await ActivityLog.getSummary(userEmail, days);
 
             res.json({ status: 'success', data: summary });
         } catch (err) {

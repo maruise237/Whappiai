@@ -20,7 +20,7 @@ router.get('/stats', requireAdmin, asyncHandler(async (req, res) => {
     const days = parseInt(req.query.days) || 7;
 
     // 1. Global Activity Summary
-    const summary = ActivityLog.getSummary(null, days);
+    const summary = await ActivityLog.getSummary(null, days);
 
     // 2. User Statistics
     const totalUsers = (await db.get('SELECT COUNT(*) as count FROM users')).count;
