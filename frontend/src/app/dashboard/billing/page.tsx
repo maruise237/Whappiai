@@ -81,7 +81,7 @@ export default function BillingPage() {
   }, [getToken, refreshPlan])
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 pb-20">
+    <div className="mx-auto max-w-5xl space-y-6 pb-20">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight">
@@ -105,7 +105,7 @@ export default function BillingPage() {
           ? "border-destructive/25 bg-destructive/5"
           : "border-primary/25 bg-primary/5"
       )}>
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="flex gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Gift className="h-5 w-5" />
@@ -142,7 +142,7 @@ export default function BillingPage() {
       </Card>
 
       <div className="space-y-6">
-        <div className="mb-10 space-y-2 text-center">
+        <div className="mb-6 space-y-2 text-center md:mb-10">
           <h2 className="text-2xl font-bold tracking-tight">{t("plans_heading")}</h2>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">
             {t("plans_subtitle")}
@@ -152,8 +152,8 @@ export default function BillingPage() {
         <BillingPlans />
       </div>
 
-      <Card className="mt-12 border-2 border-dashed bg-transparent">
-        <CardContent className="flex flex-col items-center gap-6 p-6 md:flex-row">
+      <Card className="mt-8 border-2 border-dashed bg-transparent md:mt-12">
+        <CardContent className="flex flex-col items-center gap-4 p-5 md:flex-row md:gap-6 md:p-6">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
             <Info className="h-6 w-6 text-primary" />
           </div>

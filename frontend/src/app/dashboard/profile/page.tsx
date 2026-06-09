@@ -163,8 +163,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl pb-20">
-      <section className="relative overflow-hidden rounded-[28px] border border-primary/10 bg-[radial-gradient(circle_at_top,#dcfce7_0%,#f7fee7_32%,#ffffff_74%)] px-5 py-8 shadow-sm md:px-10 md:py-10 dark:bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18)_0%,rgba(20,83,45,0.12)_42%,rgba(15,23,42,0.4)_100%)]">
+    <div className="mx-auto max-w-5xl pb-16">
+      <section className="relative overflow-hidden rounded-[28px] border border-primary/10 bg-[radial-gradient(circle_at_top,#dcfce7_0%,#f7fee7_32%,#ffffff_74%)] px-4 py-6 shadow-sm md:px-10 md:py-10 dark:bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18)_0%,rgba(20,83,45,0.12)_42%,rgba(15,23,42,0.4)_100%)]">
         <div className="absolute right-8 top-8 hidden rounded-full border border-primary/15 bg-white/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary shadow-sm backdrop-blur md:inline-flex">
           {t('page_title')}
         </div>
@@ -204,13 +204,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="mt-7 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
             <ProfilePill icon={<CreditCard className="h-4 w-4" />} label={t('plan_label')} value={getPlanLabel(planCode)} />
             <ProfilePill icon={<CalendarClock className="h-4 w-4" />} label={t('expiry_label')} value={expiry ? safeDate(expiry, { day: "2-digit", month: "short" }) : t('expiry_trial')} />
             <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label={t('actions_label')} value={messageLimit ? `${messageUsed}/${messageLimit}` : t('actions_unlimited')} />
           </div>
 
-          <div className="mt-6 flex w-full max-w-xl flex-col gap-3 sm:flex-row">
+          <div className="mt-4 flex w-full max-w-xl flex-col gap-3 sm:flex-row">
             <Button asChild className="h-11 flex-1 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90">
               <Link href="/dashboard/billing">
                 <CreditCard className="mr-2 h-4 w-4" /> {t('manage_plan')}
@@ -225,8 +225,8 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
+      <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_360px] lg:gap-6">
+        <div className="space-y-5 md:space-y-6">
           <SettingsBlock title={t('identity_title')} description={t('identity_desc')}>
             <ReadOnlyRow
               icon={<UserRound className="h-4 w-4" />}
@@ -297,7 +297,7 @@ export default function ProfilePage() {
           </SettingsBlock>
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-5 md:space-y-6">
           <SettingsBlock title={t('security_title')} description={t('security_desc')}>
             <ActionRow
               icon={<LockKeyhole className="h-4 w-4" />}
@@ -319,7 +319,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => signOut({ redirectUrl: "/login" })}
-                className="flex w-full items-center gap-3 border-b border-destructive/10 px-5 py-4 text-left text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                className="flex w-full items-center gap-3 border-b border-destructive/10 px-4 py-3.5 text-left text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5 md:px-5 md:py-4"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
                   <LogOut className="h-4 w-4" />
@@ -330,7 +330,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setDeleteDialogOpen(true)}
-                className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5"
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5 md:px-5 md:py-4"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
                   <Trash2 className="h-4 w-4" />
@@ -381,7 +381,7 @@ function SettingsBlock({ title, description, children }: { title: string; descri
   return (
     <Card className="overflow-hidden rounded-3xl border-border/70 bg-card shadow-sm shadow-primary/5">
       <CardContent className="p-0">
-        <div className="border-b bg-muted/20 px-5 py-4">
+        <div className="border-b bg-muted/20 px-4 py-3.5 md:px-5 md:py-4">
           <h2 className="text-sm font-bold tracking-tight">{title}</h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
         </div>
@@ -407,7 +407,7 @@ function ProfilePill({ icon, label, value }: { icon: React.ReactNode; label: str
 
 function ReadOnlyRow({ icon, label, value, meta }: { icon: React.ReactNode; label: string; value: string; meta: string }) {
   return (
-    <div className="flex items-center gap-3 px-5 py-4">
+    <div className="flex items-center gap-3 px-4 py-3.5 md:px-5 md:py-4">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">{label}</p>
@@ -446,14 +446,14 @@ function ActionRow({
 
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-primary/5">
+      <a href={href} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary/5 md:px-5 md:py-4">
         {content}
       </a>
     )
   }
 
   return (
-    <Link href={href} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-primary/5">
+    <Link href={href} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary/5 md:px-5 md:py-4">
       {content}
     </Link>
   )
@@ -473,7 +473,7 @@ function ToggleRow({
   onCheckedChange: (checked: boolean) => void
 }) {
   return (
-    <div className="flex items-center gap-3 px-5 py-4">
+    <div className="flex items-center gap-3 px-4 py-3.5 md:px-5 md:py-4">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">{label}</p>

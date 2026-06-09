@@ -151,7 +151,7 @@ export function BillingPlans() {
             </Badge>
           )}
 
-          <CardHeader className="p-5 pb-2">
+          <CardHeader className="p-4 pb-2 md:p-5 md:pb-2">
             <div className="flex items-center justify-between gap-3">
               <CardTitle className="text-base font-semibold tracking-tight">{plan.name}</CardTitle>
               {getPlanCode(plan.id) === activePlan && <PlanBadge plan={activePlan} active />}
@@ -162,7 +162,7 @@ export function BillingPlans() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("per_month")}</span>
             </div>
           </CardHeader>
-          <CardContent className="flex-1 p-5">
+          <CardContent className="flex-1 p-4 md:p-5">
             <ul className="space-y-3">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-3">
@@ -174,7 +174,7 @@ export function BillingPlans() {
               ))}
             </ul>
           </CardContent>
-          <CardFooter className="p-5 pt-0">
+          <CardFooter className="p-4 pt-0 md:p-5 md:pt-0">
             <Button
               className="h-10 w-full"
               variant={plan.highlighted ? "default" : "outline"}
