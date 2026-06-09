@@ -351,7 +351,8 @@ export default function ModerationPage() {
       toast.success(`${ensureString(group.subject || group.name, "Groupe")} mis a jour`)
     } catch (error) {
       console.error(error)
-      toast.error("Impossible d'enregistrer cette configuration")
+      const msg = error instanceof Error ? error.message : "Erreur inconnue"
+      toast.error(msg)
     } finally {
       setSavingGroupId(null)
     }
