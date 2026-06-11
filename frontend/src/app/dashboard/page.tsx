@@ -835,14 +835,7 @@ function ActivityTable({ recentActivities, emptyText }: { recentActivities: Acti
   )
 }
 
-function useOnboarding(
-  sessionCount,
-  activeSessions,
-  hasGroup,
-  hasActiveRule,
-  activityCount,
-  t,
-}: {
+function onboardingSteps(opts: {
   sessionCount: number
   activeSessions: number
   hasGroup: boolean
@@ -850,6 +843,7 @@ function useOnboarding(
   activityCount: number
   t: (key: string) => string
 }) {
+  const { sessionCount, activeSessions, hasGroup, hasActiveRule, activityCount, t } = opts
   const base = [
     { title: t("onb_step1_title"), text: t("onb_step1_text"), done: sessionCount > 0 },
     { title: t("onb_step2_title"), text: t("onb_step2_text"), done: activeSessions > 0 && hasGroup },
