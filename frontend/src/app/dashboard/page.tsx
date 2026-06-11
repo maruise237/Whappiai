@@ -422,14 +422,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid gap-px bg-border md:grid-cols-4">
+          <div className="grid gap-px bg-border md:grid-cols-3">
             <MetricTile label={t("stat_sessions")} value={sessions.length} sub={`${summary.activeSessions} ${t("stat_connected")}`} />
             <MetricTile label={t("stat_messages")} value={summary.messagesSent} sub={t("stat_volume")} />
-            <MetricTile
-              label={t("stat_success")}
-              value={successMetricValue(summary.messagesSent, summary.successRate, t)}
-              sub={successMetricSub(summary.messagesSent, summary.successRate, t)}
-            />
             <MetricTile label={t("stat_actions")} value={summary.totalActivities} sub={t("stat_recent")} />
           </div>
         </div>
@@ -840,18 +835,6 @@ function ActivityTable({ recentActivities, emptyText }: { recentActivities: Acti
   )
 }
 
-function successMetricValue(totalMessages: number, successRate: number, t: (key: string) => string) {
-  if (totalMessages < 5) return `${totalMessages} ${totalMessages > 1 ? t("metric_sent_plural") : t("metric_sent_singular")}`
-  return `${Math.round(successRate)}%`
-}
-
-function successMetricSub(totalMessages: number, successRate: number, t: (key: string) => string) {
-  if (totalMessages < 5) return `${totalMessages} / ${totalMessages} message${totalMessages > 1 ? "s" : ""} (${t("metric_7d")})`
-  const successCount = Math.round((totalMessages * successRate) / 100)
-  return `${successCount} / ${totalMessages} ${t("metric_ok_7d")}`
-}
-
-function onboardingSteps({
   sessionCount,
   activeSessions,
   hasGroup,
