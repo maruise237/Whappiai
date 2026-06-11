@@ -188,14 +188,6 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               <p className="text-sm font-medium">{safeRender(session.sessionId)}</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs text-muted-foreground">{t("session_whatsapp")}</p>
-                <button
-                  onClick={() => copyToClipboard(session.sessionId, "ID")}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={t("session_copy_id")}
-                  title={t("session_copy_id")}
-                >
-                  <Copy className="h-3 w-3" />
-                </button>
               </div>
             </div>
           </div>
@@ -213,17 +205,26 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                  </span>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive"
-              onClick={handleDelete}
-              aria-label={t("session_options")}
-              title={t("session_options")}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[160px]">
+                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDelete}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t("session_delete")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t("session_options")}
+              </TooltipContent>
+            </Tooltip>
         </div>
       </CardHeader>
 
