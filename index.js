@@ -269,7 +269,7 @@ async function initRateLimitStores() {
 // General limiter (all routes) — 60 req/min
 const generalLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 60,
+    max: 300,
     message: { status: 'error', message: 'Too many requests' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -303,7 +303,7 @@ const evolutionWebhookLimiter = rateLimit({
 // API limiter (per user) — 200 req/min per user
 const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 200,
+    max: 300,
     message: { status: 'error', message: 'API rate limit exceeded' },
     standardHeaders: true,
     legacyHeaders: false,
