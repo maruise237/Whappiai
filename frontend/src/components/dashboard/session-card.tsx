@@ -218,6 +218,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
         </CardHeader>
 
       <CardContent id="connection-area" className="p-4">
