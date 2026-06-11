@@ -835,6 +835,7 @@ function ActivityTable({ recentActivities, emptyText }: { recentActivities: Acti
   )
 }
 
+function useOnboarding(
   sessionCount,
   activeSessions,
   hasGroup,
