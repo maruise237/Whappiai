@@ -4,7 +4,7 @@
  *
  * - CONNECTION_UPDATE / QRCODE_UPDATED → update local session status
  * - MESSAGES_UPSERT                    → log + future dispatch
- * - SEND_MESSAGE                        → log + future dispatch
+ * - SEND_MESSAGE                        → log + credit deduction
  *
  * The route is mounted by the API index. It must NOT require auth (Evolution
  * does not have a Whappi token) but it must validate a shared secret via header
@@ -13,6 +13,9 @@
 
 const express = require('express');
 const Session = require('../models/Session');
+const User = require('../models/User');
+const CreditService = require('./CreditService');
+const ActivityLog = require('../models/ActivityLog');
 const SessionService = require('./SessionService');
 const wappy = require('./WappyEventBroadcaster');
 const { log } = require('../utils/logger');
@@ -40,9 +43,44 @@ function mapState(state) {
     return state.toUpperCase();
 }
 
+/**
+ * Process SEND_MESSAGE webhook: log activity + deduct credits for the session owner.
+ */
+async function handleSendMessage(instanceName, data) {
+    if (!instanceName) return;
+
+    const sessionId = stripPrefix(instanceName, process.env.EVOLUTION_INSTANCE_PREFIX || '');
+    const session = await Session.findById(sessionId);
+    if (!session || !session.owner_email) {
+        log('SEND_MESSAGE: no session owner found for ' + instanceName, 'WEBHOOK', { instanceName }, 'WARN');
+        return;
+    }
+
+    // Log activity
+    const jid = (data && data.key && data.key.remoteJid) || (data && data.to) || 'unknown';
+    if (ActivityLog) {
+        await ActivityLog.logMessageSend(
+            session.owner_email,
+            sessionId,
+            jid,
+            'text',
+            null,
+            'evolution-webhook'
+        ).catch(() => {});
+    }
+
+    // Deduct credits
+    try {
+        const user = await User.findByEmail(session.owner_email);
+        if (user && user.role !== 'admin') {
+            await CreditService.deduct(user.id, 1, 'Envoi via Evolution API vers ' + jid);
+        }
+    } catch (err) {
+        log('SEND_MESSAGE: credit deduction failed: ' + err.message, 'WEBHOOK', { instanceName, error: err.message }, 'ERROR');
+    }
+}
+
 router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, res) => {
-    // Evolution API doesn't reliably send custom headers.
-    // The endpoint is internal (Traefik-protected), so secret check is disabled.
     log('Evolution webhook received', 'WEBHOOK', null, 'DEBUG');
 
     const event = req.body || {};
@@ -51,7 +89,7 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
     const instanceName = instance && instance.instanceName ? instance.instanceName : (typeof instance === 'string' ? instance : null);
     const data = event.data || {};
 
-    log(`Evolution webhook: ${eventType} (${instanceName || 'n/a'})`, 'WEBHOOK', { event: eventType, instanceName }, 'DEBUG');
+    log('Evolution webhook: ' + eventType + ' (' + (instanceName || 'n/a') + ')', 'WEBHOOK', { event: eventType, instanceName }, 'DEBUG');
 
     try {
         switch (eventType) {
@@ -66,11 +104,9 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                 const detail = data.statusReason || null;
                 const qrOrCode = data.base64 || data.code || null;
                 Session.updateStatus(localId, mapped, detail, null, qrOrCode);
-                // Broadcast to frontend WebSocket clients
                 if (global._broadcastSessionUpdate) {
                     global._broadcastSessionUpdate(localId, mapped, detail, qrOrCode);
                 }
-                // Wappy event
                 if (mapped === 'CONNECTED') {
                     wappy.sessionConnected(localId);
                 } else if (mapped === 'DISCONNECTED') {
@@ -84,7 +120,6 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                 const localId = stripPrefix(instanceName, process.env.EVOLUTION_INSTANCE_PREFIX || '');
                 const qrOrCode = data.base64 || data.code || null;
                 Session.updateStatus(localId, 'CONNECTING', 'QR updated', null, qrOrCode);
-                // Broadcast to frontend WebSocket clients
                 if (global._broadcastSessionUpdate) {
                     global._broadcastSessionUpdate(localId, 'CONNECTING', 'QR updated', qrOrCode);
                 }
@@ -92,7 +127,6 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
             }
             case 'MESSAGES_UPSERT':
             case 'messages.upsert': {
-                // Evolution v2 sends individual messages; v1 sends data.messages array
                 const messages = Array.isArray(data.messages) ? data.messages : (data.key ? [data] : []);
                 for (const msg of messages) {
                     if (!msg.key || msg.key.fromMe || !instanceName) continue;
@@ -101,14 +135,15 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                     const localId = stripPrefix(instanceName, process.env.EVOLUTION_INSTANCE_PREFIX || '');
                     const moderation = require('./moderation');
                     moderation.handleIncomingMessageProvider(localId, msg).catch(err => {
-                        log(`Moderation error for ${localId}/${groupJid}: ${err.message}`, 'WEBHOOK', null, 'ERROR');
+                        log('Moderation error for ' + localId + '/' + groupJid + ': ' + err.message, 'WEBHOOK', null, 'ERROR');
                     });
                 }
                 break;
             }
             case 'SEND_MESSAGE':
             case 'send.message': {
-                log(`Evolution send_message ack`, 'WEBHOOK');
+                log('Evolution send_message ack', 'WEBHOOK');
+                await handleSendMessage(instanceName, data);
                 break;
             }
             case 'GROUPS_UPSERT':
@@ -126,16 +161,15 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                     participants,
                     action
                 }).catch(err => {
-                    log(`Welcome error for ${localId}/${groupJid}: ${err.message}`, 'WEBHOOK', null, 'ERROR');
+                    log('Welcome error for ' + localId + '/' + groupJid + ': ' + err.message, 'WEBHOOK', null, 'ERROR');
                 });
                 break;
             }
             default:
-                // Ignore unknown events but acknowledge them.
                 break;
         }
     } catch (e) {
-        log(`Evolution webhook handler error: ${e.message}`, 'WEBHOOK', null, 'ERROR');
+        log('Evolution webhook handler error: ' + e.message, 'WEBHOOK', null, 'ERROR');
         return res.status(500).json({ status: 'error', message: e.message });
     }
 
