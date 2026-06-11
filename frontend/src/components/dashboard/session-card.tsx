@@ -1,12 +1,19 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, Smartphone, MoreHorizontal, Copy, Check } from "lucide-react"
+import { RefreshCw, Smartphone, MoreHorizontal, Copy, Check, Trash2 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 import { api } from "@/lib/api"
 import { showConfirm } from "@/lib/swal"
