@@ -165,11 +165,11 @@ export default function ActivitiesPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent border-muted/30">
-                <TableHead className="text-[10px] font-semibold text-muted-foreground w-[160px]">Date & Heure</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground w-[100px] sm:w-[160px]">Date & Heure</TableHead>
                 {isAdmin && <TableHead className="text-[10px] font-semibold text-muted-foreground hidden sm:table-cell">Utilisateur</TableHead>}
                 <TableHead className="text-[10px] font-semibold text-muted-foreground">Action</TableHead>
                 <TableHead className="text-[10px] font-semibold text-muted-foreground hidden lg:table-cell">Ressource</TableHead>
-                <TableHead className="text-[10px] font-semibold text-muted-foreground hidden md:table-cell">Détails</TableHead>
+                <TableHead className="text-[10px] font-semibold text-muted-foreground hidden lg:table-cell">Détails</TableHead>
                 <TableHead className="text-[10px] font-semibold text-muted-foreground text-right">Statut</TableHead>
               </TableRow>
             </TableHeader>
@@ -223,7 +223,7 @@ export default function ActivitiesPage() {
                     </Badge>
                   </TableCell>
 
-                  <TableCell className="max-w-[300px] hidden md:table-cell">
+                  <TableCell className="max-w-[200px] hidden lg:table-cell">
 
                     <p className="text-[11px] text-muted-foreground truncate">
                         {safeRender(activity.details)}

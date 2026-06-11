@@ -360,7 +360,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
             </header>
 
-            <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_32%),hsl(var(--background))]">
+            <main className="min-h-0 flex-1 overflow-y-auto overflow-x-auto bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_32%),hsl(var(--background))]">
               <div className="mx-auto max-w-[1480px] p-4 sm:p-6 lg:p-8">
                 <ErrorBoundary><MaintenanceProvider>{children}</MaintenanceProvider></ErrorBoundary>
               </div>
@@ -420,7 +420,7 @@ function WappyMascotWrapper() {
   if (!mounted) return null
 
   // Taille responsive optimisée SaaS (recherche web juin 2026)
-  const baseSize = isMobile ? 80 : 150
+  const baseSize = isMobile ? 60 : 150
   const scrollOpacity = Math.max(0.3, 1 - scrollY / 600)
 
   return (

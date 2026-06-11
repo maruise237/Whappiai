@@ -21,6 +21,7 @@ let isShuttingDown = false;
 
 /**
  * Flush buffered entries to Postgres in a single transaction
+ * Optimized to use a single multi-row INSERT statement.
  */
 async function flush() {
   if (buffer.length === 0) return;
@@ -28,24 +29,31 @@ async function flush() {
   const batch = buffer.splice(0, BATCH_MAX_SIZE);
 
   try {
-    await db.transaction(async (tDb) => {
-      for (const entry of batch) {
-        await tDb.run(`
-          INSERT INTO activity_logs (
-            user_email, action, resource, resource_id, details, ip, user_agent, success, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-        `, [
-          entry.userEmail || null,
-          entry.action,
-          entry.resource || null,
-          entry.resourceId || null,
-          entry.details ? JSON.stringify(entry.details) : null,
-          entry.ip || null,
-          entry.userAgent || null,
-          entry.success !== false ? 1 : 0
-        ]);
-      }
-    });
+    const placeholders = [];
+    const values = [];
+    let idx = 1;
+
+    for (const entry of batch) {
+      placeholders.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, NOW())`);
+      values.push(
+        entry.userEmail || null,
+        entry.action,
+        entry.resource || null,
+        entry.resourceId || null,
+        entry.details ? JSON.stringify(entry.details) : null,
+        entry.ip || null,
+        entry.userAgent || null,
+        entry.success !== false ? 1 : 0
+      );
+    }
+
+    const sql = `
+      INSERT INTO activity_logs (
+        user_email, action, resource, resource_id, details, ip, user_agent, success, created_at
+      ) VALUES ${placeholders.join(', ')}
+    `;
+
+    await db.run(sql, values);
 
     if (batch.length > 1) {
       log(`[ActivityLog] Flushed ${batch.length} entries`, 'SYSTEM', { count: batch.length }, 'DEBUG');
@@ -214,6 +222,7 @@ class ActivityLog {
       ]);
 
       const byAction = actionRows.reduce((acc, row) => {
+        if (!row.action) return acc;
         let key = row.action.toLowerCase();
         if (key.includes('message_send') || key.includes('campaign_message')) {
           acc['send_message'] = (acc['send_message'] || 0) + Number(row.count);
@@ -258,9 +267,9 @@ class ActivityLog {
     date.setDate(date.getDate() - (parseInt(days) || 7));
     const dateLimit = date.toISOString().replace('T', ' ').split('.')[0];
 
-    // date(created_at) works in both SQLite and Postgres
+    // TO_CHAR(created_at, 'YYYY-MM-DD') works in both SQLite and Postgres
     let sql = `
-      SELECT date(created_at) as date, COUNT(*) as count
+      SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as count
       FROM activity_logs
       WHERE created_at >= $1
       AND (action = 'MESSAGE_SEND' OR action LIKE 'AI_%' OR action = 'CAMPAIGN_MESSAGE_SENT')
@@ -272,7 +281,7 @@ class ActivityLog {
       params.push(userEmail);
     }
 
-    sql += ' GROUP BY date(created_at) ORDER BY date ASC';
+    sql += " GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD') ORDER BY date ASC";
 
     try {
       const rows = await db.all(sql, params);
