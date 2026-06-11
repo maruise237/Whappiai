@@ -438,7 +438,7 @@ export default function DashboardPage() {
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold"><p className="text-sm font-semibold truncate">{t("onboarding_title")}</p>
+                <p className="text-sm font-semibold truncate">{t("onboarding_title")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{t("onboarding_desc")}</p>
               </div>
               <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{onboardingDone}/4 {t("onboarding_steps")}</Badge>
@@ -485,7 +485,7 @@ export default function DashboardPage() {
           <CardContent className="p-5 sm:p-6">
             <div className="flex flex-col gap-3 border-b pb-5 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm font-semibold"><p className="text-sm font-semibold truncate">{t("session_work_title")}</p>
+                <p className="text-sm font-semibold truncate">{t("session_work_title")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{t("session_work_desc")}</p>
               </div>
               <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
@@ -512,7 +512,7 @@ export default function DashboardPage() {
           <CardContent className="p-5 sm:p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold"><p className="text-sm font-semibold truncate">{t("rules_title")}</p>
+                <p className="text-sm font-semibold truncate">{t("rules_title")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{t("rules_desc")}</p>
               </div>
               <Button asChild variant="outline" className="h-9 text-xs">
@@ -629,7 +629,7 @@ function RuleRow({ icon, title, text }: { icon: React.ReactNode; title: string; 
         {icon}
       </div>
       <div>
-        <p className="text-sm font-semibold"><p className="text-sm font-semibold truncate">{title}</p>
+        <p className="text-sm font-semibold truncate">{title}</p>
         <p className="text-xs text-muted-foreground">{text}</p>
       </div>
     </div>
@@ -664,7 +664,7 @@ function UserActivityPanel({ recentActivities }: { recentActivities: ActivityIte
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold"><p className="text-sm font-semibold truncate">{t("last_actions")}</p>
+            <p className="text-sm font-semibold truncate">{t("last_actions")}</p>
             <p className="mt-1 text-xs text-muted-foreground">{t("activity_limit")}</p>
           </div>
           <History className="h-4 w-4 text-muted-foreground" />
@@ -690,7 +690,7 @@ function AdminPanel({
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold"><p className="text-sm font-semibold truncate">{t("admin_title")}</p>
+            <p className="text-sm font-semibold truncate">{t("admin_title")}</p>
             <p className="mt-1 text-xs text-muted-foreground">{t("admin_desc")}</p>
           </div>
           <Button asChild variant="outline" className="h-9 text-xs">
@@ -755,7 +755,7 @@ function NextBestActionPanel({
     <Card className="bg-card shadow-none">
       <CardContent className="p-5 sm:p-6">
         <div className="mb-5">
-          <p className="text-sm font-semibold"><p className="text-sm font-semibold truncate">{t("next_action_title")}</p>
+          <p className="text-sm font-semibold truncate">{t("next_action_title")}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t("next_action_desc")}</p>
         </div>
         <div className="space-y-3">
