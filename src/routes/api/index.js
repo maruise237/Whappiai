@@ -298,7 +298,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     // Rate limiting
     const apiLimiter = rateLimit({
         windowMs: 60 * 1000,
-        max: 100,
+        max: 300,
         message: { status: 'error', message: 'Too many requests, please try again later.' }
     });
     router.use(apiLimiter);

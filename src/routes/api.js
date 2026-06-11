@@ -273,8 +273,8 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     };
 
     const apiLimiter = rateLimit({
-        windowMs: 1 * 60 * 1000,
-        max: 100,
+        windowMs: 60 * 1000,
+        max: 300,
         message: { status: 'error', message: 'Too many requests, please try again later.' },
         trustProxy: true,
         standardHeaders: true,
