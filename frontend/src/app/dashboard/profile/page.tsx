@@ -207,7 +207,7 @@ export default function ProfilePage() {
           <div className="mt-5 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
             <ProfilePill icon={<CreditCard className="h-4 w-4" />} label={t('plan_label')} value={getPlanLabel(planCode)} />
             <ProfilePill icon={<CalendarClock className="h-4 w-4" />} label={t('expiry_label')} value={expiry ? safeDate(expiry, { day: "2-digit", month: "short" }) : t('expiry_trial')} />
-            <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label={t('actions_label')} value={messageLimit ? `${messageUsed}/${messageLimit}` : t('actions_unlimited')} />
+            <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label={t('actions_label')} value={messageLimit > 0 ? `${messageUsed}/${messageLimit}` : t('actions_unlimited')} />
           </div>
 
           <div className="mt-4 flex w-full max-w-xl flex-col gap-3 sm:flex-row">

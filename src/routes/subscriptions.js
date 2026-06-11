@@ -26,7 +26,7 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
 
         const email = req.auth.sessionClaims?.email || req.auth.sessionClaims?.primary_email_address;
         const user = await User.findById(userId) || await User.findByEmail(email);
-        const subscription = SubscriptionService.getCurrentSubscription(user?.id || userId);
+        const subscription = await SubscriptionService.getCurrentSubscription(user?.id || userId);
         const access = await AccountAccessService.getStatus(user);
 
         res.json({
