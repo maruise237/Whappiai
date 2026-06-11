@@ -122,6 +122,16 @@ services:
       - traefik.http.services.whappi-whappi-sypalq-7-websecure.loadbalancer.server.port=3000
       - traefik.http.routers.whappi-whappi-sypalq-7-websecure.service=whappi-whappi-sypalq-7-websecure
       - traefik.http.routers.whappi-whappi-sypalq-7-websecure.tls.certresolver=letsencrypt
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.rule=Host(`whappi.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.entrypoints=web
+      - traefik.http.services.whappi-whappi-sypalq-7-web.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.service=whappi-whappi-sypalq-7-web
+      - traefik.http.routers.whappi-whappi-sypalq-7-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.rule=Host(`whappi.kamtech.online`)
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.entrypoints=websecure
+      - traefik.http.services.whappi-whappi-sypalq-7-websecure.loadbalancer.server.port=3000
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.service=whappi-whappi-sypalq-7-websecure
+      - traefik.http.routers.whappi-whappi-sypalq-7-websecure.tls.certresolver=letsencrypt
       - traefik.docker.network=dokploy-network
       - traefik.http.routers.whappi-whappi-sypalq-7-web.rule=Host(`whappi.kamtech.online`)
       - traefik.http.routers.whappi-whappi-sypalq-7-web.entrypoints=web
