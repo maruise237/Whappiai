@@ -574,7 +574,7 @@ export default function DashboardPage() {
                     <FormItem>
                       <FormLabel>{t("create_dialog_id_label")}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t("create_dialog_id_placeholder")} {...field} />
+                        <Input autoFocus placeholder={t("create_dialog_id_placeholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -587,7 +587,7 @@ export default function DashboardPage() {
                     <FormItem>
                       <FormLabel>{t("create_dialog_phone_label")}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t("create_dialog_phone_placeholder")} {...field} />
+                        <Input type="tel" inputMode="numeric" autoComplete="tel" placeholder={t("create_dialog_phone_placeholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
