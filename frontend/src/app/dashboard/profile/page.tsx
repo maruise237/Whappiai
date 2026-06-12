@@ -178,15 +178,15 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl pb-16">
-      <section className="relative overflow-hidden rounded-[28px] border border-primary/10 bg-[radial-gradient(circle_at_top,#dcfce7_0%,#f7fee7_32%,#ffffff_74%)] px-4 py-6 shadow-sm md:px-10 md:py-10 dark:bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18)_0%,rgba(20,83,45,0.12)_42%,rgba(15,23,42,0.4)_100%)]">
-        <div className="absolute right-8 top-8 hidden rounded-full border border-primary/15 bg-white/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary shadow-sm backdrop-blur md:inline-flex">
+    <div className="mx-auto max-w-5xl pb-12 sm:pb-16">
+      <section className="relative overflow-hidden rounded-[28px] border border-primary/10 bg-[radial-gradient(circle_at_top,#dcfce7_0%,#f7fee7_32%,#ffffff_74%)] px-4 py-5 shadow-sm sm:px-6 md:px-10 md:py-10 dark:bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18)_0%,rgba(20,83,45,0.12)_42%,rgba(15,23,42,0.4)_100%)]">
+        <div className="mb-4 inline-flex rounded-full border border-primary/15 bg-white/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary shadow-sm backdrop-blur md:absolute md:right-8 md:top-8 md:mb-0">
           {t('page_title')}
         </div>
 
         <div className="flex flex-col items-center text-center">
           <div className="relative">
-            <Avatar className="size-24 rounded-full border-4 border-white bg-primary/10 shadow-lg shadow-primary/10 after:rounded-full" size="lg">
+            <Avatar className="size-20 rounded-full border-4 border-white bg-primary/10 shadow-lg shadow-primary/10 after:rounded-full sm:size-24" size="lg">
               {user?.imageUrl ? (
                 <AvatarImage src={user.imageUrl} alt={displayName} className="rounded-full" />
               ) : (
@@ -201,8 +201,8 @@ export default function ProfilePage() {
           </div>
 
           <div className="mt-5 space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">{displayName}</h1>
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{displayName}</h1>
+            <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
               <Mail className="h-4 w-4" />
               <span className="break-all">{userEmail}</span>
             </div>
@@ -233,7 +233,7 @@ export default function ProfilePage() {
                   {getPlanUsageMessage(planCode, managedGroupsUsed)}
                 </p>
               </div>
-              <div className="rounded-xl border border-primary/10 bg-card px-3 py-2 text-center shadow-sm">
+              <div className="self-start rounded-xl border border-primary/10 bg-card px-3 py-2 text-center shadow-sm sm:self-auto">
                 <p className="text-lg font-bold text-primary">{managedGroupsUsed}/{getPlanGroupLimit(planCode)}</p>
                 <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">quota utilise</p>
               </div>
@@ -241,12 +241,12 @@ export default function ProfilePage() {
           </div>
 
           <div className="mt-4 flex w-full max-w-xl flex-col gap-3 sm:flex-row">
-            <Button asChild className="h-11 flex-1 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90">
+            <Button asChild className="h-11 w-full flex-1 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90">
               <Link href="/dashboard/billing">
                 <CreditCard className="mr-2 h-4 w-4" /> {t('manage_plan')}
               </Link>
             </Button>
-            <Button asChild variant="outline" className="h-11 flex-1 rounded-full border-primary/30 text-primary hover:bg-primary/5">
+            <Button asChild variant="outline" className="h-11 w-full flex-1 rounded-full border-primary/30 text-primary hover:bg-primary/5">
               <Link href="/dashboard/moderation">
                 <ShieldCheck className="mr-2 h-4 w-4" /> {t('my_groups')}
               </Link>
@@ -377,13 +377,13 @@ function ProfilePill({ icon, label, value }: { icon: React.ReactNode; label: str
 
 function ReadOnlyRow({ icon, label, value, meta }: { icon: React.ReactNode; label: string; value: string; meta: string }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 md:px-5 md:py-4">
+    <div className="flex flex-col items-start gap-3 px-4 py-3.5 sm:flex-row sm:items-center md:px-5 md:py-4">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">{label}</p>
         <p className="truncate text-xs text-muted-foreground">{value || "-"}</p>
       </div>
-      <span className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
+      <span className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-[10px] font-semibold text-muted-foreground sm:self-auto">
         <ShieldCheck className="h-3 w-3" /> {meta}
       </span>
     </div>
@@ -404,13 +404,13 @@ function ToggleRow({
   onCheckedChange: (checked: boolean) => void
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 md:px-5 md:py-4">
+    <div className="flex flex-col items-start gap-3 px-4 py-3.5 sm:flex-row sm:items-center md:px-5 md:py-4">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">{label}</p>
         <p className="truncate text-xs text-muted-foreground">{text}</p>
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+      <Switch checked={checked} onCheckedChange={onCheckedChange} className="sm:self-auto" />
     </div>
   )
 }

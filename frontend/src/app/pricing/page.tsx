@@ -92,16 +92,16 @@ export default function PricingPage() {
             )}
           >
             {plan.highlight && (
-              <div className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+              <div className="absolute -top-3 left-4 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground sm:left-6">
                 Recommande
               </div>
             )}
-            <CardContent className="flex h-full flex-col p-6">
+            <CardContent className="flex h-full flex-col p-5 sm:p-6">
               <div>
                 <h2 className="text-xl font-semibold">{plan.name}</h2>
                 <p className="mt-2 min-h-12 text-sm text-muted-foreground">{plan.description}</p>
                 <p className="mt-6">
-                  <span className="text-4xl font-semibold tracking-tight">{plan.price}</span>
+                  <span className="text-3xl font-semibold tracking-tight sm:text-4xl">{plan.price}</span>
                   <span className="text-sm text-muted-foreground"> {plan.cadence}</span>
                 </p>
               </div>

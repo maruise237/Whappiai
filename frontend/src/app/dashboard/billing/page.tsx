@@ -191,7 +191,7 @@ export default function BillingPage() {
               {t("custom_text")}
             </p>
           </div>
-          <Button variant="outline" size="sm" className="rounded-full">{t("custom_cta")}</Button>
+          <Button variant="outline" size="sm" className="w-full rounded-full md:w-auto">{t("custom_cta")}</Button>
         </CardContent>
       </Card>
     </div>

@@ -95,10 +95,10 @@ export function Pricing() {
           transition={{ duration: 0.6 }}
           className="mb-16 text-center"
         >
-          <h2 className="mb-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <h2 className="mb-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl xl:text-5xl">
             Des forfaits simples pour proteger vos groupes WhatsApp
           </h2>
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto mb-8 max-w-2xl text-base text-muted-foreground sm:mb-10 sm:text-lg">
             Commencez avec un essai concret, passez a une moderation simple, puis ajoutez l&apos;IA et la puissance quand vos groupes grossissent.
           </p>
           <p className="text-sm font-medium text-primary">7 jours d&apos;essai gratuit avec 1 groupe pour voir Whappi moderer avant de payer.</p>
@@ -113,7 +113,7 @@ export function Pricing() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
               className={cn(
-                "relative rounded-2xl p-8 transition-all duration-300",
+                "relative rounded-2xl p-6 transition-all duration-300 sm:p-8",
                 plan.highlighted
                   ? "z-10 scale-[1.02] border-2 border-primary bg-card shadow-lg"
                   : "z-0 border border-border/70 bg-card/70 hover:border-primary/50 hover:bg-card",
@@ -121,7 +121,7 @@ export function Pricing() {
               )}
             >
               {plan.highlighted && (
-                <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground shadow-lg">
+                <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-lg sm:px-4 sm:text-sm">
                   <span>*</span> Le plus rentable
                 </div>
               )}
@@ -131,8 +131,8 @@ export function Pricing() {
                   {plan.name}
                 </h3>
                 <p className="mb-2 min-h-12 text-sm text-muted-foreground">{plan.description}</p>
-                <div className="mb-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                <div className="mb-2 flex flex-wrap items-baseline gap-1">
+                  <span className="text-3xl font-bold text-foreground sm:text-4xl">{plan.price}</span>
                   <span className="text-sm text-muted-foreground">{plan.cadence}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">

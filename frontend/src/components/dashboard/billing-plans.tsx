@@ -132,7 +132,7 @@ export function BillingPlans({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
         {plans.map((plan) => (
           <Card key={plan.id} className={cn(
             "relative flex h-full flex-col overflow-visible transition-transform",
@@ -143,18 +143,18 @@ export function BillingPlans({
             getPlanCode(plan.id) === normalizedActivePlan && "ring-2 ring-primary/15"
           )}>
           {plan.highlighted && (
-            <Badge className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-sm font-semibold text-primary-foreground shadow hover:bg-primary">
+            <Badge className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow hover:bg-primary sm:px-4 sm:text-sm">
               {t("plan_badge_recommended")}
             </Badge>
           )}
 
           <CardHeader className="p-4 pb-2 md:p-5 md:pb-2">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base font-semibold tracking-tight">{plan.name}</CardTitle>
               {getPlanCode(plan.id) === normalizedActivePlan && <PlanBadge plan={normalizedActivePlan} active />}
             </div>
             <p className="mt-2 min-h-10 text-xs leading-5 text-muted-foreground">{plan.description}</p>
-            <div className="mt-4 flex items-baseline gap-1">
+            <div className="mt-4 flex flex-wrap items-baseline gap-1">
               <span className="text-3xl font-semibold tracking-tight">{plan.price}</span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 {plan.id === "trial" ? "sans engagement" : t("per_month")}

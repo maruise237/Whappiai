@@ -448,7 +448,7 @@ export default function DashboardPage() {
                   {t("hero_desc")}
                 </p>
               </div>
-              <Button onClick={() => setIsCreateOpen(true)} className="h-10 rounded-xl">
+              <Button onClick={() => setIsCreateOpen(true)} className="h-10 w-full rounded-xl sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 {t("new_session")}
               </Button>
@@ -464,7 +464,7 @@ export default function DashboardPage() {
 
         <Card className="rounded-[28px] bg-card shadow-none">
           <CardContent className="p-5 sm:p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold truncate">{t("onboarding_title")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{t("onboarding_desc")}</p>
@@ -748,13 +748,13 @@ function TrialFocusPanel({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
-          <Button asChild className="rounded-xl">
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row lg:w-auto lg:flex-col">
+          <Button asChild className="w-full rounded-xl lg:w-auto">
             <Link href={hasGroup ? "/dashboard/moderation" : "/dashboard"}>
               {hasGroup ? "Activer mes regles" : "Connecter une session"}
             </Link>
           </Button>
-          <Button asChild variant="outline" className="rounded-xl">
+          <Button asChild variant="outline" className="w-full rounded-xl lg:w-auto">
             <Link href="/dashboard/billing">
               {isTrial || !accessAllowed ? "Voir les plans" : "Gerer mon plan"}
             </Link>
@@ -787,7 +787,7 @@ function PlanCapacityPanel({
   return (
     <Card className="rounded-[28px] bg-card shadow-none">
       <CardContent className="space-y-5 p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <PlanBadge plan={plan} active className="rounded-full px-3 py-1" />
@@ -802,7 +802,7 @@ function PlanCapacityPanel({
               Suivez ce qui est deja actif dans votre espace et voyez quand il devient utile de passer au niveau superieur.
             </p>
           </div>
-          <Button asChild variant="outline" className="rounded-xl text-xs">
+          <Button asChild variant="outline" className="w-full rounded-xl text-xs sm:w-auto">
             <Link href="/dashboard/billing">{upgradeLabel}</Link>
           </Button>
         </div>
@@ -818,7 +818,7 @@ function PlanCapacityPanel({
               </p>
             </div>
             <Badge className={cn(
-              "rounded-full border px-3 py-1 text-[10px] font-semibold",
+              "self-start rounded-full border px-3 py-1 text-[10px] font-semibold sm:self-auto",
               isNearLimit
                 ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-50"
                 : "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10"
@@ -836,10 +836,10 @@ function PlanCapacityPanel({
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button asChild className="rounded-xl">
+          <Button asChild className="w-full rounded-xl sm:w-auto">
             <Link href="/dashboard/moderation">Configurer mes groupes</Link>
           </Button>
-          <Button asChild variant="outline" className="rounded-xl">
+          <Button asChild variant="outline" className="w-full rounded-xl sm:w-auto">
             <Link href="/dashboard/billing">{isNearLimit || !accessAllowed ? "Voir les upgrades" : "Voir mon abonnement"}</Link>
           </Button>
         </div>
@@ -915,7 +915,7 @@ function FirstRunPanel({ onCreate }: { onCreate: () => void }) {
             {t("first_run_desc")}
           </p>
         </div>
-        <Button onClick={onCreate} className="h-11 rounded-xl">
+        <Button onClick={onCreate} className="h-11 w-full rounded-xl lg:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           {t("first_run_cta")}
         </Button>
