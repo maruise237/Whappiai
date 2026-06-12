@@ -8,51 +8,74 @@ import { cn } from "@/lib/utils"
 
 const plans = [
   {
-    id: "starter",
-    name: "pricing_plan_1_name",
-    description: "pricing_plan_1_desc",
-    price: "pricing_plan_1_price_monthly",
+    id: "trial",
+    name: "Essai gratuit",
+    description: "Pour connecter 1 groupe et verifier que Whappi modere bien en situation reelle.",
+    price: "7 jours",
+    cadence: "sans engagement",
     features: [
-      "pricing_plan_1_feat_1",
-      "pricing_plan_1_feat_2",
-      "pricing_plan_1_feat_3",
-      "pricing_plan_1_feat_4",
-      "pricing_plan_1_feat_5",
+      "1 groupe pendant 7 jours",
+      "Blocage des liens",
+      "Mots interdits choisis manuellement",
+      "Auto-exclusion activable",
+      "Message de bienvenue redige par vous",
     ],
-    cta: "pricing_plan_1_cta",
+    cta: "Commencer l'essai",
     highlighted: false,
+    footer: "Le plus simple pour valider votre premier groupe",
+  },
+  {
+    id: "starter",
+    name: "Starter",
+    description: "Pour moderer simplement jusqu'a 3 groupes avec les regles essentielles.",
+    price: "3 500 FCFA",
+    cadence: "/mois",
+    features: [
+      "Jusqu'a 3 groupes",
+      "Blocage des liens",
+      "Mots interdits choisis manuellement",
+      "Auto-exclusion activable",
+      "Message de bienvenue redige par vous",
+    ],
+    cta: "Passer sur Starter",
+    highlighted: false,
+    footer: "Parfait pour demarrer proprement",
   },
   {
     id: "pro",
-    name: "pricing_plan_2_name",
-    description: "pricing_plan_2_desc",
-    price: "pricing_plan_2_price_monthly",
+    name: "Pro IA",
+    description: "Pour aller plus loin avec l'IA sur jusqu'a 6 groupes.",
+    price: "8 000 FCFA",
+    cadence: "/mois",
     features: [
-      "pricing_plan_2_feat_1",
-      "pricing_plan_2_feat_2",
-      "pricing_plan_2_feat_3",
-      "pricing_plan_2_feat_4",
-      "pricing_plan_2_feat_5",
-      "pricing_plan_2_feat_6",
+      "Jusqu'a 6 groupes",
+      "Toute la moderation Starter",
+      "Assistant IA pour aider l'admin",
+      "Fonctions IA plus poussees",
+      "Presets de moderation en option",
+      "Automatisations plus confortables",
     ],
-    cta: "pricing_plan_2_cta",
+    cta: "Passer sur Pro IA",
     highlighted: true,
+    footer: "Le meilleur point d'equilibre pour grandir",
   },
   {
     id: "business",
-    name: "pricing_plan_3_name",
-    description: "pricing_plan_3_desc",
-    price: "pricing_plan_3_price_monthly",
+    name: "Business",
+    description: "Pour les structures qui veulent plus de puissance sur jusqu'a 16 groupes.",
+    price: "18 000 FCFA",
+    cadence: "/mois",
     features: [
-      "pricing_plan_3_feat_1",
-      "pricing_plan_3_feat_2",
-      "pricing_plan_3_feat_3",
-      "pricing_plan_3_feat_4",
-      "pricing_plan_3_feat_5",
-      "pricing_plan_3_feat_6",
+      "Jusqu'a 16 groupes",
+      "Tout le plan Pro IA",
+      "Fonctionnalites avancees",
+      "Administration plus poussee",
+      "Presets de moderation en option",
+      "Priorite sur les evolutions premium",
     ],
-    cta: "pricing_plan_3_cta",
+    cta: "Passer sur Business",
     highlighted: false,
+    footer: "Pour les reseaux qui veulent scaler serieusement",
   },
 ]
 
@@ -73,81 +96,52 @@ export function Pricing() {
           className="mb-16 text-center"
         >
           <h2 className="mb-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Des forfaits simples pour faire grandir Whappi
+            Des forfaits simples pour proteger vos groupes WhatsApp
           </h2>
           <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground">
-            Commencez avec une moderation claire, ajoutez l'IA au bon moment, puis passez a un niveau avance quand vos groupes grossissent.
+            Commencez avec un essai concret, passez a une moderation simple, puis ajoutez l&apos;IA et la puissance quand vos groupes grossissent.
           </p>
-          <p className="text-sm font-medium text-primary">7 jours d'essai gratuit avec 1 groupe pour tester avant de payer.</p>
+          <p className="text-sm font-medium text-primary">7 jours d&apos;essai gratuit avec 1 groupe pour voir Whappi moderer avant de payer.</p>
         </motion.div>
 
-        <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-8 md:grid-cols-3">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-6 md:grid-cols-2 xl:grid-cols-4">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.5, delay: index * 0.08 }}
               className={cn(
                 "relative rounded-2xl p-8 transition-all duration-300",
                 plan.highlighted
                   ? "z-10 scale-[1.02] border-2 border-primary bg-card shadow-lg"
-                  : "z-0 mt-4 border border-border/70 bg-card/70 hover:border-primary/50 hover:bg-card"
+                  : "z-0 border border-border/70 bg-card/70 hover:border-primary/50 hover:bg-card",
+                plan.id === "trial" && "border-amber-300/50 bg-amber-50/70"
               )}
             >
               {plan.highlighted && (
                 <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground shadow-lg">
-                  <span>*</span> Le plus choisi
+                  <span>*</span> Le plus rentable
                 </div>
               )}
 
               <div className="mb-8">
                 <h3 className={cn("mb-2 text-xl font-semibold", plan.highlighted ? "text-primary" : "text-foreground")}>
-                  {plan.id === "starter" ? "Starter" : plan.id === "pro" ? "Pro IA" : "Business"}
+                  {plan.name}
                 </h3>
-                <p className="mb-2 text-sm text-muted-foreground">
-                  {plan.id === "starter" && "Pour moderer simplement jusqu'a 3 groupes avec les regles essentielles."}
-                  {plan.id === "pro" && "Pour aller plus loin avec l'IA sur jusqu'a 6 groupes."}
-                  {plan.id === "business" && "Pour les structures qui veulent plus de puissance sur jusqu'a 16 groupes."}
-                </p>
+                <p className="mb-2 min-h-12 text-sm text-muted-foreground">{plan.description}</p>
                 <div className="mb-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-foreground">
-                    {plan.id === "starter" ? "3 500 FCFA" : plan.id === "pro" ? "8 000 FCFA" : "18 000 FCFA"}
-                  </span>
-                  <span className="text-sm text-muted-foreground">/mois</span>
+                  <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+                  <span className="text-sm text-muted-foreground">{plan.cadence}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Facture mensuellement</p>
+                <p className="text-sm text-muted-foreground">
+                  {plan.id === "trial" ? "Testez avant de vous abonner" : "Facture mensuellement"}
+                </p>
               </div>
 
               <div className="mb-8 space-y-4">
-                {(
-                  plan.id === "starter"
-                    ? [
-                        "Jusqu'a 3 groupes",
-                        "Blocage des liens",
-                        "Mots interdits choisis manuellement",
-                        "Auto-exclusion activable",
-                        "Message de bienvenue redige par vous",
-                      ]
-                    : plan.id === "pro"
-                      ? [
-                          "Jusqu'a 6 groupes",
-                          "Toute la moderation Starter",
-                          "Assistant IA pour aider l'admin",
-                          "Fonctions IA plus poussees",
-                          "Presets de moderation en option",
-                          "Automatisations plus confortables",
-                        ]
-                      : [
-                          "Jusqu'a 16 groupes",
-                          "Tout le plan Pro IA",
-                          "Fonctionnalites avancees",
-                          "Administration plus poussee",
-                          "Presets de moderation en option",
-                          "Priorite sur les evolutions premium",
-                        ]
-                ).map((feature) => (
+                {plan.features.map((feature) => (
                   <div key={feature} className="flex items-start gap-3">
                     <div className={cn("mt-1 shrink-0 rounded-full p-0.5", plan.highlighted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
                       <Check className="h-3 w-3" strokeWidth={3} />
@@ -159,15 +153,15 @@ export function Pricing() {
 
               <Button
                 className={cn("h-12 w-full rounded-xl text-base font-semibold transition-all duration-200", plan.highlighted ? "shadow-md shadow-primary/20 hover:scale-[1.02]" : "")}
-                variant={plan.highlighted ? "default" : "secondary"}
+                variant={plan.highlighted ? "default" : plan.id === "trial" ? "outline" : "secondary"}
                 asChild
               >
-                <Link href={`/register?plan=${plan.id}`}>
-                  {plan.id === "starter" ? "Choisir Starter" : plan.id === "pro" ? "Choisir Pro IA" : "Choisir Business"}
+                <Link href={`/register?plan=${plan.id === "trial" ? "trial" : plan.id}`}>
+                  {plan.cta}
                 </Link>
               </Button>
 
-              {!plan.highlighted && <p className="mt-4 text-center text-xs text-muted-foreground">Parfait pour commencer</p>}
+              <p className="mt-4 text-center text-xs text-muted-foreground">{plan.footer}</p>
             </motion.div>
           ))}
         </div>

@@ -9,9 +9,25 @@ import { cn } from "@/lib/utils"
 
 const plans = [
   {
+    code: "trial",
+    name: "Essai gratuit",
+    price: "7 jours",
+    cadence: "sans engagement",
+    description: "Pour connecter 1 groupe et verifier que Whappi modere bien en situation reelle.",
+    features: [
+      "1 groupe pendant 7 jours",
+      "Blocage des liens",
+      "Mots interdits choisis manuellement",
+      "Auto-exclusion activable",
+      "Message de bienvenue redige par vous",
+    ],
+    highlight: false,
+  },
+  {
     code: "starter",
     name: "Starter",
     price: "3 500 FCFA",
+    cadence: "/ mois",
     description: "Pour moderer simplement jusqu'a 3 groupes avec les regles essentielles.",
     features: [
       "Jusqu'a 3 groupes",
@@ -26,6 +42,7 @@ const plans = [
     code: "pro",
     name: "Pro IA",
     price: "8 000 FCFA",
+    cadence: "/ mois",
     description: "Pour aller plus loin avec l'IA sur jusqu'a 6 groupes.",
     features: [
       "Jusqu'a 6 groupes",
@@ -40,6 +57,7 @@ const plans = [
     code: "business",
     name: "Business",
     price: "18 000 FCFA",
+    cadence: "/ mois",
     description: "Pour les structures qui veulent plus de puissance sur jusqu'a 16 groupes.",
     features: [
       "Jusqu'a 16 groupes",
@@ -59,13 +77,20 @@ export default function PricingPage() {
         <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/10">Tarifs Whappi</Badge>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Forfaits co-admin WhatsApp</h1>
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
-          7 jours d&apos;essai gratuit avec 1 groupe, puis trois offres simples pour moderer, automatiser et monter en puissance.
+          7 jours d&apos;essai gratuit avec 1 groupe, puis trois offres simples pour proteger, automatiser et monter en puissance.
         </p>
       </div>
 
-      <div className="mx-auto mt-14 grid max-w-6xl gap-6 lg:grid-cols-3">
+      <div className="mx-auto mt-14 grid max-w-7xl gap-6 md:grid-cols-2 xl:grid-cols-4">
         {plans.map(plan => (
-          <Card key={plan.code} className={cn("relative bg-card shadow-none", plan.highlight && "border-primary shadow-[0_24px_70px_-50px_hsl(var(--primary))]")}>
+          <Card
+            key={plan.code}
+            className={cn(
+              "relative bg-card shadow-none",
+              plan.highlight && "border-primary shadow-[0_24px_70px_-50px_hsl(var(--primary))]",
+              plan.code === "trial" && "border-amber-300/50 bg-amber-50/70"
+            )}
+          >
             {plan.highlight && (
               <div className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
                 Recommande
@@ -74,10 +99,10 @@ export default function PricingPage() {
             <CardContent className="flex h-full flex-col p-6">
               <div>
                 <h2 className="text-xl font-semibold">{plan.name}</h2>
-                <p className="mt-2 min-h-10 text-sm text-muted-foreground">{plan.description}</p>
+                <p className="mt-2 min-h-12 text-sm text-muted-foreground">{plan.description}</p>
                 <p className="mt-6">
                   <span className="text-4xl font-semibold tracking-tight">{plan.price}</span>
-                  <span className="text-sm text-muted-foreground"> / mois</span>
+                  <span className="text-sm text-muted-foreground"> {plan.cadence}</span>
                 </p>
               </div>
               <ul className="mt-6 flex-1 space-y-3">
@@ -89,7 +114,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <Button asChild className="mt-8" variant={plan.highlight ? "default" : "outline"}>
-                <Link href={`/register?plan=${plan.code}`}>Commencer avec {plan.name}</Link>
+                <Link href={`/register?plan=${plan.code}`}>{plan.code === "trial" ? "Commencer l'essai" : `Commencer avec ${plan.name}`}</Link>
               </Button>
             </CardContent>
           </Card>
