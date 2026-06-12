@@ -1401,7 +1401,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             });
 
             if (!result) {
-                throw new Error('Baileys a retourné un résultat vide');
+                throw new Error('Le provider de message a retourné un résultat vide');
             }
 
             // Log to activity log
@@ -1427,7 +1427,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             };
         } catch (error) {
             log(`[API] Échec de l'envoi du message à ${to}: ${error.message}`, 'SYSTEM', { to, error: error.message }, 'ERROR');
-            // Check for specific Baileys error types if possible
+            // Preserve detailed provider errors when available
             const errorDetail = error.stack || error.message;
             return {
                 status: 'error',

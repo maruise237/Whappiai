@@ -10,7 +10,7 @@ const { enqueue } = require('./QueueService');
 class KeywordService {
     /**
      * Process an incoming message for keyword matches
-     * @param {object} sock - Baileys socket
+     * @param {object} sock - Legacy socket-compatible transport handle
      * @param {string} sessionId - Session ID
      * @param {object} msg - Incoming message object
      * @returns {boolean} True if a keyword was matched and processed

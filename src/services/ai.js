@@ -240,7 +240,7 @@ class AIService {
 
     /**
      * Handles an incoming message and generates an AI response if enabled
-     * @param {object} sock - Baileys socket
+     * @param {object} sock - Legacy socket-compatible transport handle
      * @param {string} sessionId - Session ID (now userId)
      * @param {object} msg - Incoming message object
      * @param {boolean} isGroupMode - Whether it's called in group assistant mode
@@ -267,7 +267,7 @@ class AIService {
             if (messageContent?.viewOnceMessage) messageContent = messageContent.viewOnceMessage.message;
             if (messageContent?.viewOnceMessageV2) messageContent = messageContent.viewOnceMessageV2.message;
 
-            // Better message text extraction for Baileys
+            // Handle legacy socket message shapes conservatively
             const messageText = messageContent?.conversation || 
                                 messageContent?.extendedTextMessage?.text || 
                                 messageContent?.imageMessage?.caption ||

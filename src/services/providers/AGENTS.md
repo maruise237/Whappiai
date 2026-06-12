@@ -1,53 +1,51 @@
-# src/services/providers/ — WhatsApp Provider Abstraction
+# src/services/providers/ - WhatsApp Provider Abstraction
 
 ## Purpose
 
-Couche d'abstraction entre Whappi et les providers WhatsApp (Evolution API, Baileys). Permet de changer de provider sans impacter le reste du code.
+Couche d'abstraction entre Whappi et le provider WhatsApp actif. Dans ce repo, le chemin supporte Evolution API en production et le legacy Baileys n'est plus maintenu.
 
 ## Ownership
 
-- `WhatsAppProvider.js` — interface/classe de base
-- `EvolutionApiProvider.js` — implémentation Evolution API (production)
-- `BaileysProvider.js` ou équivalent — implémentation Baileys directe (dev legacy)
-- `index.js` — factory / registry des providers
+- `WhatsAppProvider.js` - interface/classe de base
+- `EvolutionApiProvider.js` - implementation Evolution API active
+- `index.js` - factory / registry des providers
 
 ## Local Contracts
 
-- **Tout appel WhatsApp passe par un provider.** Aucun code hors de ce dossier n'appelle Evolution API ou Baileys directement.
+- **Tout appel WhatsApp passe par un provider.** Aucun code hors de ce dossier n'appelle Evolution API directement.
 - **Interface commune** : chaque provider expose au minimum :
-  - `sendMessage(to, content)` — envoyer un message texte
-  - `sendMedia(to, media, caption?)` — envoyer média
-  - `getInstanceStatus(instanceId?)` — statut de connexion
-  - `createInstance(instanceId?)` — créer nouvelle instance
-  - `logoutInstance(instanceId?)` — déconnecter
-  - `onWebhook(event, handler)` — recevoir events entrants
-- Provider actif défini par `WHATSAPP_PROVIDER` dans `.env` (`evolution` ou `baileys`)
-- Toute nouvelle implémentation doit passer les mêmes tests que l'existante
-- **Résilience Evolution API** (`EvolutionApiProvider.js`) :
-  - Cache TTL (défaut 5 min) sur `fetchGroups()` et `getStatus()`
-  - En cas d'erreur réseau / API down, sert les dernières données en cache
-  - Timeout 15s sur chaque requête fetch, 10s sur `_getInstanceToken`
-  - Les réponses en cache sont marquées `cached: true` dans le retour
+  - `sendMessage(to, content)` - envoyer un message texte
+  - `sendMedia(to, media, caption?)` - envoyer media
+  - `getInstanceStatus(instanceId?)` - statut de connexion
+  - `createInstance(instanceId?)` - creer nouvelle instance
+  - `logoutInstance(instanceId?)` - deconnecter
+  - `onWebhook(event, handler)` - recevoir events entrants
+- Provider actif defini par `WHATSAPP_PROVIDER` dans `.env` et doit rester `evolution`
+- Toute nouvelle implementation doit passer les memes tests que l'existante
+- **Resilience Evolution API** (`EvolutionApiProvider.js`) :
+  - Cache TTL (defaut 5 min) sur `fetchGroups()` et `getStatus()`
+  - En cas d'erreur reseau / API down, sert les dernieres donnees en cache
+  - Timeout 15s sur chaque requete fetch, 10s sur `_getInstanceToken`
+  - Les reponses en cache sont marquees `cached: true` dans le retour
   - Surcharger le TTL via `EVOLUTION_CACHE_TTL_MS` (ms)
 - **Cache groupes PostgreSQL** (`GroupCacheService.js`) :
-  - `getCachedGroups()` → retourne les groupes depuis PostgreSQL en < 10ms
-  - `refreshGroups()` → refresh WhatsApp en arrière-plan (l'utilisateur attend pas)
-  - Données considérées stale après 2 min → refresh auto au prochain appel
-  - Données expirées après 10 min → refresh forcé
+  - `getCachedGroups()` -> retourne les groupes depuis PostgreSQL en < 10ms
+  - `refreshGroups()` -> refresh WhatsApp en arriere-plan
+  - Donnees considerees stale apres 2 min -> refresh auto au prochain appel
+  - Donnees expirees apres 10 min -> refresh force
   - Configurable via `GROUP_CACHE_STALE_MS` et `GROUP_CACHE_TTL_MS`
-- **Health check** : `scripts/evolution-health-check.sh` tourne toutes les 2min en crontab.
-  Vérifie que Evolution API répond HTTP 200. Redémarre le conteneur Docker après 2 checks
-  consécutifs échoués. Crontab : `*/2 * * * * /home/ubuntu/Whappiai/scripts/evolution-health-check.sh`
+- **Health check** : `scripts/evolution-health-check.sh` peut verifier que Evolution API repond HTTP 200.
 
 ## Work Guidance
 
-1. Pour ajouter un provider : créer le fichier, implémenter l'interface, ajouter dans `index.js`
-2. Pour modifier l'interface : mettre à jour TOUTES les implémentations existantes + tests
+1. Pour ajouter un provider : creer le fichier, implementer l'interface, ajouter dans `index.js`
+2. Pour modifier l'interface : mettre a jour toutes les implementations existantes + tests
+3. Ne pas reintroduire de chemin runtime Baileys dans le serveur principal
 
 ## Verification
 
-- Vérifier que `WHATSAPP_PROVIDER=evolution` et `WHATSAPP_PROVIDER=baileys` fonctionnent tous les deux
-- Les tests d'intégration webhook couvrent le flux provider → routes
+- Verifier que `WHATSAPP_PROVIDER=evolution` fonctionne et que le flux webhook/provider reste sain
+- Les tests d'integration webhook couvrent le flux provider -> routes
 
 ## Child DOX Index
 

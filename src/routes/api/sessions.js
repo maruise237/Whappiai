@@ -3,7 +3,7 @@
  * Handles session creation, listing, QR code, and basic operations.
  *
  * The create/qr/delete endpoints delegate to Evolution API via SessionService.
- * Production no longer uses the legacy in-process Baileys transport.
+ * Production no longer uses any legacy in-process WhatsApp transport.
  */
 
 const express = require('express');
@@ -163,13 +163,7 @@ function initializeSessionRoutes(routerInstance, dependencies) {
                 }
                 return res.json({ status: 'success', ...r.qr });
             }
-            // Legacy Baileys fallback
-            if (triggerQR) {
-                const ok = await triggerQR(sessionId);
-                if (ok) return res.json({ status: 'success', message: 'QR generation triggered' });
-                return res.status(404).json({ status: 'error', message: 'Session not found' });
-            }
-            return res.status(501).json({ status: 'error', message: 'QR trigger not implemented' });
+            return res.status(501).json({ status: 'error', message: 'QR refresh requires WHATSAPP_PROVIDER=evolution' });
         } catch (err) {
             res.status(500).json({ status: 'error', message: err.message });
         }

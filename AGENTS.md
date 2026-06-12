@@ -43,8 +43,9 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
 ### Backend (Express.js - Root)
 - **Entry point**: `index.js` - Server initialization, WebSocket setup, session management orchestration
 - **`src/config/`**: Runtime configuration plus legacy SQLite compatibility shims
+- **`src/db/`**: Active Postgres query layer and migrations
 - **`src/models/`**: Data models (User, Session, ActivityLog)
-- **`src/routes/`**: 
+- **`src/routes/`**:
   - `api.js` - Main API v1 router with sessions, messaging, moderation endpoints
   - `auth.js` - Authentication routes (login/logout)
   - `users.js` - User management routes
@@ -67,19 +68,18 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
 ### Data Storage
 - **Postgres runtime**: `src/db/query.js` - active async query layer used by the app
 - **SQLite legacy**: `src/config/sqliteLegacy.js` - compatibility layer for old scripts/tests only
-- **Filesystem**: 
-  - `auth_info_baileys/<sessionId>/` - Baileys auth credentials per session
+- **Filesystem**:
   - `media/` - Uploaded media files
-  - `sessions/` - Express session files (FileStore)
+  - `sessions/` - Local session fallback for non-production only
 
 ## Key Patterns
 
 ### WhatsApp Session Lifecycle
-Sessions go through: `CONNECTING` → `GENERATING_QR` → `CONNECTED` (or `DISCONNECTED`). The `whatsappService` manages Baileys sockets in-memory (`activeSockets` Map), with automatic reconnection using exponential backoff (up to 15 retries).
+Sessions go through: `CONNECTING` -> `GENERATING_QR` -> `CONNECTED` (or `DISCONNECTED`). The Evolution provider owns the transport lifecycle, while Whappi persists status and token metadata locally.
 
 ### Authentication
-- Admin dashboard uses Express sessions with file-based storage
-- API endpoints use per-session tokens (stored in `sessionTokens` Map)
+- Admin dashboard uses Express sessions
+- API endpoints use per-session tokens
 - Master API key (`MASTER_API_KEY` env) for session creation without login
 
 ## Environment Variables (Critical)
@@ -88,8 +88,13 @@ Sessions go through: `CONNECTING` → `GENERATING_QR` → `CONNECTED` (or `DISCO
 - `ADMIN_DASHBOARD_PASSWORD`: Default admin password
 - `SESSION_SECRET`: Express session signing key
 - `MASTER_API_KEY`: For API-based session creation
+- `DATABASE_URL`: Required in production
+- `REDIS_URL`: Required in production
+- `EVOLUTION_API_URL`: Required in production
+- `EVOLUTION_API_KEY`: Required in production
+- `WHATSAPP_PROVIDER`: Must be `evolution` in production
 
 ## Platform Notes
 
-- Windows: The codebase includes retry logic for EPERM errors during credential saves (see `whatsapp.js` saveCreds wrapper)
+- Windows: prefer verifying local dev paths and Redis/Postgres env setup rather than relying on old filesystem session behavior
 - Always use `--no-pager` with git commands in this shell

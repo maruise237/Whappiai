@@ -75,7 +75,7 @@ function isGroupAdmin(groupMetadata, myJid, myLid, sessionId) {
         return false;
     }
     
-    // Baileys roles: 'admin' (admin), 'superadmin' (créateur), null (membre)
+    // Legacy WhatsApp role values: 'admin', 'superadmin', or null for members
     const isAdmin = participant.admin === 'admin' || participant.admin === 'superadmin';
     
     if (isAdmin) {
@@ -93,7 +93,7 @@ function isGroupAdmin(groupMetadata, myJid, myLid, sessionId) {
 
 /**
  * Get all groups where the session is an admin
- * @param {object} sock - Baileys socket instance
+ * @param {object} sock - Legacy socket-compatible transport instance
  * @param {string} sessionId - Session ID
  * @returns {Promise<Array>} List of admin groups
  */
@@ -652,7 +652,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
 }
 
 /**
- * Handle incoming message for moderation (Provider-aware version, no Baileys sock)
+ * Handle incoming message for moderation (provider-aware version)
  * Called by the Evolution webhook handler on MESSAGES_UPSERT.
  *
  * @param {string} sessionId
@@ -669,7 +669,7 @@ async function handleIncomingMessageProvider(sessionId, msg, extra = {}) {
 
         const senderJid = extra.senderJid || (msg.key && msg.key.participant) || (msg.key && msg.key.remoteJid) || '';
         
-        // Extract text from all possible message formats (Evolution API / Baileys)
+        // Extract text from provider and legacy-compatible message formats
         const m = msg.message || {};
         const text = extra.plainText
             || m.conversation

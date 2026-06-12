@@ -644,7 +644,7 @@ const triggerQRWrapper = async (sessionId) => {
 };
 
 // Session Proxy backed by local DB rows. In Evolution mode there is no local
-// Baileys socket in-process; the transport lives in the provider.
+// WhatsApp socket in-process; the transport lives in the provider.
 const sessionsProxy = {
     get: async (sessionId) => {
         const session = await Session.findById(sessionId);
