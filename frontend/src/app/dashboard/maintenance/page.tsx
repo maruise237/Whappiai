@@ -1,15 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { useAuth } from "@clerk/clerk-react"
-import { useRouter } from "next/navigation"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import {
   Wrench,
   Clock,
+  Shield,
   ShieldOff,
   Play,
-  Square,
   Save,
   CalendarClock,
 } from "lucide-react"
@@ -18,7 +17,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
@@ -46,7 +44,7 @@ const ICON_OPTIONS = ["Wrench", "ShieldOff", "Timer", "Clock", "AlertTriangle"]
 
 export default function MaintenancePage() {
   const { getToken, userId } = useAuth()
-  const router = useRouter()
+  const { user } = useUser()
 
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
@@ -58,6 +56,7 @@ export default function MaintenancePage() {
     scheduled_start_at: null,
     scheduled_end_at: null,
   })
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const fetchSettings = React.useCallback(async () => {
     try {
@@ -72,8 +71,12 @@ export default function MaintenancePage() {
   }, [getToken])
 
   React.useEffect(() => {
+    if (!isAdmin) {
+      setLoading(false)
+      return
+    }
     if (userId) fetchSettings()
-  }, [fetchSettings, userId])
+  }, [fetchSettings, isAdmin, userId])
 
   const saveSettings = async () => {
     setSaving(true)
@@ -122,6 +125,18 @@ export default function MaintenancePage() {
     return (
       <div className="grid min-h-[50dvh] place-items-center text-sm text-muted-foreground">
         Chargement...
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+        <Shield className="mb-4 h-12 w-12 text-muted-foreground/20" />
+        <h2 className="text-lg font-bold">Acces restreint</h2>
+        <p className="mx-auto max-w-xs text-sm text-muted-foreground">
+          Seuls les administrateurs peuvent gerer le mode maintenance.
+        </p>
       </div>
     )
   }

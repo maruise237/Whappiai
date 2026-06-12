@@ -1,9 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
 import { useUser, useAuth } from "@clerk/clerk-react"
-import { Bot, Plus, Pencil, Trash2, Check, X, Loader2, AlertCircle } from "lucide-react"
+import { Bot, Plus, Pencil, Trash2, Check, X, Loader2, AlertCircle, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
+import { toast } from "sonner"
 
 type AIModel = {
   id?: number
@@ -77,7 +77,13 @@ export default function AIModelsPage() {
     }
   }, [])
 
-  React.useEffect(() => { load() }, [load])
+  React.useEffect(() => {
+    if (!isAdmin) {
+      setLoading(false)
+      return
+    }
+    load()
+  }, [isAdmin, load])
 
   const openCreate = () => { setForm({ ...EMPTY }); setDialog({ mode: "create" }) }
   const openEdit = (m: AIModel) => { setForm({ ...m }); setDialog({ mode: "edit", model: m }) }
@@ -93,8 +99,9 @@ export default function AIModelsPage() {
       }
       setDialog(null)
       load()
+      toast.success(dialog?.mode === "create" ? "Modele ajoute" : "Modele mis a jour")
     } catch (e: any) {
-      alert(e.message)
+      toast.error(e.message || "Erreur lors de l'enregistrement")
     } finally {
       setSaving(false)
     }
@@ -107,14 +114,27 @@ export default function AIModelsPage() {
       await apiFetch(`/api/v1/admin/ai-models/${dialog.model.id}`, { method: "DELETE" })
       setDialog(null)
       load()
+      toast.success("Modele supprime")
     } catch (e: any) {
-      alert(e.message)
+      toast.error(e.message || "Erreur lors de la suppression")
     } finally {
       setSaving(false)
     }
   }
 
   const setField = (k: keyof AIModel, v: any) => setForm(f => ({ ...f, [k]: v }))
+
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+        <Shield className="mb-4 h-12 w-12 text-muted-foreground/20" />
+        <h2 className="text-lg font-bold">Acces restreint</h2>
+        <p className="mx-auto max-w-xs text-sm text-muted-foreground">
+          Seuls les administrateurs peuvent gerer les modeles IA.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
