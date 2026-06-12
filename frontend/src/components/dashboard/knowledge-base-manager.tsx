@@ -90,14 +90,14 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Book className="h-5 w-5 text-primary" /> Base de Connaissances
           </h2>
           <p className="text-sm text-muted-foreground">Ajoutez des informations spécifiques pour que l&apos;IA réponde avec précision.</p>
         </div>
-        <Button size="sm" onClick={() => setIsAdding(true)}>
+        <Button size="sm" onClick={() => setIsAdding(true)} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" /> Ajouter
         </Button>
       </div>
@@ -114,12 +114,12 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
           docs.map(doc => (
             <Card key={doc.id} className="relative group">
               <CardHeader className="p-4 pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
                     {doc.type === 'url' ? <Globe className="h-4 w-4 text-blue-500" /> : <FileText className="h-4 w-4 text-primary" />}
-                    <span className="text-sm font-medium truncate max-w-[200px]">{doc.name}</span>
+                    <span className="truncate text-sm font-medium sm:max-w-[200px]">{doc.name}</span>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDelete(doc.id)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" onClick={() => handleDelete(doc.id)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -155,9 +155,9 @@ export function KnowledgeBaseManager({ sessionId }: { sessionId: string }) {
               <Input placeholder="ex: https://monsite.com/faq" value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} className="h-9" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsAdding(false)}>Annuler</Button>
-            <Button onClick={handleAdd} disabled={isSubmitting}>
+          <DialogFooter className="gap-2 sm:flex-row">
+            <Button variant="ghost" onClick={() => setIsAdding(false)} className="w-full sm:w-auto">Annuler</Button>
+            <Button onClick={handleAdd} disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Enregistrer
             </Button>

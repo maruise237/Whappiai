@@ -118,13 +118,13 @@ export default function AIModelsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Modèles IA</h1>
           <p className="text-muted-foreground text-sm">Configurez vos providers et modèles OpenAI / DeepSeek / etc.</p>
         </div>
         {isAdmin && (
-          <Button onClick={openCreate} className="gap-2">
+          <Button onClick={openCreate} className="w-full gap-2 sm:w-auto">
             <Plus className="h-4 w-4" /> Nouveau modèle
           </Button>
         )}
@@ -156,7 +156,7 @@ export default function AIModelsPage() {
         <div className="space-y-3">
           {models.map(m => (
             <Card key={m.id} className={!m.is_active ? "opacity-60" : ""}>
-              <CardContent className="flex items-center justify-between gap-4 p-4">
+              <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold">{m.name}</span>
@@ -172,7 +172,7 @@ export default function AIModelsPage() {
                   )}
                 </div>
                 {isAdmin && (
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex w-full gap-2 shrink-0 sm:w-auto">
                     <Button variant="ghost" size="icon" onClick={() => openEdit(m)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -195,7 +195,7 @@ export default function AIModelsPage() {
               <DialogTitle>{dialog.mode === "create" ? "Nouveau modèle" : "Modifier le modèle"}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label>Nom</Label>
                   <Input value={form.name} onChange={e => setField("name", e.target.value)} placeholder="ex: DeepSeek V3" />
@@ -227,7 +227,7 @@ export default function AIModelsPage() {
                 <Label>Description</Label>
                 <Input value={form.description} onChange={e => setField("description", e.target.value)} placeholder="Optionnel" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label>Temperature</Label>
                   <Input type="number" step="0.1" min="0" max="2" value={form.temperature} onChange={e => setField("temperature", parseFloat(e.target.value))} />
@@ -237,7 +237,7 @@ export default function AIModelsPage() {
                   <Input type="number" min="1" value={form.max_tokens} onChange={e => setField("max_tokens", parseInt(e.target.value))} />
                 </div>
               </div>
-              <div className="flex gap-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={form.is_default} onChange={e => setField("is_default", e.target.checked)} className="rounded border-gray-300" />
                   Par défaut
@@ -248,9 +248,9 @@ export default function AIModelsPage() {
                 </label>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialog(null)}><X className="h-4 w-4 mr-1" /> Annuler</Button>
-              <Button onClick={handleSave} disabled={saving || !form.name || !form.model_name}>
+            <DialogFooter className="gap-2 sm:flex-row">
+              <Button variant="outline" onClick={() => setDialog(null)} className="w-full sm:w-auto"><X className="h-4 w-4 mr-1" /> Annuler</Button>
+              <Button onClick={handleSave} disabled={saving || !form.name || !form.model_name} className="w-full sm:w-auto">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
                 {dialog.mode === "create" ? "Créer" : "Enregistrer"}
               </Button>
@@ -267,9 +267,9 @@ export default function AIModelsPage() {
               <DialogTitle>Supprimer {dialog.model.name} ?</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground py-2">Cette action est irréversible.</p>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialog(null)}>Annuler</Button>
-              <Button variant="destructive" onClick={handleDelete} disabled={saving}>
+            <DialogFooter className="gap-2 sm:flex-row">
+              <Button variant="outline" onClick={() => setDialog(null)} className="w-full sm:w-auto">Annuler</Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={saving} className="w-full sm:w-auto">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
                 Supprimer
               </Button>

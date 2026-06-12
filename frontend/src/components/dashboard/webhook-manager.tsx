@@ -98,14 +98,14 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Webhook className="h-5 w-5 text-primary" /> Webhooks
           </h2>
           <p className="text-sm text-muted-foreground">Connectez Whappi &agrave; vos outils de suivi (Zapier, Make, tableurs) en temps r&eacute;el.</p>
         </div>
-        <Button size="sm" onClick={() => setIsAdding(true)}>
+        <Button size="sm" onClick={() => setIsAdding(true)} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" /> Nouveau
         </Button>
       </div>
@@ -121,14 +121,14 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
         ) : (
           webhooks.map(wh => (
             <Card key={wh.id} className="relative group overflow-hidden">
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4 min-w-0">
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-4">
                   <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <CheckCircle2 className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate max-w-md">{wh?.url || 'URL manquante'}</p>
-                    <div className="flex gap-2 mt-1">
+                    <p className="text-sm font-medium truncate sm:max-w-md">{wh?.url || 'URL manquante'}</p>
+                    <div className="mt-1 flex flex-wrap gap-2">
                       {(() => {
                         try {
                           const events = typeof wh?.events === 'string' ? JSON.parse(wh.events || '[]') : (wh?.events || []);
@@ -143,7 +143,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="text-destructive group-hover:opacity-100 opacity-0 transition-opacity" onClick={() => handleDelete(wh.id)}>
+                <Button variant="ghost" size="icon" className="self-end text-destructive opacity-100 transition-opacity sm:self-auto sm:opacity-0 sm:group-hover:opacity-100" onClick={() => handleDelete(wh.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -166,7 +166,7 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
 
             <div className="space-y-3">
               <Label className="text-xs uppercase">Événements</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {AVAILABLE_EVENTS.map(ev => (
                   <div key={ev.id} className="flex items-center space-x-2">
                     <Checkbox
@@ -188,9 +188,9 @@ export function WebhookManager({ sessionId }: { sessionId: string }) {
               <Input placeholder="Clé pour vérifier l'authenticité" value={formData.secret} onChange={e => setFormData({...formData, secret: e.target.value})} className="h-9" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsAdding(false)}>Annuler</Button>
-            <Button onClick={handleAdd} disabled={isSubmitting}>
+          <DialogFooter className="gap-2 sm:flex-row">
+            <Button variant="ghost" onClick={() => setIsAdding(false)} className="w-full sm:w-auto">Annuler</Button>
+            <Button onClick={handleAdd} disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Enregistrer
             </Button>

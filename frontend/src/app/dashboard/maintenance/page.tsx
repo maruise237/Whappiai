@@ -137,7 +137,7 @@ export default function MaintenancePage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Mode Maintenance</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -151,14 +151,14 @@ export default function MaintenancePage() {
       </div>
 
       {/* Quick actions */}
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         {isActive ? (
-          <Button variant="destructive" onClick={deactivateNow}>
+          <Button variant="destructive" onClick={deactivateNow} className="w-full sm:w-auto">
             <ShieldOff className="mr-2 h-4 w-4" />
             Desactiver maintenant
           </Button>
         ) : (
-          <Button onClick={activateNow}>
+          <Button onClick={activateNow} className="w-full sm:w-auto">
             <Play className="mr-2 h-4 w-4" />
             Activer maintenant
           </Button>
@@ -216,7 +216,7 @@ export default function MaintenancePage() {
           </div>
         </CardContent>
         <CardFooter className="border-t bg-muted/20">
-          <Button onClick={saveSettings} disabled={saving}>
+          <Button onClick={saveSettings} disabled={saving} className="w-full sm:w-auto">
             <Save className="mr-2 h-4 w-4" />
             {saving ? "Enregistrement..." : "Enregistrer les modifications"}
           </Button>
@@ -263,7 +263,7 @@ export default function MaintenancePage() {
           )}
         </CardContent>
         <CardFooter className="border-t bg-muted/20">
-          <Button onClick={saveSettings} disabled={saving}>
+          <Button onClick={saveSettings} disabled={saving} className="w-full sm:w-auto">
             <Save className="mr-2 h-4 w-4" />
             Enregistrer la programmation
           </Button>
