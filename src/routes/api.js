@@ -376,7 +376,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 const user = await User.findByEmail(currentEmail);
                 const access = await AccountAccessService.getStatus(user);
                 const planId = access.plan || user?.plan_id || 'trial';
-                const quotas = { trial: 1, free: 0, starter: 1, pro: 5, business: 20 };
+                const quotas = { trial: 1, free: 0, starter: 3, pro: 6, business: 16 };
                 const limit = access.allowed ? (quotas[planId] ?? 1) : 0;
                 const currentSessions = Session.getSessionIdsByOwner(currentEmail);
 
@@ -396,7 +396,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 const user = await User.findByEmail(currentEmail);
                 const access = await AccountAccessService.getStatus(user);
                 const planId = access.plan || user?.plan_id || 'trial';
-                const quotas = { trial: 1, free: 0, starter: 1, pro: 5, business: 20 };
+                const quotas = { trial: 1, free: 0, starter: 3, pro: 6, business: 16 };
                 const limit = access.allowed ? (quotas[planId] ?? 1) : 0;
                 const currentSessions = Session.getSessionIdsByOwner(currentEmail);
 

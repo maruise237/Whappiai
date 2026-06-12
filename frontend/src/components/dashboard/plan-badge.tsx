@@ -13,11 +13,11 @@ const planMeta: Record<string, { label: string; className: string }> = {
     className: "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200",
   },
   pro: {
-    label: "Pro",
+    label: "Pro IA",
     className: "border-primary/25 bg-primary/10 text-primary hover:bg-primary/10",
   },
   business: {
-    label: "Organisation",
+    label: "Business",
     className: "border-blue-500/25 bg-blue-500/10 text-blue-600 hover:bg-blue-500/10 dark:text-blue-300",
   },
 }

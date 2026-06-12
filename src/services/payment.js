@@ -12,7 +12,7 @@ const CreditService = require('./CreditService');
  * @returns {string} L'URL de paiement
  */
 async function createCheckoutSession(user, planCode) {
-    const plan = PricingService.getPlanByCode(planCode);
+    const plan = await PricingService.getPlanByCode(planCode);
     if (!plan) throw new Error('Plan invalide');
 
     try {
@@ -57,7 +57,7 @@ async function handleLicenseEvent(event, payload) {
     }
 
     // Récupération du plan associé au produit Chariow
-    const plan = PricingService.getPlanByChariowId(product_id);
+    const plan = await PricingService.getPlanByChariowId(product_id);
     const planCode = plan ? plan.code : 'unknown';
 
     // 1. Événement: Licence émise / activée

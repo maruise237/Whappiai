@@ -5,9 +5,9 @@ const NotificationService = require('./NotificationService');
 const PLAN_LIMITS = {
     trial: { sessions: 1, scheduledMessages: 3 },
     free: { sessions: 0, scheduledMessages: 0 },
-    starter: { sessions: 1, scheduledMessages: 3 },
-    pro: { sessions: 5, scheduledMessages: Infinity },
-    business: { sessions: 20, scheduledMessages: Infinity }
+    starter: { sessions: 3, scheduledMessages: 3 },
+    pro: { sessions: 6, scheduledMessages: Infinity },
+    business: { sessions: 16, scheduledMessages: Infinity }
 };
 
 const BLOCK_MESSAGES = {

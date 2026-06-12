@@ -1,18 +1,17 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useState } from "react"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 
 const plans = [
   {
+    id: "starter",
     name: "pricing_plan_1_name",
     description: "pricing_plan_1_desc",
-    price: { monthly: "pricing_plan_1_price_monthly", yearly: "pricing_plan_1_price_yearly", monthlyValue: 3500, yearlyValue: 33600 },
+    price: "pricing_plan_1_price_monthly",
     features: [
       "pricing_plan_1_feat_1",
       "pricing_plan_1_feat_2",
@@ -24,9 +23,10 @@ const plans = [
     highlighted: false,
   },
   {
+    id: "pro",
     name: "pricing_plan_2_name",
     description: "pricing_plan_2_desc",
-    price: { monthly: "pricing_plan_2_price_monthly", yearly: "pricing_plan_2_price_yearly", monthlyValue: 8000, yearlyValue: 76800 },
+    price: "pricing_plan_2_price_monthly",
     features: [
       "pricing_plan_2_feat_1",
       "pricing_plan_2_feat_2",
@@ -39,9 +39,10 @@ const plans = [
     highlighted: true,
   },
   {
+    id: "business",
     name: "pricing_plan_3_name",
     description: "pricing_plan_3_desc",
-    price: { monthly: "pricing_plan_3_price_monthly", yearly: "pricing_plan_3_price_yearly", monthlyValue: 18000, yearlyValue: 172800 },
+    price: "pricing_plan_3_price_monthly",
     features: [
       "pricing_plan_3_feat_1",
       "pricing_plan_3_feat_2",
@@ -56,9 +57,6 @@ const plans = [
 ]
 
 export function Pricing() {
-  const { t } = useTranslation('landing')
-  const [isAnnual, setIsAnnual] = useState(false)
-
   return (
     <section id="pricing" className="relative overflow-hidden bg-background px-4 py-24">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -75,39 +73,18 @@ export function Pricing() {
           className="mb-16 text-center"
         >
           <h2 className="mb-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            {t('pricing_section_title')}
+            Des forfaits simples pour faire grandir Whappi
           </h2>
           <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground">
-            {t('pricing_section_desc')}
+            Commencez avec une moderation claire, ajoutez l'IA au bon moment, puis passez a un niveau avance quand vos groupes grossissent.
           </p>
-
-          <div className="mb-12 flex items-center justify-center gap-4">
-            <span className={cn("text-sm font-medium transition-colors", !isAnnual ? "text-foreground" : "text-muted-foreground")}>
-              {t('pricing_monthly')}
-            </span>
-            <button
-              aria-label="Toggle annual billing"
-              onClick={() => setIsAnnual(!isAnnual)}
-              className={cn(
-                "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                isAnnual ? "bg-primary" : "bg-input"
-              )}
-            >
-              <span className={cn("pointer-events-none block h-6 w-6 rounded-full bg-background shadow-lg ring-0 transition-transform", isAnnual ? "translate-x-5" : "translate-x-0")} />
-            </button>
-            <span className={cn("flex items-center gap-2 text-sm font-medium transition-colors", isAnnual ? "text-foreground" : "text-muted-foreground")}>
-              {t('pricing_yearly')}
-              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {t('pricing_discount')}
-              </span>
-            </span>
-          </div>
+          <p className="text-sm font-medium text-primary">7 jours d'essai gratuit avec 1 groupe pour tester avant de payer.</p>
         </motion.div>
 
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-8 md:grid-cols-3">
           {plans.map((plan, index) => (
             <motion.div
-              key={plan.name}
+              key={plan.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -121,36 +98,61 @@ export function Pricing() {
             >
               {plan.highlighted && (
                 <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground shadow-lg">
-                  <span>★</span> {t('pricing_picked_by')}
+                  <span>*</span> Le plus choisi
                 </div>
               )}
 
               <div className="mb-8">
                 <h3 className={cn("mb-2 text-xl font-semibold", plan.highlighted ? "text-primary" : "text-foreground")}>
-                  {t(plan.name)}
+                  {plan.id === "starter" ? "Starter" : plan.id === "pro" ? "Pro IA" : "Business"}
                 </h3>
-                <p className="mb-2 text-sm text-muted-foreground">{t(plan.description)}</p>
+                <p className="mb-2 text-sm text-muted-foreground">
+                  {plan.id === "starter" && "Pour moderer simplement jusqu'a 3 groupes avec les regles essentielles."}
+                  {plan.id === "pro" && "Pour aller plus loin avec l'IA sur jusqu'a 6 groupes."}
+                  {plan.id === "business" && "Pour les structures qui veulent plus de puissance sur jusqu'a 16 groupes."}
+                </p>
                 <div className="mb-2 flex items-baseline gap-1">
-                  {isAnnual && (
-                    <span className="mr-2 text-lg text-muted-foreground line-through decoration-destructive/50">
-                      {Math.round(plan.price.monthlyValue * 12).toLocaleString()} FCFA
-                    </span>
-                  )}
                   <span className="text-4xl font-bold text-foreground">
-                    {isAnnual ? t(plan.price.yearly) : t(plan.price.monthly)}
+                    {plan.id === "starter" ? "3 500 FCFA" : plan.id === "pro" ? "8 000 FCFA" : "18 000 FCFA"}
                   </span>
-                  <span className="text-sm text-muted-foreground">{isAnnual ? t('pricing_per_year') : t('pricing_per_month')}</span>
+                  <span className="text-sm text-muted-foreground">/mois</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{isAnnual ? t('pricing_billed_yearly') : t('pricing_billed_monthly')}</p>
+                <p className="text-sm text-muted-foreground">Facture mensuellement</p>
               </div>
 
               <div className="mb-8 space-y-4">
-                {plan.features.map(feature => (
+                {(
+                  plan.id === "starter"
+                    ? [
+                        "Jusqu'a 3 groupes",
+                        "Blocage des liens",
+                        "Mots interdits choisis manuellement",
+                        "Auto-exclusion activable",
+                        "Message de bienvenue redige par vous",
+                      ]
+                    : plan.id === "pro"
+                      ? [
+                          "Jusqu'a 6 groupes",
+                          "Toute la moderation Starter",
+                          "Assistant IA pour aider l'admin",
+                          "Fonctions IA plus poussees",
+                          "Presets de moderation en option",
+                          "Automatisations plus confortables",
+                        ]
+                      : [
+                          "Jusqu'a 16 groupes",
+                          "Tout le plan Pro IA",
+                          "Fonctionnalites avancees",
+                          "Administration plus poussee",
+                          "Presets de moderation en option",
+                          "Priorite sur les evolutions premium",
+                        ]
+                ).map((feature) => (
                   <div key={feature} className="flex items-start gap-3">
                     <div className={cn("mt-1 shrink-0 rounded-full p-0.5", plan.highlighted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
                       <Check className="h-3 w-3" strokeWidth={3} />
                     </div>
-                    <span className="text-sm leading-tight text-foreground/90">{t(feature)}</span>
+                    <span className="text-sm leading-tight text-foreground/90">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -160,10 +162,12 @@ export function Pricing() {
                 variant={plan.highlighted ? "default" : "secondary"}
                 asChild
               >
-                <Link href="/register">{t(plan.cta)}</Link>
+                <Link href={`/register?plan=${plan.id}`}>
+                  {plan.id === "starter" ? "Choisir Starter" : plan.id === "pro" ? "Choisir Pro IA" : "Choisir Business"}
+                </Link>
               </Button>
 
-              {!plan.highlighted && <p className="mt-4 text-center text-xs text-muted-foreground">{t('pricing_perfect_to_start')}</p>}
+              {!plan.highlighted && <p className="mt-4 text-center text-xs text-muted-foreground">Parfait pour commencer</p>}
             </motion.div>
           ))}
         </div>

@@ -128,7 +128,7 @@ async function createMoneyFusionCheckout(user, planCode, { phoneNumber, customer
     const apiUrl = process.env.MONEYFUSION_API_URL;
     if (!apiUrl) throw new Error('MONEYFUSION_API_URL non configure');
 
-    const plan = PricingService.getPlanByCode(planCode);
+    const plan = await PricingService.getPlanByCode(planCode);
     if (!plan) throw new Error('Plan invalide');
 
     const orderId = crypto.randomUUID();
@@ -214,7 +214,7 @@ async function applyMoneyFusionPayment(payload = {}) {
     if (!user) throw new Error('Utilisateur MoneyFusion introuvable');
 
     const planCode = personalInfo.planCode || transaction?.plan_id;
-    const plan = PricingService.getPlanByCode(planCode);
+    const plan = await PricingService.getPlanByCode(planCode);
     if (!plan) throw new Error('Plan MoneyFusion introuvable');
 
     const amount = Number(payload.Montant || payload.data?.Montant || transaction?.amount || 0);

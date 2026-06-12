@@ -533,9 +533,9 @@ function initializeSchema() {
         if (count === 0) {
             log("Migration : Initialisation des plans de tarification", "SYSTEM");
             const plans = [
-                { id: 'starter', code: 'starter', name: 'Starter', price: 3500, message_limit: 1000, chariow_id: 'prd_jx0jkk', url: 'https://esaystor.online/prd_jx0jkk', features: '1 groupe connecte, bienvenue dans le groupe, mots interdits jusqu a 20, avertissements, 3 messages programmes actifs' },
-                { id: 'pro', code: 'pro', name: 'Pro', price: 8000, message_limit: 5000, chariow_id: 'prd_l2es24', url: 'https://esaystor.online/prd_l2es24', features: '5 groupes connectes, bienvenue dans le groupe, filtre mots illimite, anti-liens, messages programmes illimites, dashboard complet' },
-                { id: 'business', code: 'business', name: 'Organisation', price: 18000, message_limit: 25000, chariow_id: 'prd_twafj6', url: 'https://esaystor.online/prd_twafj6', features: '20 groupes connectes, toutes fonctionnalites Pro, liste noire partagee, logs avances, support prioritaire WhatsApp' }
+                { id: 'starter', code: 'starter', name: 'Starter', price: 3500, message_limit: 1000, chariow_id: 'prd_jx0jkk', url: 'https://esaystor.online/prd_jx0jkk', features: '3 groupes, blocage des liens, mots interdits manuels, auto-exclusion, message de bienvenue manuel' },
+                { id: 'pro', code: 'pro', name: 'Pro IA', price: 8000, message_limit: 5000, chariow_id: 'prd_l2es24', url: 'https://esaystor.online/prd_l2es24', features: '6 groupes, moderation Starter, assistant IA, fonctions IA avancees, presets optionnels' },
+                { id: 'business', code: 'business', name: 'Business', price: 18000, message_limit: 25000, chariow_id: 'prd_twafj6', url: 'https://esaystor.online/prd_twafj6', features: '16 groupes, tout Pro IA, fonctions avancees, administration poussee, priorite premium' }
             ];
 
             const stmt = db.prepare(`

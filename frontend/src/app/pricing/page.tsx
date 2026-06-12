@@ -12,24 +12,42 @@ const plans = [
     code: "starter",
     name: "Starter",
     price: "3 500 FCFA",
-    description: "Pour tester et gerer un seul groupe actif.",
-    features: ["1 groupe connecte", "Bienvenue dans le groupe", "Mots interdits jusqu'a 20", "Avertissements + ban auto", "3 messages programmes actifs"],
+    description: "Pour moderer simplement jusqu'a 3 groupes avec les regles essentielles.",
+    features: [
+      "Jusqu'a 3 groupes",
+      "Blocage des liens",
+      "Mots interdits choisis manuellement",
+      "Auto-exclusion activable",
+      "Message de bienvenue redige par vous",
+    ],
     highlight: false,
   },
   {
     code: "pro",
-    name: "Pro",
+    name: "Pro IA",
     price: "8 000 FCFA",
-    description: "Pour les admins qui gerent plusieurs groupes actifs.",
-    features: ["Jusqu'a 5 groupes connectes", "Bienvenue dans le groupe", "Filtre mots illimite + anti-liens", "Messages programmes illimites", "Dashboard complet + logs"],
+    description: "Pour aller plus loin avec l'IA sur jusqu'a 6 groupes.",
+    features: [
+      "Jusqu'a 6 groupes",
+      "Toute la moderation Starter",
+      "Assistant IA pour aider l'admin",
+      "Fonctions IA plus poussees",
+      "Automatisations plus confortables",
+    ],
     highlight: true,
   },
   {
     code: "business",
-    name: "Organisation",
+    name: "Business",
     price: "18 000 FCFA",
-    description: "Pour associations, medias, formations ou reseaux larges.",
-    features: ["Jusqu'a 20 groupes connectes", "Toutes les fonctionnalites Pro", "Liste noire partagee", "Logs avances", "Support prioritaire WhatsApp"],
+    description: "Pour les structures qui veulent plus de puissance sur jusqu'a 16 groupes.",
+    features: [
+      "Jusqu'a 16 groupes",
+      "Tout le plan Pro IA",
+      "Fonctionnalites avancees",
+      "Administration plus poussee",
+      "Priorite sur les evolutions premium",
+    ],
     highlight: false,
   },
 ]
@@ -41,7 +59,7 @@ export default function PricingPage() {
         <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/10">Tarifs Whappi</Badge>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Forfaits co-admin WhatsApp</h1>
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Trois offres simples pour passer d&apos;un groupe pilote a une communaute multi-groupes.
+          7 jours d&apos;essai gratuit avec 1 groupe, puis trois offres simples pour moderer, automatiser et monter en puissance.
         </p>
       </div>
 

@@ -56,9 +56,9 @@ router.post('/checkout', ClerkExpressWithAuth(), async (req, res) => {
 });
 
 // GET /api/v1/payments/plans
-router.get('/plans', (req, res) => {
+router.get('/plans', async (req, res) => {
     try {
-        const plans = PricingService.getActivePlans();
+        const plans = await PricingService.getActivePlans();
         res.json(plans);
     } catch (error) {
         log('Erreur lors de la recuperation des plans', 'PAYMENT', { error: error.message }, 'ERROR');
