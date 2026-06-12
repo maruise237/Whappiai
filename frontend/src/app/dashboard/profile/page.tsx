@@ -42,6 +42,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/plan-badge"
 import { api } from "@/lib/api"
+import { emitWappyEvent } from "@/lib/wappy-events"
 import { cn, ensureString, safeDate } from "@/lib/utils"
 import { getManagedGroupUsage, getPlanGroupLimit, getPlanUsageMessage } from "@/lib/plan-usage"
 
@@ -140,9 +141,11 @@ export default function ProfilePage() {
       await api.users.updateProfile({ organization_name: organisation, timezone }, token || undefined)
       setDbUser({ ...dbUser, organization_name: organisation, timezone })
       toast.success(t('toast_save_success'))
+      emitWappyEvent({ type: "profile", action: "saved" })
     } catch (error) {
       console.error(error)
       toast.error(t('toast_save_error'))
+      emitWappyEvent({ type: "system", action: "error", errorType: "profile-save-failed" })
     } finally {
       setSavingProfile(false)
     }
@@ -154,9 +157,11 @@ export default function ProfilePage() {
       await api.users.updateProfile({ sound_notifications: value ? 1 : 0 }, token || undefined)
       setDbUser({ ...dbUser, sound_notifications: value ? 1 : 0 })
       toast.success(t('toast_sound_success'))
+      emitWappyEvent({ type: "profile", action: "preferences-saved" })
     } catch (error) {
       console.error(error)
       toast.error(t('toast_sound_error'))
+      emitWappyEvent({ type: "system", action: "error", errorType: "profile-preferences-failed" })
     }
   }
 
@@ -337,7 +342,10 @@ export default function ProfilePage() {
             <CardContent className="p-0">
               <button
                 type="button"
-                onClick={() => signOut({ redirectUrl: "/login" })}
+                onClick={() => {
+                  emitWappyEvent({ type: "profile", action: "signout" })
+                  signOut({ redirectUrl: "/login" })
+                }}
                 className="flex w-full items-center gap-3 border-b border-destructive/10 px-4 py-3.5 text-left text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5 md:px-5 md:py-4"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">

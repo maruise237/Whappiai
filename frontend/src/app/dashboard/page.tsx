@@ -66,6 +66,7 @@ import {
 } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api } from "@/lib/api"
+import { emitWappyEvent } from "@/lib/wappy-events"
 import { shouldCelebrateSessionConnection } from "@/lib/session-celebration"
 import { cn, ensureString, safeRender } from "@/lib/utils"
 import { useWebSocket } from "@/providers/websocket-provider"
@@ -603,11 +604,23 @@ export default function DashboardPage() {
                   const token = await getToken()
                   await api.sessions.create(value.sessionId, value.phoneNumber, token || undefined)
                   toast.success(t("session_ready"), { id: toastId })
+                  emitWappyEvent({
+                    type: "session",
+                    action: "created",
+                    sessionId: value.sessionId,
+                    status: "connecting",
+                  })
                   setIsCreateOpen(false)
                   fetchSessions(true)
                 } catch (error) {
                   const message = error instanceof Error ? error.message : t("session_error")
                   toast.error(message, { id: toastId })
+                  emitWappyEvent({
+                    type: "system",
+                    action: "error",
+                    sessionId: value.sessionId,
+                    errorType: "session-create-failed",
+                  })
                 }
               })}
               className="space-y-6"

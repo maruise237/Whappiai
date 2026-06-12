@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { fetchApi } from "@/lib/api"
+import { emitWappyEvent } from "@/lib/wappy-events"
 import { useAuth } from "@clerk/clerk-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -104,6 +105,7 @@ export function BillingPlans({
   const handleSubscribe = async (planId: string) => {
     try {
       setLoading(planId)
+      emitWappyEvent({ type: "billing", action: "checkout-started", planId })
       const token = await getToken()
       const response = await fetchApi('/api/v1/payments/checkout', {
         method: 'POST',
@@ -117,10 +119,12 @@ export function BillingPlans({
         window.location.href = response.url
       } else {
         toast.error(t("toast_payment_error"))
+        emitWappyEvent({ type: "billing", action: "checkout-failed", planId })
       }
     } catch (error) {
       console.error(error)
       toast.error(error instanceof Error ? error.message : t("toast_generic_error"))
+      emitWappyEvent({ type: "billing", action: "checkout-failed", planId })
     } finally {
       setLoading(null)
     }

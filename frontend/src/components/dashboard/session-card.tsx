@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { api } from "@/lib/api"
+import { emitWappyEvent } from "@/lib/wappy-events"
 import { showConfirm } from "@/lib/swal"
 import { cn, copyToClipboard as copyUtil, ensureString, safeRender } from "@/lib/utils"
 import { toast } from "sonner"
@@ -30,23 +31,21 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
   const [localPairingCode, setLocalPairingCode] = React.useState<string | null>(null)
   const [activeTab, setActiveTab] = React.useState("qr")
 
-  // Reset local state when session changes
   React.useEffect(() => {
     setLocalQrCode(null)
     setLocalPairingCode(null)
   }, [session?.sessionId])
 
   React.useEffect(() => {
-    if (session?.status === 'DISCONNECTED') {
+    if (session?.status === "DISCONNECTED") {
       setLocalQrCode(null)
       setLocalPairingCode(null)
     }
   }, [session?.status])
 
-  // Automatically switch to correct tab if data arrives via WebSocket
   React.useEffect(() => {
-    const hasCode = session?.pairingCode || session?.pairing_code || localPairingCode;
-    const isValidStatus = session?.status === 'GENERATING_CODE' || session?.status === 'CONNECTING';
+    const hasCode = session?.pairingCode || session?.pairing_code || localPairingCode
+    const isValidStatus = session?.status === "GENERATING_CODE" || session?.status === "CONNECTING"
 
     if (hasCode && isValidStatus && !session?.qr && activeTab === "qr") {
       setActiveTab("code")
@@ -55,35 +54,59 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   const handleRequestPairingCode = async () => {
     if (!phoneNumber) {
-      toast.error(t("session_phone_required") || "Veuillez saisir un numéro de téléphone")
+      toast.error(t("session_phone_required") || "Veuillez saisir un numero de telephone")
+      emitWappyEvent({ type: "system", action: "error", errorType: "pairing-phone-missing" })
       return
     }
 
     setLoading(true)
-    const toastId = toast.loading(t("session_generating_pairing") || "Génération du code d'appairage...")
+    const toastId = toast.loading(t("session_generating_pairing") || "Generation du code d'appairage...")
+    emitWappyEvent({
+      type: "session",
+      action: "pairing-requested",
+      sessionId: ensureString(session?.sessionId || phoneNumber),
+      status: "connecting",
+    })
 
     try {
       const token = await getToken()
-      let response;
+      let response
       if (!session) {
         const newSessionId = `session_${Math.random().toString(36).substring(2, 9)}`
         response = await api.sessions.create(newSessionId, phoneNumber, token || undefined)
         onRefresh()
       } else {
         response = await api.sessions.create(session.sessionId, phoneNumber, token || undefined)
-        // We do not call onRefresh() here to prevent race conditions with WebSocket
       }
 
       if (response && response.pairingCode) {
         setLocalPairingCode(response.pairingCode)
-        toast.success(t("session_pairing_received") || "Code d'appairage reçu", { id: toastId })
+        toast.success(t("session_pairing_received") || "Code d'appairage recu", { id: toastId })
+        emitWappyEvent({
+          type: "session",
+          action: "pairing-requested",
+          sessionId: ensureString(session?.sessionId || response.sessionId || phoneNumber),
+          status: "connecting",
+        })
       } else {
-        toast.success(t("session_pairing_sent") || "Demande envoyée, attendez le code...", { id: toastId })
+        toast.success(t("session_pairing_sent") || "Demande envoyee, attendez le code...", { id: toastId })
+        emitWappyEvent({
+          type: "session",
+          action: "connecting",
+          sessionId: ensureString(session?.sessionId || response?.sessionId || phoneNumber),
+          status: "connecting",
+        })
       }
     } catch (error: any) {
-      toast.error(t("session_pairing_failed") || "Échec de la demande", {
+      toast.error(t("session_pairing_failed") || "Echec de la demande", {
         id: toastId,
-        description: error.message || t("session_pairing_impossible") || "Impossible de générer le code"
+        description: error.message || t("session_pairing_impossible") || "Impossible de generer le code",
+      })
+      emitWappyEvent({
+        type: "system",
+        action: "error",
+        sessionId: ensureString(session?.sessionId || phoneNumber),
+        errorType: "pairing-request-failed",
       })
     } finally {
       setLoading(false)
@@ -93,7 +116,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
   const copyToClipboard = async (text: string, label: string) => {
     const success = await copyUtil(text)
     if (success) {
-      toast.success(`${label} ${t("session_copied") || "copié"}`)
+      toast.success(`${label} ${t("session_copied") || "copie"}`)
+      emitWappyEvent({
+        type: "session",
+        action: label.toLowerCase().includes("code") ? "pairing-copied" : "copied",
+        sessionId: ensureString(session?.sessionId),
+      })
     }
   }
 
@@ -104,22 +132,45 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
     }
 
     setLoading(true)
-    const toastId = toast.loading(t("session_generating_qr") || "Génération du QR Code...")
+    const toastId = toast.loading(t("session_generating_qr") || "Generation du QR Code...")
+    emitWappyEvent({
+      type: "session",
+      action: "qr-requested",
+      sessionId: ensureString(session.sessionId),
+      status: "connecting",
+    })
 
     try {
       const token = await getToken()
       const response = await api.sessions.qr(session.sessionId, token || undefined)
       if (response && response.qr) {
         setLocalQrCode(response.qr)
-        toast.success(t("session_qr_generated") || "QR Code généré", { id: toastId })
+        toast.success(t("session_qr_generated") || "QR Code genere", { id: toastId })
+        emitWappyEvent({
+          type: "session",
+          action: "qr-requested",
+          sessionId: ensureString(session.sessionId),
+          status: "connecting",
+        })
       } else {
-        // We do not need to refresh, the WebSocket will update the QR code
-        toast.success(t("session_qr_sent") || "Demande de QR Code envoyée", { id: toastId })
+        toast.success(t("session_qr_sent") || "Demande de QR Code envoyee", { id: toastId })
+        emitWappyEvent({
+          type: "session",
+          action: "connecting",
+          sessionId: ensureString(session.sessionId),
+          status: "connecting",
+        })
       }
     } catch (error: any) {
-      toast.error(t("session_qr_failed") || "Échec de la génération", {
+      toast.error(t("session_qr_failed") || "Echec de la generation", {
         id: toastId,
-        description: error.message || t("session_qr_impossible") || "Impossible de générer le QR Code"
+        description: error.message || t("session_qr_impossible") || "Impossible de generer le QR Code",
+      })
+      emitWappyEvent({
+        type: "system",
+        action: "error",
+        sessionId: ensureString(session.sessionId),
+        errorType: "qr-request-failed",
       })
     } finally {
       setLoading(false)
@@ -143,30 +194,39 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
       const token = await getToken()
       await api.sessions.delete(session.sessionId, token || undefined)
       onRefresh()
-      toast.success(t("session_deleted") || "Session supprimée", { id: toastId })
+      toast.success(t("session_deleted") || "Session supprimee", { id: toastId })
+      emitWappyEvent({
+        type: "session",
+        action: "deleted",
+        sessionId: ensureString(session.sessionId),
+        status: "disconnected",
+      })
     } catch (error: any) {
-      toast.error(t("session_delete_failed") || "Échec de la suppression", { id: toastId })
+      toast.error(t("session_delete_failed") || "Echec de la suppression", { id: toastId })
+      emitWappyEvent({
+        type: "system",
+        action: "error",
+        sessionId: ensureString(session.sessionId),
+        errorType: "session-delete-failed",
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  // A session is connected if explicitly marked as isConnected and NOT currently generating/connecting
   const isConnected = session?.isConnected && !loading
   const qrCode = localQrCode || session?.qr || session?.qr_code
-
-  // Only show pairing code if the session is currently generating it or connecting
-  const isValidStatusForCode = session?.status === 'GENERATING_CODE' || session?.status === 'CONNECTING';
-  const rawPairingCode = localPairingCode || session?.pairingCode || session?.pairing_code;
-  const pairingCode = isValidStatusForCode ? rawPairingCode : null;
+  const isValidStatusForCode = session?.status === "GENERATING_CODE" || session?.status === "CONNECTING"
+  const rawPairingCode = localPairingCode || session?.pairingCode || session?.pairing_code
+  const pairingCode = isValidStatusForCode ? rawPairingCode : null
 
   if (!session) {
     return (
       <Card className="border-border bg-card">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <Smartphone className="h-8 w-8 text-muted-foreground/40 mb-3" />
-          <h3 className="text-sm font-medium mb-1">{t("session_no_selection")}</h3>
-          <p className="text-xs text-muted-foreground max-w-xs mb-4">{t("session_no_selection_desc")}</p>
+          <Smartphone className="mb-3 h-8 w-8 text-muted-foreground/40" />
+          <h3 className="mb-1 text-sm font-medium">{t("session_no_selection")}</h3>
+          <p className="mb-4 max-w-xs text-xs text-muted-foreground">{t("session_no_selection_desc")}</p>
           <Button size="sm" onClick={onCreate}>
             {t("session_create_new")}
           </Button>
@@ -177,31 +237,34 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
 
   return (
     <Card className="border-border bg-card">
-      <CardHeader className="p-4 border-b">
+      <CardHeader className="border-b p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
               <Smartphone className="h-4 w-4 text-primary" />
             </div>
             <div>
               <p className="text-sm font-medium">{safeRender(session.sessionId)}</p>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="mt-0.5 flex items-center gap-2">
                 <p className="text-xs text-muted-foreground">{t("session_whatsapp")}</p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex flex-col items-end gap-1">
-              <Badge className={isConnected
-                ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20"
-                : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
-              }>
+              <Badge
+                className={
+                  isConnected
+                    ? "border-green-500/20 bg-green-500/10 text-green-700 dark:text-green-400"
+                    : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                }
+              >
                 {isConnected ? t("session_connected") : t("session_disconnected")}
               </Badge>
               {session?.detail && !isConnected && (
-                 <span className="text-[9px] text-destructive font-bold uppercase tracking-tight">
-                    {ensureString(session.detail).includes('conflict') ? t("session_conflict") : safeRender(session.detail)}
-                 </span>
+                <span className="text-[9px] font-bold uppercase tracking-tight text-destructive">
+                  {ensureString(session.detail).includes("conflict") ? t("session_conflict") : safeRender(session.detail)}
+                </span>
               )}
             </div>
             <DropdownMenu>
@@ -212,37 +275,37 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[160px]">
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="mr-2 h-4 w-4" />
                   {t("session_delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
-        </CardHeader>
+      </CardHeader>
 
       <CardContent id="connection-area" className="p-4">
         {!isConnected ? (
           <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsList className="mb-4 grid w-full grid-cols-2">
                 <TabsTrigger value="qr" className="text-xs">{t("session_qr")}</TabsTrigger>
                 <TabsTrigger value="code" className="text-xs">{t("session_pairing_code")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="qr" className="flex flex-col items-center space-y-4 pt-4">
-                <div className="relative aspect-square w-full max-w-[240px] border rounded-lg flex items-center justify-center bg-muted/20 overflow-hidden shadow-inner">
+                <div className="relative aspect-square w-full max-w-[240px] overflow-hidden rounded-lg border bg-muted/20 shadow-inner">
                   {qrCode ? (
-                    <img src={qrCode} alt="QR Code" className="w-full h-full p-4 bg-white rounded-md object-contain" />
+                    <img src={qrCode} alt="QR Code" className="h-full w-full rounded-md bg-white p-4 object-contain" />
                   ) : (
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
+                    <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
                       <RefreshCw className={cn("h-6 w-6", loading && "animate-spin")} />
                       <span className="text-[10px] font-medium">{loading ? t("session_generating") : t("session_click_refresh")}</span>
                     </div>
                   )}
                 </div>
                 <Button size="sm" variant="outline" className="h-9 px-6" onClick={handleRefreshQr} disabled={loading}>
-                  <RefreshCw className={cn("h-3.5 w-3.5 mr-2", loading && "animate-spin")} />
+                  <RefreshCw className={cn("mr-2 h-3.5 w-3.5", loading && "animate-spin")} />
                   {t("session_refresh_qr")}
                 </Button>
               </TabsContent>
@@ -250,30 +313,30 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
               <TabsContent value="code" className="space-y-6 pt-4">
                 {pairingCode ? (
                   <>
-                    <div className="p-6 rounded-lg bg-muted/50 border flex flex-col items-center space-y-4 shadow-inner">
+                    <div className="flex flex-col items-center space-y-4 rounded-lg border bg-muted/50 p-6 shadow-inner">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("session_pairing_code_label")}</p>
                       <div className="flex flex-wrap justify-center gap-1.5">
-                        {ensureString(pairingCode).split('').map((char: string, i: number) => (
-                          <div key={`char-${i}`} className="w-9 h-12 border bg-card rounded-md flex items-center justify-center text-xl font-black text-primary shadow-sm">
+                        {ensureString(pairingCode).split("").map((char: string, i: number) => (
+                          <div key={`char-${i}`} className="flex h-12 w-9 items-center justify-center rounded-md border bg-card text-xl font-black text-primary shadow-sm">
                             {char}
                           </div>
                         ))}
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => copyToClipboard(pairingCode, "Code")}>
-                        <Copy className="h-3.5 w-3.5 mr-2" />
+                        <Copy className="mr-2 h-3.5 w-3.5" />
                         {t("session_copy_code")}
                       </Button>
                     </div>
                     <details className="text-xs text-muted-foreground">
-                      <summary className="cursor-pointer hover:text-foreground font-medium">{t("session_change_number")}</summary>
-                      <div className="flex gap-2 mt-3">
+                      <summary className="cursor-pointer font-medium hover:text-foreground">{t("session_change_number")}</summary>
+                      <div className="mt-3 flex gap-2">
                         <Input
                           placeholder={t("session_phone_placeholder")}
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
                           className="h-9 text-sm"
                         />
-                        <Button size="sm" className="h-9 px-3 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                        <Button size="sm" className="h-9 whitespace-nowrap px-3" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
                           {t("session_regenerate")}
                         </Button>
                       </div>
@@ -281,7 +344,7 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                   </>
                 ) : (
                   <div className="space-y-3">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider ml-1">{t("session_phone_label")}</label>
+                    <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t("session_phone_label")}</label>
                     <div className="flex gap-2">
                       <Input
                         placeholder={t("session_phone_placeholder")}
@@ -289,12 +352,12 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         className="h-10 text-sm"
                       />
-                      <Button size="sm" className="h-10 px-4 whitespace-nowrap" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
+                      <Button size="sm" className="h-10 whitespace-nowrap px-4" onClick={handleRequestPairingCode} disabled={loading || !phoneNumber}>
                         {t("session_get_code")}
                       </Button>
                     </div>
-                    <div className="p-8 text-center border border-dashed rounded-lg bg-muted/20">
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                    <div className="rounded-lg border border-dashed bg-muted/20 p-8 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                         {loading ? t("session_requesting_code") : t("session_enter_number")}
                       </p>
                     </div>
@@ -305,14 +368,13 @@ export function SessionCard({ session, onRefresh, onCreate }: { session?: any, o
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10">
               <Check className="h-6 w-6 text-green-600" />
             </div>
             <h4 className="text-sm font-medium">{t("session_operational")}</h4>
-            <p className="text-xs text-muted-foreground mt-1">{t("session_operational_desc")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("session_operational_desc")}</p>
 
-            <div className="w-full mt-6 space-y-2">
-            </div>
+            <div className="mt-6 w-full space-y-2" />
           </div>
         )}
       </CardContent>

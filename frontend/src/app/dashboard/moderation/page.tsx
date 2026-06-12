@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { api } from "@/lib/api"
+import { emitWappyEvent } from "@/lib/wappy-events"
 import { useAuth } from "@clerk/clerk-react"
 import { useWebSocket } from "@/providers/websocket-provider"
 import { toast } from "sonner"
@@ -324,6 +325,12 @@ export default function ModerationPage() {
 
       if (!isCurrentlyManaged && willBeManaged && isManagedGroupLimitReached) {
         toast.error(`Limite atteinte: votre plan ${planLabel(activePlan)} couvre ${managedGroupLimit} groupe(s) modere(s).`)
+        emitWappyEvent({
+          type: "moderation",
+          action: "limit-reached",
+          groupId,
+          plan: normalizedPlan,
+        })
         return
       }
     }
@@ -371,10 +378,23 @@ export default function ModerationPage() {
       const response = await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload(group.settings, t), token || undefined)
       const quotaLabel = moderationQuotaLabel(response?.meta?.groups_used, response?.meta?.group_limit)
       toast.success(`${ensureString(group.subject || group.name, "Groupe")} mis a jour${quotaLabel ? ` - ${quotaLabel}` : ""}`)
+      emitWappyEvent({
+        type: "moderation",
+        action: "rule-updated",
+        groupId,
+        sessionId: selectedSessionId,
+      })
     } catch (error) {
       console.error(error)
       const msg = error instanceof Error ? error.message : "Erreur inconnue"
       toast.error(msg)
+      emitWappyEvent({
+        type: "system",
+        action: "error",
+        groupId,
+        sessionId: selectedSessionId,
+        errorType: "moderation-save-failed",
+      })
     } finally {
       setSavingGroupId(null)
     }
@@ -387,6 +407,12 @@ export default function ModerationPage() {
     const settings = normalizeSettings(group.settings, t)
     if (!isManagedGroupSettings(settings, t) && isManagedGroupLimitReached) {
       toast.error(`Limite atteinte: votre plan ${planLabel(activePlan)} couvre ${managedGroupLimit} groupe(s) modere(s).`)
+      emitWappyEvent({
+        type: "moderation",
+        action: "limit-reached",
+        groupId,
+        plan: normalizedPlan,
+      })
       return
     }
     setSchedulingGroupId(groupId)
@@ -406,9 +432,22 @@ export default function ModerationPage() {
       updateLocalGroup(groupId, { welcomeEnabled: true })
       const quotaLabel = moderationQuotaLabel(response?.meta?.groups_used, response?.meta?.group_limit)
       toast.success(`Bienvenue quotidienne programmee${quotaLabel ? ` - ${quotaLabel}` : ""}`)
+      emitWappyEvent({
+        type: "engagement",
+        action: "welcome-scheduled",
+        groupId,
+        sessionId: selectedSessionId,
+      })
     } catch (error) {
       console.error(error)
       toast.error("Impossible de programmer le message quotidien")
+      emitWappyEvent({
+        type: "system",
+        action: "error",
+        groupId,
+        sessionId: selectedSessionId,
+        errorType: "welcome-schedule-failed",
+      })
     } finally {
       setSchedulingGroupId(null)
     }
@@ -449,9 +488,22 @@ export default function ModerationPage() {
         [groupId]: { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: draft.recurrence },
       }))
       toast.success("Message programme")
+      emitWappyEvent({
+        type: "engagement",
+        action: "task-created",
+        groupId,
+        sessionId: selectedSessionId,
+      })
     } catch (error) {
       console.error(error)
       toast.error("Impossible de programmer ce message")
+      emitWappyEvent({
+        type: "system",
+        action: "error",
+        groupId,
+        sessionId: selectedSessionId,
+        errorType: "task-create-failed",
+      })
     } finally {
       setSchedulingGroupId(null)
     }
@@ -482,9 +534,22 @@ export default function ModerationPage() {
         [groupId]: (prev[groupId] || []).filter(task => task.id !== taskId),
       }))
       toast.success("Message programme supprime")
+      emitWappyEvent({
+        type: "engagement",
+        action: "task-deleted",
+        groupId,
+        sessionId: selectedSessionId,
+      })
     } catch (error) {
       console.error(error)
       toast.error("Impossible de supprimer ce message programme")
+      emitWappyEvent({
+        type: "system",
+        action: "error",
+        groupId,
+        sessionId: selectedSessionId,
+        errorType: "task-delete-failed",
+      })
     } finally {
       setSchedulingGroupId(null)
     }
@@ -504,9 +569,24 @@ export default function ModerationPage() {
         [groupId]: (prev[groupId] || []).filter(item => ensureString(item.userId) !== userId),
       }))
       toast.success("Avertissements remis a zero")
+      emitWappyEvent({
+        type: "moderation",
+        action: "warnings-reset",
+        groupId,
+        sessionId: selectedSessionId,
+        userId,
+      })
     } catch (error) {
       console.error(error)
       toast.error("Impossible de remettre ces avertissements a zero")
+      emitWappyEvent({
+        type: "system",
+        action: "error",
+        groupId,
+        sessionId: selectedSessionId,
+        userId,
+        errorType: "warnings-reset-failed",
+      })
     } finally {
       setResettingWarningId(null)
     }
