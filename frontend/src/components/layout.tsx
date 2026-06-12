@@ -291,8 +291,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </aside>
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="flex h-14 items-center justify-between border-b border-border bg-background/90 px-3 backdrop-blur-xl sm:h-16 sm:px-6">
-              <div className="flex min-w-0 items-center gap-3">
+            <header className="flex h-14 items-center justify-between border-b border-border bg-background/90 px-2.5 backdrop-blur-xl sm:h-16 sm:px-6">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <div className="lg:hidden">
                   <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                     <SheetTrigger asChild>
@@ -300,7 +300,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <Menu className="h-5 w-5" />
                       </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-[290px] border-border bg-card p-0">
+                    <SheetContent side="left" className="w-[min(290px,calc(100vw-24px))] border-border bg-card p-0">
                       <DashboardSidebar
                         isAdmin={isAdmin}
                         pathname={pathname}
@@ -316,7 +316,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <div className="hidden sm:block">
                   <LiveIndicator />
                 </div>
@@ -332,7 +332,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <NotificationDropdown />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card p-1 pr-2 text-left transition hover:bg-muted">
+                    <button className="ml-0.5 flex items-center gap-2 rounded-full border border-border bg-card p-1 pr-1.5 text-left transition hover:bg-muted sm:ml-1 sm:pr-2">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.imageUrl} />
                         <AvatarFallback className="bg-primary/15 text-xs text-primary">
@@ -360,8 +360,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
             </header>
 
-            <main className="min-h-0 flex-1 overflow-y-auto overflow-x-auto bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_32%),hsl(var(--background))]">
-              <div className="mx-auto max-w-[1480px] p-4 sm:p-6 lg:p-8">
+            <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_32%),hsl(var(--background))]">
+              <div className="mx-auto w-full min-w-0 max-w-[1480px] p-4 sm:p-6 lg:p-8">
                 <ErrorBoundary><MaintenanceProvider>{children}</MaintenanceProvider></ErrorBoundary>
               </div>
             </main>
@@ -420,7 +420,7 @@ function WappyMascotWrapper() {
   if (!mounted) return null
 
   // Taille responsive optimisée SaaS (recherche web juin 2026)
-  const baseSize = isMobile ? 60 : 150
+  const baseSize = isMobile ? 56 : 150
   const scrollOpacity = Math.max(0.3, 1 - scrollY / 600)
 
   return (
@@ -432,7 +432,7 @@ function WappyMascotWrapper() {
       style={{ opacity: scrollOpacity }}
       className={cn(
         "fixed z-50 pointer-events-auto transition-opacity duration-300",
-        "bottom-4 right-4",
+        "bottom-3 right-3",
         "md:bottom-6 md:right-6",
         reducedMotion && "motion-reduce"
       )}

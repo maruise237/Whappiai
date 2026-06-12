@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Bell, Check, Trash2, Info, AlertTriangle, Zap, MessageSquare } from "lucide-react"
 import {
   DropdownMenu,
@@ -102,7 +103,7 @@ export function NotificationDropdown() {
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0">
+      <DropdownMenuContent align="end" className="w-[calc(100vw-1rem)] max-w-80 p-0 sm:w-80">
         <div className="flex items-center justify-between p-4 border-b">
           <DropdownMenuLabel className="p-0 font-semibold">Notifications</DropdownMenuLabel>
           {unreadCount > 0 && (
@@ -150,7 +151,7 @@ export function NotificationDropdown() {
                   {!n.is_read && (
                     <button
                       onClick={(e) => handleMarkAsRead(e, n.id)}
-                      className="opacity-0 group-hover:opacity-100 absolute top-4 right-4 text-muted-foreground hover:text-primary transition-all"
+                      className="absolute top-4 right-4 text-muted-foreground transition-all hover:text-primary opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                       title="Marquer comme lu"
                     >
                       <Check className="h-3 w-3" />
@@ -161,10 +162,10 @@ export function NotificationDropdown() {
             )}
           </div>
         </ScrollArea>
-        <div className="p-2 border-t text-center">
-          <button className="text-[10px] text-muted-foreground hover:text-foreground transition-colors w-full py-1">
+        <div className="border-t p-2 text-center">
+          <Link href="/dashboard/activities" className="block w-full py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground">
             Voir toutes les activités
-          </button>
+          </Link>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
