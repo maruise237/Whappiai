@@ -72,6 +72,7 @@ export default function ProfilePage() {
   const [organisation, setOrganisation] = React.useState("")
   const [timezone, setTimezone] = React.useState("Africa/Douala")
   const [savingProfile, setSavingProfile] = React.useState(false)
+  const [savingTimezone, setSavingTimezone] = React.useState(false)
 
   const fetchProfile = React.useCallback(async () => {
     setLoading(true)
@@ -113,7 +114,7 @@ export default function ProfilePage() {
   const expiry = subscription?.current_period_end || subscription?.subscription_expiry || dbUser?.subscription_expiry || null
   const messageLimit = Number(subscription?.message_limit || dbUser?.message_limit || 0)
   const messageUsed = Number(subscription?.message_used || dbUser?.message_used || 0)
-  const hasProfileChanges = organisation !== ensureString(dbUser?.organization_name) || timezone !== (dbUser?.timezone || "Africa/Douala")
+  const hasOrganisationChanges = organisation !== ensureString(dbUser?.organization_name)
 
   async function handleSaveProfile() {
     try {
@@ -147,6 +148,32 @@ export default function ProfilePage() {
       console.error(error)
       toast.error(t('toast_sound_error'))
       emitWappyEvent({ type: "system", action: "error", errorType: "profile-preferences-failed" })
+    }
+  }
+
+  async function handleTimezoneChange(nextTimezone: string) {
+    setTimezone(nextTimezone)
+
+    if (nextTimezone === (dbUser?.timezone || "Africa/Douala")) {
+      return
+    }
+
+    try {
+      setSavingTimezone(true)
+      const token = await getToken()
+      const updatedUser = await api.users.updateProfile({ timezone: nextTimezone }, token || undefined)
+      const nextUser = updatedUser?.user || updatedUser
+      setDbUser(nextUser)
+      setTimezone(nextUser?.timezone || nextTimezone || "Africa/Douala")
+      toast.success(t('toast_save_success'))
+      emitWappyEvent({ type: "profile", action: "saved" })
+    } catch (error) {
+      console.error(error)
+      setTimezone(dbUser?.timezone || "Africa/Douala")
+      toast.error(t('toast_save_error'))
+      emitWappyEvent({ type: "system", action: "error", errorType: "profile-timezone-failed" })
+    } finally {
+      setSavingTimezone(false)
     }
   }
 
@@ -253,7 +280,7 @@ export default function ProfilePage() {
                   className="h-11 rounded-xl border-primary/15 bg-background text-sm focus-visible:ring-primary/30"
                   disabled={loading}
                 />
-                {hasProfileChanges && (
+                {hasOrganisationChanges && (
                   <Button onClick={handleSaveProfile} disabled={savingProfile} className="h-11 rounded-xl">
                     <Save className="mr-2 h-4 w-4" />
                     {savingProfile ? t('saving_button') : t('save_button')}
@@ -279,8 +306,9 @@ export default function ProfilePage() {
               <div className="mt-2">
                 <select
                   value={timezone}
-                  onChange={e => setTimezone(e.target.value)}
+                  onChange={e => handleTimezoneChange(e.target.value)}
                   className="h-11 w-full rounded-xl border border-primary/15 bg-background px-3 text-sm focus-visible:ring-primary/30"
+                  disabled={savingTimezone}
                 >
                   {COMMON_TIMEZONES.map(tz => (
                     <option key={tz} value={tz}>{tz}</option>
