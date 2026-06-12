@@ -139,7 +139,7 @@ export function BillingPlans({
             plan.highlighted
               ? "scale-[1.02] border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10"
               : "border border-border bg-card",
-            plan.id === "trial" && "border-amber-300/40 bg-amber-50/70",
+            plan.id === "trial" && "border-state-warning/30 bg-state-warning-light/35",
             getPlanCode(plan.id) === normalizedActivePlan && "ring-2 ring-primary/15"
           )}>
           {plan.highlighted && (

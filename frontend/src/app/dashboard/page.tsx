@@ -713,7 +713,7 @@ function TrialFocusPanel({
         !accessAllowed
           ? "border-destructive/25 bg-destructive/5"
           : isTrial
-            ? "border-amber-400/30 bg-amber-50/80"
+            ? "border-state-warning/30 bg-state-warning-light/35"
             : "border-primary/20 bg-primary/5"
       )}
     >

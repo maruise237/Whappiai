@@ -88,7 +88,7 @@ export default function PricingPage() {
             className={cn(
               "relative bg-card shadow-none",
               plan.highlight && "border-primary shadow-[0_24px_70px_-50px_hsl(var(--primary))]",
-              plan.code === "trial" && "border-amber-300/50 bg-amber-50/70"
+              plan.code === "trial" && "border-state-warning/30 bg-state-warning-light/35"
             )}
           >
             {plan.highlight && (

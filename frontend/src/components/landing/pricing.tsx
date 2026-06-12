@@ -117,7 +117,7 @@ export function Pricing() {
                 plan.highlighted
                   ? "z-10 scale-[1.02] border-2 border-primary bg-card shadow-lg"
                   : "z-0 border border-border/70 bg-card/70 hover:border-primary/50 hover:bg-card",
-                plan.id === "trial" && "border-amber-300/50 bg-amber-50/70"
+                plan.id === "trial" && "border-state-warning/30 bg-state-warning-light/35"
               )}
             >
               {plan.highlighted && (
