@@ -78,7 +78,7 @@ export default function ProfilePage() {
     try {
       const token = await getToken()
       const [profileResult, subscriptionResult] = await Promise.allSettled([
-        api.auth.check(token || undefined),
+        api.users.getProfile(token || undefined),
         api.subscriptions.current(token || undefined),
       ])
       const profileData = profileResult.status === "fulfilled" ? profileResult.value : null
@@ -119,8 +119,11 @@ export default function ProfilePage() {
     try {
       setSavingProfile(true)
       const token = await getToken()
-      await api.users.updateProfile({ organization_name: organisation, timezone }, token || undefined)
-      setDbUser({ ...dbUser, organization_name: organisation, timezone })
+      const updatedUser = await api.users.updateProfile({ organization_name: organisation, timezone }, token || undefined)
+      const nextUser = updatedUser?.user || updatedUser
+      setDbUser(nextUser)
+      setOrganisation(ensureString(nextUser?.organization_name))
+      setTimezone(nextUser?.timezone || "Africa/Douala")
       toast.success(t('toast_save_success'))
       emitWappyEvent({ type: "profile", action: "saved" })
     } catch (error) {
@@ -135,8 +138,9 @@ export default function ProfilePage() {
   async function handleSoundToggle(value: boolean) {
     try {
       const token = await getToken()
-      await api.users.updateProfile({ sound_notifications: value ? 1 : 0 }, token || undefined)
-      setDbUser({ ...dbUser, sound_notifications: value ? 1 : 0 })
+      const updatedUser = await api.users.updateProfile({ sound_notifications: value ? 1 : 0 }, token || undefined)
+      const nextUser = updatedUser?.user || updatedUser
+      setDbUser(nextUser)
       toast.success(t('toast_sound_success'))
       emitWappyEvent({ type: "profile", action: "preferences-saved" })
     } catch (error) {
