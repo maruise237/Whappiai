@@ -4,8 +4,6 @@ import * as React from "react"
 import Link from "next/link"
 import { useTranslation } from "react-i18next"
 import {
-  Bell,
-  Building2,
   CalendarClock,
   ChevronRight,
   CreditCard,
@@ -16,23 +14,11 @@ import {
   Mail,
   Save,
   ShieldCheck,
-  Trash2,
   UserRound,
   Volume2,
 } from "lucide-react"
 import { useAuth, useClerk, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -89,8 +75,6 @@ export default function ProfilePage() {
   const [organisation, setOrganisation] = React.useState("")
   const [timezone, setTimezone] = React.useState("Africa/Douala")
   const [savingProfile, setSavingProfile] = React.useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
-  const [confirmEmail, setConfirmEmail] = React.useState("")
 
   const fetchProfile = React.useCallback(async () => {
     setLoading(true)
@@ -163,12 +147,6 @@ export default function ProfilePage() {
       toast.error(t('toast_sound_error'))
       emitWappyEvent({ type: "system", action: "error", errorType: "profile-preferences-failed" })
     }
-  }
-
-  function handleDeleteAccount() {
-    toast.info(t('toast_delete_info'))
-    setDeleteDialogOpen(false)
-    setConfirmEmail("")
   }
 
   return (
@@ -295,12 +273,6 @@ export default function ProfilePage() {
               checked={Boolean(dbUser?.sound_notifications)}
               onCheckedChange={handleSoundToggle}
             />
-            <ActionRow
-              icon={<Bell className="h-4 w-4" />}
-              label={t('notification_center_label')}
-              text={t('notification_center_text')}
-              href="/dashboard"
-            />
             <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
               <Label className="text-xs font-semibold text-muted-foreground">{t('timezone_label')}</Label>
               <div className="mt-2">
@@ -334,7 +306,7 @@ export default function ProfilePage() {
               icon={<LifeBuoy className="h-4 w-4" />}
               label={t('help_support_label')}
               text={t('help_support_text')}
-              href="/dashboard"
+              href="/contact"
             />
           </SettingsBlock>
 
@@ -354,52 +326,22 @@ export default function ProfilePage() {
                 <span className="flex-1">{t('sign_out')}</span>
                 <ChevronRight className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5 md:px-5 md:py-4"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
-                  <Trash2 className="h-4 w-4" />
-                </span>
-                <span className="flex-1">
-                  {t('delete_account')}
-                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{t('delete_account_hint')}</span>
-                </span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-3xl border-border/70 bg-card shadow-sm shadow-primary/5">
+            <CardContent className="space-y-2 p-4 text-sm md:p-5">
+              <p className="font-semibold">Ce qui est vraiment disponible ici</p>
+              <p className="text-muted-foreground">
+                Vous pouvez gerer votre forfait, vos groupes proteges, votre organisation, votre fuseau horaire et les sons d&apos;alerte.
+              </p>
+              <p className="text-muted-foreground">
+                Les changements sensibles d&apos;identite et de securite passent par Clerk. La suppression directe du compte n&apos;est pas exposee ici tant que le parcours n&apos;est pas completement supporte.
+              </p>
             </CardContent>
           </Card>
         </aside>
       </section>
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">{t('delete_dialog_title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('delete_dialog_desc')}
-              <br /><br />
-              {t('delete_dialog_confirm')} <strong>{userEmail}</strong>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <Input
-            value={confirmEmail}
-            onChange={event => setConfirmEmail(event.target.value)}
-            placeholder={userEmail || t('delete_dialog_placeholder')}
-          />
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmEmail("")}>{t('delete_dialog_cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={confirmEmail !== userEmail}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
-              onClick={handleDeleteAccount}
-            >
-              {t('delete_dialog_confirm_btn')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }
