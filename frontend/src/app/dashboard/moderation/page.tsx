@@ -617,9 +617,9 @@ export default function ModerationPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-            <SelectTrigger className="h-10 w-full sm:w-[260px]">
+            <SelectTrigger className="h-10 w-full lg:w-[260px]">
               <SelectValue placeholder={t("session_placeholder")} />
             </SelectTrigger>
             <SelectContent>
@@ -630,7 +630,7 @@ export default function ModerationPage() {
               ))}
             </SelectContent>
           </Select>
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full lg:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t("search_placeholder")}
@@ -730,18 +730,27 @@ export default function ModerationPage() {
             return (
               <AccordionItem key={groupId} value={groupId} className="overflow-hidden rounded-2xl border bg-card">
                 <AccordionTrigger className="rounded-none px-4 py-4 hover:no-underline sm:px-5">
-                  <div className="flex min-w-0 flex-1 items-center gap-3 pr-3">
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 pr-3 sm:flex-row sm:items-center">
                     <div className={cn(
                       "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white",
                       getGroupColor(groupId)
                     )}>
                       {groupName.charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0 text-left">
+                    <div className="min-w-0 flex-1 text-left">
                       <p className="truncate text-sm font-semibold" title={groupName}>{truncateGroupName(groupName)}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {group.participantCount ? `${safeRender(group.participantCount)} ${t("group_members")} - ` : ""}{activeCount}/3 {t("group_rules_active")}
                       </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 sm:hidden">
+                        <Badge className={cn(
+                          "border-none text-[10px]",
+                          activeCount > 0 ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-muted text-muted-foreground"
+                        )}>
+                          {activeCount > 0 ? t("group_active_badge") : t("group_inactive_badge")}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px]">{activeCount} {activeCount > 1 ? t("group_rules_count_plural") : t("group_rules_count")}</Badge>
+                      </div>
                     </div>
                   </div>
                   <div className="hidden shrink-0 items-center gap-2 sm:flex">
@@ -755,12 +764,12 @@ export default function ModerationPage() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pb-0">
-                  <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-y bg-card/95 px-4 py-3 backdrop-blur sm:px-5">
+                  <div className="sticky top-0 z-10 flex flex-col gap-3 border-y bg-card/95 px-4 py-3 backdrop-blur sm:px-5 lg:flex-row lg:items-center lg:justify-between">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold">{groupName}</p>
                       <p className="text-xs text-muted-foreground">{t("preset_active")} : {activePreset || t("preset_none")}</p>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       {groupIsLocked && (
                         <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
                           Plan plein
@@ -781,7 +790,7 @@ export default function ModerationPage() {
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
                       {t("presets_desc")}
                     </p>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                       {presets(t).map(preset => (
                         <Button
                           key={preset.name}
@@ -825,7 +834,7 @@ export default function ModerationPage() {
                             className="min-h-20 resize-none text-xs"
                             placeholder={t("scheduled_message_placeholder")}
                           />
-                          <div className="grid gap-3 sm:grid-cols-[1fr_140px_120px]">
+                          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_140px_120px]">
                             <Input
                               type="datetime-local"
                               value={scheduledDraft.scheduledAt}
@@ -845,7 +854,7 @@ export default function ModerationPage() {
                             </Select>
                             <Button
                               size="sm"
-                              className="h-9 text-xs"
+                              className="h-9 w-full text-xs lg:w-auto"
                               onClick={() => scheduleCustomMessage(group)}
                               disabled={schedulingGroupId === groupId}
                             >
@@ -879,12 +888,12 @@ export default function ModerationPage() {
                       ) : (
                         <div className="space-y-2">
                           {warnedMembers.slice(0, 5).map(member => (
-                            <div key={ensureString(member.userId)} className="flex items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2">
+                            <div key={ensureString(member.userId)} className="flex flex-col gap-3 rounded-xl border bg-card px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                               <div className="min-w-0">
                                 <p className="truncate text-xs font-semibold">{safeRender(member.phone || member.userId)}</p>
                                 <p className="mt-0.5 text-[10px] text-muted-foreground">{formatScheduleDate(member.lastWarningAt, t)}</p>
                               </div>
-                              <div className="flex shrink-0 items-center gap-1.5">
+                              <div className="flex shrink-0 items-center justify-between gap-1.5 sm:justify-end">
                                 <Badge className={cn("border-none text-[10px]", riskClass(member.risk))}>
                                   {member.count || 0} {t("warned_members_count")}
                                 </Badge>
@@ -933,7 +942,7 @@ export default function ModerationPage() {
                         <div className="space-y-2">
                           {scheduledTasks.slice(0, 5).map(task => (
                             <div key={safeRender(task.id)} className="rounded-xl border bg-card p-3">
-                              <div className="flex items-start justify-between gap-3">
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="min-w-0">
                                   <p className="text-xs font-semibold">{formatScheduleDate(task.scheduled_at, t)}</p>
                                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
@@ -951,7 +960,7 @@ export default function ModerationPage() {
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
-                              <div className="mt-2 flex items-center gap-2">
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
                                 <Badge variant="secondary" className="text-[10px]">{recurrenceLabel(task.recurrence, t)}</Badge>
                                 <span className="text-[10px] text-muted-foreground">{safeRender(task.status, "pending")}</span>
                               </div>
@@ -988,7 +997,7 @@ export default function ModerationPage() {
                   />
                   {settings.welcomeEnabled && (
                     <div className="space-y-3 rounded-2xl border bg-background/60 p-4">
-                      <div className="grid gap-3 sm:grid-cols-[1fr_140px]">
+                      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_140px]">
                         <Textarea
                           value={settings.welcomeMessage}
                           onChange={event => updateLocalGroup(groupId, { welcomeMessage: event.target.value })}
@@ -1050,7 +1059,7 @@ export default function ModerationPage() {
                           />
                         </div>
                         {settings.exclusionEnabled && (
-                          <div className="mt-3 grid gap-2 sm:grid-cols-[180px_1fr] sm:items-center">
+                          <div className="mt-3 grid gap-2 lg:grid-cols-[180px_1fr] lg:items-center">
                             <Input
                               type="number"
                               min={1}
@@ -1415,7 +1424,7 @@ function RuleSwitch({
 }) {
   return (
     <div className={cn(
-      "flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all",
+      "flex flex-col gap-4 rounded-2xl border p-4 transition-all sm:flex-row sm:items-center sm:justify-between",
       checked
         ? "border-primary/20 bg-primary/5"
         : "border-border bg-surface-neutral opacity-60"
@@ -1432,7 +1441,9 @@ function RuleSwitch({
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
         </div>
       </div>
-      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} aria-label={title} />
+      <div className="flex justify-end sm:block">
+        <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} aria-label={title} />
+      </div>
     </div>
   )
 }
