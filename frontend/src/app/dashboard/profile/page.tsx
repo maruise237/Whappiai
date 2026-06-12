@@ -7,9 +7,6 @@ import {
   CalendarClock,
   ChevronRight,
   CreditCard,
-  ExternalLink,
-  LifeBuoy,
-  LockKeyhole,
   LogOut,
   Mail,
   Save,
@@ -294,22 +291,6 @@ export default function ProfilePage() {
         </div>
 
         <aside className="space-y-5 md:space-y-6">
-          <SettingsBlock title={t('security_title')} description={t('security_desc')}>
-            <ActionRow
-              icon={<LockKeyhole className="h-4 w-4" />}
-              label={t('password_2fa_label')}
-              text={t('password_2fa_text')}
-              external
-              href="https://accounts.clerk.dev"
-            />
-            <ActionRow
-              icon={<LifeBuoy className="h-4 w-4" />}
-              label={t('help_support_label')}
-              text={t('help_support_text')}
-              href="/contact"
-            />
-          </SettingsBlock>
-
           <Card className="overflow-hidden rounded-3xl border-destructive/20 bg-destructive/5 shadow-none">
             <CardContent className="p-0">
               <button
@@ -326,18 +307,6 @@ export default function ProfilePage() {
                 <span className="flex-1">{t('sign_out')}</span>
                 <ChevronRight className="h-4 w-4" />
               </button>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border-border/70 bg-card shadow-sm shadow-primary/5">
-            <CardContent className="space-y-2 p-4 text-sm md:p-5">
-              <p className="font-semibold">Ce qui est vraiment disponible ici</p>
-              <p className="text-muted-foreground">
-                Vous pouvez gerer votre forfait, vos groupes proteges, votre organisation, votre fuseau horaire et les sons d&apos;alerte.
-              </p>
-              <p className="text-muted-foreground">
-                Les changements sensibles d&apos;identite et de securite passent par Clerk. La suppression directe du compte n&apos;est pas exposee ici tant que le parcours n&apos;est pas completement supporte.
-              </p>
             </CardContent>
           </Card>
         </aside>
@@ -383,48 +352,9 @@ function ReadOnlyRow({ icon, label, value, meta }: { icon: React.ReactNode; labe
         <p className="truncate text-xs text-muted-foreground">{value || "-"}</p>
       </div>
       <span className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
-        <LockKeyhole className="h-3 w-3" /> {meta}
+        <ShieldCheck className="h-3 w-3" /> {meta}
       </span>
     </div>
-  )
-}
-
-function ActionRow({
-  icon,
-  label,
-  text,
-  href,
-  external = false,
-}: {
-  icon: React.ReactNode
-  label: string
-  text: string
-  href: string
-  external?: boolean
-}) {
-  const content = (
-    <>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold">{label}</span>
-        <span className="block truncate text-xs text-muted-foreground">{text}</span>
-      </span>
-      {external ? <ExternalLink className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-    </>
-  )
-
-  if (external) {
-    return (
-      <a href={href} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary/5 md:px-5 md:py-4">
-        {content}
-      </a>
-    )
-  }
-
-  return (
-    <Link href={href} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary/5 md:px-5 md:py-4">
-      {content}
-    </Link>
   )
 }
 
