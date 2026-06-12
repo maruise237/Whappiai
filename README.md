@@ -7,10 +7,11 @@ Whappi is a SaaS layer for WhatsApp operations: dashboard, auth, billing, modera
 - **App layer**: Whappi
 - **WhatsApp engine**: Evolution API
 - **Frontend / backend runtime**: Node.js + Next.js app container
-- **Persistence**: SQLite volume
+- **Persistence**: PostgreSQL
+- **Shared state**: Redis
 - **Deployment target**: Dokploy + Traefik on a Linux VPS
 
-Whappi is no longer documented here as a Baileys-first deployment. The production path in this repo is **Evolution API provider mode**.
+Whappi is no longer documented here as a Baileys-first deployment. The production path in this repo is **Evolution API + Postgres + Redis**.
 
 ## Main features
 
@@ -39,16 +40,13 @@ Then fill the required variables.
 Most important:
 - `TOKEN_ENCRYPTION_KEY`
 - `SESSION_SECRET`
+- `DATABASE_URL`
+- `REDIS_URL`
 - Clerk keys
 - `WHATSAPP_PROVIDER=evolution`
 - `EVOLUTION_API_URL`
 - `EVOLUTION_API_KEY`
 - `EVOLUTION_WEBHOOK_SECRET`
-
-If you do **not** have Redis deployed, keep:
-```env
-REDIS_URL=
-```
 
 ### 3. Run with Docker Compose
 ```bash
@@ -69,7 +67,7 @@ See:
 ## Notes
 
 - `TOKEN_ENCRYPTION_KEY` must stay stable after production data exists
-- Redis is optional; a fake `REDIS_URL` creates noisy timeout logs
+- Production requires `DATABASE_URL`, `REDIS_URL`, `EVOLUTION_API_URL`, and `EVOLUTION_API_KEY`
 - Evolution API must be reachable from the app container
 
 ## License

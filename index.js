@@ -59,6 +59,7 @@ const { initializeApi } = require('./src/routes/api');
 
 // Helper to sanitize environment variables (removes quotes and whitespace)
 const _clean = (val) => typeof val === 'string' ? val.trim().replace(/^["']|["']$/g, '') : val;
+const providerName = (_clean(process.env.WHATSAPP_PROVIDER) || 'evolution').toLowerCase();
 
 // Validate encryption key
 const ENCRYPTION_KEY = _clean(process.env.TOKEN_ENCRYPTION_KEY);
@@ -74,6 +75,21 @@ const missingVars = REQUIRED_ENV_VARS.filter(key => !_clean(process.env[key]));
 if (missingVars.length > 0) {
     log(`FATAL: Variables d'environnement manquantes: ${missingVars.join(', ')}`, 'SYSTEM', { event: 'fatal-error' }, 'ERROR');
     process.exit(1);
+}
+
+// Production guardrails: Whappi only supports the Evolution + Postgres + Redis stack in production.
+if (process.env.NODE_ENV === 'production') {
+    const REQUIRED_PROD_ENV_VARS = ['DATABASE_URL', 'REDIS_URL', 'EVOLUTION_API_URL', 'EVOLUTION_API_KEY'];
+    const missingProdVars = REQUIRED_PROD_ENV_VARS.filter(key => !_clean(process.env[key]));
+    if (missingProdVars.length > 0) {
+        log(`FATAL: Variables de production manquantes: ${missingProdVars.join(', ')}`, 'SYSTEM', { event: 'fatal-prod-env' }, 'ERROR');
+        process.exit(1);
+    }
+
+    if (providerName !== 'evolution') {
+        log(`FATAL: WHATSAPP_PROVIDER=${providerName} est invalide en production. Utilisez uniquement 'evolution'.`, 'SYSTEM', { event: 'fatal-provider' }, 'ERROR');
+        process.exit(1);
+    }
 }
 
 // Initialize Express
@@ -787,6 +803,10 @@ app.use(errorHandler);
 // Initialize existing sessions on startup
 if (require.main === module) {
     (async () => {
+        const dbReady = await pg.connect();
+        if (!dbReady) {
+            throw new Error('Postgres bootstrap failed');
+        }
         await AIModel.ensureDefaultDeepSeek();
         await User.ensureAdmin(process.env.ADMIN_DASHBOARD_PASSWORD);
         const existingSessions = await Session.getAll(null, true);
@@ -808,7 +828,10 @@ if (require.main === module) {
         // Start SaaS Scheduler
         const scheduler = require('./src/cron/scheduler');
         scheduler.start();
-    })();
+    })().catch((error) => {
+        log(`FATAL: startup init failed: ${error.message}`, 'SYSTEM', { event: 'startup-init-failed' }, 'ERROR');
+        process.exit(1);
+    });
 }
 
 // Start server
@@ -816,9 +839,18 @@ const PORT = process.env.PORT || 3000;
 
 // Initialize Redis session store and token store (optional, non-blocking)
 (async () => {
+    if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
+        throw new Error('REDIS_URL is required in production');
+    }
     if (process.env.REDIS_URL) {
-        await redisService.connect();
+        const redisReady = await redisService.connect();
+        if (process.env.NODE_ENV === 'production' && !redisReady) {
+            throw new Error('Redis bootstrap failed');
+        }
         const result = await whappiSessionStore.connect(session);
+        if (process.env.NODE_ENV === 'production' && (!result.isConnected || !result.store)) {
+            throw new Error('Redis session store bootstrap failed');
+        }
         if (result.isConnected && result.store) {
             activeSessionStore.upgrade(result.store);
             log('Session store upgraded to Redis', 'SYSTEM', { event: 'session-store-redis' }, 'INFO');
@@ -859,7 +891,10 @@ const PORT = process.env.PORT || 3000;
             log(`Rate limit store init error: ${err.message}`, 'SYSTEM', { event: 'rate-limit-init-error' }, 'WARN');
         });
     }
-})();
+})().catch((error) => {
+    log(`FATAL: redis init failed: ${error.message}`, 'SYSTEM', { event: 'redis-init-failed' }, 'ERROR');
+    process.exit(1);
+});
 
 if (require.main === module) {
     server.listen(PORT, () => {

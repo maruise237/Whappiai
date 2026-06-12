@@ -1,7 +1,7 @@
 {
   "name": "super-light-web-whatsapp-api-server",
   "version": "1.0.0",
-  "description": "A super lightweight web server for WhatsApp API using @whiskeysockets/baileys",
+  "description": "Whappi SaaS runtime for WhatsApp operations using Evolution API, Postgres, and Redis",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

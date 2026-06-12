@@ -2,9 +2,8 @@
  * Session Management Routes
  * Handles session creation, listing, QR code, and basic operations.
  *
- * When WHATSAPP_PROVIDER=evolution (default), the create/qr/delete endpoints
- * delegate to Evolution API via SessionService. The legacy Baileys path is
- * still available when WHATSAPP_PROVIDER=baileys.
+ * The create/qr/delete endpoints delegate to Evolution API via SessionService.
+ * Production no longer uses the legacy in-process Baileys transport.
  */
 
 const express = require('express');

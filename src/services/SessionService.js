@@ -2,8 +2,7 @@
  * Session Service (Provider-aware)
  * Bridges Whappi session lifecycle with the active WhatsApp provider (Evolution by default).
  *
- * The legacy Baileys path is still available behind WHATSAPP_PROVIDER=baileys.
- * When WHATSAPP_PROVIDER=evolution, session creation, QR, status, delete and
+ * Production runs on Evolution API. Session creation, QR, status, delete and
  * message send go through the Evolution API client.
  */
 
@@ -18,7 +17,7 @@ function getProvider() {
 }
 
 function isProviderActive() {
-    return (process.env.WHATSAPP_PROVIDER || 'evolution').toLowerCase() !== 'baileys';
+    return true;
 }
 
 const lastQrCache = new Map();

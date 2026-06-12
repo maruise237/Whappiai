@@ -8,13 +8,14 @@ This document describes the current production-style deployment path for Whappi 
 - **Evolution API**: WhatsApp session engine (QR, state, send/receive)
 - **Dokploy**: build + container orchestration
 - **Traefik**: HTTPS routing and certificates
-- **SQLite volume**: persistent app data
+- **PostgreSQL**: persistent product data
+- **Redis**: sessions, queue, rate limits, shared runtime state
 
 Current runtime shape in this repository:
 - Single app container exposed on port `3000`
 - Public domain routed by Traefik to the app container
 - `WHATSAPP_PROVIDER=evolution`
-- Optional Redis support, but it must stay disabled unless a real Redis server exists
+- Redis-backed sessions, queue, and rate limits
 
 ## Prerequisites
 
@@ -36,6 +37,8 @@ Critical variables:
 - `NEXT_PUBLIC_API_URL`
 - `SESSION_SECRET`
 - `TOKEN_ENCRYPTION_KEY`
+- `DATABASE_URL`
+- `REDIS_URL`
 - `CLERK_SECRET_KEY`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `CLERK_WEBHOOK_SECRET`
@@ -50,7 +53,6 @@ Recommended:
 - `ADMIN_DASHBOARD_PASSWORD`
 
 Optional:
-- `REDIS_URL` -> keep empty if no Redis service is deployed
 - `CAL_CLIENT_ID`, `CAL_CLIENT_SECRET`, `CAL_REDIRECT_URI`
 - payment provider variables
 
@@ -60,13 +62,9 @@ Optional:
 `TOKEN_ENCRYPTION_KEY` must remain stable across restarts and redeploys.
 If you change it after encrypted model keys already exist in the database, startup will log decrypt errors until those records are rotated or reset.
 
-### 2) Redis is optional
-If `REDIS_URL` points to a non-existent host, Whappi starts but logs connection errors and disables cache after retries.
-If Redis is not deployed, set:
-
-```env
-REDIS_URL=
-```
+### 2) Redis is required
+Production expects Redis to be reachable at startup.
+If `REDIS_URL` is missing or the Redis service is unavailable, Whappi now fails fast instead of starting in degraded mode.
 
 ### 3) Evolution provider mode
 Whappi is expected to run with:
@@ -101,8 +99,9 @@ The compose file currently:
 - exposes internal port `3000`
 - mounts persistent volumes:
   - `whappi-data`
-  - `whappi-sessions`
   - `whappi-media`
+  - `whappi-redis`
+  - `whappi-postgres`
 - attaches to external network `dokploy-network`
 
 ## Post-deploy verification
