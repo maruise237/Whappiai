@@ -109,6 +109,8 @@ type AnalyticsPoint = {
 type ActivationState = {
   hasGroup: boolean
   hasActiveRule: boolean
+  groupCount: number
+  activeRuleGroups: number
 }
 
 type ActivationGroupPair = {
@@ -152,6 +154,8 @@ export default function DashboardPage() {
   const [activationState, setActivationState] = React.useState<ActivationState>({
     hasGroup: false,
     hasActiveRule: false,
+    groupCount: 0,
+    activeRuleGroups: 0,
   })
 
   const userEmail = user?.primaryEmailAddress?.emailAddress || ""
@@ -239,7 +243,7 @@ export default function DashboardPage() {
   const fetchActivationState = React.useCallback(async (token: string, currentSessions: SessionItem[]) => {
     const connected = currentSessions.filter(session => session.isConnected || session.status === "CONNECTED")
     if (connected.length === 0) {
-      setActivationState({ hasGroup: false, hasActiveRule: false })
+      setActivationState({ hasGroup: false, hasActiveRule: false, groupCount: 0, activeRuleGroups: 0 })
       return
     }
 
@@ -265,7 +269,7 @@ export default function DashboardPage() {
       })
 
       if (groupPairs.length === 0) {
-        setActivationState({ hasGroup: false, hasActiveRule: false })
+        setActivationState({ hasGroup: false, hasActiveRule: false, groupCount: 0, activeRuleGroups: 0 })
         return
       }
 
@@ -279,13 +283,19 @@ export default function DashboardPage() {
         })
       )
 
+      const activeRuleGroups = settingsResults.filter(
+        result => result.status === "fulfilled" && hasActiveModerationRule(result.value)
+      ).length
+
       setActivationState({
         hasGroup: true,
-        hasActiveRule: settingsResults.some(result => result.status === "fulfilled" && hasActiveModerationRule(result.value)),
+        hasActiveRule: activeRuleGroups > 0,
+        groupCount: groupPairs.length,
+        activeRuleGroups,
       })
     } catch (error) {
       console.error(error)
-      setActivationState(prev => ({ ...prev, hasGroup: false, hasActiveRule: false }))
+      setActivationState(prev => ({ ...prev, hasGroup: false, hasActiveRule: false, groupCount: 0, activeRuleGroups: 0 }))
     }
   }, [])
 
@@ -498,14 +508,23 @@ export default function DashboardPage() {
       )}
 
       {!isAdmin && (
-        <TrialFocusPanel
-          plan={activePlan}
-          expiry={trialExpiry}
-          accessAllowed={accessAllowed}
-          sessionCount={sessions.length}
-          hasGroup={activationState.hasGroup}
-          hasActiveRule={activationState.hasActiveRule}
-        />
+        <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+          <TrialFocusPanel
+            plan={activePlan}
+            expiry={trialExpiry}
+            accessAllowed={accessAllowed}
+            sessionCount={sessions.length}
+            hasGroup={activationState.hasGroup}
+            hasActiveRule={activationState.hasActiveRule}
+          />
+          <PlanCapacityPanel
+            plan={activePlan}
+            accessAllowed={accessAllowed}
+            sessionCount={sessions.length}
+            groupCount={activationState.groupCount}
+            activeRuleGroups={activationState.activeRuleGroups}
+          />
+        </div>
       )}
 
       <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
@@ -733,6 +752,89 @@ function TrialFocusPanel({
   )
 }
 
+function PlanCapacityPanel({
+  plan,
+  accessAllowed,
+  sessionCount,
+  groupCount,
+  activeRuleGroups,
+}: {
+  plan: string
+  accessAllowed: boolean
+  sessionCount: number
+  groupCount: number
+  activeRuleGroups: number
+}) {
+  const normalizedPlan = getPlanCode(plan)
+  const sessionLimit = accessAllowed ? getPlanSessionLimit(normalizedPlan) : 0
+  const usageRatio = sessionLimit > 0 ? Math.min((sessionCount / sessionLimit) * 100, 100) : 0
+  const isNearLimit = sessionLimit > 0 && sessionCount >= Math.max(sessionLimit - 1, 1)
+  const upgradeLabel = normalizedPlan === "business" ? "Plan le plus complet actif" : "Passer au plan superieur"
+
+  return (
+    <Card className="rounded-[28px] bg-card shadow-none">
+      <CardContent className="space-y-5 p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <PlanBadge plan={plan} active className="rounded-full px-3 py-1" />
+              {!accessAllowed && (
+                <Badge variant="outline" className="rounded-full border-destructive/30 text-destructive">
+                  Acces bloque
+                </Badge>
+              )}
+            </div>
+            <h2 className="mt-3 text-lg font-semibold tracking-tight">Capacite du plan</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Suivez ce qui est deja actif dans votre espace et voyez quand il devient utile de passer au niveau superieur.
+            </p>
+          </div>
+          <Button asChild variant="outline" className="rounded-xl text-xs">
+            <Link href="/dashboard/billing">{upgradeLabel}</Link>
+          </Button>
+        </div>
+
+        <div className="space-y-3 rounded-2xl border bg-background/70 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Sessions utilisees</p>
+              <p className="text-xs text-muted-foreground">
+                {sessionLimit > 0
+                  ? `${sessionCount} sur ${sessionLimit} incluses dans ce plan`
+                  : "Activez un plan pour relancer la creation de sessions"}
+              </p>
+            </div>
+            <Badge className={cn(
+              "rounded-full border px-3 py-1 text-[10px] font-semibold",
+              isNearLimit
+                ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-50"
+                : "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10"
+            )}>
+              {sessionLimit > 0 ? `${Math.max(sessionLimit - sessionCount, 0)} restante(s)` : "0 restante"}
+            </Badge>
+          </div>
+          <Progress value={usageRatio} className="h-2" />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <UsagePill label="Plan actif" value={getPlanLabel(plan)} sub={accessAllowed ? "Operationnel" : "A relancer"} />
+          <UsagePill label="Groupes detectes" value={groupCount} sub={groupCount > 0 ? "Trouves sur vos sessions" : "Aucun groupe charge"} />
+          <UsagePill label="Regles actives" value={activeRuleGroups} sub={activeRuleGroups > 0 ? "Groupes proteges" : "Encore a activer"} />
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild className="rounded-xl">
+            <Link href="/dashboard/moderation">Configurer mes groupes</Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href="/dashboard/billing">{isNearLimit || !accessAllowed ? "Voir les upgrades" : "Voir mon abonnement"}</Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function resolveExpiry(value: unknown) {
   return typeof value === "string" && !Number.isNaN(new Date(value).getTime()) ? value : null
 }
@@ -744,11 +846,31 @@ function formatShortDate(value: string) {
   })
 }
 
+function getPlanSessionLimit(plan: string) {
+  const quotas: Record<string, number> = {
+    trial: 1,
+    starter: 3,
+    pro: 6,
+    business: 16,
+  }
+  return quotas[getPlanCode(plan)] ?? 1
+}
+
 function MetricTile({ label, value, sub }: { label: string; value: string | number; sub: string }) {
   return (
     <div className="bg-card p-5">
       <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
       <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{safeRender(value)}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+    </div>
+  )
+}
+
+function UsagePill({ label, value, sub }: { label: string; value: string | number; sub: string }) {
+  return (
+    <div className="rounded-2xl border bg-background/60 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
     </div>
   )
