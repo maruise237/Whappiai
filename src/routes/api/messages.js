@@ -3,11 +3,11 @@
  * Handles message sending endpoints with credit management
  */
 
-const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const CreditService = require('../../services/CreditService');
 const { enqueue } = require('../../services/QueueService');
 const ActivityLog = require('../../models/ActivityLog');
 const SessionService = require('../../services/SessionService');
+const { normalizeJid } = require('../../utils/phone');
 
 /**
  * Initialize message routes with dependencies
@@ -18,7 +18,7 @@ function initializeMessageRoutes(routerInstance, dependencies) {
     // Helper function to send a message
     async function sendMessage(sock, to, message, sessionId, req) {
         try {
-            const jid = to.endsWith('@g.us') ? to : jidNormalizedUser(to);
+            const jid = normalizeJid(to);
 
             if (!jid) {
                 throw new Error(`Invalid JID: ${to}`);

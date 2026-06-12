@@ -194,9 +194,9 @@ class ActivityLog {
     }
 
     try {
-      // Use conditional aggregation to get total and success counts in one go
-      // Note: FILTER (WHERE ...) is standard Postgres but we use CASE for cross-DB compatibility if needed.
-      // Since the app uses better-sqlite3 (SQLite) and pg (Postgres), we use CASE.
+      // Use conditional aggregation to get total and success counts in one go.
+      // We keep CASE here because it is simple and portable, even though the
+      // active runtime is now Postgres-first.
       const counts = await db.get(`
         SELECT
           COUNT(*) as total,

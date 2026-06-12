@@ -1,11 +1,11 @@
 const db = require('../db/query');
-const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const { Session, ActivityLog, User } = require('../models');
 const { log } = require('../utils/logger');
 const wappy = require('./WappyEventBroadcaster');
 const CreditService = require('./CreditService');
 const { enqueue } = require('./QueueService');
 const WarningService = require('./warnings');
+const { normalizeWhatsAppJid } = require('../utils/phone');
 
 /**
  * Moderation Service
@@ -63,11 +63,11 @@ function isGroupAdmin(groupMetadata, myJid, myLid, sessionId) {
         return false;
     }
     
-    const normalizedTarget = jidNormalizedUser(myJid);
-    const normalizedLid = myLid ? jidNormalizedUser(myLid) : null;
+    const normalizedTarget = normalizeWhatsAppJid(myJid);
+    const normalizedLid = myLid ? normalizeWhatsAppJid(myLid) : null;
 
     const participant = groupMetadata.participants.find(p => {
-        const pId = jidNormalizedUser(p.id);
+        const pId = normalizeWhatsAppJid(p.id);
         return pId === normalizedTarget || (normalizedLid && pId === normalizedLid);
     });
     
@@ -129,7 +129,7 @@ async function getAdminGroups(sock, sessionId) {
             throw new Error('Identifiant WhatsApp introuvable sur la session active.');
         }
 
-        const myJid = jidNormalizedUser(sock.user.id);
+        const myJid = normalizeWhatsAppJid(sock.user.id);
         const myLid = sock.user.lid || sock.user.LID;
         log(`Mon JID: ${myJid}, Mon LID: ${myLid || 'Non défini'}`, sessionId, { 
             event: 'moderation-debug-ids',
@@ -145,13 +145,13 @@ async function getAdminGroups(sock, sessionId) {
         if (allGroups.length > 0) {
             // Find a group where I am present (any role) to check JID or LID matching
             const anyGroupWithMe = allGroups.find(g => g.participants?.some(p => {
-                const pId = jidNormalizedUser(p.id);
-                return pId === myJid || (myLid && pId === jidNormalizedUser(myLid));
+                const pId = normalizeWhatsAppJid(p.id);
+                return pId === myJid || (myLid && pId === normalizeWhatsAppJid(myLid));
             }));
             if (anyGroupWithMe) {
                 const meInGroup = anyGroupWithMe.participants.find(p => {
-                    const pId = jidNormalizedUser(p.id);
-                    return pId === myJid || (myLid && pId === jidNormalizedUser(myLid));
+                    const pId = normalizeWhatsAppJid(p.id);
+                    return pId === myJid || (myLid && pId === normalizeWhatsAppJid(myLid));
                 });
                 log(`Trouvé dans le groupe "${anyGroupWithMe.subject}": Rôle=${meInGroup.admin || 'membre'}`, sessionId, { 
                     event: 'moderation-debug-me',
@@ -159,7 +159,7 @@ async function getAdminGroups(sock, sessionId) {
                     role: meInGroup.admin,
                     myJidInGroup: meInGroup.id,
                     myJidNormalized: myJid,
-                    myLidNormalized: myLid ? jidNormalizedUser(myLid) : null
+                    myLidNormalized: myLid ? normalizeWhatsAppJid(myLid) : null
                 }, 'DEBUG');
             } else {
                 log(`ALERTE: Mon JID (${myJid}) ou LID (${myLid || 'N/A'}) n'a été trouvé dans AUCUN des ${allGroups.length} groupes !`, sessionId, { 
@@ -408,7 +408,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
     if (!msg.key.remoteJid.endsWith('@g.us')) return false;
     
     const groupId = msg.key.remoteJid;
-    const senderJid = jidNormalizedUser(msg.key.participant || msg.participant || msg.key.remoteJid);
+    const senderJid = normalizeWhatsAppJid(msg.key.participant || msg.participant || msg.key.remoteJid);
     
     // 1. Get Settings
     const settings = await db.get('SELECT * FROM group_settings WHERE group_id = $1 AND session_id = $2', [groupId, sessionId]);
@@ -445,7 +445,7 @@ async function handleIncomingMessage(sock, sessionId, msg) {
 
     // Check if sender is admin (admins are immune)
     try {
-        const myJid = jidNormalizedUser(sock.user.id);
+        const myJid = normalizeWhatsAppJid(sock.user.id);
         const myLid = sock.user.lid || sock.user.LID;
 
         const groupMetadata = await getGroupMetadata(sock, groupId);

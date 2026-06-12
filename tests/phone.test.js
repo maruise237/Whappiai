@@ -5,15 +5,6 @@ jest.mock('../src/utils/logger', () => ({
     log: jest.fn()
 }));
 
-jest.mock('@whiskeysockets/baileys', () => ({
-    jidNormalizedUser: jest.fn(jid => {
-        // Simple mock implementation of jidNormalizedUser
-        // In reality, baileys handles @c.us, @s.whatsapp.net, etc.
-        // For testing, we just return what's passed or a simple transform
-        return jid;
-    })
-}), { virtual: true });
-
 describe('Phone Utilities', () => {
     let originalEnv;
 
@@ -37,6 +28,11 @@ describe('Phone Utilities', () => {
         test('should return the number as-is if it already includes "@"', () => {
             expect(normalizeJid('1234567890@s.whatsapp.net')).toBe('1234567890@s.whatsapp.net');
             expect(normalizeJid('1234567890@g.us')).toBe('1234567890@g.us');
+        });
+
+        test('should normalize common WhatsApp jid variants without Baileys', () => {
+            expect(normalizeJid('1234567890@c.us')).toBe('1234567890@s.whatsapp.net');
+            expect(normalizeJid('1234567890:42@s.whatsapp.net')).toBe('1234567890@s.whatsapp.net');
         });
 
         test('should remove non-digits from the number and append @s.whatsapp.net', () => {

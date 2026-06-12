@@ -1,5 +1,5 @@
 /**
- * SessionStore — Redis-backed Express session store + API token store
+ * SessionStore - Redis-backed Express session store + API token store
  *
  * Replaces:
  *   - session-file-store (Express sessions on filesystem)
@@ -21,18 +21,18 @@ class SessionStore {
   constructor() {
     this.client = null;
     this.isConnected = false;
-    this.store = null; // connect-redis RedisStore instance
+    this.store = null;
   }
 
   /**
    * Initialize Redis connection
-   * @param {Object} sessionModule - require('express-session')
+   * @param {Object} sessionModule - kept for compatibility with existing bootstrap code
    * @returns {Promise<{store: RedisStore|null, isConnected: boolean}>}
    */
   async connect(sessionModule) {
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) {
-      log('[SessionStore] No REDIS_URL configured — falling back to default store', 'SYSTEM', { event: 'session-store-fallback' }, 'WARN');
+      log('[SessionStore] No REDIS_URL configured - using local in-memory session store for non-production runtime', 'SYSTEM', { event: 'session-store-fallback' }, 'WARN');
       return { store: null, isConnected: false };
     }
 
@@ -67,11 +67,10 @@ class SessionStore {
 
       await this.client.connect();
 
-      // Create the connect-redis store using the same client
       this.store = new RedisStore({
         client: this.client,
         prefix: 'whappi:sess:',
-        ttl: 86400, // 24h default session TTL
+        ttl: 86400,
         disableTTL: false,
       });
 
@@ -83,8 +82,6 @@ class SessionStore {
       return { store: null, isConnected: false };
     }
   }
-
-  // ── Token Store API ──────────────────────────────────────────
 
   /**
    * Get a session token from Redis
@@ -157,7 +154,7 @@ class SessionStore {
     if (!this.isConnected || !this.client) return [];
     try {
       const keys = await this.client.keys('whappi:token:*');
-      return keys.map(k => k.replace('whappi:token:', ''));
+      return keys.map((key) => key.replace('whappi:token:', ''));
     } catch {
       return [];
     }
@@ -182,6 +179,5 @@ class SessionStore {
   }
 }
 
-// Singleton
 const sessionStore = new SessionStore();
 module.exports = sessionStore;

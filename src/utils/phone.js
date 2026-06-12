@@ -1,40 +1,71 @@
 /**
- * Phone number utility
+ * Phone number and WhatsApp JID utilities
  */
-const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const { log } = require('./logger');
 
 /**
- * Normalizes a phone number to a WhatsApp JID.
+ * Normalize a WhatsApp address without relying on the legacy Baileys runtime.
+ * Handles common user/group JID variants and strips device suffixes.
+ * @param {string} jid
+ * @returns {string|null}
+ */
+const normalizeWhatsAppJid = (jid) => {
+    if (!jid) return null;
+
+    const raw = String(jid).trim();
+    if (!raw) return null;
+
+    if (!raw.includes('@')) {
+        const digits = raw.replace(/\D/g, '');
+        return digits ? `${digits}@s.whatsapp.net` : null;
+    }
+
+    const atIndex = raw.indexOf('@');
+    let user = raw.slice(0, atIndex).trim();
+    let domain = raw.slice(atIndex + 1).trim().toLowerCase();
+
+    if (!user || !domain) return null;
+
+    if (domain === 'c.us') {
+        domain = 's.whatsapp.net';
+    }
+
+    if (domain === 's.whatsapp.net' || domain === 'g.us') {
+        user = user.split(':')[0];
+    }
+
+    return `${user}@${domain}`;
+};
+
+/**
+ * Normalize a phone number to a WhatsApp JID.
  * Adds the default country code if the number is too short.
  * @param {string} number - The phone number or JID
  * @param {string} defaultCountryCode - The default country code (e.g., '237')
- * @returns {string} - The normalized JID
+ * @returns {string|null} - The normalized JID
  */
 const normalizeJid = (number, defaultCountryCode = process.env.DEFAULT_COUNTRY_CODE || '') => {
     if (!number) return null;
-    
-    let originalNumber = number;
-    // If it's already a JID, return as is (normalized)
+
+    const originalNumber = number;
+
     if (number.includes('@')) {
-        return jidNormalizedUser(number);
+        return normalizeWhatsAppJid(number);
     }
-    
-    // Clean the number from any special characters except digits
+
     let cleanNumber = number.replace(/\D/g, '');
-    
-    // If a default country code is provided and the number is short (e.g., 9 digits for Cameroon)
-    // we assume it's missing the country code.
+
     if (defaultCountryCode && cleanNumber.length <= 10 && !cleanNumber.startsWith(defaultCountryCode)) {
-        log(`[Phone] Ajout de l'indicatif pays par défaut ${defaultCountryCode} à ${cleanNumber}`, 'SYSTEM', { original: cleanNumber, countryCode: defaultCountryCode }, 'DEBUG');
+        log(`[Phone] Ajout de l'indicatif pays par defaut ${defaultCountryCode} a ${cleanNumber}`, 'SYSTEM', { original: cleanNumber, countryCode: defaultCountryCode }, 'DEBUG');
         cleanNumber = `${defaultCountryCode}${cleanNumber}`;
     }
-    
-    const jid = jidNormalizedUser(`${cleanNumber}@s.whatsapp.net`);
+
+    const jid = normalizeWhatsAppJid(`${cleanNumber}@s.whatsapp.net`);
     log(`[Phone] Normalisation de ${originalNumber} en ${jid}`, 'SYSTEM', { original: originalNumber, jid }, 'DEBUG');
     return jid;
 };
 
 module.exports = {
-    normalizeJid
+    normalizeJid,
+    normalizeWhatsAppJid
 };

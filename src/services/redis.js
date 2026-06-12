@@ -20,7 +20,7 @@ class RedisService {
         const redisUrl = process.env.REDIS_URL;
         
         if (!redisUrl) {
-            console.log('[Redis] No REDIS_URL configured, caching disabled');
+            console.log('[Redis] No REDIS_URL configured. Cache remains disabled outside production.');
             return false;
         }
 

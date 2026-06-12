@@ -1,5 +1,4 @@
 const express = require('express');
-const { jidNormalizedUser } = require('@whiskeysockets/baileys');
 const { normalizeJid } = require('../utils/phone');
 const KnowledgeService = require('../services/KnowledgeService');
 const WebhookService = require('../services/WebhookService');
@@ -1386,7 +1385,7 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     async function sendMessage(sock, to, message, sessionId, req) {
         try {
             // Robust JID handling: only normalize if it's a user JID, otherwise use as is
-            const jid = to.endsWith('@g.us') ? to : jidNormalizedUser(to);
+            const jid = normalizeJid(to);
 
             if (!jid) {
                 throw new Error(`Invalid JID: ${to}`);
