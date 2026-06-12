@@ -111,7 +111,6 @@ export function BillingPlans({
         method: 'POST',
         body: JSON.stringify({
           planId,
-          provider: "moneyfusion",
         }),
         headers: { Authorization: `Bearer ${token}` }
       })

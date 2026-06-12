@@ -31,14 +31,16 @@ class PricingService {
     }
 
     /**
-     * Get plan by Chariow Product ID
+     * Legacy helper kept for historical pricing rows that still expose
+     * the original provider product column in the database schema.
      */
     static async getPlanByChariowId(productId) {
         return await db.get('SELECT * FROM pricing_plans WHERE chariow_product_id = $1 ORDER BY version DESC LIMIT 1', [productId]);
     }
 
     /**
-     * Create a new version of a plan (Historical Pricing)
+     * Create a new version of a plan (historical pricing snapshot).
+     * The underlying schema still keeps legacy provider columns for compatibility.
      */
     static async updatePlanPrice(code, newPrice, newMessageLimit, newChariowId = null, newUrl = null) {
         const current = await this.getPlanByCode(code);

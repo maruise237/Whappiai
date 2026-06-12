@@ -1,174 +1,280 @@
+const crypto = require('crypto');
+const db = require('../db/query');
 const { log } = require('../utils/logger');
 const User = require('../models/User');
 const ActivityLog = require('../models/ActivityLog');
 const SubscriptionService = require('./SubscriptionService');
 const PricingService = require('./PricingService');
-const CreditService = require('./CreditService');
 
-/**
- * Crée un lien de paiement Chariow
- * @param {object} user - L'utilisateur qui achète
- * @param {string} planCode - Le code du plan (starter, pro, business)
- * @returns {string} L'URL de paiement
- */
-async function createCheckoutSession(user, planCode) {
+function getGeniusPayBaseUrl() {
+    return (process.env.GENIUSPAY_BASE_URL || 'http://pay.genius.ci/api/v1/merchant').replace(/\/$/, '');
+}
+
+function getFrontendBaseUrl() {
+    return (process.env.FRONTEND_URL || process.env.APP_URL || '').replace(/\/$/, '');
+}
+
+function getGeniusPayHeaders() {
+    const apiKey = process.env.GENIUSPAY_API_KEY;
+    const apiSecret = process.env.GENIUSPAY_API_SECRET;
+
+    if (!apiKey || !apiSecret) {
+        throw new Error('GENIUSPAY_API_KEY ou GENIUSPAY_API_SECRET non configure');
+    }
+
+    return {
+        'X-API-Key': apiKey,
+        'X-API-Secret': apiSecret,
+        'Content-Type': 'application/json',
+    };
+}
+
+function buildBillingRedirectUrl(status, orderId) {
+    const base = getFrontendBaseUrl();
+    if (!base) throw new Error('FRONTEND_URL requis pour GeniusPay');
+
+    const url = new URL('/dashboard/billing', base);
+    url.searchParams.set('payment', 'geniuspay');
+    url.searchParams.set('status', status);
+    if (orderId) url.searchParams.set('order', orderId);
+    return url.toString();
+}
+
+function normalizeProviderStatus(status) {
+    const value = String(status || '').toLowerCase();
+    if (['completed', 'success', 'succeeded', 'paid'].includes(value)) return 'completed';
+    if (['failed', 'failure', 'error'].includes(value)) return 'failed';
+    if (['cancelled', 'canceled'].includes(value)) return 'cancelled';
+    return 'pending';
+}
+
+async function saveTransaction({
+    id,
+    providerToken,
+    userId,
+    planId,
+    amount,
+    currency = 'XOF',
+    status,
+    checkoutUrl = null,
+    providerPayload = null,
+}) {
+    const payload = providerPayload ? JSON.stringify(providerPayload) : null;
+
+    const existing = await db.get(
+        'SELECT * FROM payment_transactions WHERE id = $1 OR provider_token = $2',
+        [id, providerToken || null]
+    );
+
+    if (existing) {
+        await db.run(`
+            UPDATE payment_transactions
+            SET provider = 'geniuspay',
+                provider_token = COALESCE($1, provider_token),
+                user_id = COALESCE($2, user_id),
+                plan_id = COALESCE($3, plan_id),
+                amount = COALESCE($4, amount),
+                currency = COALESCE($5, currency),
+                status = $6,
+                checkout_url = COALESCE($7, checkout_url),
+                provider_payload = COALESCE($8, provider_payload),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $9
+        `, [providerToken, userId, planId, amount, currency, status, checkoutUrl, payload, existing.id]);
+        return existing.id;
+    }
+
+    await db.run(`
+        INSERT INTO payment_transactions (
+            id, provider, provider_token, user_id, plan_id, amount, currency, status, checkout_url, provider_payload
+        )
+        VALUES ($1, 'geniuspay', $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [id, providerToken, userId, planId, amount, currency, status, checkoutUrl, payload]);
+
+    return id;
+}
+
+async function createCheckoutSession(user, planCode, { phoneNumber, customerName } = {}) {
     const plan = await PricingService.getPlanByCode(planCode);
     if (!plan) throw new Error('Plan invalide');
 
-    try {
-        log(`Création de lien de paiement pour ${user.email} - Plan ${planCode}`, 'PAYMENT', { plan }, 'INFO');
-        
-        if (!plan.payment_url) {
-            throw new Error('URL de paiement non configurée pour ce plan');
-        }
+    const orderId = crypto.randomUUID();
+    const body = {
+        amount: Number(plan.price),
+        currency: 'XOF',
+        description: `Abonnement Whappi ${plan.name}`,
+        customer: {
+            name: String(customerName || user.name || user.email || 'Client Whappi').trim(),
+            email: user.email,
+        },
+        success_url: buildBillingRedirectUrl('success', orderId),
+        error_url: buildBillingRedirectUrl('error', orderId),
+        metadata: {
+            order_id: orderId,
+            user_id: user.id,
+            user_email: user.email,
+            plan_id: plan.id,
+            plan_code: plan.code,
+        },
+    };
 
-        // Retourne le lien direct (stocké en base)
-        // Note: Pour une intégration plus poussée, on pourrait appeler l'API Chariow ici
-        // pour créer une session unique, mais le lien statique fonctionne pour l'instant.
-        return plan.payment_url;
-    } catch (error) {
-        log('Erreur lors de la création du paiement Chariow', 'PAYMENT', { error: error.message }, 'ERROR');
-        throw new Error('Impossible de créer le lien de paiement');
+    const cleanPhone = String(phoneNumber || user.phone || user.whatsapp_number || '').trim();
+    if (cleanPhone) body.customer.phone = cleanPhone;
+
+    await saveTransaction({
+        id: orderId,
+        userId: user.id,
+        planId: plan.id,
+        amount: Number(plan.price),
+        currency: 'XOF',
+        status: 'created',
+        providerPayload: { request: body },
+    });
+
+    const response = await fetch(`${getGeniusPayBaseUrl()}/payments`, {
+        method: 'POST',
+        headers: getGeniusPayHeaders(),
+        body: JSON.stringify(body),
+    });
+
+    let payload = null;
+    try {
+        payload = await response.json();
+    } catch {
+        payload = null;
+    }
+
+    if (!response.ok || !payload?.success || !payload?.data) {
+        throw new Error(payload?.message || 'GeniusPay a refuse la creation du paiement');
+    }
+
+    const checkoutUrl = payload.data.checkout_url || payload.data.payment_url;
+    if (!checkoutUrl) {
+        throw new Error('GeniusPay n\'a retourne aucune URL de checkout');
+    }
+
+    const providerToken = payload.data.reference || String(payload.data.id || '');
+    const normalizedStatus = normalizeProviderStatus(payload.data.status);
+
+    await saveTransaction({
+        id: orderId,
+        providerToken,
+        userId: user.id,
+        planId: plan.id,
+        amount: Number(plan.price),
+        currency: payload.data.currency || 'XOF',
+        status: normalizedStatus,
+        checkoutUrl,
+        providerPayload: { request: body, response: payload.data },
+    });
+
+    log(`GeniusPay checkout created for ${user.email}`, 'PAYMENT', { orderId, planCode, reference: providerToken }, 'INFO');
+
+    return {
+        provider: 'geniuspay',
+        orderId,
+        reference: providerToken,
+        url: checkoutUrl,
+        status: normalizedStatus,
+    };
+}
+
+function verifyWebhookSignature(rawPayload, signature) {
+    const secret = process.env.GENIUSPAY_WEBHOOK_SECRET;
+    if (!secret) {
+        throw new Error('GENIUSPAY_WEBHOOK_SECRET non configure');
+    }
+
+    if (!signature) return false;
+
+    const expected = crypto.createHmac('sha256', secret).update(rawPayload).digest('hex');
+    if (signature.length !== expected.length) return false;
+
+    try {
+        return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'));
+    } catch {
+        return false;
     }
 }
 
-/**
- * Traite les événements de licence Chariow
- * @param {string} event - Nom de l'événement
- * @param {object} payload - Données de l'événement
- * @returns {object} Résultat de l'opération
- */
-async function handleLicenseEvent(event, payload) {
-    const { customer_email, license_key, product_id, expiry_date } = payload;
-    
-    // Normalisation de l'événement
-    const eventName = event.toLowerCase();
-    log(`Processing Chariow event: ${eventName} for ${customer_email}`, 'PAYMENT', { productId: product_id });
-
-    if (!customer_email) {
-        log('Missing email in Chariow webhook', 'SYSTEM', null, 'WARN');
-        throw new Error('Missing email');
+async function handleWebhook(rawPayload, headers = {}) {
+    const signature = headers['x-geniuspay-signature'];
+    if (!verifyWebhookSignature(rawPayload, signature)) {
+        throw new Error('Invalid GeniusPay signature');
     }
 
-    const user = await User.findByEmail(customer_email);
-    if (!user) {
-        log(`User not found for payment event: ${customer_email}`, 'AUTH', null, 'WARN');
-        return { success: false, error: 'User not found' };
+    const parsed = JSON.parse(rawPayload.toString('utf8'));
+    const event = String(parsed.event || headers['x-geniuspay-event'] || '').toLowerCase();
+    const transaction = parsed.data?.transaction || {};
+    const metadata = transaction.metadata || {};
+    const status = normalizeProviderStatus(transaction.status || (event === 'payment.success' ? 'completed' : 'pending'));
+    const orderId = metadata.order_id || crypto.randomUUID();
+    const providerToken = transaction.reference || String(transaction.id || '');
+
+    const existing = await db.get(
+        'SELECT * FROM payment_transactions WHERE id = $1 OR provider_token = $2',
+        [orderId, providerToken || null]
+    );
+    const existingPayload = existing?.provider_payload ? JSON.parse(existing.provider_payload) : {};
+    const planId = metadata.plan_id || existing?.plan_id || existingPayload?.request?.metadata?.plan_id || null;
+    const planCode = metadata.plan_code || existingPayload?.request?.metadata?.plan_code || null;
+    const userId = metadata.user_id || existing?.user_id || existingPayload?.request?.metadata?.user_id || null;
+    const amount = Number(transaction.amount || existing?.amount || 0);
+
+    await saveTransaction({
+        id: orderId,
+        providerToken,
+        userId,
+        planId,
+        amount,
+        currency: transaction.currency || existing?.currency || 'XOF',
+        status,
+        checkoutUrl: existing?.checkout_url || null,
+        providerPayload: parsed,
+    });
+
+    if (status !== 'completed') {
+        return { success: true, action: 'status_updated', status, reference: providerToken };
     }
 
-    // Récupération du plan associé au produit Chariow
-    const plan = await PricingService.getPlanByChariowId(product_id);
-    const planCode = plan ? plan.code : 'unknown';
+    if (existing?.status === 'completed') {
+        return { success: true, action: 'ignored_duplicate', status, reference: providerToken };
+    }
 
-    // 1. Événement: Licence émise / activée
-    if (eventName.includes('license.issued') || eventName.includes('license émise') || eventName.includes('license activée')) {
-        
-        // Cas A: Pack de Crédits (Achat unique)
-        if (plan && plan.interval === 'one_time') {
-            try {
-                // Ajout des crédits
-                const newBalance = await CreditService.add(user.id, plan.message_limit, 'purchase', `Achat: ${plan.name}`);
-                log(`Credit pack added for ${customer_email}: ${plan.message_limit} credits. New balance: ${newBalance}`, 'PAYMENT');
-                
-                // Mise à jour User (Legacy & Display)
-                // On garde le plan actuel mais on met à jour le statut si nécessaire
-                // Note: On ne change pas plan_id pour un pack de crédits
-                await User.updateSubscription(customer_email, {
-                    planId: user.plan_id, 
-                    status: user.plan_status, // Garde le statut actuel (ex: active ou free)
-                    licenseKey: license_key,
-                    expiry: user.subscription_expiry, // Garde l'expiration actuelle
-                    messageLimit: newBalance // Met à jour l'affichage de la limite (qui est le solde pour nous)
-                });
+    const user = (userId && await User.findById(userId))
+        || (metadata.user_email && await User.findByEmail(metadata.user_email))
+        || (transaction.customer?.email && await User.findByEmail(transaction.customer.email));
+    if (!user) throw new Error('Utilisateur GeniusPay introuvable');
 
-                ActivityLog.log({
-                    userEmail: user.email,
-                    action: 'CREDIT_PURCHASE',
-                    resource: 'credits',
-                    resourceId: product_id,
-                    success: true,
-                    details: { amount: plan.message_limit, plan: plan.name }
-                });
+    const plan = (planCode && await PricingService.getPlanByCode(planCode))
+        || (planId && await PricingService.getPlan(planId));
+    if (!plan) throw new Error('Plan GeniusPay introuvable');
 
-                return { success: true, action: 'credit_added', user: user.email };
+    if (amount && amount < Number(plan.price)) {
+        throw new Error(`Montant GeniusPay insuffisant: ${amount} < ${plan.price}`);
+    }
 
-            } catch (err) {
-                log(`Error adding credits: ${err.message}`, 'PAYMENT', null, 'ERROR');
-                throw err;
-            }
-        } 
-        // Cas B: Abonnement (Récurrent)
-        else {
-            try {
-                // Activation de l'abonnement via le service dédié
-                // (Gère déjà: création en base, reset crédits, notification)
-                await SubscriptionService.subscribe(user.id, planCode);
-                
-                // Mise à jour User (Legacy & Display) pour compatibilité frontend
-                await User.updateSubscription(customer_email, {
-                    planId: plan ? plan.id : planCode,
-                    status: 'active',
-                    licenseKey: license_key,
-                    expiry: expiry_date || new Date(Date.now() + 30*24*60*60*1000).toISOString(),
-                    messageLimit: plan ? plan.message_limit : 100
-                });
+    await SubscriptionService.subscribe(user.id, plan.code);
 
-                ActivityLog.log({
-                    userEmail: user.email,
-                    action: 'SUBSCRIPTION_START',
-                    resource: 'subscription',
-                    resourceId: planCode,
-                    success: true,
-                    details: { plan: plan ? plan.name : planCode }
-                });
-
-                log(`Subscription activated for ${customer_email}: ${planCode}`, 'PAYMENT');
-                return { success: true, action: 'subscription_activated', user: user.email };
-
-            } catch (err) {
-                log(`Error activating subscription: ${err.message}`, 'PAYMENT', null, 'ERROR');
-                throw err;
-            }
+    ActivityLog.log({
+        userEmail: user.email,
+        action: 'GENIUSPAY_PAYMENT_COMPLETED',
+        resource: 'subscription',
+        resourceId: plan.code,
+        success: true,
+        details: {
+            orderId,
+            reference: providerToken,
+            amount,
+            event,
         }
-    } 
-    // 2. Événement: Licence expirée / révoquée
-    else if (eventName.includes('expired') || eventName.includes('expirée') || eventName.includes('revoked') || eventName.includes('révoquée')) {
-        try {
-            // Annulation via le service dédié
-            await SubscriptionService.cancel(user.id);
+    });
 
-            // Mise à jour User (Legacy)
-            await User.updateSubscription(customer_email, {
-                planId: 'free',
-                status: 'expired',
-                licenseKey: null,
-                expiry: new Date().toISOString(),
-                messageLimit: 100 // Retour au plan gratuit
-            });
-            
-            ActivityLog.log({
-                userEmail: user.email,
-                action: 'SUBSCRIPTION_END',
-                resource: 'subscription',
-                resourceId: planCode,
-                success: true,
-                details: { reason: eventName }
-            });
-
-            log(`Subscription ended for ${customer_email}`, 'PAYMENT');
-            return { success: true, action: 'subscription_ended', user: user.email };
-
-        } catch (err) {
-            log(`Error cancelling subscription: ${err.message}`, 'PAYMENT', null, 'ERROR');
-            throw err;
-        }
-    }
-
-    return { success: true, action: 'ignored', event: eventName };
+    return { success: true, action: 'subscription_activated', status, reference: providerToken, user: user.email };
 }
 
 module.exports = {
     createCheckoutSession,
-    handleLicenseEvent,
-    handleWebhook: handleLicenseEvent
+    handleWebhook,
+    verifyWebhookSignature,
 };

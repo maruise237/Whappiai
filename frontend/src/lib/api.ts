@@ -322,12 +322,9 @@ export const api = {
     getPlans: (token?: string) => fetchApi("/api/v1/payments/plans", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
-    checkout: (planId: string, token?: string, data: { phoneNumber?: string; customerName?: string; provider?: string } = {}) => fetchApi("/api/v1/payments/checkout", {
+    checkout: (planId: string, token?: string, data: { phoneNumber?: string; customerName?: string } = {}) => fetchApi("/api/v1/payments/checkout", {
       method: "POST",
       body: JSON.stringify({ planId, ...data }),
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    }),
-    moneyFusionStatus: (tokenPay: string, token?: string) => fetchApi(`/api/v1/payments/moneyfusion/status/${encodeURIComponent(tokenPay)}`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
   },

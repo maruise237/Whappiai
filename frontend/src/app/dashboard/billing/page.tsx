@@ -68,23 +68,15 @@ export default function BillingPage() {
   }, [refreshPlan])
 
   React.useEffect(() => {
-    async function syncMoneyFusionReturn() {
+    async function syncGeniusPayReturn() {
       if (typeof window === "undefined") return
       const params = new URLSearchParams(window.location.search)
-      const tokenPay = params.get("tokenPay") || params.get("token")
-      if (!tokenPay) return
-
-      try {
-        const token = await getToken()
-        await api.payments.moneyFusionStatus(tokenPay, token || undefined)
-        await refreshPlan()
-      } catch {
-        // The webhook can still complete the activation if the direct status check fails.
-      }
+      if (params.get("payment") !== "geniuspay") return
+      await refreshPlan()
     }
 
-    syncMoneyFusionReturn()
-  }, [getToken, refreshPlan])
+    syncGeniusPayReturn()
+  }, [refreshPlan])
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-20">
