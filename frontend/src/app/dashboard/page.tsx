@@ -35,6 +35,7 @@ import * as z from "zod"
 import { toast } from "sonner"
 
 import { SessionCard } from "@/components/dashboard/session-card"
+import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/plan-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -145,6 +146,9 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = React.useState<ActivityItem[]>([])
   const [analyticsData, setAnalyticsData] = React.useState<AnalyticsPoint[]>([])
   const [showCenterBadge, setShowCenterBadge] = React.useState(false)
+  const [activePlan, setActivePlan] = React.useState("trial")
+  const [trialExpiry, setTrialExpiry] = React.useState<string | null>(null)
+  const [accessAllowed, setAccessAllowed] = React.useState(true)
   const [activationState, setActivationState] = React.useState<ActivationState>({
     hasGroup: false,
     hasActiveRule: false,
@@ -200,6 +204,24 @@ export default function DashboardPage() {
     try {
       const token = await getToken()
       if (!token) return
+
+      const [profileResult, subscriptionResult] = await Promise.allSettled([
+        api.auth.check(token),
+        api.subscriptions.current(token),
+      ])
+      const profile = profileResult.status === "fulfilled" ? profileResult.value : null
+      const subscription = subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null
+      const userProfile = profile?.user || profile
+      setActivePlan(getPlanCode(
+        subscription?.plan_code ||
+        subscription?.plan_id ||
+        userProfile?.plan_id ||
+        userProfile?.plan ||
+        userProfile?.subscription_plan ||
+        "trial"
+      ))
+      setTrialExpiry(resolveExpiry(subscription?.current_period_end || subscription?.subscription_expiry || userProfile?.subscription_expiry))
+      setAccessAllowed(subscription?.access_allowed !== false)
 
       if (isAdmin) {
         await fetchAdminSummary(token)
@@ -475,6 +497,17 @@ export default function DashboardPage() {
         <FirstRunPanel onCreate={() => setIsCreateOpen(true)} />
       )}
 
+      {!isAdmin && (
+        <TrialFocusPanel
+          plan={activePlan}
+          expiry={trialExpiry}
+          accessAllowed={accessAllowed}
+          sessionCount={sessions.length}
+          hasGroup={activationState.hasGroup}
+          hasActiveRule={activationState.hasActiveRule}
+        />
+      )}
+
       <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
         <Card className="rounded-[28px] bg-card shadow-none">
           <CardContent className="p-5 sm:p-6">
@@ -605,6 +638,110 @@ export default function DashboardPage() {
       </Dialog>
     </div>
   )
+}
+
+function TrialFocusPanel({
+  plan,
+  expiry,
+  accessAllowed,
+  sessionCount,
+  hasGroup,
+  hasActiveRule,
+}: {
+  plan: string
+  expiry: string | null
+  accessAllowed: boolean
+  sessionCount: number
+  hasGroup: boolean
+  hasActiveRule: boolean
+}) {
+  const isTrial = getPlanCode(plan) === "trial"
+  const title = !accessAllowed
+    ? "Votre acces doit etre relance"
+    : isTrial
+      ? "Votre essai gratuit est actif"
+      : `Whappi est pret pour votre plan ${getPlanLabel(plan)}`
+
+  const text = !accessAllowed
+    ? "L'essai ou l'abonnement n'autorise plus de nouvelles actions. Choisissez un plan pour relancer vos groupes et vos automatisations."
+    : isTrial
+      ? "Vous avez 7 jours pour connecter 1 groupe, promouvoir votre numero admin et activer au moins une regle de moderation. L'objectif est simple: voir Whappi moderer un vrai groupe."
+      : "Continuez l'activation: connectez vos groupes prioritaires, activez vos regles essentielles puis montez en puissance."
+
+  const checklist = [
+    { done: sessionCount > 0, label: "Session connectee" },
+    { done: hasGroup, label: "Premier groupe repere" },
+    { done: hasActiveRule, label: "Premiere regle activee" },
+  ]
+
+  return (
+    <Card
+      className={cn(
+        "rounded-[28px] border shadow-none",
+        !accessAllowed
+          ? "border-destructive/25 bg-destructive/5"
+          : isTrial
+            ? "border-amber-400/30 bg-amber-50/80"
+            : "border-primary/20 bg-primary/5"
+      )}
+    >
+      <CardContent className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <PlanBadge plan={plan} active className="rounded-full px-3 py-1" />
+            {expiry && (
+              <Badge variant="outline" className="rounded-full bg-background/80">
+                {`Echeance: ${formatShortDate(expiry)}`}
+              </Badge>
+            )}
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{text}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {checklist.map((item) => (
+              <Badge
+                key={item.label}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium",
+                  item.done
+                    ? "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10"
+                    : "border-border bg-background text-muted-foreground hover:bg-background"
+                )}
+              >
+                {item.done ? "OK" : "A faire"} {item.label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
+          <Button asChild className="rounded-xl">
+            <Link href={hasGroup ? "/dashboard/moderation" : "/dashboard"}>
+              {hasGroup ? "Activer mes regles" : "Connecter une session"}
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href="/dashboard/billing">
+              {isTrial || !accessAllowed ? "Voir les plans" : "Gerer mon plan"}
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function resolveExpiry(value: unknown) {
+  return typeof value === "string" && !Number.isNaN(new Date(value).getTime()) ? value : null
+}
+
+function formatShortDate(value: string) {
+  return new Date(value).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "short",
+  })
 }
 
 function MetricTile({ label, value, sub }: { label: string; value: string | number; sub: string }) {

@@ -21,6 +21,22 @@ export function BillingPlans() {
 
   const plans = [
     {
+      id: "trial",
+      name: "Essai gratuit",
+      price: "7 jours",
+      description: "Pour connecter 1 groupe et verifier que Whappi modere bien en situation reelle.",
+      features: [
+        "1 groupe pendant 7 jours",
+        "Blocage des liens",
+        "Mots interdits choisis manuellement",
+        "Auto-exclusion activable",
+        "Message de bienvenue redige par vous",
+      ],
+      cta: "Essai en cours",
+      highlighted: false,
+      disabled: true,
+    },
+    {
       id: "starter",
       name: "Starter",
       price: "3 500 FCFA",
@@ -32,7 +48,7 @@ export function BillingPlans() {
         "Auto-exclusion activable",
         "Message de bienvenue redige par vous",
       ],
-      cta: "Choisir Starter",
+      cta: "Passer sur Starter",
       highlighted: false,
     },
     {
@@ -47,7 +63,7 @@ export function BillingPlans() {
         "Fonctions IA plus poussees",
         "Presets de moderation en option",
       ],
-      cta: "Choisir Pro IA",
+      cta: "Passer sur Pro IA",
       highlighted: true,
     },
     {
@@ -62,19 +78,20 @@ export function BillingPlans() {
         "Administration plus poussee",
         "Priorite sur les evolutions premium",
       ],
-      cta: "Choisir Business",
+      cta: "Passer sur Business",
       highlighted: false,
     },
   ]
 
   const comparisonRows = [
+    { feature: "Periode d'essai", starter: "Apres essai", pro: "Apres essai", business: "Apres essai" },
     { feature: "Groupes geres", starter: "3", pro: "6", business: "16" },
     { feature: "Blocage des liens", starter: "Inclus", pro: "Inclus", business: "Inclus" },
     { feature: "Mots interdits", starter: "Personnalises", pro: "Personnalises", business: "Personnalises" },
     { feature: "Auto-exclusion", starter: "Inclus", pro: "Inclus", business: "Inclus" },
     { feature: "Message de bienvenue manuel", starter: "Inclus", pro: "Inclus", business: "Inclus" },
-    { feature: "Assistant IA", starter: "—", pro: "Inclus", business: "Inclus" },
-    { feature: "Fonctions avancees", starter: "—", pro: "IA", business: "Avance" },
+    { feature: "Assistant IA", starter: "-", pro: "Inclus", business: "Inclus" },
+    { feature: "Fonctions avancees", starter: "-", pro: "IA", business: "Avance" },
   ]
 
   useEffect(() => {
@@ -143,6 +160,7 @@ export function BillingPlans() {
             plan.highlighted
               ? "scale-[1.02] border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10"
               : "border border-border bg-card",
+            plan.id === "trial" && "border-amber-300/40 bg-amber-50/70",
             getPlanCode(plan.id) === activePlan && "ring-2 ring-primary/15"
           )}>
           {plan.highlighted && (
@@ -159,7 +177,9 @@ export function BillingPlans() {
             <p className="mt-2 min-h-10 text-xs leading-5 text-muted-foreground">{plan.description}</p>
             <div className="mt-4 flex items-baseline gap-1">
               <span className="text-3xl font-semibold tracking-tight">{plan.price}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("per_month")}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {plan.id === "trial" ? "sans engagement" : t("per_month")}
+              </span>
             </div>
           </CardHeader>
           <CardContent className="flex-1 p-4 md:p-5">
@@ -179,7 +199,7 @@ export function BillingPlans() {
               className="h-10 w-full"
               variant={plan.highlighted ? "default" : "outline"}
               onClick={() => handleSubscribe(plan.id)}
-              disabled={loading === plan.id}
+              disabled={loading === plan.id || Boolean(plan.disabled)}
             >
               {loading === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : plan.cta}
             </Button>

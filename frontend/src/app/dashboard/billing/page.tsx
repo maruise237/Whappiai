@@ -181,7 +181,7 @@ function billingBannerText(plan: string, accessState: { allowed: boolean; messag
   if (plan === "starter") return "Inclus : jusqu'a 3 groupes, anti-liens, mots interdits, auto-exclusion et message de bienvenue manuel."
   if (plan === "pro") return "Inclus : jusqu'a 6 groupes, toute la moderation Starter et un vrai plus IA pour aider l'admin."
   if (plan === "business") return "Inclus : jusqu'a 16 groupes, tout le plan Pro IA et des fonctions plus avancees."
-  return "Essai gratuit : 7 jours avec 1 groupe pour tester Whappi."
+  return "Essai gratuit : 7 jours avec 1 groupe pour verifier la moderation et votre premiere regle activee."
 }
 
 type PlanSource = {
