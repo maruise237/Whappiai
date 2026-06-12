@@ -1,23 +1,30 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Check, ChevronDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { api, fetchApi } from "@/lib/api"
+import { fetchApi } from "@/lib/api"
 import { useAuth } from "@clerk/clerk-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { getPlanCode, PlanBadge } from "@/components/dashboard/plan-badge"
 
-export function BillingPlans() {
+export function BillingPlans({
+  activePlan = "trial",
+  recommendedPlan = "pro",
+}: {
+  activePlan?: string
+  recommendedPlan?: string | null
+}) {
   const { t } = useTranslation("billing")
   const [loading, setLoading] = useState<string | null>(null)
   const [showComparison, setShowComparison] = useState(false)
-  const [activePlan, setActivePlan] = useState("trial")
   const { getToken } = useAuth()
+  const normalizedActivePlan = getPlanCode(activePlan)
+  const normalizedRecommendedPlan = recommendedPlan ? getPlanCode(recommendedPlan) : null
 
   const plans = [
     {
@@ -49,7 +56,7 @@ export function BillingPlans() {
         "Message de bienvenue redige par vous",
       ],
       cta: "Passer sur Starter",
-      highlighted: false,
+      highlighted: normalizedRecommendedPlan === "starter",
     },
     {
       id: "pro",
@@ -64,7 +71,7 @@ export function BillingPlans() {
         "Presets de moderation en option",
       ],
       cta: "Passer sur Pro IA",
-      highlighted: true,
+      highlighted: normalizedRecommendedPlan === "pro",
     },
     {
       id: "business",
@@ -79,7 +86,7 @@ export function BillingPlans() {
         "Priorite sur les evolutions premium",
       ],
       cta: "Passer sur Business",
-      highlighted: false,
+      highlighted: normalizedRecommendedPlan === "business",
     },
   ]
 
@@ -93,38 +100,6 @@ export function BillingPlans() {
     { feature: "Assistant IA", starter: "-", pro: "Inclus", business: "Inclus" },
     { feature: "Fonctions avancees", starter: "-", pro: "IA", business: "Avance" },
   ]
-
-  useEffect(() => {
-    let mounted = true
-    async function fetchPlan() {
-      try {
-        const token = await getToken()
-        const [profileResult, subscriptionResult] = await Promise.allSettled([
-          api.auth.check(token || undefined),
-          api.subscriptions.current(token || undefined),
-        ])
-        const profile = profileResult.status === "fulfilled" ? profileResult.value : null
-        const subscription = subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null
-        const userProfile = profile?.user || profile
-        if (mounted) {
-          setActivePlan(getPlanCode(
-            subscription?.plan_code ||
-            subscription?.plan_id ||
-            userProfile?.plan_id ||
-            userProfile?.plan ||
-            userProfile?.subscription_plan ||
-            "trial"
-          ))
-        }
-      } catch {
-        if (mounted) setActivePlan("trial")
-      }
-    }
-    fetchPlan()
-    return () => {
-      mounted = false
-    }
-  }, [getToken])
 
   const handleSubscribe = async (planId: string) => {
     try {
@@ -161,7 +136,7 @@ export function BillingPlans() {
               ? "scale-[1.02] border-2 border-primary bg-primary/5 shadow-lg shadow-primary/10"
               : "border border-border bg-card",
             plan.id === "trial" && "border-amber-300/40 bg-amber-50/70",
-            getPlanCode(plan.id) === activePlan && "ring-2 ring-primary/15"
+            getPlanCode(plan.id) === normalizedActivePlan && "ring-2 ring-primary/15"
           )}>
           {plan.highlighted && (
             <Badge className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-sm font-semibold text-primary-foreground shadow hover:bg-primary">
@@ -172,7 +147,7 @@ export function BillingPlans() {
           <CardHeader className="p-4 pb-2 md:p-5 md:pb-2">
             <div className="flex items-center justify-between gap-3">
               <CardTitle className="text-base font-semibold tracking-tight">{plan.name}</CardTitle>
-              {getPlanCode(plan.id) === activePlan && <PlanBadge plan={activePlan} active />}
+              {getPlanCode(plan.id) === normalizedActivePlan && <PlanBadge plan={normalizedActivePlan} active />}
             </div>
             <p className="mt-2 min-h-10 text-xs leading-5 text-muted-foreground">{plan.description}</p>
             <div className="mt-4 flex items-baseline gap-1">

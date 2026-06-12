@@ -20,6 +20,7 @@ export default function BillingPage() {
   const [accessState, setAccessState] = React.useState({ allowed: true, status: "active", message: "" })
   const [isPlanLoading, setIsPlanLoading] = React.useState(true)
   const [managedGroupsUsed, setManagedGroupsUsed] = React.useState(0)
+  const recommendedPlan = getRecommendedPlan(activePlan, managedGroupsUsed)
 
   const refreshPlan = React.useCallback(async () => {
     setIsPlanLoading(true)
@@ -176,7 +177,7 @@ export default function BillingPage() {
           </p>
         </div>
 
-        <BillingPlans />
+        <BillingPlans activePlan={activePlan} recommendedPlan={recommendedPlan} />
       </div>
 
       <Card className="mt-8 border-2 border-dashed bg-transparent md:mt-12">
@@ -279,4 +280,15 @@ function isExpiredDate(value: string | null) {
 
 function ensureText(value: unknown) {
   return typeof value === "string" ? value : ""
+}
+
+function getRecommendedPlan(activePlan: string, managedGroupsUsed: number) {
+  const plan = getPlanCode(activePlan)
+  const limit = getPlanGroupLimit(plan)
+  const usageRatio = limit > 0 ? managedGroupsUsed / limit : 0
+
+  if (plan === "trial") return "starter"
+  if (plan === "starter" && usageRatio >= 0.67) return "pro"
+  if (plan === "pro" && usageRatio >= 0.67) return "business"
+  return null
 }
