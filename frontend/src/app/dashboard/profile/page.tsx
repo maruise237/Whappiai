@@ -219,7 +219,7 @@ export default function ProfilePage() {
             <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label={t('actions_label')} value={messageLimit > 0 ? `${messageUsed}/${messageLimit}` : t('actions_unlimited')} />
           </div>
 
-          <div className="mt-4 w-full max-w-2xl rounded-2xl border border-primary/15 bg-white/80 px-4 py-4 text-left shadow-sm backdrop-blur">
+          <div className="mt-4 w-full max-w-2xl rounded-2xl border border-primary/15 bg-background/80 px-4 py-4 text-left shadow-sm backdrop-blur">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-foreground">Groupes proteges</p>
@@ -227,7 +227,7 @@ export default function ProfilePage() {
                   {getPlanUsageMessage(planCode, managedGroupsUsed)}
                 </p>
               </div>
-              <div className="rounded-xl border bg-background px-3 py-2 text-center">
+              <div className="rounded-xl border border-primary/10 bg-card px-3 py-2 text-center shadow-sm">
                 <p className="text-lg font-bold text-primary">{managedGroupsUsed}/{getPlanGroupLimit(planCode)}</p>
                 <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">quota utilise</p>
               </div>
