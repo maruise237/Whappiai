@@ -368,8 +368,9 @@ export default function ModerationPage() {
     setSavingGroupId(groupId)
     try {
       const token = await getToken()
-      await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload(group.settings, t), token || undefined)
-      toast.success(`${ensureString(group.subject || group.name, "Groupe")} mis a jour`)
+      const response = await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload(group.settings, t), token || undefined)
+      const quotaLabel = moderationQuotaLabel(response?.meta?.groups_used, response?.meta?.group_limit)
+      toast.success(`${ensureString(group.subject || group.name, "Groupe")} mis a jour${quotaLabel ? ` - ${quotaLabel}` : ""}`)
     } catch (error) {
       console.error(error)
       const msg = error instanceof Error ? error.message : "Erreur inconnue"
@@ -391,7 +392,7 @@ export default function ModerationPage() {
     setSchedulingGroupId(groupId)
     try {
       const token = await getToken()
-      await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload({
+      const response = await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload({
         ...settings,
         welcomeEnabled: true,
       }, t), token || undefined)
@@ -403,7 +404,8 @@ export default function ModerationPage() {
       }, token || undefined)
       await refreshGroupOperations(groupId, token || undefined)
       updateLocalGroup(groupId, { welcomeEnabled: true })
-      toast.success("Bienvenue quotidienne programmee")
+      const quotaLabel = moderationQuotaLabel(response?.meta?.groups_used, response?.meta?.group_limit)
+      toast.success(`Bienvenue quotidienne programmee${quotaLabel ? ` - ${quotaLabel}` : ""}`)
     } catch (error) {
       console.error(error)
       toast.error("Impossible de programmer le message quotidien")
@@ -994,12 +996,17 @@ export default function ModerationPage() {
                       <CheckCircle2 className="h-4 w-4 text-primary" />
                       {activeRuleLabel(activeCount, t)}
                     </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-xs text-muted-foreground">
+                        {managedGroupCount}/{managedGroupLimit} groupe(s) proteges
+                      </span>
                     {savedGroupIds[groupId] ? (
                       <div className="flex items-center gap-1.5 text-xs text-green-600">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         {t("saved_indicator")}
                       </div>
                     ) : null}
+                    </div>
                   </div>
                   </div>
                 </AccordionContent>
@@ -1171,6 +1178,13 @@ function isManagedGroupSettings(settings?: GroupSettings | null, t?: (key: strin
     normalized.exclusionEnabled ||
     normalized.forbiddenWords.trim()
   )
+}
+
+function moderationQuotaLabel(groupsUsed?: unknown, groupLimit?: unknown) {
+  const used = Number(groupsUsed)
+  const limit = Number(groupLimit)
+  if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) return ""
+  return `${used}/${limit} groupes proteges`
 }
 
 function detectPresetName(settings: ReturnType<typeof normalizeSettings>, t: (key: string) => string) {
