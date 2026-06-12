@@ -181,6 +181,14 @@ export default function ModerationPage() {
   const debounceTimers = React.useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   const connectedSessions = sessions.filter(session => session.isConnected || session.status === "CONNECTED")
+  const normalizedPlan = getPlanCode(activePlan)
+  const managedGroupLimit = getPlanGroupLimit(normalizedPlan)
+  const managedGroupCount = React.useMemo(
+    () => groups.filter(group => isManagedGroupSettings(group.settings, t)).length,
+    [groups, t]
+  )
+  const remainingManagedGroups = Math.max(managedGroupLimit - managedGroupCount, 0)
+  const isManagedGroupLimitReached = remainingManagedGroups <= 0
 
   const fetchSessions = React.useCallback(async () => {
     setLoadingSessions(true)
@@ -307,6 +315,19 @@ export default function ModerationPage() {
   }, [])
 
   const updateLocalGroup = (groupId: string, patch: Partial<GroupSettings>) => {
+    const currentGroup = groupDataRef.current.find(group => ensureString(group.id || group.jid) === groupId)
+    if (currentGroup) {
+      const currentSettings = normalizeSettings(currentGroup.settings, t)
+      const nextSettings = { ...currentSettings, ...patch }
+      const isCurrentlyManaged = isManagedGroupSettings(currentSettings, t)
+      const willBeManaged = isManagedGroupSettings(nextSettings, t)
+
+      if (!isCurrentlyManaged && willBeManaged && isManagedGroupLimitReached) {
+        toast.error(`Limite atteinte: votre plan ${planLabel(activePlan)} couvre ${managedGroupLimit} groupe(s) modere(s).`)
+        return
+      }
+    }
+
     setGroups(prev => prev.map(group => {
       const currentId = ensureString(group.id || group.jid)
       if (currentId !== groupId) return group
@@ -363,6 +384,10 @@ export default function ModerationPage() {
     if (!selectedSessionId || !groupId) return
 
     const settings = normalizeSettings(group.settings, t)
+    if (!isManagedGroupSettings(settings, t) && isManagedGroupLimitReached) {
+      toast.error(`Limite atteinte: votre plan ${planLabel(activePlan)} couvre ${managedGroupLimit} groupe(s) modere(s).`)
+      return
+    }
     setSchedulingGroupId(groupId)
     try {
       const token = await getToken()
@@ -585,7 +610,18 @@ export default function ModerationPage() {
         />
       ) : (
         <div className="space-y-4">
-          {getPlanCode(activePlan) === "trial" && (
+          <div className="flex flex-col gap-2 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <span className="flex items-center gap-2 text-primary">
+              <Shield className="h-4 w-4 shrink-0" />
+              {managedGroupCount}/{managedGroupLimit} groupe(s) moderes actifs sur votre plan {planLabel(activePlan)}.
+              {isManagedGroupLimitReached ? " Passez au niveau superieur pour proteger un nouveau groupe." : ` Il vous reste ${remainingManagedGroups} groupe(s) a activer.`}
+            </span>
+            <Link href="/dashboard/billing" className="font-medium text-primary underline underline-offset-2 hover:text-primary/80">
+              {isManagedGroupLimitReached ? "Voir les upgrades" : "Voir mon plan"}
+            </Link>
+          </div>
+
+          {normalizedPlan === "trial" && (
             <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
               <span className="flex items-center gap-2 text-amber-700">
                 <Info className="h-4 w-4 shrink-0" />
@@ -601,6 +637,8 @@ export default function ModerationPage() {
           {filteredGroups.map(group => {
             const groupId = ensureString(group.id || group.jid)
             const settings = normalizeSettings(group.settings, t)
+            const groupIsManaged = isManagedGroupSettings(settings, t)
+            const groupIsLocked = !groupIsManaged && isManagedGroupLimitReached
             const activeCount = [settings.antiLinksEnabled, settings.welcomeEnabled, settings.warningsEnabled].filter(Boolean).length
             const warnedMembers = warnedMembersByGroup[groupId] || []
             const scheduledTasks = tasksByGroup[groupId] || []
@@ -641,11 +679,21 @@ export default function ModerationPage() {
                       <p className="text-xs text-muted-foreground">{t("preset_active")} : {activePreset || t("preset_none")}</p>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {groupIsLocked && (
+                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
+                          Plan plein
+                        </Badge>
+                      )}
                       <CheckCircle2 className="h-4 w-4 text-primary" />
                       {activeRuleLabel(activeCount, t)}
                     </div>
                   </div>
                   <div className="space-y-4 p-4 sm:p-5">
+                  {groupIsLocked && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                      Ce groupe n'est pas encore protege. Votre plan {planLabel(activePlan)} a deja atteint sa limite de {managedGroupLimit} groupe(s) moderes.
+                    </div>
+                  )}
                   <div className="rounded-2xl border bg-background/60 p-4">
                     <p className="text-sm font-semibold">{t("presets_title")}</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -665,6 +713,7 @@ export default function ModerationPage() {
                               : "border-border text-muted-foreground hover:border-primary/50"
                           )}
                           onClick={() => applyPreset(groupId, preset)}
+                          disabled={groupIsLocked}
                         >
                           {preset.name}
                         </Button>
@@ -835,12 +884,14 @@ export default function ModerationPage() {
                     title={t("rule_antilinks_switch_title")}
                     text={t("rule_antilinks_switch_text")}
                     checked={settings.antiLinksEnabled}
+                    disabled={groupIsLocked}
                     onCheckedChange={checked => updateLocalGroup(groupId, { antiLinksEnabled: checked })}
                   />
                   <SectionPanel enabled={Boolean(settings.forbiddenWords.trim())} icon={<Shield className="h-4 w-4" />} title={t("rule_forbidden_title")} text={t("rule_forbidden_text")} t={t}>
                     <ForbiddenWordsInput
                       value={settings.forbiddenWords}
                       planLimit={forbiddenWordsLimit(activePlan)}
+                      disabled={groupIsLocked}
                       onChange={value => updateLocalGroup(groupId, { forbiddenWords: value })}
                       t={t}
                     />
@@ -850,6 +901,7 @@ export default function ModerationPage() {
                     title={t("rule_welcome_switch_title")}
                     text={t("rule_welcome_switch_text")}
                     checked={settings.welcomeEnabled}
+                    disabled={groupIsLocked}
                     onCheckedChange={checked => updateLocalGroup(groupId, { welcomeEnabled: checked })}
                   />
                   {settings.welcomeEnabled && (
@@ -876,7 +928,7 @@ export default function ModerationPage() {
                             variant="outline"
                             className="h-9 w-full text-xs"
                             onClick={() => scheduleDailyWelcome(group)}
-                            disabled={schedulingGroupId === groupId}
+                            disabled={schedulingGroupId === groupId || groupIsLocked}
                           >
                             {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="mr-2 h-3.5 w-3.5" />}
                             {t("scheduled_button")}
@@ -890,6 +942,7 @@ export default function ModerationPage() {
                     title={t("rule_warning_switch_title")}
                     text={t("rule_warning_switch_text")}
                     checked={settings.warningsEnabled}
+                    disabled={groupIsLocked}
                     onCheckedChange={checked => updateLocalGroup(groupId, { warningsEnabled: checked })}
                   />
                   {settings.warningsEnabled && (
@@ -1090,6 +1143,36 @@ function forbiddenWordsLimit(plan: string) {
   return getPlanCode(plan) === "starter" || getPlanCode(plan) === "trial" ? 20 : 999
 }
 
+function getPlanGroupLimit(plan: string) {
+  const limits: Record<string, number> = {
+    trial: 1,
+    starter: 3,
+    pro: 6,
+    business: 16,
+  }
+  return limits[getPlanCode(plan)] ?? 1
+}
+
+function planLabel(plan: string) {
+  const code = getPlanCode(plan)
+  if (code === "trial") return "Essai"
+  if (code === "starter") return "Starter"
+  if (code === "pro") return "Pro IA"
+  if (code === "business") return "Business"
+  return "Essai"
+}
+
+function isManagedGroupSettings(settings?: GroupSettings | null, t?: (key: string) => string) {
+  const normalized = normalizeSettings(settings, t)
+  return Boolean(
+    normalized.antiLinksEnabled ||
+    normalized.welcomeEnabled ||
+    normalized.warningsEnabled ||
+    normalized.exclusionEnabled ||
+    normalized.forbiddenWords.trim()
+  )
+}
+
 function detectPresetName(settings: ReturnType<typeof normalizeSettings>, t: (key: string) => string) {
   const currentWords = splitForbiddenWords(settings.forbiddenWords).sort().join("|")
   const match = presets(t).find(preset => {
@@ -1148,11 +1231,13 @@ function SectionPanel({
 function ForbiddenWordsInput({
   value,
   planLimit,
+  disabled = false,
   onChange,
   t,
 }: {
   value: string
   planLimit: number
+  disabled?: boolean
   onChange: (value: string) => void
   t: (key: string, options?: Record<string, unknown>) => string
 }) {
@@ -1163,7 +1248,7 @@ function ForbiddenWordsInput({
 
   const commitTag = (raw: string) => {
     const next = raw.trim().toLowerCase()
-    if (!next || tags.includes(next) || isLimitReached) return
+    if (!next || tags.includes(next) || isLimitReached || disabled) return
     onChange(joinForbiddenWords([...tags, next]))
     setDraft("")
   }
@@ -1178,14 +1263,14 @@ function ForbiddenWordsInput({
         {tags.map(tag => (
           <Badge key={tag} variant="secondary" className="gap-1 rounded-full pr-1 text-xs">
             {tag}
-            <button type="button" onClick={() => removeTag(tag)} className="rounded-full p-0.5 hover:bg-background" aria-label={t("forbidden_input_remove_aria", { tag })}>
+            <button type="button" disabled={disabled} onClick={() => removeTag(tag)} className="rounded-full p-0.5 hover:bg-background disabled:cursor-not-allowed disabled:opacity-50" aria-label={t("forbidden_input_remove_aria", { tag })}>
               <X className="h-3 w-3" />
             </button>
           </Badge>
         ))}
         <input
           value={draft}
-          disabled={isLimitReached}
+          disabled={isLimitReached || disabled}
           onChange={event => {
             const next = event.target.value
             if (next.includes(",")) {
@@ -1204,14 +1289,14 @@ function ForbiddenWordsInput({
             }
           }}
           className="min-w-32 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-          placeholder={isLimitReached ? t("forbidden_input_limit_reached") : t("forbidden_input_placeholder")}
+          placeholder={disabled ? "Upgrade requis pour activer ce groupe" : isLimitReached ? t("forbidden_input_limit_reached") : t("forbidden_input_placeholder")}
         />
       </div>
       <div className="flex items-center justify-between gap-3">
         <span className={cn("text-xs text-muted-foreground", isLimitReached && "text-state-warning")}>
           {t("forbidden_input_count", { count: tags.length, limit: isUnlimited ? t("forbidden_input_unlimited") : planLimit })}
         </span>
-        {isLimitReached && (
+        {(isLimitReached || disabled) && (
           <span className="text-xs text-state-warning">{t("forbidden_input_upgrade")}</span>
         )}
       </div>
@@ -1224,12 +1309,14 @@ function RuleSwitch({
   title,
   text,
   checked,
+  disabled = false,
   onCheckedChange,
 }: {
   icon: React.ReactNode
   title: string
   text: string
   checked: boolean
+  disabled?: boolean
   onCheckedChange: (checked: boolean) => void
 }) {
   return (
@@ -1251,7 +1338,7 @@ function RuleSwitch({
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
         </div>
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label={title} />
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} aria-label={title} />
     </div>
   )
 }
