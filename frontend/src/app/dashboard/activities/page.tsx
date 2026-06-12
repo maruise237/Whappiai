@@ -113,7 +113,7 @@ export default function ActivitiesPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <History className="h-5 w-5 text-primary" /> Journal Activités
@@ -121,12 +121,12 @@ export default function ActivitiesPage() {
           <p className="text-sm text-muted-foreground">Historique complet des actions du système.</p>
         </div>
 
-        <Button size="sm" variant="outline" onClick={fetchActivities} disabled={loading} className="rounded-full h-8">
+        <Button size="sm" variant="outline" onClick={fetchActivities} disabled={loading} className="h-8 w-full rounded-full sm:w-auto">
           <RefreshCcw className={cn("h-3 w-3 mr-2", loading && "animate-spin")} /> Rafraîchir
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 w-full max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
@@ -151,7 +151,7 @@ export default function ActivitiesPage() {
             </Select>
         )}
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />

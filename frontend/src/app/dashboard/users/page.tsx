@@ -246,10 +246,10 @@ export default function UsersPage() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button size="sm" variant="outline" onClick={() => fetchUsers()} className="h-8 rounded-full px-4">
+          <Button size="sm" variant="outline" onClick={() => fetchUsers()} className="h-8 w-full rounded-full px-4 sm:w-auto">
             <RefreshCw className="mr-2 h-3 w-3" /> Actualiser
           </Button>
-          <Button size="sm" onClick={() => setIsAddDialogOpen(true)} className="h-8 rounded-full px-4">
+          <Button size="sm" onClick={() => setIsAddDialogOpen(true)} className="h-8 w-full rounded-full px-4 sm:w-auto">
             <Plus className="mr-2 h-3 w-3" /> Nouvel utilisateur
           </Button>
         </div>
@@ -265,7 +265,7 @@ export default function UsersPage() {
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <Card className="bg-card shadow-none">
           <CardContent className="p-4">
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold">File d&apos;attention</p>
                 <p className="mt-1 text-xs text-muted-foreground">Les comptes qui meritent une action admin rapide.</p>
@@ -283,7 +283,7 @@ export default function UsersPage() {
                     key={ensureString(user.id || user.email)}
                     type="button"
                     onClick={() => setSelectedUserId(user.id)}
-                    className="flex items-center justify-between gap-3 rounded-xl border bg-background/50 px-3 py-2 text-left transition-colors hover:bg-muted/40"
+                    className="flex flex-col gap-3 rounded-xl border bg-background/50 px-3 py-2 text-left transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-xs font-semibold">{safeRender(user.email)}</p>
@@ -299,7 +299,7 @@ export default function UsersPage() {
 
         <Card className="bg-card shadow-none">
           <CardContent className="p-4">
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold">Mix forfaits</p>
                 <p className="mt-1 text-xs text-muted-foreground">Repartition commerciale actuelle.</p>
@@ -448,7 +448,7 @@ export default function UsersPage() {
       </Card>
 
       <Sheet open={!!selectedUserId} onOpenChange={open => !open && setSelectedUserId(null)}>
-        <SheetContent className="overflow-y-auto sm:max-w-[620px]">
+        <SheetContent className="w-full overflow-y-auto sm:max-w-[620px]">
           <SheetHeader className="pb-6">
             <SheetTitle className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
@@ -471,14 +471,14 @@ export default function UsersPage() {
             </div>
           ) : (
             <Tabs defaultValue="subscription" className="space-y-6">
-              <TabsList className="grid h-9 w-full grid-cols-3">
+              <TabsList className="grid h-auto w-full grid-cols-3">
                 <TabsTrigger value="subscription" className="text-[10px] font-bold">Abonnement</TabsTrigger>
                 <TabsTrigger value="sessions" className="text-[10px] font-bold">Sessions</TabsTrigger>
                 <TabsTrigger value="activity" className="text-[10px] font-bold">Activite</TabsTrigger>
               </TabsList>
 
               <TabsContent value="subscription" className="space-y-6">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Metric label="Plan actuel" value={planLabel(userDetails?.user?.plan_id)} />
                   <Metric label="Actions restantes" value={safeRender(remainingActions(userDetails?.user))} />
                   <Metric label="Actions utilisees" value={safeRender(userDetails?.user?.message_used || 0)} />
@@ -487,7 +487,7 @@ export default function UsersPage() {
 
                 <Card className="bg-card shadow-none">
                   <CardContent className="space-y-3 p-4">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-sm font-semibold">Profil compte</p>
                         <p className="mt-1 text-xs text-muted-foreground">Informations utiles pour le support et le suivi commercial.</p>
@@ -552,11 +552,11 @@ export default function UsersPage() {
                       </div>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <Button size="sm" onClick={handleActivateSubscription} disabled={isSubmitting}>
+                      <Button size="sm" onClick={handleActivateSubscription} disabled={isSubmitting} className="w-full">
                         {isSubmitting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-2 h-3 w-3" />}
                         Activer manuellement
                       </Button>
-                      <Button size="sm" variant="outline" onClick={handleExpireSubscription} disabled={isSubmitting}>
+                      <Button size="sm" variant="outline" onClick={handleExpireSubscription} disabled={isSubmitting} className="w-full">
                         <XCircle className="mr-2 h-3 w-3" />
                         Expirer le forfait
                       </Button>
@@ -567,7 +567,7 @@ export default function UsersPage() {
 
               <TabsContent value="sessions" className="space-y-3">
                 {Array.isArray(userDetails?.sessions) && userDetails.sessions.length > 0 ? userDetails.sessions.map((session: any) => (
-                  <div key={ensureString(session.id)} className="flex items-center justify-between rounded-lg border bg-card p-3">
+                  <div key={ensureString(session.id)} className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="truncate text-xs font-bold">{safeRender(session.id)}</p>
                       <p className="text-[10px] text-muted-foreground">{safeRender(session.status)}</p>
@@ -632,8 +632,8 @@ export default function UsersPage() {
             </div>
           </div>
           <DialogFooter className="gap-2 sm:flex-row">
-            <Button variant="ghost" size="sm" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={handleCreateUser} disabled={isSubmitting}>
+            <Button variant="ghost" size="sm" onClick={() => setIsAddDialogOpen(false)} className="w-full sm:w-auto">Annuler</Button>
+            <Button size="sm" onClick={handleCreateUser} disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
               Lancer l&apos;invitation
             </Button>
