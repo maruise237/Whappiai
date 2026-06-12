@@ -3,11 +3,11 @@ const User = require('../models/User');
 const NotificationService = require('./NotificationService');
 
 const PLAN_LIMITS = {
-    trial: { sessions: 1, scheduledMessages: 3 },
-    free: { sessions: 0, scheduledMessages: 0 },
-    starter: { sessions: 3, scheduledMessages: 3 },
-    pro: { sessions: 6, scheduledMessages: Infinity },
-    business: { sessions: 16, scheduledMessages: Infinity }
+    trial: { sessions: 1, groups: 1, scheduledMessages: 3 },
+    free: { sessions: 0, groups: 0, scheduledMessages: 0 },
+    starter: { sessions: 3, groups: 3, scheduledMessages: 3 },
+    pro: { sessions: 6, groups: 6, scheduledMessages: Infinity },
+    business: { sessions: 16, groups: 16, scheduledMessages: Infinity }
 };
 
 const BLOCK_MESSAGES = {
@@ -16,6 +16,7 @@ const BLOCK_MESSAGES = {
     subscription_invalid: "Votre abonnement n'est plus actif. Choisissez un forfait pour continuer.",
     action_limit_reached: "Limite d'actions atteinte pour ce forfait. Passez au forfait superieur ou renouvelez.",
     session_limit_reached: "Limite de sessions atteinte pour ce forfait.",
+    group_limit_reached: "Limite de groupes moderes atteinte pour ce forfait.",
     scheduled_limit_reached: "Limite de messages programmes atteinte pour ce forfait."
 };
 
@@ -140,6 +141,45 @@ class AccountAccessService {
         return { ...status, limit, current };
     }
 
+    static async canManageModeratedGroup(userId, sessionId, groupId, nextSettings) {
+        const user = await User.findById(userId);
+        const status = this.getStatus(user);
+        if (!status.allowed) return status;
+        if (user.role === 'admin') return status;
+
+        const limit = status.entitlements.groups;
+        const current = await this.countManagedGroups(userId);
+        const existing = await db.get(
+            'SELECT * FROM group_settings WHERE group_id = $1 AND session_id = $2',
+            [groupId, sessionId]
+        );
+        const wasActive = this.hasManagedGroupSettings(existing);
+        const willBeActive = this.hasManagedGroupSettings(nextSettings);
+
+        if (!willBeActive) {
+            return { ...status, limit, current, wasActive, projected: current };
+        }
+
+        if (wasActive) {
+            return { ...status, limit, current, wasActive, projected: current };
+        }
+
+        if (current >= limit) {
+            const blocked = {
+                ...status,
+                allowed: false,
+                code: 'group_limit_reached',
+                message: `${BLOCK_MESSAGES.group_limit_reached} Limite actuelle : ${limit}.`,
+                limit,
+                current
+            };
+            this.notifyBlocked(user, blocked.code, blocked.message);
+            return blocked;
+        }
+
+        return { ...status, limit, current, wasActive, projected: current + 1 };
+    }
+
     static async countActiveScheduledTasks(userId) {
         const user = await User.findById(userId);
         if (!user?.email) return 0;
@@ -153,6 +193,52 @@ class AccountAccessService {
         `, [user.email]);
 
         return row?.count || 0;
+    }
+
+    static async countManagedGroups(userId) {
+        const user = await User.findById(userId);
+        if (!user?.email) return 0;
+
+        const row = await db.get(`
+            SELECT COUNT(*) as count
+            FROM group_settings g
+            JOIN whatsapp_sessions s ON s.id = g.session_id
+            WHERE lower(s.owner_email) = lower($1)
+            AND (
+                COALESCE(g.is_active, 0) = 1
+                OR COALESCE(g.anti_link, 0) = 1
+                OR COALESCE(g.warnings_enabled, 0) = 1
+                OR COALESCE(g.auto_kick_enabled, 0) = 1
+                OR COALESCE(g.welcome_enabled, 0) = 1
+                OR COALESCE(g.welcome_digest_enabled, 0) = 1
+                OR COALESCE(g.ai_assistant_enabled, 0) = 1
+                OR NULLIF(BTRIM(COALESCE(g.bad_words, '')), '') IS NOT NULL
+            )
+        `, [user.email]);
+
+        return Number(row?.count || 0);
+    }
+
+    static hasManagedGroupSettings(settings) {
+        if (!settings) return false;
+
+        const badWords = String(
+            settings.bad_words ??
+            settings.banned_words ??
+            settings.forbiddenWords ??
+            ''
+        ).trim();
+
+        return Boolean(
+            Number(settings.is_active || 0) ||
+            Number(settings.anti_link || settings.anti_links_enabled || 0) ||
+            Number(settings.warnings_enabled || settings.warningsEnabled || 0) ||
+            Number(settings.auto_kick_enabled || settings.exclusionEnabled || 0) ||
+            Number(settings.welcome_enabled || settings.welcomeEnabled || 0) ||
+            Number(settings.welcome_digest_enabled || 0) ||
+            Number(settings.ai_assistant_enabled || 0) ||
+            badWords
+        );
     }
 
     static notifyBlocked(user, reason, message) {

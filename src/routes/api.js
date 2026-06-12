@@ -818,12 +818,33 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.post('/sessions/:sessionId/moderation/groups/:groupId', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
+            if (!req.currentUser?.id) {
+                return res.status(401).json({ status: 'error', message: 'Compte utilisateur requis pour modifier la moderation.' });
+            }
+
+            const access = await AccountAccessService.canManageModeratedGroup(req.currentUser.id, sessionId, groupId, req.body);
+            if (!access.allowed) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: access.message,
+                    code: access.code,
+                    limit: access.limit,
+                    current: access.current
+                });
+            }
+
             const wappy = require('../services/WappyEventBroadcaster');
             const moderationService = require('../services/moderation');
             await moderationService.updateGroupSettings(sessionId, groupId, req.body);
-            // Wappy event: règle mise à jour
             wappy.ruleUpdated(groupId, sessionId);
-            res.json({ status: 'success', message: 'Settings updated' });
+            res.json({
+                status: 'success',
+                message: 'Settings updated',
+                meta: {
+                    group_limit: access.limit,
+                    groups_used: access.projected ?? access.current
+                }
+            });
         } catch (err) {
             log(`Échec de la mise à jour de la modération pour ${groupId}: ${err.message}`, sessionId, { groupId, error: err.message }, 'ERROR');
             res.status(500).json({ status: 'error', message: err.message });
