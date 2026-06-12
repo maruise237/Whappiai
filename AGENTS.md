@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-Whappi is a WhatsApp API server built with Express.js and the `@whiskeysockets/baileys` library, paired with a Next.js 15 dashboard. It provides session management, messaging capabilities, group moderation, and AI-powered auto-responders.
+Whappi is a WhatsApp operations SaaS built on Express.js and a Next.js 15 dashboard. The active production path uses Evolution API for WhatsApp transport, Postgres for persistence, and Redis for queues, rate limits, and shared session state.
 
 ## Commands
 
@@ -42,14 +42,14 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
 
 ### Backend (Express.js - Root)
 - **Entry point**: `index.js` - Server initialization, WebSocket setup, session management orchestration
-- **`src/config/`**: Database configuration (SQLite via better-sqlite3)
+- **`src/config/`**: Runtime configuration plus legacy SQLite compatibility shims
 - **`src/models/`**: Data models (User, Session, ActivityLog)
 - **`src/routes/`**: 
   - `api.js` - Main API v1 router with sessions, messaging, moderation endpoints
   - `auth.js` - Authentication routes (login/logout)
   - `users.js` - User management routes
 - **`src/services/`**:
-  - `whatsapp.js` - Baileys connection management, QR code generation, message handling
+  - `providers/EvolutionApiProvider.js` - Active WhatsApp transport adapter for Evolution API
   - `ai.js` - AI auto-responder integration (configurable endpoint/model)
   - `moderation.js` - Group moderation (blacklists, welcome messages)
   - `engagement.js` - Scheduled group messaging and engagement tasks
@@ -65,6 +65,7 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
 - Key directories: `src/app/` (pages), `src/components/`, `src/hooks/`, `src/lib/`, `src/providers/`
 
 ### Data Storage
+- **Postgres runtime**: `src/db/query.js` - active async query layer used by the app
 - **SQLite legacy**: `src/config/sqliteLegacy.js` - compatibility layer for old scripts/tests only
 - **Filesystem**: 
   - `auth_info_baileys/<sessionId>/` - Baileys auth credentials per session

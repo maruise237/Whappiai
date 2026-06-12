@@ -6,7 +6,14 @@
  * maintenance scripts that still expect the historical better-sqlite3 API.
  */
 
-const Database = require('better-sqlite3');
+let Database;
+try {
+    Database = require('better-sqlite3');
+} catch (error) {
+    throw new Error(
+        'sqliteLegacy.js requires better-sqlite3, which is now a development-only dependency. Install dev dependencies or re-add better-sqlite3 explicitly before running legacy SQLite scripts.'
+    );
+}
 const path = require('path');
 const fs = require('fs');
 const { log } = require('../utils/logger');
