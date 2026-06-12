@@ -43,6 +43,7 @@ import { Switch } from "@/components/ui/switch"
 import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/plan-badge"
 import { api } from "@/lib/api"
 import { cn, ensureString, safeDate } from "@/lib/utils"
+import { getManagedGroupUsage, getPlanGroupLimit, getPlanUsageMessage } from "@/lib/plan-usage"
 
 const COMMON_TIMEZONES = [
   'Africa/Douala', 'Africa/Lagos', 'Africa/Abidjan', 'Africa/Nairobi',
@@ -82,6 +83,7 @@ export default function ProfilePage() {
   const { signOut } = useClerk()
   const [dbUser, setDbUser] = React.useState<DbUserProfile | null>(null)
   const [subscription, setSubscription] = React.useState<SubscriptionProfile | null>(null)
+  const [managedGroupsUsed, setManagedGroupsUsed] = React.useState(0)
   const [loading, setLoading] = React.useState(true)
   const [organisation, setOrganisation] = React.useState("")
   const [timezone, setTimezone] = React.useState("Africa/Douala")
@@ -104,8 +106,10 @@ export default function ProfilePage() {
       setSubscription(nextSubscription)
       setOrganisation(ensureString(nextUser?.organization_name))
       setTimezone(nextUser?.timezone || "Africa/Douala")
+      setManagedGroupsUsed(await getManagedGroupUsage(token || undefined))
     } catch (error) {
       console.error(error)
+      setManagedGroupsUsed(0)
       toast.error(t('toast_load_error'))
     } finally {
       setLoading(false)
@@ -208,6 +212,21 @@ export default function ProfilePage() {
             <ProfilePill icon={<CreditCard className="h-4 w-4" />} label={t('plan_label')} value={getPlanLabel(planCode)} />
             <ProfilePill icon={<CalendarClock className="h-4 w-4" />} label={t('expiry_label')} value={expiry ? safeDate(expiry, { day: "2-digit", month: "short" }) : t('expiry_trial')} />
             <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label={t('actions_label')} value={messageLimit > 0 ? `${messageUsed}/${messageLimit}` : t('actions_unlimited')} />
+          </div>
+
+          <div className="mt-4 w-full max-w-2xl rounded-2xl border border-primary/15 bg-white/80 px-4 py-4 text-left shadow-sm backdrop-blur">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Groupes proteges</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {getPlanUsageMessage(planCode, managedGroupsUsed)}
+                </p>
+              </div>
+              <div className="rounded-xl border bg-background px-3 py-2 text-center">
+                <p className="text-lg font-bold text-primary">{managedGroupsUsed}/{getPlanGroupLimit(planCode)}</p>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">quota utilise</p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-4 flex w-full max-w-xl flex-col gap-3 sm:flex-row">

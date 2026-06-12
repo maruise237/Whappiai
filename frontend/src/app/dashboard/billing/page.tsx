@@ -10,6 +10,7 @@ import { api } from "@/lib/api"
 import { useAuth } from "@clerk/clerk-react"
 import { getPlanCode, getPlanLabel, PlanBadge } from "@/components/dashboard/plan-badge"
 import { cn } from "@/lib/utils"
+import { getManagedGroupUsage, getPlanGroupLimit, getPlanUsageMessage } from "@/lib/plan-usage"
 
 export default function BillingPage() {
   const { t } = useTranslation("billing")
@@ -18,6 +19,7 @@ export default function BillingPage() {
   const [expiresAt, setExpiresAt] = React.useState<string | null>(null)
   const [accessState, setAccessState] = React.useState({ allowed: true, status: "active", message: "" })
   const [isPlanLoading, setIsPlanLoading] = React.useState(true)
+  const [managedGroupsUsed, setManagedGroupsUsed] = React.useState(0)
 
   const refreshPlan = React.useCallback(async () => {
     setIsPlanLoading(true)
@@ -30,16 +32,19 @@ export default function BillingPage() {
       const profile = profileResult.status === "fulfilled" ? profileResult.value : null
       const subscription = subscriptionResult.status === "fulfilled" ? subscriptionResult.value : null
       const userProfile = profile?.user || profile
-      setActivePlan(resolveActivePlan(userProfile, subscription))
+      const nextPlan = resolveActivePlan(userProfile, subscription)
+      setActivePlan(nextPlan)
       setExpiresAt(resolveExpiration(userProfile, subscription))
       setAccessState({
         allowed: subscription?.access_allowed !== false,
         status: ensureText(subscription?.status || userProfile?.plan_status || "active"),
         message: ensureText(subscription?.access_message || ""),
       })
+      setManagedGroupsUsed(await getManagedGroupUsage(token || undefined))
     } catch {
       setActivePlan("trial")
       setExpiresAt(null)
+      setManagedGroupsUsed(0)
       setAccessState({ allowed: false, status: "unknown", message: t("error_verify") })
     } finally {
       setIsPlanLoading(false)
@@ -140,6 +145,28 @@ export default function BillingPage() {
           </div>
         </CardContent>
       </Card>
+
+      {!isPlanLoading && (
+        <Card className="border-primary/15 bg-card shadow-none">
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Usage des groupes proteges</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {getPlanUsageMessage(activePlan, managedGroupsUsed)}
+              </p>
+            </div>
+            <div className="rounded-2xl border bg-background px-4 py-3 text-left sm:text-right">
+              <p className="text-xs text-muted-foreground">Consommation actuelle</p>
+              <p className="text-lg font-bold text-primary">
+                {managedGroupsUsed}/{getPlanGroupLimit(activePlan)}
+              </p>
+              <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                groupes proteges
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-6">
         <div className="mb-6 space-y-2 text-center md:mb-10">
