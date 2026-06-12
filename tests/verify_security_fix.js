@@ -1,5 +1,5 @@
 
-const { db } = require('../src/config/database');
+const { db } = require('../src/config/sqliteLegacy');
 const User = require('../src/models/User');
 const AIModel = require('../src/models/AIModel');
 const crypto = require('crypto');

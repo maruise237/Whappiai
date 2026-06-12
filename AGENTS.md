@@ -65,7 +65,7 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
 - Key directories: `src/app/` (pages), `src/components/`, `src/hooks/`, `src/lib/`, `src/providers/`
 
 ### Data Storage
-- **SQLite**: `src/config/database.sqlite` - Users, sessions metadata, activity logs
+- **SQLite legacy**: `src/config/sqliteLegacy.js` - compatibility layer for old scripts/tests only
 - **Filesystem**: 
   - `auth_info_baileys/<sessionId>/` - Baileys auth credentials per session
   - `media/` - Uploaded media files

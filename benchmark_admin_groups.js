@@ -1,4 +1,4 @@
-const { db } = require('./src/config/database');
+const { db } = require('./src/config/sqliteLegacy');
 const { getAdminGroups } = require('./src/services/moderation');
 const { log } = require('./src/utils/logger');
 
