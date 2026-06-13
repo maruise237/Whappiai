@@ -225,6 +225,8 @@ function DashboardSidebar({
   onToggleCollapse?: () => void
   onItemClick?: () => void
 }) {
+  const isAdminMode = isAdmin && adminNavigation.some(item => pathname === item.href || pathname.startsWith(`${item.href}/`))
+
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground">
       <div className={cn("border-b border-border", collapsed ? "p-3" : "p-5")}>
@@ -243,9 +245,11 @@ function DashboardSidebar({
         </div>
         {!collapsed ? (
           <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Mode co-admin</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{isAdminMode ? "Mode admin" : "Mode co-admin"}</p>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Whappi suit une logique simple : session, groupe, regle, verification.
+              {isAdminMode
+                ? "Support, paiements, comptes et controle interne sans melange avec l'espace client."
+                : "Whappi suit une logique simple : session, groupe, regle, verification."}
             </p>
           </div>
         ) : (
@@ -258,8 +262,12 @@ function DashboardSidebar({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p className="text-xs font-semibold">Mode co-admin</p>
-                  <p className="mt-1 max-w-[180px] text-[11px] text-muted-foreground">Session, groupe, regle, verification.</p>
+                  <p className="text-xs font-semibold">{isAdminMode ? "Mode admin" : "Mode co-admin"}</p>
+                  <p className="mt-1 max-w-[180px] text-[11px] text-muted-foreground">
+                    {isAdminMode
+                      ? "Pilotage interne reserve a l'administration."
+                      : "Session, groupe, regle, verification."}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -269,21 +277,23 @@ function DashboardSidebar({
 
       <ScrollArea className={cn("flex-1 py-4", collapsed ? "px-2" : "px-3")}>
         <div className="space-y-6">
-          <section className="space-y-2">
-            {!collapsed ? <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Principal</p> : null}
-            {userNavigation.map(item => (
-              <NavigationItem
-                key={item.href}
-                item={item}
-                active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
-                collapsed={collapsed}
-                onClick={onItemClick}
-              />
-            ))}
-          </section>
+          {!isAdminMode && (
+            <section className="space-y-2">
+              {!collapsed ? <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Principal</p> : null}
+              {userNavigation.map(item => (
+                <NavigationItem
+                  key={item.href}
+                  item={item}
+                  active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+                  collapsed={collapsed}
+                  onClick={onItemClick}
+                />
+              ))}
+            </section>
+          )}
 
           {isAdmin && (
-            <section className="space-y-2 border-t border-border pt-5">
+            <section className={cn("space-y-2", !isAdminMode && "border-t border-border pt-5")}>
               {!collapsed ? <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Admin</p> : null}
               {adminNavigation.map(item => (
                 <NavigationItem
