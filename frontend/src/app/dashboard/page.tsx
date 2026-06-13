@@ -456,6 +456,9 @@ export default function DashboardPage() {
   }), [activationState.hasActiveRule, activationState.hasGroup, recentActivities.length, sessions.length, summary.activeSessions, summary.totalActivities, t])
   const onboardingDone = onboarding.filter(step => step.state === "done").length
   const protectedGroupLimit = getPlanProtectedGroupLimit(activePlan)
+  const sessionLimit = accessAllowed ? getPlanSessionLimit(activePlan) : 0
+  const remainingSessionSlots = Math.max(sessionLimit - sessions.length, 0)
+  const canCreateSession = accessAllowed && remainingSessionSlots > 0
   const remainingProtectedGroups = Math.max(protectedGroupLimit - activationState.activeRuleGroups, 0)
   const primaryAction = React.useMemo(() => {
     if (!accessAllowed) {
@@ -598,7 +601,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
-                <MetricTile label={t("stat_sessions")} value={sessions.length} sub={`${summary.activeSessions} ${t("stat_connected")}`} />
+                <MetricTile label={t("stat_sessions")} value={sessions.length} sub={sessionLimit > 0 ? `${summary.activeSessions} ${t("stat_connected")} • ${remainingSessionSlots} slot(s) restante(s)` : `${summary.activeSessions} ${t("stat_connected")}`} />
                 <MetricTile label="Groupes reperes" value={activationState.groupCount} sub={activationState.groupCount > 0 ? "Prets a etre configures" : "Encore a detecter"} />
                 <MetricTile label="Regles actives" value={activationState.activeRuleGroups} sub={activationState.activeRuleGroups > 0 ? "Groupes deja proteges" : "Aucune protection active"} />
                 <MetricTile label="Quota restant" value={remainingProtectedGroups} sub={`${protectedGroupLimit} groupe(s) inclus dans ${getPlanLabel(activePlan)}`} />
@@ -666,21 +669,37 @@ export default function DashboardPage() {
                       Tout commence ici. Une session proprement connectee permet a Whappi de retrouver vos groupes et de suivre vos actions.
                     </p>
                   </div>
-                  {sessions.length > 0 && (
-                    <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
-                      <SelectTrigger className="h-10 text-xs md:w-[240px]">
-                        <SelectValue placeholder={t("choose_session")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sessions.map(session => (
-                          <SelectItem key={ensureString(session.sessionId)} value={ensureString(session.sessionId)} className="text-xs">
-                            {safeRender(session.sessionId)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {sessions.length > 0 && (
+                      <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
+                        <SelectTrigger className="h-10 text-xs md:w-[240px]">
+                          <SelectValue placeholder={t("choose_session")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sessions.map(session => (
+                            <SelectItem key={ensureString(session.sessionId)} value={ensureString(session.sessionId)} className="text-xs">
+                              {safeRender(session.sessionId)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {canCreateSession && (
+                      <Button onClick={() => setIsCreateOpen(true)} variant="outline" className="h-10 rounded-xl text-xs">
+                        <Plus className="mr-2 h-4 w-4" />
+                        {t("new_session")}
+                      </Button>
+                    )}
+                  </div>
                 </div>
+
+                {accessAllowed && !canCreateSession && sessionLimit > 0 && (
+                  <div className="mt-4 rounded-2xl border bg-background/60 p-3 text-xs text-muted-foreground">
+                    {sessions.length >= sessionLimit
+                      ? `Votre plan ${getPlanLabel(activePlan)} autorise ${sessionLimit} session(s). Pour en ajouter une nouvelle, il faut d'abord liberer une session ou passer au plan superieur.`
+                      : "Creation de session disponible."}
+                  </div>
+                )}
 
                 <div className="mt-5">
                   <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
