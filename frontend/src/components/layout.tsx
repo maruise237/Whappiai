@@ -87,6 +87,13 @@ const userNavigation: NavItemConfig[] = [
 
 const adminNavigation: NavItemConfig[] = [
   {
+    label: "Centre admin",
+    detail: "Vue d'ensemble, supervision et priorites",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    adminOnly: true,
+  },
+  {
     label: "Support",
     detail: "Messages clients et transactions",
     href: "/dashboard/support-inbox",
@@ -115,6 +122,13 @@ const adminNavigation: NavItemConfig[] = [
     adminOnly: true,
   },
 ]
+
+function isNavItemActive(item: NavItemConfig, pathname: string) {
+  if (item.href === "/dashboard") {
+    return pathname === "/dashboard"
+  }
+  return pathname === item.href || pathname.startsWith(`${item.href}/`)
+}
 
 function LiveIndicator() {
   const { isConnected } = useWebSocket()
@@ -225,7 +239,10 @@ function DashboardSidebar({
   onToggleCollapse?: () => void
   onItemClick?: () => void
 }) {
-  const isAdminMode = isAdmin && adminNavigation.some(item => pathname === item.href || pathname.startsWith(`${item.href}/`))
+  const isAdminMode = isAdmin && (
+    pathname === "/dashboard" ||
+    adminNavigation.some(item => item.href !== "/dashboard" && (pathname === item.href || pathname.startsWith(`${item.href}/`)))
+  )
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground">
@@ -284,7 +301,7 @@ function DashboardSidebar({
                 <NavigationItem
                   key={item.href}
                   item={item}
-                  active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+                  active={isNavItemActive(item, pathname)}
                   collapsed={collapsed}
                   onClick={onItemClick}
                 />
@@ -299,7 +316,7 @@ function DashboardSidebar({
                 <NavigationItem
                   key={item.href}
                   item={item}
-                  active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+                  active={isNavItemActive(item, pathname)}
                   collapsed={collapsed}
                   onClick={onItemClick}
                 />
@@ -326,8 +343,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const userEmail = user?.primaryEmailAddress?.emailAddress || ""
   const userName = user?.firstName || userEmail.split("@")[0] || "Utilisateur"
   const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
-  const navigation = isAdmin ? [...userNavigation, ...adminNavigation] : userNavigation
-  const isAdminHeavyRoute = pathname ? ["/dashboard/users", "/dashboard/support-inbox", "/dashboard/ai-models", "/dashboard/maintenance"].some(route => pathname.startsWith(route)) : false
+  const isAdminMode = isAdmin && Boolean(pathname && (
+    pathname === "/dashboard" ||
+    adminNavigation.some(item => item.href !== "/dashboard" && pathname.startsWith(item.href))
+  ))
+  const navigation = isAdminMode ? adminNavigation : isAdmin ? [...userNavigation, ...adminNavigation] : userNavigation
+  const isAdminHeavyRoute = pathname ? ["/dashboard", "/dashboard/users", "/dashboard/support-inbox", "/dashboard/ai-models", "/dashboard/maintenance"].some(route => pathname.startsWith(route)) : false
   const currentItem = navigation
     .slice()
     .sort((a, b) => b.href.length - a.href.length)
