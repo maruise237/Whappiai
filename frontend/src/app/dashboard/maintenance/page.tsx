@@ -31,7 +31,7 @@ import { api } from "@/lib/api"
 import { getAdminErrorMessage } from "@/lib/admin-errors"
 
 type MaintenanceSettings = {
-  enabled: number
+  enabled: number | boolean
   title: string
   message: string
   icon: string
@@ -42,6 +42,8 @@ type MaintenanceSettings = {
 }
 
 const ICON_OPTIONS = ["Wrench", "ShieldOff", "Timer", "Clock", "AlertTriangle"]
+
+const isMaintenanceEnabled = (value: unknown) => value === true || value === 1 || value === "1"
 
 export default function MaintenancePage() {
   const { getToken, userId } = useAuth()
@@ -65,7 +67,7 @@ export default function MaintenancePage() {
     try {
       const token = await getToken()
       const data = await api.admin.getMaintenance(token || undefined) as MaintenanceSettings
-      if (data) setSettings(data)
+      if (data) setSettings({ ...data, enabled: isMaintenanceEnabled(data.enabled) ? 1 : 0 })
     } catch (err) {
       console.error(err)
       setPageError(getAdminErrorMessage(err, "Impossible de charger le mode maintenance."))
@@ -145,7 +147,7 @@ export default function MaintenancePage() {
     )
   }
 
-  const isActive = settings.enabled === 1
+  const isActive = isMaintenanceEnabled(settings.enabled)
   const hasSchedule = settings.scheduled_start_at && settings.scheduled_end_at
   const scheduleStart = settings.scheduled_start_at
     ? settings.scheduled_start_at.slice(0, 16)

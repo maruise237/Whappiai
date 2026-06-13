@@ -24,6 +24,18 @@ function safeParseDetails(details) {
     }
 }
 
+function maintenanceEnabledValue(value) {
+    return value === true || value === 1 || value === '1';
+}
+
+async function ensureMaintenanceSettingsRow() {
+    await db.run(`
+        INSERT INTO maintenance_settings (id, enabled, title, message, icon)
+        VALUES (1, 0, 'Maintenance en cours', 'Nous effectuons des ameliorations techniques. Revenez dans quelques instants.', 'Wrench')
+        ON CONFLICT (id) DO NOTHING
+    `);
+}
+
 /**
  * GET /api/v1/admin/stats
  * Platform-wide statistics for the admin dashboard
@@ -176,6 +188,7 @@ router.get('/users/:userId/details', requireAdmin, asyncHandler(async (req, res)
  * Get current maintenance settings
  */
 router.get('/maintenance', requireAdmin, asyncHandler(async (req, res) => {
+    await ensureMaintenanceSettingsRow();
     const settings = await db.get('SELECT * FROM maintenance_settings WHERE id = 1');
     if (!settings) {
         return response.success(res, {
@@ -187,7 +200,10 @@ router.get('/maintenance', requireAdmin, asyncHandler(async (req, res) => {
             scheduled_end_at: null
         });
     }
-    return response.success(res, settings);
+    return response.success(res, {
+        ...settings,
+        enabled: maintenanceEnabledValue(settings.enabled) ? 1 : 0
+    });
 }));
 
 /**
@@ -197,6 +213,7 @@ router.get('/maintenance', requireAdmin, asyncHandler(async (req, res) => {
 router.put('/maintenance', requireAdmin, asyncHandler(async (req, res) => {
     const { enabled, title, message, icon, scheduled_start_at, scheduled_end_at } = req.body;
     const userEmail = req.currentUser?.email || 'admin';
+    await ensureMaintenanceSettingsRow();
 
     await db.run(`
         UPDATE maintenance_settings SET
@@ -210,7 +227,7 @@ router.put('/maintenance', requireAdmin, asyncHandler(async (req, res) => {
             updated_by = $7
         WHERE id = 1
     `, [
-        enabled === true ? 1 : 0,
+        maintenanceEnabledValue(enabled) ? 1 : 0,
         title || null,
         message || null,
         icon || null,
@@ -239,6 +256,7 @@ router.put('/maintenance', requireAdmin, asyncHandler(async (req, res) => {
  */
 router.post('/maintenance/activate', requireAdmin, asyncHandler(async (req, res) => {
     const userEmail = req.currentUser?.email || 'admin';
+    await ensureMaintenanceSettingsRow();
 
     await db.run(`
         UPDATE maintenance_settings SET
@@ -267,6 +285,7 @@ router.post('/maintenance/activate', requireAdmin, asyncHandler(async (req, res)
  */
 router.post('/maintenance/deactivate', requireAdmin, asyncHandler(async (req, res) => {
     const userEmail = req.currentUser?.email || 'admin';
+    await ensureMaintenanceSettingsRow();
 
     await db.run(`
         UPDATE maintenance_settings SET
