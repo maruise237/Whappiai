@@ -1,10 +1,17 @@
 # AGENTS.md
 
-This file provides guidance to WARP (warp.dev) when working with code in this repository.
+This file is the root DOX guide for AI agents and contributors working in this repository.
 
 ## Project Overview
 
 Whappi is a WhatsApp operations SaaS built on Express.js and a Next.js 15 dashboard. The active production path uses Evolution API for WhatsApp transport, Postgres for persistence, and Redis for queues, rate limits, and shared session state.
+
+## DOX Workflow
+
+- Before editing, read this file and then walk into the closest child `AGENTS.md` for the area you will touch.
+- Prefer the most local guidance over generic assumptions.
+- After meaningful architectural or UX changes, update the affected `AGENTS.md` so the docs stay aligned with reality.
+- Keep child docs short, operational, and specific to the folder they protect.
 
 ## Commands
 
@@ -65,6 +72,13 @@ docker compose up --build -d   # Backend on :3000, Frontend on :3001
 - Static export to `frontend/out` (served by Express in production)
 - Key directories: `src/app/` (pages), `src/components/`, `src/hooks/`, `src/lib/`, `src/providers/`
 
+### Admin vs User Experience
+- **Admins now live in an exclusive admin shell.** They should not see user navigation, profile/billing flows, or the Wappy mascot.
+- **Users live in the co-admin shell.** They keep access to sessions, moderation, billing, and support.
+- Route `/dashboard` is role-sensitive:
+  - admin -> admin center
+  - non-admin -> user center
+
 ### Data Storage
 - **Postgres runtime**: `src/db/query.js` - active async query layer used by the app
 - **SQLite legacy**: `src/config/sqliteLegacy.js` - compatibility layer for old scripts/tests only
@@ -82,6 +96,24 @@ Sessions go through: `CONNECTING` -> `GENERATING_QR` -> `CONNECTED` (or `DISCONN
 - API endpoints use per-session tokens
 - Master API key (`MASTER_API_KEY` env) for session creation without login
 
+### Maintenance Mode
+- Maintenance state is stored in `maintenance_settings`.
+- Admin pages write through `/api/v1/admin/maintenance*`.
+- User-facing maintenance overlay reads `/api/v1/maintenance/status`.
+- Admins are intentionally bypassed by the overlay so they can recover the platform while maintenance is active.
+
+### Payments
+- Active payment provider is GeniusPay.
+- Never treat browser redirect as the source of truth for subscription activation.
+- Webhook reconciliation and transaction correlation must stay idempotent and defensive.
+
+### Admin Stability
+- Do not mount normal admin/product routes behind strict auth-attempt rate limiters.
+- Admin pages must degrade gracefully:
+  - no raw JSON errors in UI
+  - clear toast + inline message
+  - avoid taking down the whole screen because a secondary panel failed
+
 ## Environment Variables (Critical)
 
 - `TOKEN_ENCRYPTION_KEY`: **Must be 64 hex characters** - Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
@@ -98,3 +130,13 @@ Sessions go through: `CONNECTING` -> `GENERATING_QR` -> `CONNECTED` (or `DISCONN
 
 - Windows: prefer verifying local dev paths and Redis/Postgres env setup rather than relying on old filesystem session behavior
 - Always use `--no-pager` with git commands in this shell
+
+## Child DOX Index
+
+- `frontend/src/app/dashboard/AGENTS.md` - shell split admin/user, dashboard route conventions
+- `frontend/src/app/dashboard/support-inbox/AGENTS.md` - admin support inbox and transaction handling UI
+- `frontend/src/app/dashboard/users/AGENTS.md` - SaaS account management console
+- `frontend/src/app/dashboard/maintenance/AGENTS.md` - maintenance control panel and overlay expectations
+- `src/routes/AGENTS.md` - backend HTTP route contracts and sensitive route guidance
+- `src/services/AGENTS.md` - service-layer responsibilities and cross-cutting constraints
+- `src/services/providers/AGENTS.md` - WhatsApp provider abstraction leaf
