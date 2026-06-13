@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  History,
   Inbox,
   LayoutDashboard,
   LifeBuoy,
@@ -98,6 +99,13 @@ const adminNavigation: NavItemConfig[] = [
     detail: "Messages clients et transactions",
     href: "/dashboard/support-inbox",
     icon: Inbox,
+    adminOnly: true,
+  },
+  {
+    label: "Activite",
+    detail: "Journal systeme et signaux recents",
+    href: "/dashboard/activities",
+    icon: History,
     adminOnly: true,
   },
   {
@@ -239,11 +247,6 @@ function DashboardSidebar({
   onToggleCollapse?: () => void
   onItemClick?: () => void
 }) {
-  const isAdminMode = isAdmin && (
-    pathname === "/dashboard" ||
-    adminNavigation.some(item => item.href !== "/dashboard" && (pathname === item.href || pathname.startsWith(`${item.href}/`)))
-  )
-
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground">
       <div className={cn("border-b border-border", collapsed ? "p-3" : "p-5")}>
@@ -262,9 +265,9 @@ function DashboardSidebar({
         </div>
         {!collapsed ? (
           <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{isAdminMode ? "Mode admin" : "Mode co-admin"}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{isAdmin ? "Mode admin" : "Mode co-admin"}</p>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              {isAdminMode
+              {isAdmin
                 ? "Support, paiements, comptes et controle interne sans melange avec l'espace client."
                 : "Whappi suit une logique simple : session, groupe, regle, verification."}
             </p>
@@ -279,9 +282,9 @@ function DashboardSidebar({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p className="text-xs font-semibold">{isAdminMode ? "Mode admin" : "Mode co-admin"}</p>
+                  <p className="text-xs font-semibold">{isAdmin ? "Mode admin" : "Mode co-admin"}</p>
                   <p className="mt-1 max-w-[180px] text-[11px] text-muted-foreground">
-                    {isAdminMode
+                    {isAdmin
                       ? "Pilotage interne reserve a l'administration."
                       : "Session, groupe, regle, verification."}
                   </p>
@@ -294,7 +297,7 @@ function DashboardSidebar({
 
       <ScrollArea className={cn("flex-1 py-4", collapsed ? "px-2" : "px-3")}>
         <div className="space-y-6">
-          {!isAdminMode && (
+          {!isAdmin && (
             <section className="space-y-2">
               {!collapsed ? <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Principal</p> : null}
               {userNavigation.map(item => (
@@ -310,7 +313,7 @@ function DashboardSidebar({
           )}
 
           {isAdmin && (
-            <section className={cn("space-y-2", !isAdminMode && "border-t border-border pt-5")}>
+            <section className="space-y-2">
               {!collapsed ? <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Admin</p> : null}
               {adminNavigation.map(item => (
                 <NavigationItem
@@ -343,16 +346,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const userEmail = user?.primaryEmailAddress?.emailAddress || ""
   const userName = user?.firstName || userEmail.split("@")[0] || "Utilisateur"
   const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
-  const isAdminMode = isAdmin && Boolean(pathname && (
-    pathname === "/dashboard" ||
-    adminNavigation.some(item => item.href !== "/dashboard" && pathname.startsWith(item.href))
-  ))
-  const navigation = isAdminMode ? adminNavigation : isAdmin ? [...userNavigation, ...adminNavigation] : userNavigation
-  const isAdminHeavyRoute = pathname ? ["/dashboard", "/dashboard/users", "/dashboard/support-inbox", "/dashboard/ai-models", "/dashboard/maintenance"].some(route => pathname.startsWith(route)) : false
+  const navigation = isAdmin ? adminNavigation : userNavigation
+  const forbiddenUserRoutes = ["/dashboard/moderation", "/dashboard/billing", "/dashboard/profile", "/dashboard/support", "/dashboard/credits", "/dashboard/ai"]
+  const isAdminHeavyRoute = pathname
+    ? adminNavigation.some(item => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    : false
   const currentItem = navigation
     .slice()
     .sort((a, b) => b.href.length - a.href.length)
-    .find(item => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .find(item => isNavItemActive(item, pathname))
 
   React.useEffect(() => {
     setMounted(true)
@@ -381,6 +383,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return
     window.localStorage.setItem("whappi-dashboard-sidebar-collapsed", String(desktopCollapsed))
   }, [desktopCollapsed])
+
+  React.useEffect(() => {
+    if (!isAdmin || !pathname) return
+    if (forbiddenUserRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`))) {
+      router.replace("/dashboard")
+    }
+  }, [isAdmin, pathname, router])
 
   // Auth guard: redirect to login if not authenticated
   if (!isLoaded || !mounted) {
@@ -478,17 +487,33 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">Compte</DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest">{isAdmin ? "Administration" : "Compte"}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
-                      <UserCircle className="mr-2 h-4 w-4" /> Profil
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
-                      <CreditCard className="mr-2 h-4 w-4" /> Forfaits
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/dashboard/support")}>
-                      <LifeBuoy className="mr-2 h-4 w-4" /> Support
-                    </DropdownMenuItem>
+                    {isAdmin ? (
+                      <>
+                        <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                          <LayoutDashboard className="mr-2 h-4 w-4" /> Centre admin
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push("/dashboard/support-inbox")}>
+                          <Inbox className="mr-2 h-4 w-4" /> Support
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push("/dashboard/users")}>
+                          <Users className="mr-2 h-4 w-4" /> Utilisateurs
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
+                          <UserCircle className="mr-2 h-4 w-4" /> Profil
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
+                          <CreditCard className="mr-2 h-4 w-4" /> Forfaits
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push("/dashboard/support")}>
+                          <LifeBuoy className="mr-2 h-4 w-4" /> Support
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive">
                       <LogOut className="mr-2 h-4 w-4" /> Deconnexion
