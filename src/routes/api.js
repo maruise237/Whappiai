@@ -564,6 +564,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.post('/sessions/:sessionId/ai', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId } = req.params;
         try {
+            if (req.currentUser?.id) {
+                const featureAccess = await AccountAccessService.canUseFeature(req.currentUser.id, 'sessionAi');
+                if (!featureAccess.allowed) {
+                    return res.status(403).json({ status: 'error', message: featureAccess.message, code: featureAccess.code });
+                }
+            }
+
             // Validate sessionId first to ensure it's safe and exists
             if (!isValidId(sessionId)) {
                 return res.status(400).json({ status: 'error', message: 'Invalid session ID format' });
@@ -667,6 +674,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
         const { sessionId } = req.params;
         const aiService = require('../services/ai');
         try {
+            if (req.currentUser?.id) {
+                const featureAccess = await AccountAccessService.canUseFeature(req.currentUser.id, 'sessionAi');
+                if (!featureAccess.allowed) {
+                    return res.status(403).json({ status: 'error', message: featureAccess.message, code: featureAccess.code });
+                }
+            }
+
             // Get session config from DB if body is empty
             let config = { ...req.body };
 
@@ -822,6 +836,18 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
                 return res.status(401).json({ status: 'error', message: 'Compte utilisateur requis pour modifier la moderation.' });
             }
 
+            if (req.body?.ai_assistant_enabled) {
+                const aiAccess = await AccountAccessService.canUseFeature(req.currentUser.id, 'aiAssistant');
+                if (!aiAccess.allowed) {
+                    return res.status(403).json({
+                        status: 'error',
+                        message: aiAccess.message,
+                        code: aiAccess.code,
+                        feature: aiAccess.feature
+                    });
+                }
+            }
+
             const access = await AccountAccessService.canManageModeratedGroup(req.currentUser.id, sessionId, groupId, req.body);
             if (!access.allowed) {
                 return res.status(403).json({
@@ -930,6 +956,13 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
     router.post('/sessions/:sessionId/groups/:groupId/ai-generate', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
+            if (req.currentUser?.id) {
+                const featureAccess = await AccountAccessService.canUseFeature(req.currentUser.id, 'aiGeneration');
+                if (!featureAccess.allowed) {
+                    return res.status(403).json({ status: 'error', message: featureAccess.message, code: featureAccess.code });
+                }
+            }
+
             // Credit Check & Deduction
             if (req.currentUser.role !== 'admin') {
                 if (!req.currentUser.id) {

@@ -3,11 +3,11 @@ const User = require('../models/User');
 const NotificationService = require('./NotificationService');
 
 const PLAN_LIMITS = {
-    trial: { sessions: 1, groups: 1, scheduledMessages: 3 },
-    free: { sessions: 0, groups: 0, scheduledMessages: 0 },
-    starter: { sessions: 3, groups: 3, scheduledMessages: 3 },
-    pro: { sessions: 6, groups: 6, scheduledMessages: Infinity },
-    business: { sessions: 16, groups: 16, scheduledMessages: Infinity }
+    trial: { sessions: 1, groups: 1, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false },
+    free: { sessions: 0, groups: 0, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false },
+    starter: { sessions: 3, groups: 3, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false },
+    pro: { sessions: 6, groups: 6, scheduledMessages: Infinity, moderationPresets: true, aiAssistant: true, aiGeneration: true, sessionAi: true },
+    business: { sessions: 16, groups: 16, scheduledMessages: Infinity, moderationPresets: true, aiAssistant: true, aiGeneration: true, sessionAi: true }
 };
 
 const BLOCK_MESSAGES = {
@@ -18,6 +18,13 @@ const BLOCK_MESSAGES = {
     session_limit_reached: "Limite de sessions atteinte pour ce forfait.",
     group_limit_reached: "Limite de groupes moderes atteinte pour ce forfait.",
     scheduled_limit_reached: "Limite de messages programmes atteinte pour ce forfait."
+};
+
+const FEATURE_MESSAGES = {
+    moderationPresets: "Les presets de moderation sont disponibles a partir du forfait Pro IA.",
+    aiAssistant: "L'assistant IA de groupe est disponible a partir du forfait Pro IA.",
+    aiGeneration: "La generation IA pour les groupes est disponible a partir du forfait Pro IA.",
+    sessionAi: "La configuration IA avancee est disponible a partir du forfait Pro IA."
 };
 
 class AccountAccessService {
@@ -139,6 +146,27 @@ class AccountAccessService {
         }
 
         return { ...status, limit, current };
+    }
+
+    static async canUseFeature(userId, featureKey) {
+        const user = await User.findById(userId);
+        const status = this.getStatus(user);
+        if (!status.allowed) return status;
+        if (user.role === 'admin') return { ...status, feature: featureKey };
+
+        if (!status.entitlements?.[featureKey]) {
+            const blocked = {
+                ...status,
+                allowed: false,
+                code: `${featureKey}_locked`,
+                message: FEATURE_MESSAGES[featureKey] || "Fonction reservee a un forfait superieur.",
+                feature: featureKey
+            };
+            this.notifyBlocked(user, blocked.code, blocked.message);
+            return blocked;
+        }
+
+        return { ...status, feature: featureKey };
     }
 
     static async canManageModeratedGroup(userId, sessionId, groupId, nextSettings) {

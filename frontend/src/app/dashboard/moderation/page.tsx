@@ -176,6 +176,13 @@ export default function ModerationPage() {
   const [tasksByGroup, setTasksByGroup] = React.useState<Record<string, EngagementTask[]>>({})
   const [presetByGroup, setPresetByGroup] = React.useState<Record<string, string>>({})
   const [activePlan, setActivePlan] = React.useState("trial")
+  const [entitlements, setEntitlements] = React.useState({
+    moderationPresets: false,
+    aiAssistant: false,
+    aiGeneration: false,
+    scheduledMessages: 0,
+    scheduledMessagesUnlimited: false,
+  })
   const [searchQuery, setSearchQuery] = React.useState("")
   const [savedGroupIds, setSavedGroupIds] = React.useState<Record<string, boolean>>({})
   const groupDataRef = React.useRef<GroupItem[]>([])
@@ -190,6 +197,8 @@ export default function ModerationPage() {
   )
   const remainingManagedGroups = Math.max(managedGroupLimit - managedGroupCount, 0)
   const isManagedGroupLimitReached = remainingManagedGroups <= 0
+  const canUsePresets = Boolean(entitlements.moderationPresets)
+  const canUseScheduledMessages = entitlements.scheduledMessagesUnlimited || Number(entitlements.scheduledMessages) > 0
 
   const fetchSessions = React.useCallback(async () => {
     setLoadingSessions(true)
@@ -211,6 +220,13 @@ export default function ModerationPage() {
         userProfile?.subscription_plan ||
         "trial"
       ))
+      setEntitlements({
+        moderationPresets: Boolean(subscriptionResult?.entitlements?.moderationPresets),
+        aiAssistant: Boolean(subscriptionResult?.entitlements?.aiAssistant),
+        aiGeneration: Boolean(subscriptionResult?.entitlements?.aiGeneration),
+        scheduledMessages: subscriptionResult?.entitlements?.scheduledMessages ?? 0,
+        scheduledMessagesUnlimited: Boolean(subscriptionResult?.entitlements?.scheduledMessagesUnlimited),
+      })
       const firstConnected = list.find(session => session.isConnected || session.status === "CONNECTED")
       setSelectedSessionId(prev => prev || ensureString(firstConnected?.sessionId || list[0]?.sessionId || ""))
     } catch (error) {
@@ -364,6 +380,10 @@ export default function ModerationPage() {
   }
 
   const applyPreset = (groupId: string, preset: { name: string; patch: Partial<GroupSettings> }) => {
+    if (!canUsePresets) {
+      toast.error(`Les presets de moderation sont disponibles a partir du plan Pro IA. Votre plan actuel: ${planLabel(activePlan)}.`)
+      return
+    }
     updateLocalGroup(groupId, preset.patch)
     setPresetByGroup(prev => ({ ...prev, [groupId]: preset.name }))
   }
@@ -403,6 +423,11 @@ export default function ModerationPage() {
   const scheduleDailyWelcome = async (group: GroupItem) => {
     const groupId = ensureString(group.id || group.jid)
     if (!selectedSessionId || !groupId) return
+
+    if (!canUseScheduledMessages) {
+      toast.error(`Les messages programmes sont disponibles a partir du plan Pro IA. Votre plan actuel: ${planLabel(activePlan)}.`)
+      return
+    }
 
     const settings = normalizeSettings(group.settings, t)
     if (!isManagedGroupSettings(settings, t) && isManagedGroupLimitReached) {
@@ -469,6 +494,10 @@ export default function ModerationPage() {
   const scheduleCustomMessage = async (group: GroupItem) => {
     const groupId = ensureString(group.id || group.jid)
     if (!selectedSessionId || !groupId) return
+    if (!canUseScheduledMessages) {
+      toast.error(`Les messages programmes sont disponibles a partir du plan Pro IA. Votre plan actuel: ${planLabel(activePlan)}.`)
+      return
+    }
     const draft = scheduledDrafts[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
     if (!draft.message.trim()) return toast.error("Ecrivez le message a programmer")
     if (!draft.scheduledAt) return toast.error("Choisissez une date et une heure")
@@ -786,10 +815,19 @@ export default function ModerationPage() {
                     </div>
                   )}
                   <div className="rounded-2xl border bg-background/60 p-4">
-                    <p className="text-sm font-semibold">{t("presets_title")}</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      {t("presets_desc")}
-                    </p>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">{t("presets_title")}</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {t("presets_desc")}
+                        </p>
+                      </div>
+                      {!canUsePresets && (
+                        <Badge variant="outline" className="border-state-warning/30 bg-state-warning-light text-state-warning">
+                          Pro IA requis
+                        </Badge>
+                      )}
+                    </div>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                       {presets(t).map(preset => (
                         <Button
@@ -804,12 +842,17 @@ export default function ModerationPage() {
                               : "border-border text-muted-foreground hover:border-primary/50"
                           )}
                           onClick={() => applyPreset(groupId, preset)}
-                          disabled={groupIsLocked}
+                          disabled={groupIsLocked || !canUsePresets}
                         >
                           {preset.name}
                         </Button>
                       ))}
                     </div>
+                    {!canUsePresets && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Les presets rapides sont inclus a partir du plan Pro IA pour accelerer la mise en route de vos groupes.
+                      </p>
+                    )}
                     <p className="mt-2 text-xs text-muted-foreground">{t("preset_active")} : {activePreset || t("preset_none")}</p>
                   </div>
                   {(() => {
@@ -827,41 +870,47 @@ export default function ModerationPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="space-y-3">
-                          <Textarea
-                            value={scheduledDraft.message}
-                            onChange={event => updateScheduledDraft(groupId, { message: event.target.value })}
-                            className="min-h-20 resize-none text-xs"
-                            placeholder={t("scheduled_message_placeholder")}
-                          />
-                          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_140px_120px]">
-                            <Input
-                              type="datetime-local"
-                              value={scheduledDraft.scheduledAt}
-                              onChange={event => updateScheduledDraft(groupId, { scheduledAt: event.target.value })}
-                              className="h-9 text-xs"
+                        {canUseScheduledMessages ? (
+                          <div className="space-y-3">
+                            <Textarea
+                              value={scheduledDraft.message}
+                              onChange={event => updateScheduledDraft(groupId, { message: event.target.value })}
+                              className="min-h-20 resize-none text-xs"
+                              placeholder={t("scheduled_message_placeholder")}
                             />
-                            <Select
-                              value={scheduledDraft.recurrence}
-                              onValueChange={value => updateScheduledDraft(groupId, { recurrence: value })}
-                            >
-                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">{t("scheduled_recurrence_none")}</SelectItem>
-                                <SelectItem value="daily">{t("scheduled_recurrence_daily")}</SelectItem>
-                                <SelectItem value="weekly">{t("scheduled_recurrence_weekly")}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              size="sm"
-                              className="h-9 w-full text-xs lg:w-auto"
-                              onClick={() => scheduleCustomMessage(group)}
-                              disabled={schedulingGroupId === groupId}
-                            >
-                              {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : t("scheduled_button")}
-                            </Button>
+                            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_140px_120px]">
+                              <Input
+                                type="datetime-local"
+                                value={scheduledDraft.scheduledAt}
+                                onChange={event => updateScheduledDraft(groupId, { scheduledAt: event.target.value })}
+                                className="h-9 text-xs"
+                              />
+                              <Select
+                                value={scheduledDraft.recurrence}
+                                onValueChange={value => updateScheduledDraft(groupId, { recurrence: value })}
+                              >
+                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">{t("scheduled_recurrence_none")}</SelectItem>
+                                  <SelectItem value="daily">{t("scheduled_recurrence_daily")}</SelectItem>
+                                  <SelectItem value="weekly">{t("scheduled_recurrence_weekly")}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                size="sm"
+                                className="h-9 w-full text-xs lg:w-auto"
+                                onClick={() => scheduleCustomMessage(group)}
+                                disabled={schedulingGroupId === groupId}
+                              >
+                                {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : t("scheduled_button")}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="rounded-2xl border border-dashed bg-background/60 p-4 text-xs leading-5 text-muted-foreground">
+                            Les messages programmes et la bienvenue quotidienne automatique sont inclus a partir du plan Pro IA. Votre plan {planLabel(activePlan)} garde la moderation essentielle, puis vous pouvez upgrader quand vous avez besoin d'automatiser.
+                          </div>
+                        )}
                       </div>
                     )
                   })()}

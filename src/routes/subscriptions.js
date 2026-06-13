@@ -28,6 +28,11 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
         const user = await User.findById(userId) || await User.findByEmail(email);
         const subscription = await SubscriptionService.getCurrentSubscription(user?.id || userId);
         const access = await AccountAccessService.getStatus(user);
+        const serializableEntitlements = access.entitlements ? {
+            ...access.entitlements,
+            scheduledMessagesUnlimited: !Number.isFinite(access.entitlements.scheduledMessages),
+            scheduledMessages: Number.isFinite(access.entitlements.scheduledMessages) ? access.entitlements.scheduledMessages : null,
+        } : null;
 
         res.json({
             status: 'success',
@@ -39,7 +44,7 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
                 access_allowed: access.allowed,
                 access_code: access.code,
                 access_message: access.message,
-                entitlements: access.entitlements,
+                entitlements: serializableEntitlements,
                 current_period_end: subscription?.current_period_end || user?.subscription_expiry || null,
                 subscription_expiry: subscription?.current_period_end || user?.subscription_expiry || null,
                 renewal_reminders: [7, 3, 1, 0],

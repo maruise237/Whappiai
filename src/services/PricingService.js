@@ -19,7 +19,7 @@ const DEFAULT_PLANS = [
         currency: 'XAF',
         message_limit: 5000,
         interval: 'month',
-        features: '6 groupes, moderation Starter, assistant IA, fonctions IA avancees, presets optionnels'
+        features: '6 groupes, moderation Starter, presets de moderation, assistant IA, generation IA et messages programmes'
     },
     {
         id: 'business',
@@ -29,7 +29,7 @@ const DEFAULT_PLANS = [
         currency: 'XAF',
         message_limit: 25000,
         interval: 'month',
-        features: '16 groupes, tout Pro IA, fonctions avancees, administration poussee, priorite premium'
+        features: '16 groupes, tout Pro IA, messages programmes sans limite, generation IA et protection etendue'
     }
 ];
 

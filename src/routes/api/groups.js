@@ -67,6 +67,18 @@ function initializeGroupRoutes(routerInstance, dependencies) {
                 return res.status(401).json({ status: 'error', message: 'Compte utilisateur requis pour modifier la moderation.' });
             }
 
+            if (req.body?.ai_assistant_enabled) {
+                const aiAccess = await AccountAccessService.canUseFeature(req.currentUser.id, 'aiAssistant');
+                if (!aiAccess.allowed) {
+                    return res.status(403).json({
+                        status: 'error',
+                        message: aiAccess.message,
+                        code: aiAccess.code,
+                        feature: aiAccess.feature
+                    });
+                }
+            }
+
             const access = await AccountAccessService.canManageModeratedGroup(req.currentUser.id, sessionId, groupId, req.body);
             if (!access.allowed) {
                 return res.status(403).json({

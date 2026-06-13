@@ -67,9 +67,10 @@ export function BillingPlans({
       features: [
         "Jusqu'a 6 groupes",
         "Toute la moderation Starter",
+        "Presets de moderation rapides",
         "Assistant IA pour aider l'admin",
-        "Fonctions IA plus poussees",
-        "Presets de moderation en option",
+        "Generation IA pour vos groupes",
+        "Messages programmes inclus",
       ],
       cta: "Passer sur Pro IA",
       highlighted: normalizedRecommendedPlan === "pro",
@@ -82,9 +83,9 @@ export function BillingPlans({
       features: [
         "Jusqu'a 16 groupes",
         "Tout le plan Pro IA",
-        "Fonctionnalites avancees",
-        "Administration plus poussee",
-        "Priorite sur les evolutions premium",
+        "Messages programmes sans limite",
+        "Generation IA pour vos groupes",
+        "Protection etendue sur plus de groupes",
       ],
       cta: "Passer sur Business",
       highlighted: normalizedRecommendedPlan === "business",
@@ -98,8 +99,10 @@ export function BillingPlans({
     { feature: "Mots interdits", starter: "Personnalises", pro: "Personnalises", business: "Personnalises" },
     { feature: "Auto-exclusion", starter: "Inclus", pro: "Inclus", business: "Inclus" },
     { feature: "Message de bienvenue manuel", starter: "Inclus", pro: "Inclus", business: "Inclus" },
+    { feature: "Presets de moderation", starter: "-", pro: "Inclus", business: "Inclus" },
     { feature: "Assistant IA", starter: "-", pro: "Inclus", business: "Inclus" },
-    { feature: "Fonctions avancees", starter: "-", pro: "IA", business: "Avance" },
+    { feature: "Generation IA", starter: "-", pro: "Inclus", business: "Inclus" },
+    { feature: "Messages programmes", starter: "-", pro: "Inclus", business: "Sans limite" },
   ]
 
   const handleSubscribe = async (planId: string) => {

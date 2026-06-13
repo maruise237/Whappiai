@@ -5,6 +5,7 @@
 
 const Session = require('../../models/Session');
 const CreditService = require('../../services/CreditService');
+const AccountAccessService = require('../../services/AccountAccessService');
 
 /**
  * Initialize AI routes with dependencies
@@ -63,6 +64,13 @@ function initializeAIRoutes(routerInstance, dependencies) {
                 return res.status(404).json({ status: 'error', message: 'Session not found' });
             }
 
+            if (req.currentUser?.id) {
+                const featureAccess = await AccountAccessService.canUseFeature(req.currentUser.id, 'sessionAi');
+                if (!featureAccess.allowed) {
+                    return res.status(403).json({ status: 'error', message: featureAccess.message, code: featureAccess.code });
+                }
+            }
+
             const aiConfig = { ...req.body };
             if (req.currentUser.role !== 'admin') {
                 delete aiConfig.endpoint;
@@ -84,6 +92,13 @@ function initializeAIRoutes(routerInstance, dependencies) {
         const { sessionId } = req.params;
         const aiService = require('../services/ai');
         try {
+            if (req.currentUser?.id) {
+                const featureAccess = await AccountAccessService.canUseFeature(req.currentUser.id, 'sessionAi');
+                if (!featureAccess.allowed) {
+                    return res.status(403).json({ status: 'error', message: featureAccess.message, code: featureAccess.code });
+                }
+            }
+
             let config = { ...req.body };
 
             if (req.currentUser.role !== 'admin') {
@@ -150,6 +165,13 @@ function initializeAIRoutes(routerInstance, dependencies) {
     routerInstance.post('/sessions/:sessionId/groups/:groupId/ai-generate', checkSessionOrTokenAuth, ensureOwnership, async (req, res) => {
         const { sessionId, groupId } = req.params;
         try {
+            if (req.currentUser?.id) {
+                const featureAccess = await AccountAccessService.canUseFeature(req.currentUser.id, 'aiGeneration');
+                if (!featureAccess.allowed) {
+                    return res.status(403).json({ status: 'error', message: featureAccess.message, code: featureAccess.code });
+                }
+            }
+
             if (req.currentUser.role !== 'admin') {
                 if (!req.currentUser.id) {
                     return res.status(400).json({ status: 'error', message: 'User account required for credit deduction.' });
