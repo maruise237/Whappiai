@@ -112,9 +112,9 @@ export default function ProfilePage() {
   const planCode = getPlanCode(subscription?.plan_code || subscription?.plan_id || dbUser?.plan_id || "trial")
   const planStatus = ensureString(subscription?.status || dbUser?.plan_status || "active")
   const expiry = subscription?.current_period_end || subscription?.subscription_expiry || dbUser?.subscription_expiry || null
-  const messageLimit = Number(subscription?.message_limit || dbUser?.message_limit || 0)
-  const messageUsed = Number(subscription?.message_used || dbUser?.message_used || 0)
   const hasOrganisationChanges = organisation !== ensureString(dbUser?.organization_name)
+  const expiryValue = getProfileExpiryValue(planCode, expiry, t)
+  const scheduledMessageValue = getScheduledMessageValue(planCode)
 
   async function handleSaveProfile() {
     try {
@@ -221,8 +221,8 @@ export default function ProfilePage() {
 
           <div className="mt-5 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
             <ProfilePill icon={<CreditCard className="h-4 w-4" />} label={t('plan_label')} value={getPlanLabel(planCode)} />
-            <ProfilePill icon={<CalendarClock className="h-4 w-4" />} label={t('expiry_label')} value={expiry ? safeDate(expiry, { day: "2-digit", month: "short" }) : t('expiry_trial')} />
-            <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label={t('actions_label')} value={messageLimit > 0 ? `${messageUsed}/${messageLimit}` : t('actions_unlimited')} />
+            <ProfilePill icon={<CalendarClock className="h-4 w-4" />} label={t('expiry_label')} value={expiryValue} />
+            <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label="Messages programmes" value={scheduledMessageValue} />
           </div>
 
           <div className="mt-4 w-full max-w-2xl rounded-2xl border border-primary/15 bg-background/80 px-4 py-4 text-left shadow-sm backdrop-blur">
@@ -439,4 +439,18 @@ function statusTone(status: string) {
     return "border-state-warning/30 bg-state-warning-light text-state-warning"
   }
   return "border-primary/20 bg-primary/10 text-primary"
+}
+
+function getProfileExpiryValue(planCode: string, expiry: string | null, t: (key: string) => string) {
+  const formattedDate = safeDate(expiry, { day: "2-digit", month: "short" })
+  if (formattedDate !== "-") return formattedDate
+  if (planCode === "trial") return "7 jours"
+  if (planCode === "starter" || planCode === "pro" || planCode === "business") return "Mensuel"
+  return t('status_active')
+}
+
+function getScheduledMessageValue(planCode: string) {
+  if (planCode === "trial" || planCode === "starter") return "3 max"
+  if (planCode === "pro" || planCode === "business") return "Illimites"
+  return "3 max"
 }
