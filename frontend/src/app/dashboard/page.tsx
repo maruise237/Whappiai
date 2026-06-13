@@ -467,176 +467,238 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className="overflow-hidden rounded-[28px] border bg-card shadow-[0_30px_80px_-55px_hsl(var(--primary))]">
-          <div className="border-b p-5 sm:p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                {showCenterBadge && (
-                  <Badge className="gap-2 border-primary/15 bg-primary/10 pr-1 text-primary hover:bg-primary/10">
-                    {t("hero_badge_new")}
-                    <button
-                      type="button"
-                      onClick={dismissCenterBadge}
-                      className="rounded-full p-0.5 text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary"
-                      aria-label={t("hero_badge_hide")}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
-                <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                  {t("hero_title")}
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  {t("hero_desc")}
-                </p>
-              </div>
-              <Button onClick={() => setIsCreateOpen(true)} className="h-10 w-full rounded-xl sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                {t("new_session")}
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid gap-px bg-border md:grid-cols-3">
-            <MetricTile label={t("stat_sessions")} value={sessions.length} sub={`${summary.activeSessions} ${t("stat_connected")}`} />
-            <MetricTile label={t("stat_messages")} value={summary.messagesSent} sub={t("stat_volume")} />
-            <MetricTile label={t("stat_actions")} value={summary.totalActivities} sub={t("stat_recent")} />
-          </div>
-        </div>
-
-        <Card className="rounded-[28px] bg-card shadow-none">
-          <CardContent className="p-5 sm:p-6">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold truncate">{t("onboarding_title")}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t("onboarding_desc")}</p>
-              </div>
-              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{onboardingDone}/4 {t("onboarding_steps")}</Badge>
-            </div>
-            <Progress value={(onboardingDone / 4) * 100} className="mt-4 h-1.5" />
-            <div className="mt-5 space-y-3">
-              {onboarding.map(step => (
-                <div key={step.title} className={cn(
-                  "flex gap-3 rounded-2xl border bg-background/60 p-3 transition-colors",
-                  step.state === "done" && "opacity-60",
-                  step.state === "current" && "border-state-warning bg-state-warning-light/40"
-                )}>
-                  <span className={cn(
-                    "mt-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px]",
-                    step.state === "done" && "bg-primary/10 text-primary",
-                    step.state === "current" && "animate-pulse bg-state-warning text-white",
-                    step.state === "upcoming" && "bg-muted text-muted-foreground"
-                  )}>
-                    {step.state === "done" ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    ) : step.state === "current" ? (
-                      <Radio className="h-3.5 w-3.5" />
-                    ) : (
-                      <Circle className="h-3.5 w-3.5" />
-                    )}
-                  </span>
+      {isAdmin ? (
+        <>
+          <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+            <Card className="overflow-hidden rounded-[28px] border-primary/10 bg-card shadow-[0_30px_80px_-55px_hsl(var(--primary))]">
+              <CardContent className="space-y-6 p-5 sm:p-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className={cn("text-sm font-medium", step.state === "done" && "line-through")}>{step.title}</p>
-                    <p className={cn("text-xs text-muted-foreground", step.state === "upcoming" && "text-muted-foreground/60")}>{step.text}</p>
+                    <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">
+                      Espace admin dedie
+                    </Badge>
+                    <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                      Supervisez Whappi sans bruit compte client.
+                    </h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                      Cette vue ne montre que les zones admin: support, paiements, utilisateurs, maintenance et IA.
+                    </p>
+                  </div>
+                  <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
+                    <Button asChild className="h-10 rounded-xl">
+                      <Link href="/dashboard/support-inbox">Ouvrir le support</Link>
+                    </Button>
+                    <Button asChild variant="outline" className="h-10 rounded-xl">
+                      <Link href="/dashboard/users">Voir les comptes</Link>
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
 
-      {sessions.length === 0 && (
-        <FirstRunPanel onCreate={() => setIsCreateOpen(true)} />
-      )}
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <AdminZoneCard
+                    href="/dashboard/support-inbox"
+                    icon={<Inbox className="h-4 w-4" />}
+                    title="Support & paiements"
+                    text="Conversation client, transactions et suivis sensibles."
+                  />
+                  <AdminZoneCard
+                    href="/dashboard/users"
+                    icon={<Users className="h-4 w-4" />}
+                    title="Comptes"
+                    text="Forfaits, activations manuelles et vue utilisateur."
+                  />
+                  <AdminZoneCard
+                    href="/dashboard/ai-models"
+                    icon={<Smartphone className="h-4 w-4" />}
+                    title="Modeles IA"
+                    text="Providers, cles API et configuration technique."
+                  />
+                  <AdminZoneCard
+                    href="/dashboard/maintenance"
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                    title="Maintenance"
+                    text="Mode maintenance et controles systeme reserves admin."
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-      {!isAdmin && (
-        <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-          <TrialFocusPanel
-            plan={activePlan}
-            expiry={trialExpiry}
-            accessAllowed={accessAllowed}
-            sessionCount={sessions.length}
-            hasGroup={activationState.hasGroup}
-            hasActiveRule={activationState.hasActiveRule}
-          />
-          <PlanCapacityPanel
-            plan={activePlan}
-            accessAllowed={accessAllowed}
-            sessionCount={sessions.length}
-            groupCount={activationState.groupCount}
-            activeRuleGroups={activationState.activeRuleGroups}
-          />
-        </div>
-      )}
+            <AdminControlRail adminStats={adminStats} adminSignals={adminSignals} />
+          </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
-        <Card className="rounded-[28px] bg-card shadow-none">
-          <CardContent className="p-5 sm:p-6">
-            <div className="flex flex-col gap-3 border-b pb-5 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-sm font-semibold truncate">{t("session_work_title")}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t("session_work_desc")}</p>
+          <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
+            <AdminPanel adminStats={adminStats} adminSignals={adminSignals} analyticsData={analyticsData} recentActivities={recentActivities} />
+            <AdminFocusPanel adminSignals={adminSignals} adminStats={adminStats} />
+          </section>
+        </>
+      ) : (
+        <>
+          <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+            <div className="overflow-hidden rounded-[28px] border bg-card shadow-[0_30px_80px_-55px_hsl(var(--primary))]">
+              <div className="border-b p-5 sm:p-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    {showCenterBadge && (
+                      <Badge className="gap-2 border-primary/15 bg-primary/10 pr-1 text-primary hover:bg-primary/10">
+                        {t("hero_badge_new")}
+                        <button
+                          type="button"
+                          onClick={dismissCenterBadge}
+                          className="rounded-full p-0.5 text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary"
+                          aria-label={t("hero_badge_hide")}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                    <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                      {t("hero_title")}
+                    </h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                      {t("hero_desc")}
+                    </p>
+                  </div>
+                  <Button onClick={() => setIsCreateOpen(true)} className="h-10 w-full rounded-xl sm:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("new_session")}
+                  </Button>
+                </div>
               </div>
-              <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
-                <SelectTrigger className="h-10 text-xs md:w-[220px]">
-                  <SelectValue placeholder={t("choose_session")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sessions.map(session => (
-                    <SelectItem key={ensureString(session.sessionId)} value={ensureString(session.sessionId)} className="text-xs">
-                      {safeRender(session.sessionId)}
-                    </SelectItem>
+
+              <div className="grid gap-px bg-border md:grid-cols-3">
+                <MetricTile label={t("stat_sessions")} value={sessions.length} sub={`${summary.activeSessions} ${t("stat_connected")}`} />
+                <MetricTile label={t("stat_messages")} value={summary.messagesSent} sub={t("stat_volume")} />
+                <MetricTile label={t("stat_actions")} value={summary.totalActivities} sub={t("stat_recent")} />
+              </div>
+            </div>
+
+            <Card className="rounded-[28px] bg-card shadow-none">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold truncate">{t("onboarding_title")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("onboarding_desc")}</p>
+                  </div>
+                  <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{onboardingDone}/4 {t("onboarding_steps")}</Badge>
+                </div>
+                <Progress value={(onboardingDone / 4) * 100} className="mt-4 h-1.5" />
+                <div className="mt-5 space-y-3">
+                  {onboarding.map(step => (
+                    <div key={step.title} className={cn(
+                      "flex gap-3 rounded-2xl border bg-background/60 p-3 transition-colors",
+                      step.state === "done" && "opacity-60",
+                      step.state === "current" && "border-state-warning bg-state-warning-light/40"
+                    )}>
+                      <span className={cn(
+                        "mt-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px]",
+                        step.state === "done" && "bg-primary/10 text-primary",
+                        step.state === "current" && "animate-pulse bg-state-warning text-white",
+                        step.state === "upcoming" && "bg-muted text-muted-foreground"
+                      )}>
+                        {step.state === "done" ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : step.state === "current" ? (
+                          <Radio className="h-3.5 w-3.5" />
+                        ) : (
+                          <Circle className="h-3.5 w-3.5" />
+                        )}
+                      </span>
+                      <div>
+                        <p className={cn("text-sm font-medium", step.state === "done" && "line-through")}>{step.title}</p>
+                        <p className={cn("text-xs text-muted-foreground", step.state === "upcoming" && "text-muted-foreground/60")}>{step.text}</p>
+                      </div>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
 
-            <div className="mt-5">
-              <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
-            </div>
-          </CardContent>
-        </Card>
+          {sessions.length === 0 && (
+            <FirstRunPanel onCreate={() => setIsCreateOpen(true)} />
+          )}
 
-        <Card className="rounded-[28px] bg-card shadow-none">
-          <CardContent className="p-5 sm:p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold truncate">{t("rules_title")}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t("rules_desc")}</p>
-              </div>
-              <Button asChild variant="outline" className="h-9 text-xs">
-                <Link href="/dashboard/moderation">
-                  {t("rules_open")}
-                  <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            </div>
+          <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+            <TrialFocusPanel
+              plan={activePlan}
+              expiry={trialExpiry}
+              accessAllowed={accessAllowed}
+              sessionCount={sessions.length}
+              hasGroup={activationState.hasGroup}
+              hasActiveRule={activationState.hasActiveRule}
+            />
+            <PlanCapacityPanel
+              plan={activePlan}
+              accessAllowed={accessAllowed}
+              sessionCount={sessions.length}
+              groupCount={activationState.groupCount}
+              activeRuleGroups={activationState.activeRuleGroups}
+            />
+          </div>
 
-            <div className="grid gap-3">
-              <RuleRow icon={<Link2 className="h-4 w-4" />} title={t("rule_anti_links")} text={t("rule_anti_links_desc")} />
-              <RuleRow icon={<MessageCircle className="h-4 w-4" />} title={t("rule_welcome")} text={t("rule_welcome_desc")} />
-              <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title={t("rule_warnings")} text={t("rule_warnings_desc")} />
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+          <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+            <Card className="rounded-[28px] bg-card shadow-none">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col gap-3 border-b pb-5 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold truncate">{t("session_work_title")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("session_work_desc")}</p>
+                  </div>
+                  <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
+                    <SelectTrigger className="h-10 text-xs md:w-[220px]">
+                      <SelectValue placeholder={t("choose_session")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sessions.map(session => (
+                        <SelectItem key={ensureString(session.sessionId)} value={ensureString(session.sessionId)} className="text-xs">
+                          {safeRender(session.sessionId)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-      <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        {isAdmin ? (
-          <AdminPanel adminStats={adminStats} adminSignals={adminSignals} analyticsData={analyticsData} recentActivities={recentActivities} />
-        ) : (
-          <UserActivityPanel recentActivities={recentActivities} />
-        )}
-        <NextBestActionPanel
-          sessionCount={sessions.length}
-          activeSessions={summary.activeSessions}
-          hasGroup={activationState.hasGroup}
-          hasActiveRule={activationState.hasActiveRule}
-        />
-      </section>
+                <div className="mt-5">
+                  <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-[28px] bg-card shadow-none">
+              <CardContent className="p-5 sm:p-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold truncate">{t("rules_title")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("rules_desc")}</p>
+                  </div>
+                  <Button asChild variant="outline" className="h-9 text-xs">
+                    <Link href="/dashboard/moderation">
+                      {t("rules_open")}
+                      <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                </div>
+
+                <div className="grid gap-3">
+                  <RuleRow icon={<Link2 className="h-4 w-4" />} title={t("rule_anti_links")} text={t("rule_anti_links_desc")} />
+                  <RuleRow icon={<MessageCircle className="h-4 w-4" />} title={t("rule_welcome")} text={t("rule_welcome_desc")} />
+                  <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title={t("rule_warnings")} text={t("rule_warnings_desc")} />
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
+            <UserActivityPanel recentActivities={recentActivities} />
+            <NextBestActionPanel
+              sessionCount={sessions.length}
+              activeSessions={summary.activeSessions}
+              hasGroup={activationState.hasGroup}
+              hasActiveRule={activationState.hasActiveRule}
+            />
+          </section>
+        </>
+      )}
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-[440px]">
@@ -1094,6 +1156,165 @@ function AdminPanel({
               <p className="mt-1 text-xs text-muted-foreground">Vue courte pour valider le systeme sans ouvrir une page plus lourde.</p>
             </div>
             <ActivityTable recentActivities={recentActivities.slice(0, 3)} emptyText={t("admin_no_activity")} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function AdminZoneCard({
+  href,
+  icon,
+  title,
+  text,
+}: {
+  href: string
+  icon: React.ReactNode
+  title: string
+  text: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-3xl border bg-background/60 p-4 transition-colors hover:border-primary/30 hover:bg-primary/5"
+    >
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
+    </Link>
+  )
+}
+
+function AdminControlRail({
+  adminStats,
+  adminSignals,
+}: {
+  adminStats: AdminStats | null
+  adminSignals: AdminSignals
+}) {
+  const items = [
+    {
+      label: "Messages non lus",
+      value: adminSignals.unreadSupport,
+      note: "Demandent une reponse admin.",
+    },
+    {
+      label: "Paiements a verifier",
+      value: adminSignals.pendingPayments + adminSignals.failedPayments,
+      note: "Attente, echec ou verification manuelle.",
+    },
+    {
+      label: "Utilisateurs actifs",
+      value: adminStats?.users?.active || 0,
+      note: "Comptes operationnels actuellement.",
+    },
+    {
+      label: "Sessions connectees",
+      value: adminStats?.sessions?.connected || 0,
+      note: "Lignes WhatsApp encore en ligne.",
+    },
+  ]
+
+  return (
+    <Card className="rounded-[28px] bg-card shadow-none">
+      <CardContent className="space-y-5 p-5 sm:p-6">
+        <div>
+          <p className="text-sm font-semibold">Surveillance admin</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Vue courte reservee au pilotage interne, sans sessions ni onboarding client.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          {items.map(item => (
+            <div key={item.label} className="rounded-2xl border bg-background/60 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{item.label}</p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight">{item.value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.note}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-3xl border border-primary/15 bg-primary/5 p-4">
+          <p className="text-sm font-semibold text-primary">Acces rapides admin</p>
+          <div className="mt-3 flex flex-col gap-2">
+            <Button asChild className="justify-between rounded-xl">
+              <Link href="/dashboard/support-inbox">
+                Support & transactions
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-between rounded-xl">
+              <Link href="/dashboard/users">
+                Comptes et forfaits
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function AdminFocusPanel({
+  adminSignals,
+  adminStats,
+}: {
+  adminSignals: AdminSignals
+  adminStats: AdminStats | null
+}) {
+  const focusItems = [
+    {
+      label: "Support ouvert",
+      status: adminSignals.openSupport > 0 ? "A traiter" : "Stable",
+      tone: adminSignals.openSupport > 0 ? "bg-state-warning/10 text-state-warning" : "bg-primary/10 text-primary",
+      note: `${adminSignals.openSupport} conversation(s) encore ouverte(s).`,
+    },
+    {
+      label: "Flux paiement",
+      status: adminSignals.pendingPayments > 0 || adminSignals.failedPayments > 0 ? "Verifier" : "Sain",
+      tone: adminSignals.pendingPayments > 0 || adminSignals.failedPayments > 0 ? "bg-state-warning/10 text-state-warning" : "bg-primary/10 text-primary",
+      note: `${adminSignals.completedPayments} paiement(s) completes, ${adminSignals.pendingPayments + adminSignals.failedPayments} a suivre.`,
+    },
+    {
+      label: "Base comptes",
+      status: (adminStats?.users?.total || 0) > 0 ? "Active" : "Vide",
+      tone: (adminStats?.users?.total || 0) > 0 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+      note: `${adminStats?.users?.total || 0} compte(s) connus dans l'espace SaaS.`,
+    },
+  ]
+
+  return (
+    <Card className="rounded-[28px] bg-card shadow-none">
+      <CardContent className="space-y-4 p-5 sm:p-6">
+        <div>
+          <p className="text-sm font-semibold">Controle rapide</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Resume lateral reserve a la supervision interne de Whappi.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {focusItems.map(item => (
+            <div key={item.label} className="rounded-2xl border bg-background/60 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold">{item.label}</p>
+                <Badge className={cn("border-none", item.tone)}>{item.status}</Badge>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.note}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-3xl border bg-background/60 p-4">
+          <p className="text-sm font-semibold">Zones reservees admin</p>
+          <div className="mt-3 grid gap-2">
+            <QuickAction href="/dashboard/ai-models" icon={<Smartphone className="h-4 w-4" />} title="Modeles IA" text="Configurer providers et cles API." />
+            <QuickAction href="/dashboard/maintenance" icon={<ShieldCheck className="h-4 w-4" />} title="Maintenance" text="Garder le dashboard propre en production." />
           </div>
         </div>
       </CardContent>
