@@ -10,7 +10,7 @@ const { log } = require('../utils/logger');
 // GET /api/v1/subscriptions/plans
 router.get('/plans', async (req, res) => {
     try {
-        const plans = PricingService.getAllPlans();
+        const plans = await PricingService.getAllPlans();
         res.json({ status: 'success', data: plans });
     } catch (error) {
         log('Error fetching plans', 'PRICING', { error: error.message }, 'ERROR');

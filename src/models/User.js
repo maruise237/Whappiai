@@ -43,7 +43,10 @@ class User {
             ON CONFLICT (id) DO UPDATE SET
                 email = EXCLUDED.email,
                 name = EXCLUDED.name,
-                role = GREATEST(users.role::text, EXCLUDED.role::text)::user_role,
+                role = CASE
+                    WHEN users.role = 'admin' OR EXCLUDED.role = 'admin' THEN 'admin'
+                    ELSE 'user'
+                END,
                 image_url = EXCLUDED.image_url,
                 updated_at = NOW()`,
             [userId, normalizedEmail, name, targetRole, imageUrl, createdBy]
