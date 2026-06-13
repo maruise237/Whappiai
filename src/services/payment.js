@@ -250,6 +250,11 @@ async function handleWebhook(rawPayload, headers = {}) {
     const planId = metadata.plan_id || existing?.plan_id || existingPayload?.request?.metadata?.plan_id || null;
     const planCode = metadata.plan_code || existingPayload?.request?.metadata?.plan_code || null;
     const userId = metadata.user_id || existing?.user_id || existingPayload?.request?.metadata?.user_id || null;
+    const userEmail = metadata.user_email
+        || existingPayload?.request?.metadata?.user_email
+        || transaction.customer?.email
+        || existingPayload?.request?.customer?.email
+        || null;
     const amount = Number(transaction.amount || existing?.amount || 0);
 
     await saveTransaction({
@@ -273,9 +278,18 @@ async function handleWebhook(rawPayload, headers = {}) {
     }
 
     const user = (userId && await User.findById(userId))
-        || (metadata.user_email && await User.findByEmail(metadata.user_email))
-        || (transaction.customer?.email && await User.findByEmail(transaction.customer.email));
-    if (!user) throw new Error('Utilisateur GeniusPay introuvable');
+        || (userEmail && await User.findByEmail(userEmail));
+    if (!user) {
+        log('Impossible de relier le webhook GeniusPay a un utilisateur', 'PAYMENT', {
+            orderId,
+            reference: providerToken,
+            userId,
+            userEmail,
+            metadata,
+            hasExistingTransaction: Boolean(existing),
+        }, 'ERROR');
+        throw new Error('Utilisateur GeniusPay introuvable');
+    }
 
     const plan = (planCode && await PricingService.getPlanByCode(planCode))
         || (planId && await PricingService.getPlan(planId));
