@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth, useClerk, useUser } from "@clerk/clerk-react"
 import {
+  ChevronLeft,
   ChevronRight,
   CreditCard,
   Inbox,
@@ -14,6 +15,8 @@ import {
   Menu,
   Bot,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   ShieldCheck,
   Sun,
   UserCircle,
@@ -148,22 +151,25 @@ function LiveIndicator() {
 function NavigationItem({
   item,
   active,
+  collapsed,
   onClick,
 }: {
   item: NavItemConfig
   active: boolean
+  collapsed?: boolean
   onClick?: () => void
 }) {
   const Icon = item.icon
   const id = item.href ? `nav-${item.href.replace(/\//g, "-")}` : undefined
 
-  return (
+  const content = (
     <Link
       href={item.href}
       id={id}
       onClick={onClick}
       className={cn(
-        "group flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 active:scale-[0.99]",
+        "group flex items-center rounded-xl text-left transition-all duration-200 active:scale-[0.99]",
+        collapsed ? "justify-center px-2 py-3" : "gap-3 px-3 py-3",
         active
           ? "bg-primary text-primary-foreground shadow-[0_18px_40px_-24px_hsl(var(--primary))]"
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -177,47 +183,100 @@ function NavigationItem({
       >
         <Icon className="h-4 w-4" />
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold leading-4">{item.label}</span>
-        <span className={cn("mt-1 block truncate text-[11px]", active ? "text-primary-foreground/75" : "text-muted-foreground")}>
-          {item.detail}
-        </span>
-      </span>
-      {active && <ChevronRight className="h-4 w-4 text-primary-foreground/70" />}
+      {!collapsed ? (
+        <>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold leading-4">{item.label}</span>
+            <span className={cn("mt-1 block truncate text-[11px]", active ? "text-primary-foreground/75" : "text-muted-foreground")}>
+              {item.detail}
+            </span>
+          </span>
+          {active && <ChevronRight className="h-4 w-4 text-primary-foreground/70" />}
+        </>
+      ) : null}
     </Link>
+  )
+
+  if (!collapsed) return content
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent side="right">
+          <p className="text-xs font-semibold">{item.label}</p>
+          <p className="mt-1 max-w-[180px] text-[11px] text-muted-foreground">{item.detail}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
 function DashboardSidebar({
   isAdmin,
   pathname,
+  collapsed,
+  onToggleCollapse,
   onItemClick,
 }: {
   isAdmin: boolean
   pathname: string
+  collapsed?: boolean
+  onToggleCollapse?: () => void
   onItemClick?: () => void
 }) {
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground">
-      <div className="border-b border-border p-5">
-        <Logo orientation="horizontal" size={25} showText />
-        <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Mode co-admin</p>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            Whappi suit une logique simple : session, groupe, regle, verification.
-          </p>
+      <div className={cn("border-b border-border", collapsed ? "p-3" : "p-5")}>
+        <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between gap-3")}>
+          <Logo orientation="horizontal" size={25} showText={!collapsed} />
+          {onToggleCollapse ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden lg:inline-flex"
+              onClick={onToggleCollapse}
+            >
+              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </Button>
+          ) : null}
         </div>
+        {!collapsed ? (
+          <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Mode co-admin</p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Whappi suit une logique simple : session, groupe, regle, verification.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 flex justify-center">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/15 bg-primary/5 text-primary">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p className="text-xs font-semibold">Mode co-admin</p>
+                  <p className="mt-1 max-w-[180px] text-[11px] text-muted-foreground">Session, groupe, regle, verification.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
       </div>
 
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className={cn("flex-1 py-4", collapsed ? "px-2" : "px-3")}>
         <div className="space-y-6">
           <section className="space-y-2">
-            <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Principal</p>
+            {!collapsed ? <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Principal</p> : null}
             {userNavigation.map(item => (
               <NavigationItem
                 key={item.href}
                 item={item}
                 active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+                collapsed={collapsed}
                 onClick={onItemClick}
               />
             ))}
@@ -225,12 +284,13 @@ function DashboardSidebar({
 
           {isAdmin && (
             <section className="space-y-2 border-t border-border pt-5">
-              <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Admin</p>
+              {!collapsed ? <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Admin</p> : null}
               {adminNavigation.map(item => (
                 <NavigationItem
                   key={item.href}
                   item={item}
                   active={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+                  collapsed={collapsed}
                   onClick={onItemClick}
                 />
               ))}
@@ -251,11 +311,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
+  const [desktopCollapsed, setDesktopCollapsed] = React.useState(false)
 
   const userEmail = user?.primaryEmailAddress?.emailAddress || ""
   const userName = user?.firstName || userEmail.split("@")[0] || "Utilisateur"
   const isAdmin = userEmail === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
   const navigation = isAdmin ? [...userNavigation, ...adminNavigation] : userNavigation
+  const isAdminHeavyRoute = pathname ? ["/dashboard/users", "/dashboard/support-inbox", "/dashboard/ai-models", "/dashboard/maintenance"].some(route => pathname.startsWith(route)) : false
   const currentItem = navigation
     .slice()
     .sort((a, b) => b.href.length - a.href.length)
@@ -263,6 +325,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     setMounted(true)
+    const savedSidebarState = typeof window !== "undefined" ? window.localStorage.getItem("whappi-dashboard-sidebar-collapsed") : null
+    if (savedSidebarState !== null) {
+      setDesktopCollapsed(savedSidebarState === "true")
+    } else if (isAdminHeavyRoute) {
+      setDesktopCollapsed(true)
+    }
     const checkUserSync = async () => {
       if (!isLoaded || !user) return
       try {
@@ -276,7 +344,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       }
     }
     checkUserSync()
-  }, [getToken, isLoaded, router, user])
+  }, [getToken, isAdminHeavyRoute, isLoaded, router, user])
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+    window.localStorage.setItem("whappi-dashboard-sidebar-collapsed", String(desktopCollapsed))
+  }, [desktopCollapsed])
 
   // Auth guard: redirect to login if not authenticated
   if (!isLoaded || !mounted) {
@@ -301,8 +374,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <WappyProvider>
           <WappyConnector />
           <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
-          <aside className="hidden w-[280px] shrink-0 border-r border-border lg:flex">
-            <DashboardSidebar isAdmin={isAdmin} pathname={pathname} />
+          <aside className={cn("hidden shrink-0 border-r border-border transition-[width] duration-200 lg:flex", desktopCollapsed ? "w-[88px]" : "w-[280px]")}>
+            <DashboardSidebar
+              isAdmin={isAdmin}
+              pathname={pathname}
+              collapsed={desktopCollapsed}
+              onToggleCollapse={() => setDesktopCollapsed(current => !current)}
+            />
           </aside>
 
           <div className="flex min-w-0 flex-1 flex-col">
@@ -319,6 +397,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                       <DashboardSidebar
                         isAdmin={isAdmin}
                         pathname={pathname}
+                        collapsed={false}
                         onItemClick={() => setMobileOpen(false)}
                       />
                     </SheetContent>
@@ -326,7 +405,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{currentItem?.label || "Centre"}</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hidden lg:inline-flex"
+                      onClick={() => setDesktopCollapsed(current => !current)}
+                    >
+                      {desktopCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                    </Button>
+                    <p className="truncate text-sm font-semibold text-foreground">{currentItem?.label || "Centre"}</p>
+                  </div>
                   <p className="hidden text-[11px] text-muted-foreground sm:block">{currentItem?.detail || "Dashboard Whappi"}</p>
                 </div>
               </div>
