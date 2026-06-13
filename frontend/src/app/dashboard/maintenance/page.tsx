@@ -28,6 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { api } from "@/lib/api"
+import { getAdminErrorMessage } from "@/lib/admin-errors"
 
 type MaintenanceSettings = {
   enabled: number
@@ -48,6 +49,7 @@ export default function MaintenancePage() {
 
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
+  const [pageError, setPageError] = React.useState("")
   const [settings, setSettings] = React.useState<MaintenanceSettings>({
     enabled: 0,
     title: "Maintenance en cours",
@@ -59,12 +61,14 @@ export default function MaintenancePage() {
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
   const fetchSettings = React.useCallback(async () => {
+    setPageError("")
     try {
       const token = await getToken()
       const data = await api.admin.getMaintenance(token || undefined) as MaintenanceSettings
       if (data) setSettings(data)
     } catch (err) {
       console.error(err)
+      setPageError(getAdminErrorMessage(err, "Impossible de charger le mode maintenance."))
     } finally {
       setLoading(false)
     }
@@ -93,7 +97,7 @@ export default function MaintenancePage() {
       toast.success("Parametres de maintenance enregistres")
       fetchSettings()
     } catch (err: any) {
-      toast.error(err.message || "Erreur lors de l'enregistrement")
+      toast.error(getAdminErrorMessage(err, "Erreur lors de l'enregistrement"))
     } finally {
       setSaving(false)
     }
@@ -106,7 +110,7 @@ export default function MaintenancePage() {
       toast.success("Mode maintenance active")
       fetchSettings()
     } catch (err: any) {
-      toast.error(err.message || "Erreur d'activation")
+      toast.error(getAdminErrorMessage(err, "Erreur d'activation"))
     }
   }
 
@@ -117,7 +121,7 @@ export default function MaintenancePage() {
       toast.success("Mode maintenance desactive")
       fetchSettings()
     } catch (err: any) {
-      toast.error(err.message || "Erreur de desactivation")
+      toast.error(getAdminErrorMessage(err, "Erreur de desactivation"))
     }
   }
 
@@ -164,6 +168,12 @@ export default function MaintenancePage() {
           {isActive ? "Actif" : "Inactif"}
         </Badge>
       </div>
+
+      {pageError ? (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          {pageError}
+        </div>
+      ) : null}
 
       {/* Quick actions */}
       <div className="flex flex-col gap-3 sm:flex-row">

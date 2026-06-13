@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/lib/api"
+import { getAdminErrorMessage } from "@/lib/admin-errors"
 import { cn, ensureString, safeDate, safeRender } from "@/lib/utils"
 import {
   formatPaymentStatus,
@@ -50,6 +51,9 @@ export default function SupportInboxPage() {
   const [loading, setLoading] = React.useState(true)
   const [transactionsLoading, setTransactionsLoading] = React.useState(true)
   const [detailLoading, setDetailLoading] = React.useState(false)
+  const [threadsError, setThreadsError] = React.useState("")
+  const [transactionsError, setTransactionsError] = React.useState("")
+  const [detailError, setDetailError] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [statusFilter, setStatusFilter] = React.useState("all")
@@ -61,6 +65,7 @@ export default function SupportInboxPage() {
 
   const fetchThreads = React.useCallback(async () => {
     setLoading(true)
+    setThreadsError("")
     try {
       const token = await getToken()
       const data = await api.support.adminListThreads({
@@ -75,7 +80,9 @@ export default function SupportInboxPage() {
       })
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de charger la boite support")
+      const message = getAdminErrorMessage(error, "Impossible de charger la boite support")
+      setThreadsError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -83,13 +90,16 @@ export default function SupportInboxPage() {
 
   const fetchTransactions = React.useCallback(async () => {
     setTransactionsLoading(true)
+    setTransactionsError("")
     try {
       const token = await getToken()
       const data = await api.support.adminListTransactions({}, token || undefined)
       setTransactions(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de charger les transactions")
+      const message = getAdminErrorMessage(error, "Impossible de charger les transactions")
+      setTransactionsError(message)
+      toast.error(message)
     } finally {
       setTransactionsLoading(false)
     }
@@ -97,6 +107,7 @@ export default function SupportInboxPage() {
 
   const fetchThreadDetail = React.useCallback(async (threadId: string) => {
     setDetailLoading(true)
+    setDetailError("")
     try {
       const token = await getToken()
       const data = await api.support.getThread(threadId, token || undefined)
@@ -105,7 +116,9 @@ export default function SupportInboxPage() {
       setPriorityValue(ensureString(data?.thread?.priority || "normal"))
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de charger cette conversation")
+      const message = getAdminErrorMessage(error, "Impossible de charger cette conversation")
+      setDetailError(message)
+      toast.error(message)
     } finally {
       setDetailLoading(false)
     }
@@ -140,7 +153,7 @@ export default function SupportInboxPage() {
       toast.success("Reponse envoyee au client")
       await Promise.all([fetchThreads(), fetchThreadDetail(selectedThreadId)])
     } catch (error: any) {
-      toast.error(error.message || "Impossible d'envoyer la reponse")
+      toast.error(getAdminErrorMessage(error, "Impossible d'envoyer la reponse"))
     } finally {
       setSubmitting(false)
     }
@@ -159,7 +172,7 @@ export default function SupportInboxPage() {
       toast.success("Statut mis a jour")
       await Promise.all([fetchThreads(), fetchThreadDetail(selectedThreadId)])
     } catch (error: any) {
-      toast.error(error.message || "Impossible de mettre a jour le statut")
+      toast.error(getAdminErrorMessage(error, "Impossible de mettre a jour le statut"))
     } finally {
       setSubmitting(false)
     }
@@ -218,6 +231,11 @@ export default function SupportInboxPage() {
         </TabsList>
 
         <TabsContent value="threads" className="space-y-4">
+          {threadsError ? (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              {threadsError}
+            </div>
+          ) : null}
           <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
             <div className="relative max-w-sm">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -311,6 +329,10 @@ export default function SupportInboxPage() {
                 ) : detailLoading ? (
                   <div className="space-y-3">
                     {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-24 rounded-2xl" />)}
+                  </div>
+                ) : detailError ? (
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-12 text-center text-sm text-amber-100">
+                    {detailError}
                   </div>
                 ) : !threadDetail?.thread ? (
                   <div className="rounded-2xl border border-dashed bg-muted/10 px-4 py-12 text-center text-sm text-muted-foreground">
@@ -437,6 +459,11 @@ export default function SupportInboxPage() {
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-4">
+          {transactionsError ? (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              {transactionsError}
+            </div>
+          ) : null}
           <Card className="overflow-hidden bg-card shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">

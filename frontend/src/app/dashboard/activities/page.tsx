@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { api } from "@/lib/api"
+import { getAdminErrorMessage } from "@/lib/admin-errors"
 import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, ensureString, safeRender, safeDate } from "@/lib/utils"
@@ -48,6 +49,7 @@ export default function ActivitiesPage() {
   const { user } = useUser()
   const [activities, setActivities] = React.useState<ActivityItem[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [pageError, setPageError] = React.useState("")
   const [searchQuery, setSearchQuery] = React.useState("")
   const [userFilter, setUserFilter] = React.useState("all")
 
@@ -59,12 +61,15 @@ export default function ActivitiesPage() {
       return
     }
     setLoading(true)
+    setPageError("")
     try {
       const token = await getToken()
       const data = await api.activities.list(ACTIVITIES_PAGE_SIZE, 0, token || undefined)
       setActivities(Array.isArray(data) ? (data as ActivityItem[]) : [])
-    } catch {
-      toast.error("Erreur de chargement du journal")
+    } catch (error) {
+      const message = getAdminErrorMessage(error, "Erreur de chargement du journal")
+      setPageError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -127,6 +132,11 @@ export default function ActivitiesPage() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        {pageError ? (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 sm:hidden">
+            {pageError}
+          </div>
+        ) : null}
         <div className="relative flex-1 w-full max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
@@ -159,6 +169,12 @@ export default function ActivitiesPage() {
           <span className="text-[10px] font-semibold tracking-widest text-muted-foreground">Live Tracking</span>
         </div>
       </div>
+
+      {pageError ? (
+        <div className="hidden rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 sm:block">
+          {pageError}
+        </div>
+      ) : null}
 
       <Card className="border-none shadow-none bg-muted/10 overflow-hidden">
         <div className="overflow-x-auto">

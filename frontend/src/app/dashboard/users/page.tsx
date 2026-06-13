@@ -35,6 +35,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { api } from "@/lib/api"
+import { getAdminErrorMessage } from "@/lib/admin-errors"
 import { useAuth, useUser } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { cn, ensureString, safeDate, safeRender } from "@/lib/utils"
@@ -73,6 +74,8 @@ export default function UsersPage() {
   const [selectedUserId, setSelectedUserId] = React.useState<string | null>(null)
   const [userDetails, setUserDetails] = React.useState<any>(null)
   const [isDetailsLoading, setIsDetailsLoading] = React.useState(false)
+  const [pageError, setPageError] = React.useState("")
+  const [detailsError, setDetailsError] = React.useState("")
 
   const [formData, setFormData] = React.useState({ email: "", role: "user" })
   const [subscriptionForm, setSubscriptionForm] = React.useState({
@@ -85,13 +88,16 @@ export default function UsersPage() {
 
   const fetchUsers = React.useCallback(async () => {
     setLoading(true)
+    setPageError("")
     try {
       const token = await getToken()
       const data = await api.users.list(token || undefined)
       setUsers(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error(error)
-      toast.error("Erreur de chargement des utilisateurs")
+      const message = getAdminErrorMessage(error, "Erreur de chargement des utilisateurs")
+      setPageError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -99,6 +105,7 @@ export default function UsersPage() {
 
   const fetchUserDetails = React.useCallback(async (userId: string) => {
     setIsDetailsLoading(true)
+    setDetailsError("")
     try {
       const token = await getToken()
       const data = await api.admin.getUserDetails(userId, token || undefined)
@@ -112,7 +119,9 @@ export default function UsersPage() {
       })
     } catch (error) {
       console.error(error)
-      toast.error("Erreur de chargement des details")
+      const message = getAdminErrorMessage(error, "Erreur de chargement des details")
+      setDetailsError(message)
+      toast.error(message)
     } finally {
       setIsDetailsLoading(false)
     }
@@ -153,7 +162,7 @@ export default function UsersPage() {
       setIsAddDialogOpen(false)
       fetchUsers()
     } catch (error: any) {
-      toast.error(error.message || "Erreur lors de la creation")
+      toast.error(getAdminErrorMessage(error, "Erreur lors de la creation"))
     } finally {
       setIsSubmitting(false)
     }
@@ -166,7 +175,7 @@ export default function UsersPage() {
       toast.success("Role mis a jour")
       fetchUsers()
     } catch (error: any) {
-      toast.error(error.message || "Erreur lors de la mise a jour")
+      toast.error(getAdminErrorMessage(error, "Erreur lors de la mise a jour"))
     }
   }
 
@@ -177,7 +186,7 @@ export default function UsersPage() {
       toast.success(user.is_active ? "Compte desactive" : "Compte reactive")
       fetchUsers()
     } catch (error: any) {
-      toast.error(error.message || "Erreur de statut")
+      toast.error(getAdminErrorMessage(error, "Erreur de statut"))
     }
   }
 
@@ -189,7 +198,7 @@ export default function UsersPage() {
       toast.success("Utilisateur supprime")
       fetchUsers()
     } catch (error: any) {
-      toast.error(error.message || "Erreur de suppression")
+      toast.error(getAdminErrorMessage(error, "Erreur de suppression"))
     }
   }
 
@@ -203,7 +212,7 @@ export default function UsersPage() {
       fetchUserDetails(selectedUserId)
       fetchUsers()
     } catch (error: any) {
-      toast.error(error.message || "Erreur abonnement")
+      toast.error(getAdminErrorMessage(error, "Erreur abonnement"))
     } finally {
       setIsSubmitting(false)
     }
@@ -219,7 +228,7 @@ export default function UsersPage() {
       fetchUserDetails(selectedUserId)
       fetchUsers()
     } catch (error: any) {
-      toast.error(error.message || "Erreur abonnement")
+      toast.error(getAdminErrorMessage(error, "Erreur abonnement"))
     } finally {
       setIsSubmitting(false)
     }
@@ -261,6 +270,12 @@ export default function UsersPage() {
         <AdminMetricCard icon={AlertTriangle} label="A traiter" value={adminStats.attention} detail="expiration, inactif, volume bas" tone={adminStats.attention > 0 ? "warning" : "success"} />
         <AdminMetricCard icon={Gauge} label="MRR estime" value={`${adminStats.mrr.toLocaleString("fr-FR")} FCFA`} detail="hors paiements externes" />
       </div>
+
+      {pageError ? (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          {pageError}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <Card className="bg-card shadow-none">
@@ -468,6 +483,10 @@ export default function UsersPage() {
             <div className="flex flex-col items-center justify-center gap-3 py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
               <p className="text-xs text-muted-foreground">Chargement du compte...</p>
+            </div>
+          ) : detailsError ? (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-8 text-center text-sm text-amber-100">
+              {detailsError}
             </div>
           ) : (
             <Tabs defaultValue="subscription" className="space-y-6">
