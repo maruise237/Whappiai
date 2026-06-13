@@ -12,6 +12,18 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const response = require('../utils/response');
 const db = require('../db/query');
 
+function safeParseDetails(details) {
+    if (details === null || details === undefined) return null;
+    if (typeof details === 'object') return details;
+    if (typeof details !== 'string') return details;
+
+    try {
+        return JSON.parse(details);
+    } catch {
+        return details;
+    }
+}
+
 /**
  * GET /api/v1/admin/stats
  * Platform-wide statistics for the admin dashboard
@@ -152,7 +164,7 @@ router.get('/users/:userId/details', requireAdmin, asyncHandler(async (req, res)
             ...l,
             timestamp: l.created_at,
             status: l.success === 1 ? 'success' : 'failure',
-            details: l.details ? JSON.parse(l.details) : null
+            details: safeParseDetails(l.details)
         }))
     });
 }));
