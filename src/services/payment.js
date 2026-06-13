@@ -236,16 +236,19 @@ async function handleWebhook(rawPayload, headers = {}) {
 
     const parsed = JSON.parse(rawPayload.toString('utf8'));
     const event = String(parsed.event || headers['x-webhook-event'] || headers['x-geniuspay-event'] || '').toLowerCase();
-    const transaction = parsed.data?.transaction || {};
-    const metadata = transaction.metadata || {};
+    const transaction = parsed.data?.transaction || parsed.transaction || parsed.data || {};
+    const metadata = transaction.metadata || parsed.metadata || parsed.data?.metadata || {};
     const status = normalizeProviderStatus(transaction.status || (event === 'payment.success' ? 'completed' : 'pending'));
-    const orderId = metadata.order_id || crypto.randomUUID();
-    const providerToken = transaction.reference || String(transaction.id || '');
+    const orderId = metadata.order_id || null;
+    const providerToken = transaction.reference || String(transaction.id || '') || null;
 
-    const existing = await db.get(
-        'SELECT * FROM payment_transactions WHERE id = $1 OR provider_token = $2',
-        [orderId, providerToken || null]
-    );
+    let existing = null;
+    if (orderId || providerToken) {
+        existing = await db.get(
+            'SELECT * FROM payment_transactions WHERE id = $1 OR provider_token = $2',
+            [orderId, providerToken || null]
+        );
+    }
     const existingPayload = existing?.provider_payload ? JSON.parse(existing.provider_payload) : {};
     const planId = metadata.plan_id || existing?.plan_id || existingPayload?.request?.metadata?.plan_id || null;
     const planCode = metadata.plan_code || existingPayload?.request?.metadata?.plan_code || null;
@@ -256,9 +259,32 @@ async function handleWebhook(rawPayload, headers = {}) {
         || existingPayload?.request?.customer?.email
         || null;
     const amount = Number(transaction.amount || existing?.amount || 0);
+    const canonicalOrderId = orderId || existing?.id || null;
+
+    if (!canonicalOrderId && !providerToken && !userId && !userEmail && !planId && !planCode) {
+        log('Webhook GeniusPay ignore: payload de test ou non correlable', 'PAYMENT', {
+            event,
+            topLevelKeys: Object.keys(parsed || {}),
+            dataKeys: parsed?.data && typeof parsed.data === 'object' ? Object.keys(parsed.data) : [],
+            transactionKeys: transaction && typeof transaction === 'object' ? Object.keys(transaction) : [],
+        }, 'WARN');
+        return { success: true, action: 'ignored_unmatched_test_payload', status };
+    }
+
+    if (!canonicalOrderId) {
+        log('Webhook GeniusPay ignore: impossible de retrouver la transaction d\'origine', 'PAYMENT', {
+            event,
+            reference: providerToken,
+            userId,
+            userEmail,
+            planId,
+            planCode,
+        }, 'WARN');
+        return { success: true, action: 'ignored_unmatched_payment', status, reference: providerToken };
+    }
 
     await saveTransaction({
-        id: orderId,
+        id: canonicalOrderId,
         providerToken,
         userId,
         planId,
@@ -281,7 +307,7 @@ async function handleWebhook(rawPayload, headers = {}) {
         || (userEmail && await User.findByEmail(userEmail));
     if (!user) {
         log('Impossible de relier le webhook GeniusPay a un utilisateur', 'PAYMENT', {
-            orderId,
+            orderId: canonicalOrderId,
             reference: providerToken,
             userId,
             userEmail,
@@ -302,7 +328,7 @@ async function handleWebhook(rawPayload, headers = {}) {
     await SubscriptionService.subscribe(user.id, plan.code);
 
     log(`GeniusPay webhook activated subscription for ${user.email}`, 'PAYMENT', {
-        orderId,
+        orderId: canonicalOrderId,
         reference: providerToken,
         planCode: plan.code,
         event,
@@ -315,7 +341,7 @@ async function handleWebhook(rawPayload, headers = {}) {
         resourceId: plan.code,
         success: true,
         details: {
-            orderId,
+            orderId: canonicalOrderId,
             reference: providerToken,
             amount,
             event,
