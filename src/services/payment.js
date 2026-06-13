@@ -256,6 +256,13 @@ async function handleWebhook(rawPayload, headers = {}) {
 
     await SubscriptionService.subscribe(user.id, plan.code);
 
+    log(`GeniusPay webhook activated subscription for ${user.email}`, 'PAYMENT', {
+        orderId,
+        reference: providerToken,
+        planCode: plan.code,
+        event,
+    }, 'INFO');
+
     ActivityLog.log({
         userEmail: user.email,
         action: 'GENIUSPAY_PAYMENT_COMPLETED',
@@ -273,8 +280,46 @@ async function handleWebhook(rawPayload, headers = {}) {
     return { success: true, action: 'subscription_activated', status, reference: providerToken, user: user.email };
 }
 
+async function getPaymentStatusForUser(userId, orderId) {
+    if (!orderId) throw new Error('orderId requis');
+
+    const transaction = await db.get(`
+        SELECT t.*, p.code as plan_code, p.name as plan_name
+        FROM payment_transactions t
+        LEFT JOIN pricing_plans p ON p.id = t.plan_id
+        WHERE t.id = $1
+    `, [orderId]);
+
+    if (!transaction) {
+        return {
+            found: false,
+            orderId,
+            status: 'unknown',
+        };
+    }
+
+    if (transaction.user_id && userId && transaction.user_id !== userId) {
+        throw new Error('Acces non autorise a cette transaction');
+    }
+
+    return {
+        found: true,
+        orderId: transaction.id,
+        reference: transaction.provider_token || null,
+        provider: transaction.provider,
+        status: normalizeProviderStatus(transaction.status),
+        planId: transaction.plan_id || null,
+        planCode: transaction.plan_code || null,
+        planName: transaction.plan_name || null,
+        checkoutUrl: transaction.checkout_url || null,
+        updatedAt: transaction.updated_at || transaction.created_at || null,
+        createdAt: transaction.created_at || null,
+    };
+}
+
 module.exports = {
     createCheckoutSession,
     handleWebhook,
+    getPaymentStatusForUser,
     verifyWebhookSignature,
 };

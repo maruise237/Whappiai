@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
-const { createCheckoutSession, handleWebhook } = require('../services/payment');
+const { createCheckoutSession, handleWebhook, getPaymentStatusForUser } = require('../services/payment');
 const PricingService = require('../services/PricingService');
 const { log } = require('../utils/logger');
 
@@ -37,6 +37,26 @@ router.get('/plans', async (req, res) => {
     } catch (error) {
         log('Erreur lors de la recuperation des plans', 'PAYMENT', { error: error.message }, 'ERROR');
         res.status(500).json({ error: 'Impossible de recuperer les plans' });
+    }
+});
+
+// GET /api/v1/payments/status/:orderId
+router.get('/status/:orderId', ClerkExpressWithAuth(), async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        if (!userId) {
+            return res.status(401).json({ error: 'Non autorise' });
+        }
+
+        const result = await getPaymentStatusForUser(userId, req.params.orderId);
+        res.json(result);
+    } catch (error) {
+        const statusCode = error.message === 'Acces non autorise a cette transaction' ? 403 : 500;
+        log('Erreur lors de la verification du paiement GeniusPay', 'PAYMENT', {
+            error: error.message,
+            orderId: req.params.orderId,
+        }, statusCode === 403 ? 'WARN' : 'ERROR');
+        res.status(statusCode).json({ error: error.message || 'Impossible de verifier le paiement' });
     }
 });
 

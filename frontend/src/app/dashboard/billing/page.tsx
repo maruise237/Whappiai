@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useTranslation } from "react-i18next"
-import { BellRing, CalendarClock, CreditCard, Gift, Info } from "lucide-react"
+import { AlertCircle, BellRing, CalendarClock, CheckCircle2, CreditCard, Gift, Info, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BillingPlans } from "@/components/dashboard/billing-plans"
@@ -20,6 +20,12 @@ export default function BillingPage() {
   const [accessState, setAccessState] = React.useState({ allowed: true, status: "active", message: "" })
   const [isPlanLoading, setIsPlanLoading] = React.useState(true)
   const [managedGroupsUsed, setManagedGroupsUsed] = React.useState(0)
+  const [paymentState, setPaymentState] = React.useState<{
+    orderId: string
+    status: "pending" | "completed" | "failed" | "cancelled" | "unknown"
+    planCode?: string | null
+    reference?: string | null
+  } | null>(null)
   const recommendedPlan = getRecommendedPlan(activePlan, managedGroupsUsed)
 
   const refreshPlan = React.useCallback(async () => {
@@ -68,15 +74,70 @@ export default function BillingPage() {
   }, [refreshPlan])
 
   React.useEffect(() => {
+    let interval: number | null = null
+    let cancelled = false
+
     async function syncGeniusPayReturn() {
       if (typeof window === "undefined") return
       const params = new URLSearchParams(window.location.search)
       if (params.get("payment") !== "geniuspay") return
-      await refreshPlan()
+      const orderId = params.get("order")
+      if (!orderId) {
+        await refreshPlan()
+        return
+      }
+
+      setPaymentState({
+        orderId,
+        status: params.get("status") === "error" ? "failed" : "pending",
+        planCode: params.get("plan"),
+        reference: null,
+      })
+
+      const token = await getToken()
+      const pollStatus = async () => {
+        const payment = await api.payments.status(orderId, token || undefined)
+        const normalizedStatus = normalizePaymentState(payment?.status)
+        if (cancelled) return true
+
+        setPaymentState({
+          orderId,
+          status: normalizedStatus,
+          planCode: payment?.planCode || null,
+          reference: payment?.reference || null,
+        })
+
+        if (normalizedStatus === "completed") {
+          await refreshPlan()
+          return true
+        }
+
+        if (normalizedStatus === "failed" || normalizedStatus === "cancelled") {
+          return true
+        }
+
+        return false
+      }
+
+      const isDone = await pollStatus()
+      if (isDone) return
+
+      let attempts = 0
+      interval = window.setInterval(async () => {
+        attempts += 1
+        const done = await pollStatus()
+        if (done || attempts >= 24) {
+          if (interval) window.clearInterval(interval)
+        }
+      }, 5000)
     }
 
     syncGeniusPayReturn()
-  }, [refreshPlan])
+    return () => {
+      cancelled = true
+      if (interval) window.clearInterval(interval)
+    }
+  }, [getToken, refreshPlan])
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-20">
@@ -138,6 +199,61 @@ export default function BillingPage() {
           </div>
         </CardContent>
       </Card>
+
+      {paymentState && (
+        <Card className={cn(
+          "shadow-none",
+          paymentState.status === "completed"
+            ? "border-primary/25 bg-primary/5"
+            : paymentState.status === "failed" || paymentState.status === "cancelled"
+              ? "border-destructive/25 bg-destructive/5"
+              : "border-state-warning/30 bg-state-warning-light/35"
+        )}>
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="flex gap-4">
+              <div className={cn(
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
+                paymentState.status === "completed"
+                  ? "bg-primary/10 text-primary"
+                  : paymentState.status === "failed" || paymentState.status === "cancelled"
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-state-warning-light text-state-warning"
+              )}>
+                {paymentState.status === "completed" ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : paymentState.status === "failed" || paymentState.status === "cancelled" ? (
+                  <AlertCircle className="h-5 w-5" />
+                ) : (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                )}
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">
+                  {paymentState.status === "completed"
+                    ? "Paiement confirme"
+                    : paymentState.status === "failed" || paymentState.status === "cancelled"
+                      ? "Paiement non confirme"
+                      : "Paiement recu, activation en attente"}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {paymentState.status === "completed"
+                    ? "Votre abonnement est active. Whappi a bien recu la confirmation de GeniusPay."
+                    : paymentState.status === "failed" || paymentState.status === "cancelled"
+                      ? "Le paiement n'a pas encore pu etre confirme. Vous pouvez relancer un test si besoin."
+                      : "Le paiement a reussi chez GeniusPay. Si le webhook met quelques secondes a arriver, Whappi activera automatiquement votre forfait des reception."}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border bg-card px-4 py-3 text-left sm:text-right">
+              <p className="text-xs text-muted-foreground">Suivi paiement</p>
+              <p className="text-sm font-bold text-foreground">{paymentState.orderId.slice(0, 8)}...</p>
+              <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                {paymentState.reference || paymentState.status}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {!isPlanLoading && (
         <Card className="border-primary/15 bg-card shadow-none">
@@ -283,4 +399,13 @@ function getRecommendedPlan(activePlan: string, managedGroupsUsed: number) {
   if (plan === "starter" && usageRatio >= 0.67) return "pro"
   if (plan === "pro" && usageRatio >= 0.67) return "business"
   return null
+}
+
+function normalizePaymentState(value: unknown): "pending" | "completed" | "failed" | "cancelled" | "unknown" {
+  const status = ensureText(value).toLowerCase()
+  if (status === "completed") return "completed"
+  if (status === "failed") return "failed"
+  if (status === "cancelled" || status === "canceled") return "cancelled"
+  if (status === "pending" || status === "created" || status === "processing") return "pending"
+  return "unknown"
 }

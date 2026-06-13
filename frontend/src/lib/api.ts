@@ -327,6 +327,9 @@ export const api = {
       body: JSON.stringify({ planId, ...data }),
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
+    status: (orderId: string, token?: string) => fetchApi(`/api/v1/payments/status/${orderId}`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   },
   subscriptions: {
     current: (token?: string) => fetchApi("/api/v1/subscriptions/current", {
