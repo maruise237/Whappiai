@@ -10,12 +10,14 @@ import {
   CheckCircle2,
   Circle,
   History,
+  Inbox,
   Link2,
   MessageCircle,
   Plus,
   Radio,
   ShieldCheck,
   Smartphone,
+  Wallet,
   TriangleAlert,
   Users,
   X,
@@ -102,6 +104,23 @@ type AdminStats = {
   operations?: { applied?: number; messagesSent?: number }
 }
 
+type AdminThreadSignal = {
+  status?: string
+  adminUnreadCount?: number
+}
+
+type AdminTransactionSignal = {
+  status?: string
+}
+
+type AdminSignals = {
+  openSupport: number
+  unreadSupport: number
+  pendingPayments: number
+  failedPayments: number
+  completedPayments: number
+}
+
 type AnalyticsPoint = {
   date?: string
   messages?: number
@@ -146,6 +165,13 @@ export default function DashboardPage() {
     messagesSent: 0,
   })
   const [adminStats, setAdminStats] = React.useState<AdminStats | null>(null)
+  const [adminSignals, setAdminSignals] = React.useState<AdminSignals>({
+    openSupport: 0,
+    unreadSupport: 0,
+    pendingPayments: 0,
+    failedPayments: 0,
+    completedPayments: 0,
+  })
   const [recentActivities, setRecentActivities] = React.useState<ActivityItem[]>([])
   const [analyticsData, setAnalyticsData] = React.useState<AnalyticsPoint[]>([])
   const [showCenterBadge, setShowCenterBadge] = React.useState(false)
@@ -185,6 +211,24 @@ export default function DashboardPage() {
         successRate: safeStats?.overview?.successRate || 0,
         messagesSent: safeStats?.overview?.messagesSent || 0,
         activeSessions: safeStats?.sessions?.connected || 0,
+      })
+
+      const [supportThreadsResult, transactionsResult] = await Promise.allSettled([
+        api.support.adminListThreads({}, token),
+        api.support.adminListTransactions({}, token),
+      ])
+
+      const supportThreads = supportThreadsResult.status === "fulfilled" ? supportThreadsResult.value : []
+      const transactions = transactionsResult.status === "fulfilled" ? transactionsResult.value : []
+      const safeThreads = Array.isArray(supportThreads) ? (supportThreads as AdminThreadSignal[]) : []
+      const safeTransactions = Array.isArray(transactions) ? (transactions as AdminTransactionSignal[]) : []
+
+      setAdminSignals({
+        openSupport: safeThreads.filter(item => item.status === "open" || item.status === "pending").length,
+        unreadSupport: safeThreads.reduce((sum, item) => sum + Number(item.adminUnreadCount || 0), 0),
+        pendingPayments: safeTransactions.filter(item => item.status === "pending" || item.status === "created").length,
+        failedPayments: safeTransactions.filter(item => item.status === "failed").length,
+        completedPayments: safeTransactions.filter(item => item.status === "completed").length,
       })
     } catch (error) {
       console.error(error)
@@ -582,7 +626,7 @@ export default function DashboardPage() {
 
       <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
         {isAdmin ? (
-          <AdminPanel adminStats={adminStats} analyticsData={analyticsData} recentActivities={recentActivities} />
+          <AdminPanel adminStats={adminStats} adminSignals={adminSignals} analyticsData={analyticsData} recentActivities={recentActivities} />
         ) : (
           <UserActivityPanel recentActivities={recentActivities} />
         )}
@@ -944,53 +988,113 @@ function UserActivityPanel({ recentActivities }: { recentActivities: ActivityIte
 
 function AdminPanel({
   adminStats,
+  adminSignals,
   analyticsData,
   recentActivities,
 }: {
   adminStats: AdminStats | null
+  adminSignals: AdminSignals
   analyticsData: AnalyticsPoint[]
   recentActivities: ActivityItem[]
 }) {
   const { t } = useTranslation("dashboard")
+  const primaryAdminAction = adminSignals.unreadSupport > 0
+    ? {
+        title: "Repondre aux clients en attente",
+        text: `${adminSignals.unreadSupport} message${adminSignals.unreadSupport > 1 ? "s" : ""} support attendent une reponse admin.`,
+        href: "/dashboard/support-inbox",
+        cta: "Ouvrir la boite support",
+      }
+    : adminSignals.failedPayments > 0
+      ? {
+          title: "Verifier les paiements en echec",
+          text: `${adminSignals.failedPayments} transaction${adminSignals.failedPayments > 1 ? "s" : ""} demandent une verification.`,
+          href: "/dashboard/support-inbox",
+          cta: "Voir les transactions",
+        }
+      : {
+          title: "Surveiller les comptes a accompagner",
+          text: "Le centre admin est propre. Utilisez la vue utilisateurs pour traiter les exceptions et les upgrades manuels.",
+          href: "/dashboard/users",
+          cta: "Ouvrir les utilisateurs",
+        }
+
   return (
-    <Card className="rounded-[28px] bg-card shadow-none">
+    <Card className="rounded-[28px] border-primary/10 bg-card shadow-none">
       <CardContent className="p-5 sm:p-6">
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold truncate">{t("admin_title")}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{t("admin_desc")}</p>
+        <div className="mb-5 rounded-[24px] border border-primary/15 bg-primary/5 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-primary">Poste de commandement admin</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight">Commencez par l'action la plus rentable maintenant.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Les meilleurs dashboards admin montrent d'abord les exceptions, ensuite les raccourcis, et seulement apres les courbes.
+              </p>
+            </div>
+            <Button asChild className="h-10 w-full lg:w-auto">
+              <Link href={primaryAdminAction.href}>{primaryAdminAction.cta}</Link>
+            </Button>
           </div>
-          <Button asChild variant="outline" className="h-9 text-xs">
-            <Link href="/dashboard/users">{t("admin_users_btn")}</Link>
-          </Button>
+        </div>
+
+        <div className="mb-5 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-3xl border bg-background/60 p-4">
+            <div className="mb-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Action prioritaire</p>
+              <p className="mt-2 text-lg font-semibold">{primaryAdminAction.title}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{primaryAdminAction.text}</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <QuickAction href="/dashboard/support-inbox" icon={<Inbox className="h-4 w-4" />} title="Support" text={`${adminSignals.openSupport} conversations ouvertes`} />
+              <QuickAction href="/dashboard/users" icon={<Users className="h-4 w-4" />} title="Comptes" text={`${adminStats?.users?.total || 0} utilisateurs`} />
+              <QuickAction href="/dashboard/support-inbox" icon={<Wallet className="h-4 w-4" />} title="Paiements" text={`${adminSignals.pendingPayments + adminSignals.failedPayments} a verifier`} />
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <MiniAdminStat icon={<Inbox className="h-4 w-4" />} label="Messages non lus" value={adminSignals.unreadSupport} />
+            <MiniAdminStat icon={<Wallet className="h-4 w-4" />} label="Paiements en attente" value={adminSignals.pendingPayments} />
+          </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <MiniAdminStat icon={<Users className="h-4 w-4" />} label={t("admin_users")} value={adminStats?.users?.total || 0} />
-          <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label={t("admin_sessions")} value={adminStats?.sessions?.total || 0} />
-          <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label={t("admin_actions")} value={adminStats?.operations?.applied || 0} />
+          <MiniAdminStat icon={<Users className="h-4 w-4" />} label="Utilisateurs actifs" value={adminStats?.users?.active || 0} />
+          <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label="Sessions connectees" value={adminStats?.sessions?.connected || 0} />
+          <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label="Paiements completes" value={adminSignals.completedPayments} />
         </div>
 
-        <div className="mt-5 h-[190px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={analyticsData}>
-              <defs>
-                <linearGradient id="adminMessages" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--foreground))" }} />
-              <Area type="monotone" dataKey="messages" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#adminMessages)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-3xl border bg-background/60 p-4">
+            <div className="mb-3">
+              <p className="text-sm font-semibold">Tendance operations</p>
+              <p className="mt-1 text-xs text-muted-foreground">Courbe secondaire utile pour lire le rythme, pas pour decider de la prochaine action.</p>
+            </div>
+            <div className="h-[190px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={analyticsData}>
+                  <defs>
+                    <linearGradient id="adminMessages" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--foreground))" }} />
+                  <Area type="monotone" dataKey="messages" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#adminMessages)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
-        <div className="mt-5 grid gap-2">
-          <ActivityTable recentActivities={recentActivities.slice(0, 3)} emptyText={t("admin_no_activity")} />
+          <div className="rounded-3xl border bg-background/60 p-4">
+            <div className="mb-3">
+              <p className="text-sm font-semibold">Journal recent</p>
+              <p className="mt-1 text-xs text-muted-foreground">Vue courte pour valider le systeme sans ouvrir une page plus lourde.</p>
+            </div>
+            <ActivityTable recentActivities={recentActivities.slice(0, 3)} emptyText={t("admin_no_activity")} />
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1053,6 +1157,16 @@ function MiniAdminStat({ icon, label, value }: { icon: React.ReactNode; label: s
       <p className="text-2xl font-semibold">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
+  )
+}
+
+function QuickAction({ href, icon, title, text }: { href: string; icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <Link href={href} className="rounded-2xl border bg-card/70 p-3 transition-colors hover:bg-muted/40">
+      <div className="mb-2 text-primary">{icon}</div>
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{text}</p>
+    </Link>
   )
 }
 
