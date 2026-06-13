@@ -18,7 +18,6 @@ import {
   ShieldCheck,
   Smartphone,
   Wallet,
-  TriangleAlert,
   Users,
   X,
 } from "lucide-react"
@@ -456,6 +455,79 @@ export default function DashboardPage() {
     t,
   }), [activationState.hasActiveRule, activationState.hasGroup, recentActivities.length, sessions.length, summary.activeSessions, summary.totalActivities, t])
   const onboardingDone = onboarding.filter(step => step.state === "done").length
+  const protectedGroupLimit = getPlanProtectedGroupLimit(activePlan)
+  const remainingProtectedGroups = Math.max(protectedGroupLimit - activationState.activeRuleGroups, 0)
+  const primaryAction = React.useMemo(() => {
+    if (!accessAllowed) {
+      return {
+        eyebrow: "Relancez votre acces",
+        title: "Choisissez un plan pour continuer a proteger vos groupes.",
+        description: "Votre espace existe deja, mais de nouvelles actions restent bloquees tant que l'essai ou l'abonnement n'est pas relance.",
+        ctaLabel: "Voir les plans",
+        ctaHref: "/dashboard/billing",
+        secondaryLabel: "Voir mes groupes",
+        secondaryHref: "/dashboard/moderation",
+      }
+    }
+
+    if (sessions.length === 0) {
+      return {
+        eyebrow: "Etape 1 sur 5",
+        title: "Connectez votre premiere session WhatsApp.",
+        description: "Commencez par une seule ligne active. Une fois connectee, Whappi pourra retrouver vos groupes et vous guider vers la premiere regle utile.",
+        ctaLabel: t("new_session"),
+        ctaAction: () => setIsCreateOpen(true),
+        secondaryLabel: "Voir les plans",
+        secondaryHref: "/dashboard/billing",
+      }
+    }
+
+    if (summary.activeSessions === 0) {
+      return {
+        eyebrow: "Etape 2 sur 5",
+        title: "Relancez votre connexion pour charger vos groupes.",
+        description: "Votre session existe deja. Il reste a la reconnecter proprement pour que Whappi detecte vos groupes et vous amene a la moderation.",
+        ctaLabel: "Ouvrir la session",
+        ctaHref: "#session-work",
+        secondaryLabel: "Comprendre mon quota",
+        secondaryHref: "#plan-capacity",
+      }
+    }
+
+    if (!activationState.hasGroup) {
+      return {
+        eyebrow: "Etape 3 sur 5",
+        title: "Reperez votre premier groupe a proteger.",
+        description: "Vos sessions sont connectees. Ouvrez maintenant vos groupes et choisissez celui que vous voulez moderer en premier.",
+        ctaLabel: "Voir mes groupes",
+        ctaHref: "/dashboard/moderation",
+        secondaryLabel: "Verifier la session",
+        secondaryHref: "#session-work",
+      }
+    }
+
+    if (!activationState.hasActiveRule) {
+      return {
+        eyebrow: "Etape 4 sur 5",
+        title: "Activez une seule regle pour valider Whappi.",
+        description: "Commencez simple: anti-liens, bienvenue ou avertissements. Le but est d'obtenir un premier resultat visible dans un vrai groupe.",
+        ctaLabel: "Configurer la moderation",
+        ctaHref: "/dashboard/moderation",
+        secondaryLabel: "Voir mon quota",
+        secondaryHref: "#plan-capacity",
+      }
+    }
+
+    return {
+      eyebrow: "Etape 5 sur 5",
+      title: "Whappi est actif. Vous pouvez maintenant etendre la protection.",
+      description: "Votre premiere regle tourne deja. Suivez votre quota, ajoutez d'autres groupes utiles et passez au plan superieur seulement quand cela devient concret.",
+      ctaLabel: "Gerer mes groupes",
+      ctaHref: "/dashboard/moderation",
+      secondaryLabel: "Voir mon abonnement",
+      secondaryHref: "/dashboard/billing",
+    }
+  }, [accessAllowed, activationState.hasActiveRule, activationState.hasGroup, sessions.length, summary.activeSessions, t])
 
   if (!isLoaded || loading) {
     return (
@@ -473,11 +545,11 @@ export default function DashboardPage() {
         </>
       ) : (
         <>
-          <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+          <section className="grid gap-5 2xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
             <div className="overflow-hidden rounded-[28px] border bg-card shadow-[0_30px_80px_-55px_hsl(var(--primary))]">
               <div className="border-b p-5 sm:p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="max-w-3xl">
                     {showCenterBadge && (
                       <Badge className="gap-2 border-primary/15 bg-primary/10 pr-1 text-primary hover:bg-primary/10">
                         {t("hero_badge_new")}
@@ -491,24 +563,45 @@ export default function DashboardPage() {
                         </button>
                       </Badge>
                     )}
-                    <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                      {t("hero_title")}
+                    <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-primary/80">
+                      {primaryAction.eyebrow}
+                    </p>
+                    <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                      {primaryAction.title}
                     </h1>
                     <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                      {t("hero_desc")}
+                      {primaryAction.description}
+                    </p>
+                    <p className="mt-4 text-sm font-medium text-foreground/80">
+                      1 session connectee. 1 groupe repere. 1 regle activee. Puis seulement l'upgrade utile.
                     </p>
                   </div>
-                  <Button onClick={() => setIsCreateOpen(true)} className="h-10 w-full rounded-xl sm:w-auto">
-                    <Plus className="mr-2 h-4 w-4" />
-                    {t("new_session")}
-                  </Button>
+                  <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row xl:w-auto xl:flex-col">
+                    {"ctaAction" in primaryAction ? (
+                      <Button onClick={primaryAction.ctaAction} className="h-10 w-full rounded-xl sm:w-auto xl:w-full">
+                        <Plus className="mr-2 h-4 w-4" />
+                        {primaryAction.ctaLabel}
+                      </Button>
+                    ) : (
+                      <Button asChild className="h-10 w-full rounded-xl sm:w-auto xl:w-full">
+                        <Link href={primaryAction.ctaHref}>{primaryAction.ctaLabel}</Link>
+                      </Button>
+                    )}
+                    <Button asChild variant="outline" className="h-10 w-full rounded-xl sm:w-auto xl:w-full">
+                      <Link href={primaryAction.secondaryHref}>
+                        {primaryAction.secondaryLabel}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid gap-px bg-border md:grid-cols-3">
+              <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
                 <MetricTile label={t("stat_sessions")} value={sessions.length} sub={`${summary.activeSessions} ${t("stat_connected")}`} />
-                <MetricTile label={t("stat_messages")} value={summary.messagesSent} sub={t("stat_volume")} />
-                <MetricTile label={t("stat_actions")} value={summary.totalActivities} sub={t("stat_recent")} />
+                <MetricTile label="Groupes reperes" value={activationState.groupCount} sub={activationState.groupCount > 0 ? "Prets a etre configures" : "Encore a detecter"} />
+                <MetricTile label="Regles actives" value={activationState.activeRuleGroups} sub={activationState.activeRuleGroups > 0 ? "Groupes deja proteges" : "Aucune protection active"} />
+                <MetricTile label="Quota restant" value={remainingProtectedGroups} sub={`${protectedGroupLimit} groupe(s) inclus dans ${getPlanLabel(activePlan)}`} />
               </div>
             </div>
 
@@ -550,6 +643,11 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
+                <Button asChild className="mt-5 w-full rounded-xl">
+                  <Link href={activationState.hasGroup ? "/dashboard/moderation" : "#session-work"}>
+                    {activationState.hasGroup ? "Continuer la configuration" : "Commencer par la session"}
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           </section>
@@ -558,7 +656,42 @@ export default function DashboardPage() {
             <FirstRunPanel onCreate={() => setIsCreateOpen(true)} />
           )}
 
-          <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+          <section className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+            <Card id="session-work" className="rounded-[28px] bg-card shadow-none">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col gap-3 border-b pb-5 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold truncate">1. Connecter ou verifier une session</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Tout commence ici. Une session proprement connectee permet a Whappi de retrouver vos groupes et de suivre vos actions.
+                    </p>
+                  </div>
+                  {sessions.length > 0 && (
+                    <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
+                      <SelectTrigger className="h-10 text-xs md:w-[240px]">
+                        <SelectValue placeholder={t("choose_session")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sessions.map(session => (
+                          <SelectItem key={ensureString(session.sessionId)} value={ensureString(session.sessionId)} className="text-xs">
+                            {safeRender(session.sessionId)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="mt-5">
+                  <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <FirstRuleActionCard hasGroup={activationState.hasGroup} hasActiveRule={activationState.hasActiveRule} />
+          </section>
+
+          <section className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
             <TrialFocusPanel
               plan={activePlan}
               expiry={trialExpiry}
@@ -574,68 +707,10 @@ export default function DashboardPage() {
               groupCount={activationState.groupCount}
               activeRuleGroups={activationState.activeRuleGroups}
             />
-          </div>
-
-          <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
-            <Card className="rounded-[28px] bg-card shadow-none">
-              <CardContent className="p-5 sm:p-6">
-                <div className="flex flex-col gap-3 border-b pb-5 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold truncate">{t("session_work_title")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t("session_work_desc")}</p>
-                  </div>
-                  <Select value={selectedSessionId || ""} onValueChange={value => setSelectedSessionId(ensureString(value))}>
-                    <SelectTrigger className="h-10 text-xs md:w-[220px]">
-                      <SelectValue placeholder={t("choose_session")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sessions.map(session => (
-                        <SelectItem key={ensureString(session.sessionId)} value={ensureString(session.sessionId)} className="text-xs">
-                          {safeRender(session.sessionId)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="mt-5">
-                  <SessionCard session={selectedSession} onRefresh={() => fetchSessions(false)} onCreate={() => setIsCreateOpen(true)} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-[28px] bg-card shadow-none">
-              <CardContent className="p-5 sm:p-6">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold truncate">{t("rules_title")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t("rules_desc")}</p>
-                  </div>
-                  <Button asChild variant="outline" className="h-9 text-xs">
-                    <Link href="/dashboard/moderation">
-                      {t("rules_open")}
-                      <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                </div>
-
-                <div className="grid gap-3">
-                  <RuleRow icon={<Link2 className="h-4 w-4" />} title={t("rule_anti_links")} text={t("rule_anti_links_desc")} />
-                  <RuleRow icon={<MessageCircle className="h-4 w-4" />} title={t("rule_welcome")} text={t("rule_welcome_desc")} />
-                  <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title={t("rule_warnings")} text={t("rule_warnings_desc")} />
-                </div>
-              </CardContent>
-            </Card>
           </section>
 
-          <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <section className="grid gap-5">
             <UserActivityPanel recentActivities={recentActivities} />
-            <NextBestActionPanel
-              sessionCount={sessions.length}
-              activeSessions={summary.activeSessions}
-              hasGroup={activationState.hasGroup}
-              hasActiveRule={activationState.hasActiveRule}
-            />
           </section>
         </>
       )}
@@ -825,13 +900,14 @@ function PlanCapacityPanel({
   activeRuleGroups: number
 }) {
   const normalizedPlan = getPlanCode(plan)
+  const protectedGroupLimit = accessAllowed ? getPlanProtectedGroupLimit(normalizedPlan) : 0
   const sessionLimit = accessAllowed ? getPlanSessionLimit(normalizedPlan) : 0
-  const usageRatio = sessionLimit > 0 ? Math.min((sessionCount / sessionLimit) * 100, 100) : 0
-  const isNearLimit = sessionLimit > 0 && sessionCount >= Math.max(sessionLimit - 1, 1)
+  const usageRatio = protectedGroupLimit > 0 ? Math.min((activeRuleGroups / protectedGroupLimit) * 100, 100) : 0
+  const isNearLimit = protectedGroupLimit > 0 && activeRuleGroups >= Math.max(protectedGroupLimit - 1, 1)
   const upgradeLabel = normalizedPlan === "business" ? "Plan le plus complet actif" : "Passer au plan superieur"
 
   return (
-    <Card className="rounded-[28px] bg-card shadow-none">
+    <Card id="plan-capacity" className="rounded-[28px] bg-card shadow-none">
       <CardContent className="space-y-5 p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -845,7 +921,7 @@ function PlanCapacityPanel({
             </div>
             <h2 className="mt-3 text-lg font-semibold tracking-tight">Capacite du plan</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Suivez ce qui est deja actif dans votre espace et voyez quand il devient utile de passer au niveau superieur.
+              Suivez vos groupes deja proteges, ce qu'il vous reste a activer et le bon moment pour passer au niveau superieur.
             </p>
           </div>
           <Button asChild variant="outline" className="w-full rounded-xl text-xs sm:w-auto">
@@ -856,11 +932,11 @@ function PlanCapacityPanel({
         <div className="space-y-3 rounded-2xl border bg-background/70 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium">Sessions utilisees</p>
+              <p className="text-sm font-medium">Groupes proteges</p>
               <p className="text-xs text-muted-foreground">
-                {sessionLimit > 0
-                  ? `${sessionCount} sur ${sessionLimit} incluses dans ce plan`
-                  : "Activez un plan pour relancer la creation de sessions"}
+                {protectedGroupLimit > 0
+                  ? `${activeRuleGroups} sur ${protectedGroupLimit} groupes proteges avec ce plan`
+                  : "Activez un plan pour relancer la protection de groupes"}
               </p>
             </div>
             <Badge className={cn(
@@ -869,16 +945,17 @@ function PlanCapacityPanel({
                 ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-50"
                 : "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10"
             )}>
-              {sessionLimit > 0 ? `${Math.max(sessionLimit - sessionCount, 0)} restante(s)` : "0 restante"}
+              {protectedGroupLimit > 0 ? `${Math.max(protectedGroupLimit - activeRuleGroups, 0)} restante(s)` : "0 restante"}
             </Badge>
           </div>
           <Progress value={usageRatio} className="h-2" />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <UsagePill label="Plan actif" value={getPlanLabel(plan)} sub={accessAllowed ? "Operationnel" : "A relancer"} />
+          <UsagePill label="Sessions" value={sessionCount} sub={sessionLimit > 0 ? `${sessionLimit} ligne(s) incluses` : "Bloquees"} />
           <UsagePill label="Groupes detectes" value={groupCount} sub={groupCount > 0 ? "Trouves sur vos sessions" : "Aucun groupe charge"} />
-          <UsagePill label="Regles actives" value={activeRuleGroups} sub={activeRuleGroups > 0 ? "Groupes proteges" : "Encore a activer"} />
+          <UsagePill label="Protections actives" value={activeRuleGroups} sub={activeRuleGroups > 0 ? "Groupes deja couverts" : "Encore a activer"} />
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -889,6 +966,62 @@ function PlanCapacityPanel({
             <Link href="/dashboard/billing">{isNearLimit || !accessAllowed ? "Voir les upgrades" : "Voir mon abonnement"}</Link>
           </Button>
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function FirstRuleActionCard({ hasGroup, hasActiveRule }: { hasGroup: boolean; hasActiveRule: boolean }) {
+  return (
+    <Card className="rounded-[28px] bg-card shadow-none">
+      <CardContent className="space-y-5 p-5 sm:p-6">
+        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold truncate">2. Activer une premiere regle</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Ne cherchez pas a tout configurer d'un coup. Une seule protection bien activee suffit pour valider la valeur de Whappi.
+            </p>
+          </div>
+          <Button asChild variant="outline" className="h-9 rounded-xl text-xs">
+            <Link href="/dashboard/moderation">
+              Ouvrir la moderation
+              <ArrowRight className="ml-2 h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid gap-3">
+          <RuleRow icon={<Link2 className="h-4 w-4" />} title="Anti-liens" text="Le plus simple pour couper liens hors sujet, pubs et arnaques." />
+          <RuleRow icon={<MessageCircle className="h-4 w-4" />} title="Bienvenue" text="Envoyez vos regles ou votre message d'accueil a chaque nouvel arrivant." />
+          <RuleRow icon={<ShieldCheck className="h-4 w-4" />} title="Avertissements" text="Prevenez avant exclusion pour garder une moderation plus souple." />
+        </div>
+
+        {!hasGroup ? (
+          <div className="rounded-2xl border border-dashed bg-background/60 p-4 text-sm text-muted-foreground">
+            Connectez d'abord une session puis laissez Whappi retrouver vos groupes. La moderation devient utile seulement quand un premier groupe est visible.
+          </div>
+        ) : (
+          <div className="rounded-2xl border bg-background/60 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold">{hasActiveRule ? "Premiere regle deja active" : "Choisissez la premiere regle a activer"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {hasActiveRule
+                    ? "Whappi protege deja au moins un groupe. Vous pouvez maintenant etendre la configuration ou verifier le quota."
+                    : "Commencez par anti-liens si vous voulez le resultat le plus rapide a observer dans le groupe."}
+                </p>
+              </div>
+              <Badge className={cn(
+                "rounded-full border px-3 py-1 text-xs",
+                hasActiveRule
+                  ? "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10"
+                  : "border-state-warning/30 bg-state-warning-light/60 text-state-warning hover:bg-state-warning-light/60"
+              )}>
+                {hasActiveRule ? "Protection active" : "Regle a activer"}
+              </Badge>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -906,6 +1039,16 @@ function formatShortDate(value: string) {
 }
 
 function getPlanSessionLimit(plan: string) {
+  const quotas: Record<string, number> = {
+    trial: 1,
+    starter: 3,
+    pro: 6,
+    business: 16,
+  }
+  return quotas[getPlanCode(plan)] ?? 1
+}
+
+function getPlanProtectedGroupLimit(plan: string) {
   const quotas: Record<string, number> = {
     trial: 1,
     starter: 3,
@@ -1378,55 +1521,6 @@ function AdminFocusPanel({
             <QuickAction href="/dashboard/maintenance" icon={<ShieldCheck className="h-4 w-4" />} title="Maintenance" text="Garder le dashboard propre en production." />
           </div>
         </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function NextBestActionPanel({
-  sessionCount,
-  activeSessions,
-  hasGroup,
-  hasActiveRule,
-}: {
-  sessionCount: number
-  activeSessions: number
-  hasGroup: boolean
-  hasActiveRule: boolean
-}) {
-  const { t } = useTranslation("dashboard")
-  const steps = [
-    { label: t("step_session"), done: sessionCount > 0 },
-    { label: t("step_connexion"), done: activeSessions > 0 },
-    { label: t("step_groupe"), done: activeSessions > 0 && hasGroup },
-    { label: t("step_regle"), done: hasActiveRule },
-  ]
-
-  const hasTodo = steps.some(step => !step.done)
-
-  return (
-    <Card className="bg-card shadow-none">
-      <CardContent className="p-5 sm:p-6">
-        <div className="mb-5">
-          <p className="text-sm font-semibold truncate">{t("next_action_title")}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("next_action_desc")}</p>
-        </div>
-        <div className="space-y-3">
-          {steps.map(step => (
-            <div key={step.label} className="flex items-center justify-between rounded-2xl border bg-background/60 p-3">
-              <span className="flex items-center gap-2 text-sm font-medium">
-                {!step.done && <TriangleAlert className="h-3.5 w-3.5 text-state-warning" />}
-                {step.label}
-              </span>
-              <Badge className={cn(step.done ? "bg-primary/10 text-primary" : "bg-state-warning/10 text-state-warning", "text-[10px] sm:text-xs px-2 py-0.5")}>
-                {step.done ? t("next_action_ok") : t("next_action_todo")}
-              </Badge>
-            </div>
-          ))}
-        </div>
-        <Button asChild className={cn("mt-5 w-full", hasTodo && "bg-state-warning text-white hover:bg-state-warning/90")} size="sm">
-          <Link href="/dashboard/moderation">{t("next_action_cta")}</Link>
-        </Button>
       </CardContent>
     </Card>
   )
