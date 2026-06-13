@@ -179,7 +179,25 @@ async function createCheckoutSession(user, planCode, { phoneNumber, customerName
     };
 }
 
-function verifyWebhookSignature(rawPayload, signature) {
+function buildCandidateSignatureBuffers(rawPayload, secret, timestamp) {
+    const payloadBuffer = Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(String(rawPayload || ''), 'utf8');
+    const candidates = [
+        crypto.createHmac('sha256', secret).update(payloadBuffer).digest(),
+    ];
+
+    if (timestamp) {
+        const signedPayload = Buffer.concat([
+            Buffer.from(String(timestamp), 'utf8'),
+            Buffer.from('.', 'utf8'),
+            payloadBuffer,
+        ]);
+        candidates.unshift(crypto.createHmac('sha256', secret).update(signedPayload).digest());
+    }
+
+    return candidates;
+}
+
+function verifyWebhookSignature(rawPayload, signature, timestamp) {
     const secret = process.env.GENIUSPAY_WEBHOOK_SECRET;
     if (!secret) {
         throw new Error('GENIUSPAY_WEBHOOK_SECRET non configure');
@@ -187,24 +205,37 @@ function verifyWebhookSignature(rawPayload, signature) {
 
     if (!signature) return false;
 
-    const expected = crypto.createHmac('sha256', secret).update(rawPayload).digest('hex');
-    if (signature.length !== expected.length) return false;
-
+    let provided;
     try {
-        return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'));
+        provided = Buffer.from(signature, 'hex');
     } catch {
         return false;
     }
+
+    const candidates = buildCandidateSignatureBuffers(rawPayload, secret, timestamp);
+    for (const expected of candidates) {
+        if (provided.length !== expected.length) continue;
+        try {
+            if (crypto.timingSafeEqual(provided, expected)) {
+                return true;
+            }
+        } catch {
+            return false;
+        }
+    }
+
+    return false;
 }
 
 async function handleWebhook(rawPayload, headers = {}) {
-    const signature = headers['x-geniuspay-signature'];
-    if (!verifyWebhookSignature(rawPayload, signature)) {
+    const signature = headers['x-webhook-signature'] || headers['x-geniuspay-signature'];
+    const timestamp = headers['x-webhook-timestamp'] || headers['x-geniuspay-timestamp'];
+    if (!verifyWebhookSignature(rawPayload, signature, timestamp)) {
         throw new Error('Invalid GeniusPay signature');
     }
 
     const parsed = JSON.parse(rawPayload.toString('utf8'));
-    const event = String(parsed.event || headers['x-geniuspay-event'] || '').toLowerCase();
+    const event = String(parsed.event || headers['x-webhook-event'] || headers['x-geniuspay-event'] || '').toLowerCase();
     const transaction = parsed.data?.transaction || {};
     const metadata = transaction.metadata || {};
     const status = normalizeProviderStatus(transaction.status || (event === 'payment.success' ? 'completed' : 'pending'));
