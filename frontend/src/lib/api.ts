@@ -331,6 +331,47 @@ export const api = {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     }),
   },
+  support: {
+    listThreads: (token?: string) => fetchApi('/api/v1/support/threads', {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    createThread: (data: any, token?: string) => fetchApi('/api/v1/support/threads', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    getThread: (threadId: string, token?: string) => fetchApi(`/api/v1/support/threads/${threadId}`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    addMessage: (threadId: string, data: any, token?: string) => fetchApi(`/api/v1/support/threads/${threadId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    updateStatus: (threadId: string, data: any, token?: string) => fetchApi(`/api/v1/support/threads/${threadId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
+    adminListThreads: (params: Record<string, string | number | boolean> = {}, token?: string) => {
+      const query = new URLSearchParams(Object.entries(params).reduce<Record<string, string>>((acc, [key, value]) => {
+        if (value !== undefined && value !== null && `${value}` !== "") acc[key] = String(value)
+        return acc
+      }, {})).toString()
+      return fetchApi(`/api/v1/support/admin/threads${query ? `?${query}` : ""}`, {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      })
+    },
+    adminListTransactions: (params: Record<string, string | number | boolean> = {}, token?: string) => {
+      const query = new URLSearchParams(Object.entries(params).reduce<Record<string, string>>((acc, [key, value]) => {
+        if (value !== undefined && value !== null && `${value}` !== "") acc[key] = String(value)
+        return acc
+      }, {})).toString()
+      return fetchApi(`/api/v1/support/admin/transactions${query ? `?${query}` : ""}`, {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      })
+    },
+  },
   subscriptions: {
     current: (token?: string) => fetchApi("/api/v1/subscriptions/current", {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},

@@ -62,8 +62,65 @@ const validateAIModel = (config) => {
     };
 };
 
+/**
+ * Normalize user-provided support text into safe plain text.
+ * We keep support content text-only to avoid HTML/script injection.
+ * @param {string} text
+ * @param {object} options
+ * @returns {string}
+ */
+const sanitizePlainText = (text, options = {}) => {
+    if (text === null || text === undefined) return '';
+
+    const {
+        maxLength = 2000,
+        multiline = true,
+        preserveNewlines = true,
+    } = options;
+
+    let value = String(text)
+        .normalize('NFKC')
+        .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, ' ')
+        .replace(/[<>]/g, ' ')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n');
+
+    if (!multiline || !preserveNewlines) {
+        value = value.replace(/\n+/g, ' ');
+    }
+
+    value = value
+        .split('\n')
+        .map(line => line.replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join(multiline && preserveNewlines ? '\n' : ' ')
+        .trim();
+
+    if (value.length > maxLength) {
+        value = value.slice(0, maxLength).trim();
+    }
+
+    return value;
+};
+
+const validateSupportCategory = (value) => {
+    return ['general', 'payment', 'technical', 'billing', 'feedback'].includes(String(value || '').toLowerCase());
+};
+
+const validateSupportStatus = (value) => {
+    return ['open', 'pending', 'resolved', 'closed'].includes(String(value || '').toLowerCase());
+};
+
+const validateSupportPriority = (value) => {
+    return ['low', 'normal', 'high', 'urgent'].includes(String(value || '').toLowerCase());
+};
+
 module.exports = {
     isValidId,
     sanitizeId,
-    validateAIModel
+    validateAIModel,
+    sanitizePlainText,
+    validateSupportCategory,
+    validateSupportStatus,
+    validateSupportPriority
 };

@@ -20,6 +20,7 @@ async function migrate() {
     'group_engagement_tasks', 'ai_models', 'keyword_responders',
     'knowledge_base', 'knowledge_chunks', 'conversation_memory',
     'maintenance_settings', 'payment_transactions', 'user_notifications',
+    'support_threads', 'support_messages',
     'ai_blacklisted_numbers', 'ai_whitelisted_numbers'
   ];
 
@@ -46,6 +47,9 @@ async function migrate() {
     'CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id)',
     'CREATE INDEX IF NOT EXISTS idx_webhooks_session ON webhooks(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_conversation_memory_session ON conversation_memory(session_id)',
+    'CREATE INDEX IF NOT EXISTS idx_support_threads_user ON support_threads(user_id, last_message_at DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_support_threads_status ON support_threads(status, last_message_at DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON support_messages(thread_id, created_at ASC)',
   ];
 
   for (const idx of indexes) {
@@ -226,6 +230,25 @@ function getTableSQL(table) {
       id TEXT PRIMARY KEY, user_id TEXT, type TEXT, title TEXT,
       message TEXT, is_read INTEGER DEFAULT 0, metadata TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    support_threads: `CREATE TABLE IF NOT EXISTS support_threads (
+      id TEXT PRIMARY KEY, ticket_code TEXT UNIQUE NOT NULL,
+      user_id TEXT NOT NULL, user_email TEXT NOT NULL,
+      subject TEXT NOT NULL, category TEXT DEFAULT 'general',
+      status TEXT DEFAULT 'open', priority TEXT DEFAULT 'normal',
+      payment_order_id TEXT, payment_reference TEXT,
+      last_message_preview TEXT,
+      admin_unread_count INTEGER DEFAULT 0,
+      user_unread_count INTEGER DEFAULT 0,
+      last_reply_by TEXT DEFAULT 'user',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    support_messages: `CREATE TABLE IF NOT EXISTS support_messages (
+      id TEXT PRIMARY KEY, thread_id TEXT NOT NULL REFERENCES support_threads(id) ON DELETE CASCADE,
+      author_user_id TEXT, author_email TEXT, author_role TEXT NOT NULL,
+      message TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
     ai_blacklisted_numbers: `CREATE TABLE IF NOT EXISTS ai_blacklisted_numbers (
       id SERIAL PRIMARY KEY, session_id TEXT NOT NULL,

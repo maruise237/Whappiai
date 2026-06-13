@@ -42,6 +42,7 @@ const userRoutes = require('./src/routes/users');
 const adminRoutes = require('./src/routes/admin');
 const webhookRoutes = require('./src/routes/webhooks');
 const paymentRoutes = require('./src/routes/payments');
+const supportRoutes = require('./src/routes/support');
 const subscriptionRoutes = require('./src/routes/subscriptions');
 const creditRoutes = require('./src/routes/credits');
 const notificationRoutes = require('./src/routes/notifications');
@@ -53,6 +54,7 @@ const { errorHandler, notFoundHandler, asyncHandler } = require('./src/middlewar
 const redisService = require('./src/services/redis');
 const whappiSessionStore = require('./src/services/SessionStore');
 const queueService = require('./src/services/QueueService');
+const { ensureSupportSchema } = require('./src/services/supportSchema');
 
 // API v1
 const { initializeApi } = require('./src/routes/api');
@@ -689,6 +691,7 @@ app.use('/webhooks', authLimiter, webhookRoutes);
 app.use('/admin/users', authLimiter, userRoutes);
 app.use('/api/v1/admin', authLimiter, adminRoutes);
 app.use('/api/v1/payments', authLimiter, paymentRoutes);
+app.use('/api/v1/support', apiLimiter, supportRoutes);
 app.use('/api/v1/subscriptions', authLimiter, subscriptionRoutes);
 app.use('/api/v1/credits', authLimiter, creditRoutes);
 app.use('/api/v1/notifications', authLimiter, notificationRoutes);
@@ -809,6 +812,7 @@ if (require.main === module) {
         }
         await AIModel.ensureDefaultDeepSeek();
         await User.ensureAdmin(process.env.ADMIN_DASHBOARD_PASSWORD);
+        await ensureSupportSchema();
         const existingSessions = await Session.getAll(null, true);
         log(`Trouvé ${existingSessions.length} session(s) existante(s)`, 'SYSTEM', { count: existingSessions.length }, 'INFO');
 

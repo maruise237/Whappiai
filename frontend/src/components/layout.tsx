@@ -7,7 +7,9 @@ import { useAuth, useClerk, useUser } from "@clerk/clerk-react"
 import {
   ChevronRight,
   CreditCard,
+  Inbox,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Menu,
   Bot,
@@ -72,9 +74,22 @@ const userNavigation: NavItemConfig[] = [
     href: "/dashboard/billing",
     icon: CreditCard,
   },
+  {
+    label: "Support",
+    detail: "Aide, retours et suivi",
+    href: "/dashboard/support",
+    icon: LifeBuoy,
+  },
 ]
 
 const adminNavigation: NavItemConfig[] = [
+  {
+    label: "Support",
+    detail: "Messages clients et transactions",
+    href: "/dashboard/support-inbox",
+    icon: Inbox,
+    adminOnly: true,
+  },
   {
     label: "Modèles IA",
     detail: "Providers, modèles, clés API",
@@ -350,6 +365,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
                       <CreditCard className="mr-2 h-4 w-4" /> Forfaits
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push("/dashboard/support")}>
+                      <LifeBuoy className="mr-2 h-4 w-4" /> Support
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/login" })} className="text-destructive">
