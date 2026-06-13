@@ -138,7 +138,7 @@ function isNavItemActive(item: NavItemConfig, pathname: string) {
   return pathname === item.href || pathname.startsWith(`${item.href}/`)
 }
 
-function LiveIndicator() {
+function LiveIndicator({ isAdmin }: { isAdmin: boolean }) {
   const { isConnected } = useWebSocket()
 
   if (!isConnected) {
@@ -152,10 +152,16 @@ function LiveIndicator() {
             </div>
           </TooltipTrigger>
           <TooltipContent className="max-w-[240px] text-center">
-            <p>Si votre forfait a expire, renouvelez pour retablir la connexion WhatsApp.</p>
-            <Link href="/dashboard/billing" className="mt-1 block text-xs font-medium text-primary underline underline-offset-2">
-              Voir les forfaits
-            </Link>
+            {isAdmin ? (
+              <p>Le flux temps reel n'est pas encore connecte. Verifiez l'etat plateforme depuis les vues admin.</p>
+            ) : (
+              <>
+                <p>Si votre forfait a expire, renouvelez pour retablir la connexion WhatsApp.</p>
+                <Link href="/dashboard/billing" className="mt-1 block text-xs font-medium text-primary underline underline-offset-2">
+                  Voir les forfaits
+                </Link>
+              </>
+            )}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -462,7 +468,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
               <div className="flex items-center gap-1 sm:gap-2">
                 <div className="hidden sm:block">
-                  <LiveIndicator />
+                  <LiveIndicator isAdmin={isAdmin} />
                 </div>
                 <Button
                   variant="ghost"

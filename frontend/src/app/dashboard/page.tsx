@@ -469,67 +469,7 @@ export default function DashboardPage() {
     <div className="space-y-6 pb-10">
       {isAdmin ? (
         <>
-          <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-            <Card className="overflow-hidden rounded-[28px] border-primary/10 bg-card shadow-[0_30px_80px_-55px_hsl(var(--primary))]">
-              <CardContent className="space-y-6 p-5 sm:p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">
-                      Espace admin dedie
-                    </Badge>
-                    <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                      Supervisez Whappi sans bruit compte client.
-                    </h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                      Cette vue ne montre que les zones admin: support, paiements, utilisateurs, maintenance et IA.
-                    </p>
-                  </div>
-                  <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-2">
-                    <Button asChild className="h-10 rounded-xl">
-                      <Link href="/dashboard/support-inbox">Ouvrir le support</Link>
-                    </Button>
-                    <Button asChild variant="outline" className="h-10 rounded-xl">
-                      <Link href="/dashboard/users">Voir les comptes</Link>
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <AdminZoneCard
-                    href="/dashboard/support-inbox"
-                    icon={<Inbox className="h-4 w-4" />}
-                    title="Support & paiements"
-                    text="Conversation client, transactions et suivis sensibles."
-                  />
-                  <AdminZoneCard
-                    href="/dashboard/users"
-                    icon={<Users className="h-4 w-4" />}
-                    title="Comptes"
-                    text="Forfaits, activations manuelles et vue utilisateur."
-                  />
-                  <AdminZoneCard
-                    href="/dashboard/ai-models"
-                    icon={<Smartphone className="h-4 w-4" />}
-                    title="Modeles IA"
-                    text="Providers, cles API et configuration technique."
-                  />
-                  <AdminZoneCard
-                    href="/dashboard/maintenance"
-                    icon={<ShieldCheck className="h-4 w-4" />}
-                    title="Maintenance"
-                    text="Mode maintenance et controles systeme reserves admin."
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <AdminControlRail adminStats={adminStats} adminSignals={adminSignals} />
-          </section>
-
-          <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
-            <AdminPanel adminStats={adminStats} adminSignals={adminSignals} analyticsData={analyticsData} recentActivities={recentActivities} />
-            <AdminFocusPanel adminSignals={adminSignals} adminStats={adminStats} />
-          </section>
+          <AdminPanel adminStats={adminStats} adminSignals={adminSignals} analyticsData={analyticsData} recentActivities={recentActivities} />
         </>
       ) : (
         <>
@@ -1060,6 +1000,12 @@ function AdminPanel({
   recentActivities: ActivityItem[]
 }) {
   const { t } = useTranslation("dashboard")
+  const totalUsers = adminStats?.users?.total || 0
+  const activeUsers = adminStats?.users?.active || 0
+  const connectedSessions = adminStats?.sessions?.connected || 0
+  const successRate = adminStats?.overview?.successRate || 0
+  const paymentsToReview = adminSignals.pendingPayments + adminSignals.failedPayments
+
   const primaryAdminAction = adminSignals.unreadSupport > 0
     ? {
         title: "Repondre aux clients en attente",
@@ -1067,99 +1013,214 @@ function AdminPanel({
         href: "/dashboard/support-inbox",
         cta: "Ouvrir la boite support",
       }
-    : adminSignals.failedPayments > 0
+    : paymentsToReview > 0
       ? {
-          title: "Verifier les paiements en echec",
-          text: `${adminSignals.failedPayments} transaction${adminSignals.failedPayments > 1 ? "s" : ""} demandent une verification.`,
+          title: "Verifier les paiements sensibles",
+          text: `${paymentsToReview} transaction${paymentsToReview > 1 ? "s" : ""} demandent une verification ou un suivi manuel.`,
           href: "/dashboard/support-inbox",
           cta: "Voir les transactions",
         }
       : {
-          title: "Surveiller les comptes a accompagner",
-          text: "Le centre admin est propre. Utilisez la vue utilisateurs pour traiter les exceptions et les upgrades manuels.",
+          title: "Piloter les comptes a forte valeur",
+          text: "Le centre est propre. Utilisez la vue utilisateurs pour les upgrades manuels et les cas commerciaux.",
           href: "/dashboard/users",
           cta: "Ouvrir les utilisateurs",
         }
 
   return (
-    <Card className="rounded-[28px] border-primary/10 bg-card shadow-none">
-      <CardContent className="p-5 sm:p-6">
-        <div className="mb-5 rounded-[24px] border border-primary/15 bg-primary/5 p-4 sm:p-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+    <div className="space-y-5">
+      <Card className="overflow-hidden rounded-[30px] border-primary/10 bg-card shadow-[0_30px_90px_-60px_hsl(var(--primary))]">
+        <CardContent className="space-y-6 p-5 sm:p-6 lg:p-7">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-primary">Poste de commandement admin</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">Commencez par l'action la plus rentable maintenant.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Les meilleurs dashboards admin montrent d'abord les exceptions, ensuite les raccourcis, et seulement apres les courbes.
+              <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">Centre admin Whappi</Badge>
+              <h1 className="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                Vue d'ensemble operations, paiements et comptes.
+              </h1>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
+                Les meilleurs dashboards admin montrent d'abord les exceptions, ensuite les leviers d'action, puis les tendances.
               </p>
             </div>
-            <Button asChild className="h-10 w-full lg:w-auto">
-              <Link href={primaryAdminAction.href}>{primaryAdminAction.cta}</Link>
-            </Button>
-          </div>
-        </div>
-
-        <div className="mb-5 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-3xl border bg-background/60 p-4">
-            <div className="mb-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Action prioritaire</p>
-              <p className="mt-2 text-lg font-semibold">{primaryAdminAction.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{primaryAdminAction.text}</p>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <QuickAction href="/dashboard/support-inbox" icon={<Inbox className="h-4 w-4" />} title="Support" text={`${adminSignals.openSupport} conversations ouvertes`} />
-              <QuickAction href="/dashboard/users" icon={<Users className="h-4 w-4" />} title="Comptes" text={`${adminStats?.users?.total || 0} utilisateurs`} />
-              <QuickAction href="/dashboard/support-inbox" icon={<Wallet className="h-4 w-4" />} title="Paiements" text={`${adminSignals.pendingPayments + adminSignals.failedPayments} a verifier`} />
+            <div className="grid w-full gap-2 sm:grid-cols-2 xl:w-[340px]">
+              <Button asChild className="h-11 rounded-2xl">
+                <Link href={primaryAdminAction.href}>{primaryAdminAction.cta}</Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11 rounded-2xl">
+                <Link href="/dashboard/activities">Voir le journal</Link>
+              </Button>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <MiniAdminStat icon={<Inbox className="h-4 w-4" />} label="Messages non lus" value={adminSignals.unreadSupport} />
-            <MiniAdminStat icon={<Wallet className="h-4 w-4" />} label="Paiements en attente" value={adminSignals.pendingPayments} />
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <AdminHeadlineStat label="Messages non lus" value={adminSignals.unreadSupport} note="A traiter en priorite" tone={adminSignals.unreadSupport > 0 ? "warning" : "neutral"} />
+            <AdminHeadlineStat label="Paiements a verifier" value={paymentsToReview} note="Attente, echec ou validation manuelle" tone={paymentsToReview > 0 ? "warning" : "neutral"} />
+            <AdminHeadlineStat label="Utilisateurs actifs" value={activeUsers} note={`${totalUsers} compte(s) connus`} tone="neutral" />
+            <AdminHeadlineStat label="Sessions connectees" value={connectedSessions} note={`${successRate}% de succes recent`} tone="neutral" />
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="grid gap-3 md:grid-cols-3">
-          <MiniAdminStat icon={<Users className="h-4 w-4" />} label="Utilisateurs actifs" value={adminStats?.users?.active || 0} />
-          <MiniAdminStat icon={<Smartphone className="h-4 w-4" />} label="Sessions connectees" value={adminStats?.sessions?.connected || 0} />
-          <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label="Paiements completes" value={adminSignals.completedPayments} />
-        </div>
-
-        <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-3xl border bg-background/60 p-4">
-            <div className="mb-3">
-              <p className="text-sm font-semibold">Tendance operations</p>
-              <p className="mt-1 text-xs text-muted-foreground">Courbe secondaire utile pour lire le rythme, pas pour decider de la prochaine action.</p>
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <Card className="rounded-[28px] bg-card shadow-none">
+          <CardContent className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Action prioritaire</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight">{primaryAdminAction.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{primaryAdminAction.text}</p>
+              </div>
+              <Badge className={cn(
+                "w-fit border-none",
+                adminSignals.unreadSupport > 0 || paymentsToReview > 0 ? "bg-state-warning/10 text-state-warning" : "bg-primary/10 text-primary"
+              )}>
+                {adminSignals.unreadSupport > 0 || paymentsToReview > 0 ? "Action requise" : "Sous controle"}
+              </Badge>
             </div>
-            <div className="h-[190px]">
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <QuickAction href="/dashboard/support-inbox" icon={<Inbox className="h-4 w-4" />} title="Support" text={`${adminSignals.openSupport} conversation(s) ouverte(s)`} />
+              <QuickAction href="/dashboard/users" icon={<Users className="h-4 w-4" />} title="Comptes" text={`${totalUsers} utilisateur(s) a surveiller`} />
+              <QuickAction href="/dashboard/support-inbox" icon={<Wallet className="h-4 w-4" />} title="Paiements" text={`${paymentsToReview} dossier(s) a verifier`} />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <MiniAdminStat icon={<Inbox className="h-4 w-4" />} label="Support ouvert" value={adminSignals.openSupport} />
+              <MiniAdminStat icon={<Wallet className="h-4 w-4" />} label="Paiements completes" value={adminSignals.completedPayments} />
+              <MiniAdminStat icon={<ShieldCheck className="h-4 w-4" />} label="Sessions en ligne" value={connectedSessions} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[28px] bg-card shadow-none">
+          <CardContent className="space-y-4 p-5 sm:p-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Zones admin</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight">Acces directs propres</h2>
+            </div>
+
+            <div className="grid gap-3">
+              <AdminZoneCard href="/dashboard/support-inbox" icon={<Inbox className="h-4 w-4" />} title="Support & transactions" text="Traitez les demandes clients et les flux paiement depuis une seule zone." />
+              <AdminZoneCard href="/dashboard/users" icon={<Users className="h-4 w-4" />} title="Utilisateurs" text="Gerez comptes, upgrades manuels et historique d'abonnement." />
+              <AdminZoneCard href="/dashboard/ai-models" icon={<Smartphone className="h-4 w-4" />} title="Modeles IA" text="Configurez providers, cles et environnement IA." />
+              <AdminZoneCard href="/dashboard/maintenance" icon={<ShieldCheck className="h-4 w-4" />} title="Maintenance" text="Gardez la plateforme propre et previsible en production." />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card className="rounded-[28px] bg-card shadow-none">
+          <CardContent className="p-5 sm:p-6">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Tendance operations</p>
+                <p className="mt-1 text-xs text-muted-foreground">Lecture rapide du rythme global pour confirmer que la plateforme reste saine.</p>
+              </div>
+              <Badge className="w-fit bg-primary/10 text-primary hover:bg-primary/10">7 derniers jours</Badge>
+            </div>
+            <div className="h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={analyticsData}>
                   <defs>
                     <linearGradient id="adminMessages" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.38} />
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--foreground))" }} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 16, color: "hsl(var(--foreground))" }} />
                   <Area type="monotone" dataKey="messages" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#adminMessages)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="rounded-3xl border bg-background/60 p-4">
-            <div className="mb-3">
-              <p className="text-sm font-semibold">Journal recent</p>
-              <p className="mt-1 text-xs text-muted-foreground">Vue courte pour valider le systeme sans ouvrir une page plus lourde.</p>
+        <Card className="rounded-[28px] bg-card shadow-none">
+          <CardContent className="space-y-4 p-5 sm:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Controle rapide</p>
+                <p className="mt-1 text-xs text-muted-foreground">Synthese compacte des signaux a surveiller maintenant.</p>
+              </div>
+              <Badge className="w-fit bg-primary/10 text-primary hover:bg-primary/10">
+                {paymentsToReview > 0 || adminSignals.unreadSupport > 0 ? "Sous vigilance" : "Stable"}
+              </Badge>
             </div>
-            <ActivityTable recentActivities={recentActivities.slice(0, 3)} emptyText={t("admin_no_activity")} />
+
+            <div className="space-y-3">
+              <AdminStatusRow label="Support" value={`${adminSignals.openSupport} ouvert(s)`} status={adminSignals.unreadSupport > 0 ? "Reponse attendue" : "Stable"} alert={adminSignals.unreadSupport > 0} />
+              <AdminStatusRow label="Paiements" value={`${paymentsToReview} a verifier`} status={`${adminSignals.completedPayments} complete(s)`} alert={paymentsToReview > 0} />
+              <AdminStatusRow label="Comptes" value={`${activeUsers} actif(s)`} status={`${totalUsers} au total`} alert={false} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="rounded-[28px] bg-card shadow-none">
+        <CardContent className="p-5 sm:p-6">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold">Journal recent</p>
+              <p className="mt-1 text-xs text-muted-foreground">Validation rapide du systeme avant d'ouvrir une page plus lourde.</p>
+            </div>
+            <Button asChild variant="outline" className="h-10 rounded-xl">
+              <Link href="/dashboard/activities">Ouvrir toute l'activite</Link>
+            </Button>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+          <ActivityTable recentActivities={recentActivities.slice(0, 5)} emptyText={t("admin_no_activity")} />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function AdminHeadlineStat({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string
+  value: string | number
+  note: string
+  tone: "neutral" | "warning"
+}) {
+  return (
+    <div className={cn(
+      "rounded-3xl border p-4",
+      tone === "warning" ? "border-state-warning/30 bg-state-warning-light/30" : "bg-background/60"
+    )}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
+    </div>
+  )
+}
+
+function AdminStatusRow({
+  label,
+  value,
+  status,
+  alert,
+}: {
+  label: string
+  value: string
+  status: string
+  alert: boolean
+}) {
+  return (
+    <div className="rounded-2xl border bg-background/60 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold">{label}</p>
+        <Badge className={cn("border-none", alert ? "bg-state-warning/10 text-state-warning" : "bg-primary/10 text-primary")}>
+          {status}
+        </Badge>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">{value}</p>
+    </div>
   )
 }
 
