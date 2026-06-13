@@ -506,13 +506,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
           {/* Wappy mascot */}
-          <WappyMascotWrapper />
+          <WappyMascotWrapper isAdmin={isAdmin} />
         </WappyProvider>
     </WebSocketProvider>
   )
 }
 
-function WappyMascotWrapper() {
+function WappyMascotWrapper({ isAdmin }: { isAdmin: boolean }) {
   const { state, setState } = useWappy()
   const [mounted, setMounted] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
@@ -555,7 +555,7 @@ function WappyMascotWrapper() {
     lastClick.current = now
   }, [setState])
 
-  if (!mounted) return null
+  if (!mounted || isAdmin) return null
 
   // Taille responsive optimisée SaaS (recherche web juin 2026)
   const baseSize = isMobile ? 56 : 150
