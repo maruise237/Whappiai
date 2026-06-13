@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { api } from "@/lib/api"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
@@ -47,35 +48,30 @@ export default function AIModelsPage() {
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress === "maruise237@gmail.com" || user?.publicMetadata?.role === "admin"
 
-  const apiFetch = async (path: string, opts: RequestInit = {}) => {
-    const token = await getToken()
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}${path}`, {
-      ...opts,
-      headers: {
-        ...opts.headers,
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    })
-    if (!res.ok) {
-      const txt = await res.text()
-      throw new Error(txt || res.statusText)
+  const getFriendlyError = React.useCallback((value: unknown) => {
+    const raw = value instanceof Error ? value.message : String(value || "")
+    const normalized = raw.trim()
+
+    if (normalized.includes("Too many authentication attempts") || normalized.includes("Admin rate limit exceeded")) {
+      return "Trop de requetes ont ete envoyees en peu de temps. Reessayez dans quelques secondes."
     }
-    return res.json()
-  }
+
+    return normalized || "Erreur de chargement des modeles IA."
+  }, [])
 
   const load = React.useCallback(async () => {
     setLoading(true)
     setError("")
     try {
-      const data = await apiFetch("/api/v1/admin/ai-models")
-      setModels(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [])
+      const token = await getToken()
+      const data = await api.ai.admin.list(token || undefined)
+      setModels(Array.isArray(data) ? data : [])
     } catch (e: any) {
-      setError(e.message)
+      setError(getFriendlyError(e))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [getFriendlyError, getToken])
 
   React.useEffect(() => {
     if (!isAdmin) {
@@ -92,16 +88,17 @@ export default function AIModelsPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const token = await getToken()
       if (dialog?.mode === "create") {
-        await apiFetch("/api/v1/admin/ai-models", { method: "POST", body: JSON.stringify(form) })
+        await api.ai.admin.create(form, token || undefined)
       } else if (dialog?.mode === "edit" && dialog.model?.id) {
-        await apiFetch(`/api/v1/admin/ai-models/${dialog.model.id}`, { method: "PUT", body: JSON.stringify(form) })
+        await api.ai.admin.update(String(dialog.model.id), form, token || undefined)
       }
       setDialog(null)
       load()
       toast.success(dialog?.mode === "create" ? "Modele ajoute" : "Modele mis a jour")
     } catch (e: any) {
-      toast.error(e.message || "Erreur lors de l'enregistrement")
+      toast.error(getFriendlyError(e) || "Erreur lors de l'enregistrement")
     } finally {
       setSaving(false)
     }
@@ -111,12 +108,13 @@ export default function AIModelsPage() {
     if (!dialog?.model?.id) return
     setSaving(true)
     try {
-      await apiFetch(`/api/v1/admin/ai-models/${dialog.model.id}`, { method: "DELETE" })
+      const token = await getToken()
+      await api.ai.admin.delete(String(dialog.model.id), token || undefined)
       setDialog(null)
       load()
       toast.success("Modele supprime")
     } catch (e: any) {
-      toast.error(e.message || "Erreur lors de la suppression")
+      toast.error(getFriendlyError(e) || "Erreur lors de la suppression")
     } finally {
       setSaving(false)
     }

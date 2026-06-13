@@ -264,6 +264,7 @@ const RateLimitStore = require('./src/services/rateLimitStore');
 let rlStoresInitialized = false;
 let generalStore = null;
 let authStore = null;
+let adminStore = null;
 let webhookStore = null;
 let apiStore = null;
 
@@ -273,12 +274,14 @@ async function initRateLimitStores() {
 
   generalStore = new RateLimitStore({ prefix: 'rl:general:', windowMs: 60000 });
   authStore = new RateLimitStore({ prefix: 'rl:auth:', windowMs: 900000 });
+  adminStore = new RateLimitStore({ prefix: 'rl:admin:', windowMs: 60000 });
   webhookStore = new RateLimitStore({ prefix: 'rl:webhook:', windowMs: 1000 });  // 1s window
   apiStore = new RateLimitStore({ prefix: 'rl:api:', windowMs: 60000 });
 
   await Promise.all([
     generalStore.init(),
     authStore.init(),
+    adminStore.init(),
     webhookStore.init(),
     apiStore.init(),
   ]);
@@ -304,6 +307,18 @@ const authLimiter = rateLimit({
     legacyHeaders: false,
     validate: { trustProxy: false },
     store: authStore
+});
+
+// Admin limiter â€” high enough for dashboard fetch bursts, still separated from auth abuse control
+const adminLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 600,
+    message: { status: 'error', message: 'Admin rate limit exceeded' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { trustProxy: false },
+    store: adminStore,
+    keyGenerator: (req) => req.headers.authorization || req.ip
 });
 
 // Evolution webhook limiter — 30 req/s per session
@@ -687,15 +702,15 @@ const apiRouter = initializeApi(
 );
 
 // Mount routes with specific rate limiters
-app.use('/webhooks', authLimiter, webhookRoutes);
-app.use('/admin/users', authLimiter, userRoutes);
-app.use('/api/v1/admin', authLimiter, adminRoutes);
-app.use('/api/v1/payments', authLimiter, paymentRoutes);
+app.use('/webhooks', generalLimiter, webhookRoutes);
+app.use('/admin/users', adminLimiter, userRoutes);
+app.use('/api/v1/admin', adminLimiter, adminRoutes);
+app.use('/api/v1/payments', apiLimiter, paymentRoutes);
 app.use('/api/v1/support', apiLimiter, supportRoutes);
-app.use('/api/v1/subscriptions', authLimiter, subscriptionRoutes);
-app.use('/api/v1/credits', authLimiter, creditRoutes);
-app.use('/api/v1/notifications', authLimiter, notificationRoutes);
-app.use('/api/v1/cal', authLimiter, calRoutes);
+app.use('/api/v1/subscriptions', apiLimiter, subscriptionRoutes);
+app.use('/api/v1/credits', apiLimiter, creditRoutes);
+app.use('/api/v1/notifications', apiLimiter, notificationRoutes);
+app.use('/api/v1/cal', apiLimiter, calRoutes);
 app.use('/api/v1/webhooks', evolutionWebhookLimiter, evolutionWebhookRouter);
 app.use('/api/v1', publicRoutes);  // public, no auth
 app.use('/api/v1', apiLimiter, apiRouter);
