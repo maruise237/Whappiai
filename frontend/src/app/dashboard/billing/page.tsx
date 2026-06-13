@@ -230,17 +230,17 @@ export default function BillingPage() {
               <div>
                 <p className="font-semibold text-foreground">
                   {paymentState.status === "completed"
-                    ? "Paiement confirme"
+                    ? "Forfait active"
                     : paymentState.status === "failed" || paymentState.status === "cancelled"
-                      ? "Paiement non confirme"
-                      : "Paiement recu, activation en attente"}
+                      ? "Confirmation interrompue"
+                      : "Confirmation en cours"}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {paymentState.status === "completed"
-                    ? "Votre abonnement est active. Whappi a bien recu la confirmation de GeniusPay."
+                    ? "Votre abonnement est bien actif. Vous pouvez continuer normalement."
                     : paymentState.status === "failed" || paymentState.status === "cancelled"
-                      ? "Le paiement n'a pas encore pu etre confirme. Vous pouvez relancer un test si besoin."
-                      : "Le paiement a reussi chez GeniusPay. Si le webhook met quelques secondes a arriver, Whappi activera automatiquement votre forfait des reception."}
+                      ? "Nous n'avons pas encore pu finaliser l'activation. Si cela persiste, contactez le support avec votre reference de paiement."
+                      : "Nous finalisons l'activation de votre forfait. Cela prend generalement quelques secondes et la page se met a jour automatiquement."}
                 </p>
               </div>
             </div>
