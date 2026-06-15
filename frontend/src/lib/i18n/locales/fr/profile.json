@@ -3,6 +3,7 @@
   "default_display_name": "Compte Whappi",
   "plan_label": "Forfait",
   "expiry_label": "Expiration",
+  "scheduled_messages_label": "Messages programmes",
   "expiry_trial": "Essai",
   "actions_label": "Actions",
   "actions_unlimited": "Illimité",

@@ -115,7 +115,7 @@ export default function ProfilePage() {
   const expiry = subscription?.current_period_end || subscription?.subscription_expiry || dbUser?.subscription_expiry || null
   const hasOrganisationChanges = organisation !== ensureString(dbUser?.organization_name)
   const expiryValue = getProfileExpiryValue(planCode, expiry, t)
-  const scheduledMessageValue = getScheduledMessageValue(planCode)
+  const scheduledMessageValue = getScheduledMessageValue(planCode, t)
 
   async function handleSaveProfile() {
     try {
@@ -223,7 +223,7 @@ export default function ProfilePage() {
           <div className="mt-5 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
             <ProfilePill icon={<CreditCard className="h-4 w-4" />} label={t('plan_label')} value={getPlanLabel(planCode)} />
             <ProfilePill icon={<CalendarClock className="h-4 w-4" />} label={t('expiry_label')} value={expiryValue} />
-            <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label="Messages programmes" value={scheduledMessageValue} />
+            <ProfilePill icon={<ShieldCheck className="h-4 w-4" />} label={t('scheduled_messages_label')} value={scheduledMessageValue} />
           </div>
 
           <div className="mt-4 w-full max-w-2xl rounded-2xl border border-primary/15 bg-background/80 px-4 py-4 text-left shadow-sm backdrop-blur">
@@ -450,6 +450,6 @@ function getProfileExpiryValue(planCode: string, expiry: string | null, t: (key:
   return t('status_active')
 }
 
-function getScheduledMessageValue(planCode: string) {
-  return getPlanScheduledMessageLabel(planCode)
+function getScheduledMessageValue(planCode: string, t: (key: string) => string) {
+  return getPlanScheduledMessageLabel(planCode, t)
 }

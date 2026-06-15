@@ -3,6 +3,7 @@
   "default_display_name": "Whappi Account",
   "plan_label": "Plan",
   "expiry_label": "Expiry",
+  "scheduled_messages_label": "Scheduled messages",
   "expiry_trial": "Trial",
   "actions_label": "Actions",
   "actions_unlimited": "Unlimited",

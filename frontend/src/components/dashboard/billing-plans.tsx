@@ -12,7 +12,7 @@ import { useAuth } from "@clerk/clerk-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { getPlanCode, PlanBadge } from "@/components/dashboard/plan-badge"
-import { PLAN_CARDS, PLAN_COMPARISON_ROWS } from "@/lib/plan-features"
+import { getPlanCards, getPlanComparisonRows } from "@/lib/plan-features"
 
 export function BillingPlans({
   activePlan = "trial",
@@ -28,9 +28,9 @@ export function BillingPlans({
   const normalizedActivePlan = getPlanCode(activePlan)
   const normalizedRecommendedPlan = recommendedPlan ? getPlanCode(recommendedPlan) : null
 
-  const plans = PLAN_CARDS.map(plan => ({
+  const plans = getPlanCards(t).map(plan => ({
     ...plan,
-    cta: plan.id === "trial" ? "Essai en cours" : plan.cta,
+    cta: plan.id === "trial" ? t("plan_trial_current_cta") : plan.cta,
     highlighted: normalizedRecommendedPlan === plan.id,
     disabled: plan.id === "trial",
   }))
@@ -89,7 +89,7 @@ export function BillingPlans({
             <div className="mt-4 flex flex-wrap items-baseline gap-1">
               <span className="text-3xl font-semibold tracking-tight">{plan.price}</span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                {plan.id === "trial" ? "sans engagement" : t("per_month")}
+                {plan.cadence}
               </span>
             </div>
           </CardHeader>
@@ -146,7 +146,7 @@ export function BillingPlans({
                   </tr>
                 </thead>
                 <tbody>
-                  {PLAN_COMPARISON_ROWS.map(row => (
+                  {getPlanComparisonRows(t).map(row => (
                     <tr key={row.feature} className="border-b last:border-b-0">
                       <td className="px-4 py-3 text-xs font-medium">{row.feature}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{row.starter}</td>

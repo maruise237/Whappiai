@@ -5,9 +5,13 @@ import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { PLAN_CARDS } from "@/lib/plan-features"
+import { getPlanCards } from "@/lib/plan-features"
+import { useTranslation } from "react-i18next"
 
 export function Pricing() {
+  const { t } = useTranslation("billing")
+  const plans = getPlanCards(t)
+
   return (
     <section id="pricing" className="relative overflow-hidden bg-background px-4 py-24">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -24,16 +28,16 @@ export function Pricing() {
           className="mb-16 text-center"
         >
           <h2 className="mb-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl xl:text-5xl">
-            Des forfaits simples pour proteger vos groupes WhatsApp
+            {t("landing_pricing_title")}
           </h2>
           <p className="mx-auto mb-8 max-w-2xl text-base text-muted-foreground sm:mb-10 sm:text-lg">
-            Commencez avec un essai concret, passez a une moderation simple, puis ajoutez l&apos;IA et la puissance quand vos groupes grossissent.
+            {t("landing_pricing_subtitle")}
           </p>
-          <p className="text-sm font-medium text-primary">7 jours d&apos;essai gratuit avec 1 groupe pour voir Whappi moderer avant de payer.</p>
+          <p className="text-sm font-medium text-primary">{t("landing_pricing_trial_note")}</p>
         </motion.div>
 
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {PLAN_CARDS.map((plan, index) => (
+          {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 20 }}
@@ -50,7 +54,7 @@ export function Pricing() {
             >
               {plan.highlighted && (
                 <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-lg sm:px-4 sm:text-sm">
-                  <span>*</span> Le plus rentable
+                  <span>*</span> {t("landing_pricing_recommended_badge")}
                 </div>
               )}
 
@@ -64,7 +68,7 @@ export function Pricing() {
                   <span className="text-sm text-muted-foreground">{plan.cadence}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {plan.id === "trial" ? "Testez avant de vous abonner" : "Facture mensuellement"}
+                  {plan.id === "trial" ? t("landing_pricing_trial_footer") : t("landing_pricing_monthly_invoice")}
                 </p>
               </div>
 

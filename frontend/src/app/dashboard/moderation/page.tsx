@@ -363,7 +363,7 @@ export default function ModerationPage() {
 
   const applyPreset = (groupId: string, preset: { name: string; patch: Partial<GroupSettings> }) => {
     if (!canUsePresets) {
-      toast.error(`Les presets de moderation sont disponibles a partir du plan Pro IA. Votre plan actuel: ${planLabel(activePlan)}.`)
+      toast.error(t("toast_presets_pro_required", { plan: planLabel(activePlan) }))
       return
     }
     updateLocalGroup(groupId, preset.patch)
@@ -378,7 +378,7 @@ export default function ModerationPage() {
     try {
       const token = await getToken()
       const response = await api.sessions.updateGroupSettings(selectedSessionId, groupId, toModerationPayload(group.settings, t), token || undefined)
-      const quotaLabel = moderationQuotaLabel(response?.meta?.groups_used, response?.meta?.group_limit)
+      const quotaLabel = moderationQuotaLabel(response?.meta?.groups_used, response?.meta?.group_limit, t)
       toast.success(`${ensureString(group.subject || group.name, "Groupe")} mis a jour${quotaLabel ? ` - ${quotaLabel}` : ""}`)
       emitWappyEvent({
         type: "moderation",
@@ -407,13 +407,13 @@ export default function ModerationPage() {
     if (!selectedSessionId || !groupId) return
 
     if (!canUseScheduledMessages) {
-      toast.error(`Les messages programmes sont disponibles a partir du plan Pro IA. Votre plan actuel: ${planLabel(activePlan)}.`)
+      toast.error(t("toast_scheduled_pro_required", { plan: planLabel(activePlan) }))
       return
     }
 
     const settings = normalizeSettings(group.settings, t)
     if (!isManagedGroupSettings(settings, t) && isManagedGroupLimitReached) {
-      toast.error(`Limite atteinte: votre plan ${planLabel(activePlan)} couvre ${managedGroupLimit} groupe(s) modere(s).`)
+      toast.error(t("toast_group_limit_reached", { plan: planLabel(activePlan), limit: managedGroupLimit }))
       emitWappyEvent({
         type: "moderation",
         action: "limit-reached",
@@ -437,8 +437,8 @@ export default function ModerationPage() {
       }, token || undefined)
       await refreshGroupOperations(groupId, token || undefined)
       updateLocalGroup(groupId, { welcomeEnabled: true })
-      const quotaLabel = moderationQuotaLabel(response?.meta?.groups_used, response?.meta?.group_limit)
-      toast.success(`Bienvenue quotidienne programmee${quotaLabel ? ` - ${quotaLabel}` : ""}`)
+      const quotaLabel = moderationQuotaLabel(response?.meta?.groups_used, response?.meta?.group_limit, t)
+      toast.success(`${t("toast_daily_welcome_scheduled")}${quotaLabel ? ` - ${quotaLabel}` : ""}`)
       emitWappyEvent({
         type: "engagement",
         action: "welcome-scheduled",
@@ -447,7 +447,7 @@ export default function ModerationPage() {
       })
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de programmer le message quotidien")
+      toast.error(t("toast_daily_welcome_error"))
       emitWappyEvent({
         type: "system",
         action: "error",
@@ -477,12 +477,12 @@ export default function ModerationPage() {
     const groupId = ensureString(group.id || group.jid)
     if (!selectedSessionId || !groupId) return
     if (!canUseScheduledMessages) {
-      toast.error(`Les messages programmes sont disponibles a partir du plan Pro IA. Votre plan actuel: ${planLabel(activePlan)}.`)
+      toast.error(t("toast_scheduled_pro_required", { plan: planLabel(activePlan) }))
       return
     }
     const draft = scheduledDrafts[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
-    if (!draft.message.trim()) return toast.error("Ecrivez le message a programmer")
-    if (!draft.scheduledAt) return toast.error("Choisissez une date et une heure")
+    if (!draft.message.trim()) return toast.error(t("toast_schedule_message_required"))
+    if (!draft.scheduledAt) return toast.error(t("toast_schedule_date_required"))
 
     setSchedulingGroupId(groupId)
     try {
@@ -498,7 +498,7 @@ export default function ModerationPage() {
         ...prev,
         [groupId]: { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: draft.recurrence },
       }))
-      toast.success("Message programme")
+      toast.success(t("toast_message_scheduled"))
       emitWappyEvent({
         type: "engagement",
         action: "task-created",
@@ -507,7 +507,7 @@ export default function ModerationPage() {
       })
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de programmer ce message")
+      toast.error(t("toast_message_schedule_error"))
       emitWappyEvent({
         type: "system",
         action: "error",
@@ -544,7 +544,7 @@ export default function ModerationPage() {
         ...prev,
         [groupId]: (prev[groupId] || []).filter(task => task.id !== taskId),
       }))
-      toast.success("Message programme supprime")
+      toast.success(t("toast_message_deleted"))
       emitWappyEvent({
         type: "engagement",
         action: "task-deleted",
@@ -553,7 +553,7 @@ export default function ModerationPage() {
       })
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de supprimer ce message programme")
+      toast.error(t("toast_message_delete_error"))
       emitWappyEvent({
         type: "system",
         action: "error",
@@ -659,24 +659,24 @@ export default function ModerationPage() {
             <div className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">
-                  Plan {planLabel(activePlan)}
+                  {t("plan_badge", { plan: planLabel(activePlan) })}
                 </Badge>
                 <Badge variant="outline">
-                  {managedGroupCount}/{managedGroupLimit} groupe(s) proteges
+                  {t("quota_badge", { used: managedGroupCount, limit: managedGroupLimit })}
                 </Badge>
               </div>
               <div>
                 <p className="text-lg font-semibold tracking-tight sm:text-xl">
-                  Activez une vraie moderation, groupe par groupe.
+                  {t("hero_title")}
                 </p>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Choisissez un groupe, activez anti-liens, mots interdits, auto-exclusion et message de bienvenue. Les options Pro restent separees pour eviter la confusion.
+                  {t("hero_text")}
                 </p>
               </div>
             </div>
             <Link href="/dashboard/billing">
               <Button className="w-full whitespace-nowrap lg:w-auto">
-                {isManagedGroupLimitReached ? "Augmenter mon quota" : "Voir mon forfait"}
+                {isManagedGroupLimitReached ? t("hero_cta_quota") : t("hero_cta_plan")}
               </Button>
             </Link>
           </CardContent>
@@ -685,23 +685,23 @@ export default function ModerationPage() {
         <Card className="shadow-none">
           <CardContent className="space-y-3 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold">Prochaine action</p>
+              <p className="text-sm font-semibold">{t("next_action_title")}</p>
               <Badge variant="outline" className="text-[10px]">
-                {connectedSessions.length > 0 ? "Session OK" : "Session requise"}
+                {connectedSessions.length > 0 ? t("session_ok_badge") : t("session_required_badge")}
               </Badge>
             </div>
             <div className="space-y-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className={cn("h-4 w-4", connectedSessions.length > 0 ? "text-primary" : "text-muted-foreground")} />
-                <span>Session connectee</span>
+                <span>{t("check_session_connected")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className={cn("h-4 w-4", groups.length > 0 ? "text-primary" : "text-muted-foreground")} />
-                <span>Groupes detectes</span>
+                <span>{t("check_groups_detected")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className={cn("h-4 w-4", managedGroupCount > 0 ? "text-primary" : "text-muted-foreground")} />
-                <span>Au moins une regle activee</span>
+                <span>{t("check_rule_active")}</span>
               </div>
             </div>
           </CardContent>
@@ -738,11 +738,13 @@ export default function ModerationPage() {
           <div className="flex flex-col gap-2 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
             <span className="flex items-center gap-2 text-primary">
               <Shield className="h-4 w-4 shrink-0" />
-              {managedGroupCount}/{managedGroupLimit} groupe(s) moderes actifs sur votre plan {planLabel(activePlan)}.
-              {isManagedGroupLimitReached ? " Passez au niveau superieur pour proteger un nouveau groupe." : ` Il vous reste ${remainingManagedGroups} groupe(s) a activer.`}
+              {t("quota_line", { used: managedGroupCount, limit: managedGroupLimit, plan: planLabel(activePlan) })}
+              {isManagedGroupLimitReached
+                ? t("quota_line_full")
+                : t("quota_line_remaining", { remaining: remainingManagedGroups })}
             </span>
             <Link href="/dashboard/billing" className="font-medium text-primary underline underline-offset-2 hover:text-primary/80">
-              {isManagedGroupLimitReached ? "Voir les upgrades" : "Voir mon plan"}
+              {isManagedGroupLimitReached ? t("quota_cta_upgrade") : t("quota_cta_plan")}
             </Link>
           </div>
 
@@ -820,7 +822,7 @@ export default function ModerationPage() {
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       {groupIsLocked && (
                         <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
-                          Plan plein
+                          {t("plan_full_badge")}
                         </Badge>
                       )}
                       <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -830,19 +832,19 @@ export default function ModerationPage() {
                   <div className="space-y-4 p-4 sm:p-5">
                   {groupIsLocked && (
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
-                      Ce groupe n'est pas encore protege. Votre plan {planLabel(activePlan)} a deja atteint sa limite de {managedGroupLimit} groupe(s) moderes.
+                      {t("group_locked_message", { plan: planLabel(activePlan), limit: managedGroupLimit })}
                     </div>
                   )}
                   <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
                     <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <p className="text-sm font-semibold">Regles essentielles</p>
+                        <p className="text-sm font-semibold">{t("essential_rules_title")}</p>
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                          Le minimum utile pour que Whappi modere vraiment ce groupe.
+                          {t("essential_rules_desc")}
                         </p>
                       </div>
                       <Badge variant="outline" className="w-fit bg-background text-[10px]">
-                        Inclus dans {planLabel(activePlan)}
+                        {t("included_in_plan", { plan: planLabel(activePlan) })}
                       </Badge>
                     </div>
                     <div className="space-y-3">
@@ -928,7 +930,7 @@ export default function ModerationPage() {
                             placeholder={t("rule_welcome_placeholder")}
                           />
                           <p className="text-[10px] leading-4 text-muted-foreground">
-                            Vous ecrivez ce message manuellement. Whappi l'utilise comme message d'accueil du groupe.
+                            {t("manual_welcome_hint")}
                           </p>
                           {canUseScheduledMessages && (
                             <div className="grid gap-3 rounded-xl border bg-background/60 p-3 lg:grid-cols-[140px_1fr] lg:items-center">
@@ -969,7 +971,7 @@ export default function ModerationPage() {
                       </div>
                       {!canUsePresets && (
                         <Badge variant="outline" className="border-state-warning/30 bg-state-warning-light text-state-warning">
-                          Pro IA requis
+                          {t("pro_required_badge")}
                         </Badge>
                       )}
                     </div>
@@ -995,7 +997,7 @@ export default function ModerationPage() {
                     </div>
                     {!canUsePresets && (
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Les presets rapides sont inclus a partir du plan Pro IA pour accelerer la mise en route de vos groupes.
+                        {t("presets_locked_text")}
                       </p>
                     )}
                     <p className="mt-2 text-xs text-muted-foreground">{t("preset_active")} : {activePreset || t("preset_none")}</p>
@@ -1010,15 +1012,15 @@ export default function ModerationPage() {
                               <Clock3 className="h-4 w-4" />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold">Automatisations Pro</p>
+                              <p className="text-sm font-semibold">{t("pro_automation_title")}</p>
                               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                Messages programmes disponibles avec Pro IA. Votre plan actuel reste centre sur la moderation simple.
+                                {t("pro_automation_desc")}
                               </p>
                             </div>
                           </div>
                           <Link href="/dashboard/billing" className="w-full sm:w-auto">
                             <Button variant="outline" size="sm" className="w-full text-xs sm:w-auto">
-                              Voir Pro IA
+                              {t("pro_automation_cta")}
                             </Button>
                           </Link>
                         </div>
@@ -1075,7 +1077,7 @@ export default function ModerationPage() {
                           </div>
                         ) : (
                           <div className="rounded-2xl border border-dashed bg-background/60 p-4 text-xs leading-5 text-muted-foreground">
-                            Ces anciens messages restent visibles, mais la creation de nouveaux messages programmes demande le plan Pro IA.
+                            {t("scheduled_legacy_locked")}
                           </div>
                         )}
                       </div>
@@ -1375,11 +1377,11 @@ function isManagedGroupSettings(settings?: GroupSettings | null, t?: (key: strin
   )
 }
 
-function moderationQuotaLabel(groupsUsed?: unknown, groupLimit?: unknown) {
+function moderationQuotaLabel(groupsUsed?: unknown, groupLimit?: unknown, t?: (key: string, options?: Record<string, unknown>) => string) {
   const used = Number(groupsUsed)
   const limit = Number(groupLimit)
   if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) return ""
-  return `${used}/${limit} groupes proteges`
+  return t ? t("quota_badge", { used, limit }) : `${used}/${limit} groupes proteges`
 }
 
 function detectPresetName(settings: ReturnType<typeof normalizeSettings>, t: (key: string) => string) {

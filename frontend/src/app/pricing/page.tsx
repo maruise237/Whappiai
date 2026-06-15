@@ -6,21 +6,25 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { PLAN_CARDS } from "@/lib/plan-features"
+import { getPlanCards } from "@/lib/plan-features"
+import { useTranslation } from "react-i18next"
 
 export default function PricingPage() {
+  const { t } = useTranslation("billing")
+  const plans = getPlanCards(t)
+
   return (
     <div className="min-h-screen bg-background px-4 py-12 text-foreground sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl text-center">
-        <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/10">Tarifs Whappi</Badge>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Forfaits co-admin WhatsApp</h1>
+        <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/10">{t("pricing_page_badge")}</Badge>
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("pricing_page_title")}</h1>
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
-          7 jours d&apos;essai gratuit avec 1 groupe, puis trois offres simples pour proteger, automatiser et monter en puissance.
+          {t("pricing_page_subtitle")}
         </p>
       </div>
 
       <div className="mx-auto mt-14 grid max-w-7xl gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {PLAN_CARDS.map(plan => (
+        {plans.map(plan => (
           <Card
             key={plan.id}
             className={cn(
@@ -31,7 +35,7 @@ export default function PricingPage() {
           >
             {plan.highlighted && (
               <div className="absolute -top-3 left-4 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground sm:left-6">
-                Recommande
+                {t("plan_badge_recommended")}
               </div>
             )}
             <CardContent className="flex h-full flex-col p-5 sm:p-6">
@@ -52,7 +56,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <Button asChild className="mt-8" variant={plan.highlighted ? "default" : "outline"}>
-                <Link href={`/register?plan=${plan.id}`}>{plan.id === "trial" ? "Commencer l'essai" : `Commencer avec ${plan.name}`}</Link>
+                <Link href={`/register?plan=${plan.id}`}>{plan.cta}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -61,7 +65,7 @@ export default function PricingPage() {
 
       <div className="mt-12 text-center">
         <Link href="/dashboard/billing" className="text-sm font-medium text-primary hover:underline">
-          Gerer mon abonnement
+          {t("pricing_page_manage_link")}
         </Link>
       </div>
     </div>

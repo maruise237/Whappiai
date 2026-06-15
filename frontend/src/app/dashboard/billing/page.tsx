@@ -230,22 +230,22 @@ export default function BillingPage() {
               <div>
                 <p className="font-semibold text-foreground">
                   {paymentState.status === "completed"
-                    ? "Forfait active"
+                    ? t("payment_completed_title")
                     : paymentState.status === "failed" || paymentState.status === "cancelled"
-                      ? "Confirmation interrompue"
-                      : "Confirmation en cours"}
+                      ? t("payment_failed_title")
+                      : t("payment_pending_title")}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {paymentState.status === "completed"
-                    ? "Votre abonnement est bien actif. Vous pouvez continuer normalement."
+                    ? t("payment_completed_text")
                     : paymentState.status === "failed" || paymentState.status === "cancelled"
-                      ? "Nous n'avons pas encore pu finaliser l'activation. Si cela persiste, contactez le support avec votre reference de paiement."
-                      : "Nous finalisons l'activation de votre forfait. Cela prend generalement quelques secondes et la page se met a jour automatiquement."}
+                      ? t("payment_failed_text")
+                      : t("payment_pending_text")}
                 </p>
               </div>
             </div>
             <div className="rounded-2xl border bg-card px-4 py-3 text-left sm:text-right">
-              <p className="text-xs text-muted-foreground">Suivi paiement</p>
+              <p className="text-xs text-muted-foreground">{t("payment_tracking_label")}</p>
               <p className="text-sm font-bold text-foreground">{paymentState.orderId.slice(0, 8)}...</p>
               <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 {paymentState.reference || paymentState.status}
@@ -259,18 +259,18 @@ export default function BillingPage() {
         <Card className="border-primary/15 bg-card shadow-none">
           <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div>
-              <p className="text-sm font-semibold text-foreground">Usage des groupes proteges</p>
+              <p className="text-sm font-semibold text-foreground">{t("group_usage_title")}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {getPlanUsageMessage(activePlan, managedGroupsUsed)}
               </p>
             </div>
             <div className="rounded-2xl border bg-background px-4 py-3 text-left sm:text-right">
-              <p className="text-xs text-muted-foreground">Consommation actuelle</p>
+              <p className="text-xs text-muted-foreground">{t("group_usage_current")}</p>
               <p className="text-lg font-bold text-primary">
                 {managedGroupsUsed}/{getPlanGroupLimit(activePlan)}
               </p>
               <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                groupes proteges
+                {t("group_usage_unit")}
               </p>
             </div>
           </CardContent>
@@ -280,18 +280,18 @@ export default function BillingPage() {
       <div className="grid gap-3 md:grid-cols-3">
         <SalesProofCard
           icon={<CheckCircle2 className="h-4 w-4" />}
-          title="Activation automatique"
-          text="Apres paiement, Whappi suit la transaction et active le forfait des que GeniusPay confirme."
+          title={t("sales_proof_activation_title")}
+          text={t("sales_proof_activation_text")}
         />
         <SalesProofCard
           icon={<ShieldCheck className="h-4 w-4" />}
-          title="Forfaits verifiables"
-          text="Chaque plan affiche seulement les fonctions livrables: groupes, moderation, IA et messages programmes."
+          title={t("sales_proof_plans_title")}
+          text={t("sales_proof_plans_text")}
         />
         <SalesProofCard
           icon={<Info className="h-4 w-4" />}
-          title="Support avec reference"
-          text="En cas de retard, gardez la reference de paiement: l'admin peut verifier la transaction."
+          title={t("sales_proof_support_title")}
+          text={t("sales_proof_support_text")}
         />
       </div>
 
@@ -348,10 +348,10 @@ function billingBannerTitle(plan: string, accessState: { allowed: boolean }, t: 
 
 function billingBannerText(plan: string, accessState: { allowed: boolean; message: string }, t: (key: string, opts?: Record<string, unknown>) => string) {
   if (!accessState.allowed) return accessState.message || t("banner_text_renew")
-  if (plan === "starter") return "Inclus : jusqu'a 3 groupes, anti-liens, mots interdits, auto-exclusion et message de bienvenue manuel."
-  if (plan === "pro") return "Inclus : jusqu'a 6 groupes, toute la moderation Starter et un vrai plus IA pour aider l'admin."
-  if (plan === "business") return "Inclus : jusqu'a 16 groupes, tout le plan Pro IA et des fonctions plus avancees."
-  return "Essai gratuit : 7 jours avec 1 groupe pour verifier la moderation et votre premiere regle activee."
+  if (plan === "starter") return t("banner_text_starter")
+  if (plan === "pro") return t("banner_text_pro")
+  if (plan === "business") return t("banner_text_business")
+  return t("banner_text_trial")
 }
 
 type PlanSource = {
