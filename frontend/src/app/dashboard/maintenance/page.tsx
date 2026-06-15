@@ -165,7 +165,7 @@ export default function MaintenancePage() {
             Activez une page de maintenance pour les utilisateurs du dashboard.
           </p>
         </div>
-        <Badge variant={isActive ? "destructive" : "secondary"} className="gap-2">
+        <Badge variant={isActive ? "destructive" : "secondary"} className="w-fit gap-2">
           <span className={`h-2 w-2 rounded-full ${isActive ? "bg-red-500 animate-pulse" : "bg-green-500"}`} />
           {isActive ? "Actif" : "Inactif"}
         </Badge>
@@ -312,10 +312,10 @@ export default function MaintenancePage() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
               <Wrench className="h-7 w-7 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold">{settings.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{settings.message}</p>
+            <h2 className="break-words text-lg font-semibold">{settings.title}</h2>
+            <p className="mt-2 break-words text-sm text-muted-foreground">{settings.message}</p>
             {scheduleEnd && (
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-xs text-muted-foreground">
+              <div className="mt-4 inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border bg-card px-4 py-1.5 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
                 Retour prevu vers {new Date(settings.scheduled_end_at!).toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" })}
               </div>

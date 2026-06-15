@@ -149,7 +149,7 @@ export default function AIModelsPage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <AlertCircle className="h-4 w-4 shrink-0" />{error}
         </div>
       )}
@@ -208,7 +208,7 @@ export default function AIModelsPage() {
       {/* Dialog create / edit */}
       {dialog && dialog.mode !== "delete" && (
         <Dialog open onOpenChange={o => !o && setDialog(null)}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{dialog.mode === "create" ? "Nouveau modèle" : "Modifier le modèle"}</DialogTitle>
             </DialogHeader>
@@ -280,7 +280,7 @@ export default function AIModelsPage() {
       {/* Dialog delete */}
       {dialog && dialog.mode === "delete" && dialog.model && (
         <Dialog open onOpenChange={o => !o && setDialog(null)}>
-          <DialogContent>
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-lg">
             <DialogHeader>
               <DialogTitle>Supprimer {dialog.model.name} ?</DialogTitle>
             </DialogHeader>

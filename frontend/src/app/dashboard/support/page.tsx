@@ -161,16 +161,16 @@ export default function SupportPage() {
             Envoyez une demande claire, suivez les reponses et gardez une trace de vos echanges avec l&apos;equipe.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge className="border-none bg-primary/10 text-primary hover:bg-primary/10">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Badge className="w-fit border-none bg-primary/10 text-primary hover:bg-primary/10">
             {threads.length} conversation{threads.length > 1 ? "s" : ""}
           </Badge>
-          <Badge className="border-none bg-amber-500/10 text-amber-600 hover:bg-amber-500/10">
+          <Badge className="w-fit border-none bg-amber-500/10 text-amber-600 hover:bg-amber-500/10">
             {openCount} ouverte{openCount > 1 ? "s" : ""}
           </Badge>
           {isAdmin ? (
             <Link href="/dashboard/support-inbox">
-              <Button variant="outline" size="sm" className="rounded-full">
+              <Button variant="outline" size="sm" className="w-full rounded-full sm:w-auto">
                 <ShieldAlert className="mr-2 h-3.5 w-3.5" /> Ouvrir la boite admin
               </Button>
             </Link>
@@ -252,9 +252,9 @@ export default function SupportPage() {
           </Card>
 
           <Card className="bg-card shadow-none">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">Mes conversations</CardTitle>
-              <Button variant="outline" size="sm" className="rounded-full" onClick={() => fetchThreads()}>
+              <Button variant="outline" size="sm" className="w-full rounded-full sm:w-auto" onClick={() => fetchThreads()}>
                 <RefreshCw className="mr-2 h-3.5 w-3.5" /> Actualiser
               </Button>
             </CardHeader>
@@ -289,7 +289,7 @@ export default function SupportPage() {
                         </div>
                         <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{safeRender(thread.lastMessagePreview, "Aucun message.")}</p>
                         <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-                          <span>{thread.ticketCode}</span>
+                          <span className="break-all">{thread.ticketCode}</span>
                           <span>{safeDate(thread.lastMessageAt)}</span>
                           {thread.userUnreadCount ? <span>{thread.userUnreadCount} {thread.userUnreadCount > 1 ? "nouveaux" : "nouveau"} message{thread.userUnreadCount > 1 ? "s" : ""}</span> : null}
                         </div>
@@ -355,11 +355,11 @@ export default function SupportPage() {
                     <div className="mt-3 grid gap-2 text-[11px] text-muted-foreground sm:grid-cols-2">
                       <div>
                         <p className="font-semibold text-foreground">Order ID</p>
-                        <p className="font-mono">{safeRender(threadDetail.thread.paymentOrderId, "Non fourni")}</p>
+                        <p className="break-all font-mono">{safeRender(threadDetail.thread.paymentOrderId, "Non fourni")}</p>
                       </div>
                       <div>
                         <p className="font-semibold text-foreground">Reference</p>
-                        <p className="font-mono">{safeRender(threadDetail.thread.paymentReference, "Non fournie")}</p>
+                        <p className="break-all font-mono">{safeRender(threadDetail.thread.paymentReference, "Non fournie")}</p>
                       </div>
                     </div>
                   ) : null}
@@ -400,7 +400,7 @@ export default function SupportPage() {
                       <p className="text-[11px] text-muted-foreground">
                         Reponse liee a votre compte et protegee par les memes controles que le formulaire initial.
                       </p>
-                      <Button onClick={handleReply} disabled={submitting || reply.trim().length < 2}>
+                      <Button onClick={handleReply} disabled={submitting || reply.trim().length < 2} className="w-full sm:w-auto">
                         {submitting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-2 h-3.5 w-3.5" />}
                         Envoyer
                       </Button>

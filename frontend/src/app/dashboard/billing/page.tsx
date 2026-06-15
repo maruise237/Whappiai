@@ -244,10 +244,10 @@ export default function BillingPage() {
                 </p>
               </div>
             </div>
-            <div className="rounded-2xl border bg-card px-4 py-3 text-left sm:text-right">
-              <p className="text-xs text-muted-foreground">{t("payment_tracking_label")}</p>
-              <p className="text-sm font-bold text-foreground">{paymentState.orderId.slice(0, 8)}...</p>
-              <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <div className="w-full min-w-0 rounded-2xl border bg-card px-4 py-3 text-left sm:w-auto sm:text-right">
+            <p className="text-xs text-muted-foreground">{t("payment_tracking_label")}</p>
+            <p className="text-sm font-bold text-foreground">{paymentState.orderId.slice(0, 8)}...</p>
+              <p className="mt-1 break-all text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 {paymentState.reference || paymentState.status}
               </p>
             </div>
@@ -264,7 +264,7 @@ export default function BillingPage() {
                 {getPlanUsageMessage(activePlan, managedGroupsUsed)}
               </p>
             </div>
-            <div className="rounded-2xl border bg-background px-4 py-3 text-left sm:text-right">
+            <div className="w-full rounded-2xl border bg-background px-4 py-3 text-left sm:w-auto sm:text-right">
               <p className="text-xs text-muted-foreground">{t("group_usage_current")}</p>
               <p className="text-lg font-bold text-primary">
                 {managedGroupsUsed}/{getPlanGroupLimit(activePlan)}

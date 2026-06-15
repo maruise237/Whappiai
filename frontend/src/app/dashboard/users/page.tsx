@@ -336,8 +336,8 @@ export default function UsersPage() {
         </Card>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-        <div className="relative max-w-sm">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <div className="relative w-full max-w-sm">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Rechercher email, ID, organisation..."
@@ -347,9 +347,9 @@ export default function UsersPage() {
           />
         </div>
         <Tabs value={segment} onValueChange={setSegment} className="w-full md:w-auto">
-          <TabsList className="grid h-9 w-full grid-cols-3 md:flex md:w-auto">
+          <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-3 md:flex md:w-auto">
             {Object.entries(segmentLabels).map(([value, label]) => (
-              <TabsTrigger key={value} value={value} className="px-3 text-[10px] font-semibold">
+              <TabsTrigger key={value} value={value} className="min-h-9 px-3 text-[10px] font-semibold">
                 {label}
               </TabsTrigger>
             ))}
@@ -359,7 +359,7 @@ export default function UsersPage() {
 
       <Card className="overflow-hidden bg-card shadow-none">
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[760px]">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-[10px] font-semibold text-muted-foreground">Utilisateur</TableHead>
@@ -463,14 +463,14 @@ export default function UsersPage() {
       </Card>
 
       <Sheet open={!!selectedUserId} onOpenChange={open => !open && setSelectedUserId(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-[620px]">
+        <SheetContent className="w-[min(100vw,620px)] overflow-y-auto sm:max-w-[620px]">
           <SheetHeader className="pb-6">
             <SheetTitle className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 {ensureString(userDetails?.user?.email, "?").charAt(0).toUpperCase()}
               </div>
               <div className="text-left">
-                <p className="text-base font-bold">{safeRender(userDetails?.user?.email)}</p>
+                <p className="break-all text-base font-bold">{safeRender(userDetails?.user?.email)}</p>
                 <Badge variant="outline" className="text-[9px] uppercase tracking-widest">{planLabel(userDetails?.user?.plan_id)}</Badge>
               </div>
             </SheetTitle>
@@ -624,7 +624,7 @@ export default function UsersPage() {
       </Sheet>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-base">Ajouter un utilisateur</DialogTitle>
             <DialogDescription className="text-xs">Creez manuellement un acces pour un nouveau membre.</DialogDescription>

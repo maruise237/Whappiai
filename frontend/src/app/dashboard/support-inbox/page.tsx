@@ -207,11 +207,11 @@ export default function SupportInboxPage() {
             Centralisez les messages clients, repondez depuis une zone dediee et surveillez les statuts de transaction.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => fetchThreads()}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button variant="outline" size="sm" className="w-full rounded-full sm:w-auto" onClick={() => fetchThreads()}>
             <RefreshCw className="mr-2 h-3.5 w-3.5" /> Actualiser les messages
           </Button>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => fetchTransactions()}>
+          <Button variant="outline" size="sm" className="w-full rounded-full sm:w-auto" onClick={() => fetchTransactions()}>
             <Wallet className="mr-2 h-3.5 w-3.5" /> Actualiser les transactions
           </Button>
         </div>
@@ -236,8 +236,8 @@ export default function SupportInboxPage() {
               {threadsError}
             </div>
           ) : null}
-          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-            <div className="relative max-w-sm">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+            <div className="relative w-full max-w-sm">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
@@ -248,7 +248,7 @@ export default function SupportInboxPage() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 min-w-40 text-xs">
+                <SelectTrigger className="h-9 w-full min-w-40 text-xs sm:w-auto">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -259,7 +259,7 @@ export default function SupportInboxPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" className="h-9" onClick={() => fetchThreads()}>
+              <Button variant="outline" size="sm" className="h-9 w-full sm:w-auto" onClick={() => fetchThreads()}>
                 Filtrer
               </Button>
             </div>
@@ -358,7 +358,7 @@ export default function SupportInboxPage() {
                           <div className="mt-3 grid gap-2 text-[11px] text-muted-foreground sm:grid-cols-2">
                             <div>
                               <p className="font-semibold text-foreground">Client</p>
-                              <p>{safeRender(threadDetail.thread.userEmail)}</p>
+                              <p className="break-all">{safeRender(threadDetail.thread.userEmail)}</p>
                             </div>
                             <div>
                               <p className="font-semibold text-foreground">Derniere activite</p>
@@ -366,11 +366,11 @@ export default function SupportInboxPage() {
                             </div>
                             <div>
                               <p className="font-semibold text-foreground">Order ID</p>
-                              <p className="font-mono">{safeRender(threadDetail.thread.paymentOrderId, "Aucun")}</p>
+                              <p className="break-all font-mono">{safeRender(threadDetail.thread.paymentOrderId, "Aucun")}</p>
                             </div>
                             <div>
                               <p className="font-semibold text-foreground">Reference paiement</p>
-                              <p className="font-mono">{safeRender(threadDetail.thread.paymentReference, "Aucune")}</p>
+                              <p className="break-all font-mono">{safeRender(threadDetail.thread.paymentReference, "Aucune")}</p>
                             </div>
                           </div>
                         </div>
@@ -445,7 +445,7 @@ export default function SupportInboxPage() {
                         <p className="text-[11px] text-muted-foreground">
                           Cette zone est reservee aux admins. Les messages passent en texte nettoye et journalise.
                         </p>
-                        <Button onClick={handleReply} disabled={submitting || reply.trim().length < 2}>
+                        <Button onClick={handleReply} disabled={submitting || reply.trim().length < 2} className="w-full sm:w-auto">
                           {submitting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <MessageSquareReply className="mr-2 h-3.5 w-3.5" />}
                           Envoyer au client
                         </Button>
@@ -472,7 +472,7 @@ export default function SupportInboxPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[760px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="text-[10px] font-semibold text-muted-foreground">Client</TableHead>
