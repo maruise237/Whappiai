@@ -88,24 +88,6 @@ type EngagementTask = {
 const defaultWelcomeMessage = "default_welcome_message"
 const defaultWarningMessage = "default_warning_message"
 
-const ruleSummary = (t: (key: string) => string) => [
-  {
-    icon: Link2,
-    title: t("rule_antilinks_title"),
-    text: t("rule_antilinks_text"),
-  },
-  {
-    icon: MessageSquareText,
-    title: t("rule_welcome_title"),
-    text: t("rule_welcome_text"),
-  },
-  {
-    icon: AlertTriangle,
-    title: t("rule_warnings_title"),
-    text: t("rule_warnings_text"),
-  },
-]
-
 const presets = (t: (key: string) => string): Array<{ name: string; patch: Partial<GroupSettings> }> => [
   {
     name: t("preset_professionnel"),
@@ -671,27 +653,59 @@ export default function ModerationPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
-        {ruleSummary(t).map(rule => (
-          <Card key={rule.title} className="bg-card shadow-none">
-            <CardContent className="flex gap-3 p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <rule.icon className="h-4 w-4" />
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+        <Card className="overflow-hidden border-primary/15 bg-gradient-to-br from-primary/10 via-card to-card shadow-none">
+          <CardContent className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div className="min-w-0 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="border-primary/15 bg-primary/10 text-primary hover:bg-primary/10">
+                  Plan {planLabel(activePlan)}
+                </Badge>
+                <Badge variant="outline">
+                  {managedGroupCount}/{managedGroupLimit} groupe(s) proteges
+                </Badge>
               </div>
               <div>
-                <p className="text-sm font-semibold">{rule.title}</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">{rule.text}</p>
+                <p className="text-lg font-semibold tracking-tight sm:text-xl">
+                  Activez une vraie moderation, groupe par groupe.
+                </p>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Choisissez un groupe, activez anti-liens, mots interdits, auto-exclusion et message de bienvenue. Les options Pro restent separees pour eviter la confusion.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+            <Link href="/dashboard/billing">
+              <Button className="w-full whitespace-nowrap lg:w-auto">
+                {isManagedGroupLimitReached ? "Augmenter mon quota" : "Voir mon forfait"}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
-      <div className="flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 p-3">
-        <Info className="h-4 w-4 shrink-0 text-primary" />
-        <p className="text-xs text-muted-foreground">
-          {t("info_banner")}
-        </p>
+        <Card className="shadow-none">
+          <CardContent className="space-y-3 p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold">Prochaine action</p>
+              <Badge variant="outline" className="text-[10px]">
+                {connectedSessions.length > 0 ? "Session OK" : "Session requise"}
+              </Badge>
+            </div>
+            <div className="space-y-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className={cn("h-4 w-4", connectedSessions.length > 0 ? "text-primary" : "text-muted-foreground")} />
+                <span>Session connectee</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className={cn("h-4 w-4", groups.length > 0 ? "text-primary" : "text-muted-foreground")} />
+                <span>Groupes detectes</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className={cn("h-4 w-4", managedGroupCount > 0 ? "text-primary" : "text-muted-foreground")} />
+                <span>Au moins une regle activee</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {sessions.length === 0 ? (
@@ -750,7 +764,12 @@ export default function ModerationPage() {
             const settings = normalizeSettings(group.settings, t)
             const groupIsManaged = isManagedGroupSettings(settings, t)
             const groupIsLocked = !groupIsManaged && isManagedGroupLimitReached
-            const activeCount = [settings.antiLinksEnabled, settings.welcomeEnabled, settings.warningsEnabled].filter(Boolean).length
+            const activeCount = [
+              settings.antiLinksEnabled,
+              Boolean(settings.forbiddenWords.trim()),
+              settings.warningsEnabled,
+              settings.welcomeEnabled,
+            ].filter(Boolean).length
             const warnedMembers = warnedMembersByGroup[groupId] || []
             const scheduledTasks = tasksByGroup[groupId] || []
             const groupName = ensureString(group.subject || group.name, t("group_unnamed"))
@@ -769,7 +788,7 @@ export default function ModerationPage() {
                     <div className="min-w-0 flex-1 text-left">
                       <p className="truncate text-sm font-semibold" title={groupName}>{truncateGroupName(groupName)}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {group.participantCount ? `${safeRender(group.participantCount)} ${t("group_members")} - ` : ""}{activeCount}/3 {t("group_rules_active")}
+                        {group.participantCount ? `${safeRender(group.participantCount)} ${t("group_members")} - ` : ""}{activeCount}/4 {t("group_rules_active")}
                       </p>
                       <div className="mt-2 flex flex-wrap items-center gap-2 sm:hidden">
                         <Badge className={cn(
@@ -814,6 +833,132 @@ export default function ModerationPage() {
                       Ce groupe n'est pas encore protege. Votre plan {planLabel(activePlan)} a deja atteint sa limite de {managedGroupLimit} groupe(s) moderes.
                     </div>
                   )}
+                  <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
+                    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">Regles essentielles</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          Le minimum utile pour que Whappi modere vraiment ce groupe.
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="w-fit bg-background text-[10px]">
+                        Inclus dans {planLabel(activePlan)}
+                      </Badge>
+                    </div>
+                    <div className="space-y-3">
+                      <RuleSwitch
+                        icon={<Link2 className="h-4 w-4" />}
+                        title={t("rule_antilinks_switch_title")}
+                        text={t("rule_antilinks_switch_text")}
+                        checked={settings.antiLinksEnabled}
+                        disabled={groupIsLocked}
+                        onCheckedChange={checked => updateLocalGroup(groupId, { antiLinksEnabled: checked })}
+                      />
+                      <SectionPanel enabled={Boolean(settings.forbiddenWords.trim())} icon={<Shield className="h-4 w-4" />} title={t("rule_forbidden_title")} text={t("rule_forbidden_text")} t={t}>
+                        <ForbiddenWordsInput
+                          value={settings.forbiddenWords}
+                          planLimit={forbiddenWordsLimit(activePlan)}
+                          disabled={groupIsLocked}
+                          onChange={value => updateLocalGroup(groupId, { forbiddenWords: value })}
+                          t={t}
+                        />
+                      </SectionPanel>
+                      <RuleSwitch
+                        icon={<AlertTriangle className="h-4 w-4" />}
+                        title={t("rule_warning_switch_title")}
+                        text={t("rule_warning_switch_text")}
+                        checked={settings.warningsEnabled}
+                        disabled={groupIsLocked}
+                        onCheckedChange={checked => updateLocalGroup(groupId, { warningsEnabled: checked })}
+                      />
+                      {settings.warningsEnabled && (
+                        <div className="space-y-3 rounded-2xl border bg-card p-4">
+                          <Textarea
+                            value={settings.warningMessage}
+                            onChange={event => updateLocalGroup(groupId, { warningMessage: event.target.value })}
+                            className="min-h-24 resize-none text-xs"
+                            placeholder={t("rule_warning_placeholder")}
+                          />
+                          <div className="rounded-xl border bg-background/60 p-3">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <p className="text-xs font-semibold">{t("rule_exclusion_title")}</p>
+                                <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                                  {t("rule_exclusion_desc")}
+                                </p>
+                              </div>
+                              <Switch
+                                checked={settings.exclusionEnabled}
+                                onCheckedChange={checked => updateLocalGroup(groupId, { exclusionEnabled: checked })}
+                                aria-label={t("rule_exclusion_title")}
+                              />
+                            </div>
+                            {settings.exclusionEnabled && (
+                              <div className="mt-3 grid gap-2 lg:grid-cols-[180px_1fr] lg:items-center">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={10}
+                                  value={settings.maxWarnings}
+                                  onChange={event => updateLocalGroup(groupId, { maxWarnings: clampWarningLimit(event.target.value) })}
+                                  className="h-10 text-xs"
+                                />
+                                <p className="text-[10px] leading-4 text-muted-foreground">
+                                  {t("rule_exclusion_example", { max: settings.maxWarnings })}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <RuleSwitch
+                        icon={<MessageSquareText className="h-4 w-4" />}
+                        title={t("rule_welcome_switch_title")}
+                        text={t("rule_welcome_switch_text")}
+                        checked={settings.welcomeEnabled}
+                        disabled={groupIsLocked}
+                        onCheckedChange={checked => updateLocalGroup(groupId, { welcomeEnabled: checked })}
+                      />
+                      {settings.welcomeEnabled && (
+                        <div className="space-y-3 rounded-2xl border bg-card p-4">
+                          <Textarea
+                            value={settings.welcomeMessage}
+                            onChange={event => updateLocalGroup(groupId, { welcomeMessage: event.target.value })}
+                            className="min-h-24 resize-none text-xs"
+                            placeholder={t("rule_welcome_placeholder")}
+                          />
+                          <p className="text-[10px] leading-4 text-muted-foreground">
+                            Vous ecrivez ce message manuellement. Whappi l'utilise comme message d'accueil du groupe.
+                          </p>
+                          {canUseScheduledMessages && (
+                            <div className="grid gap-3 rounded-xl border bg-background/60 p-3 lg:grid-cols-[140px_1fr] lg:items-center">
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                  {t("rule_welcome_send_time")}
+                                </label>
+                                <Input
+                                  type="time"
+                                  value={settings.welcomeDigestTime}
+                                  onChange={event => updateLocalGroup(groupId, { welcomeDigestTime: event.target.value })}
+                                  className="h-10 text-xs"
+                                />
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-9 w-full text-xs lg:w-fit"
+                                onClick={() => scheduleDailyWelcome(group)}
+                                disabled={schedulingGroupId === groupId || groupIsLocked}
+                              >
+                                {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="mr-2 h-3.5 w-3.5" />}
+                                {t("scheduled_button")}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <div className="rounded-2xl border bg-background/60 p-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
@@ -857,6 +1002,28 @@ export default function ModerationPage() {
                   </div>
                   {(() => {
                     const scheduledDraft = scheduledDrafts[groupId] || { message: "", scheduledAt: defaultScheduleDateTime(), recurrence: "none" }
+                    if (!canUseScheduledMessages && scheduledTasks.length === 0) {
+                      return (
+                        <div className="flex flex-col gap-3 rounded-2xl border border-dashed bg-background/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                              <Clock3 className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold">Automatisations Pro</p>
+                              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                Messages programmes disponibles avec Pro IA. Votre plan actuel reste centre sur la moderation simple.
+                              </p>
+                            </div>
+                          </div>
+                          <Link href="/dashboard/billing" className="w-full sm:w-auto">
+                            <Button variant="outline" size="sm" className="w-full text-xs sm:w-auto">
+                              Voir Pro IA
+                            </Button>
+                          </Link>
+                        </div>
+                      )
+                    }
                     return (
                       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                         <div className="mb-3 flex items-start gap-3">
@@ -908,7 +1075,7 @@ export default function ModerationPage() {
                           </div>
                         ) : (
                           <div className="rounded-2xl border border-dashed bg-background/60 p-4 text-xs leading-5 text-muted-foreground">
-                            Les messages programmes et la bienvenue quotidienne automatique sont inclus a partir du plan Pro IA. Votre plan {planLabel(activePlan)} garde la moderation essentielle, puis vous pouvez upgrader quand vous avez besoin d'automatiser.
+                            Ces anciens messages restent visibles, mais la creation de nouveaux messages programmes demande le plan Pro IA.
                           </div>
                         )}
                       </div>
@@ -1019,116 +1186,6 @@ export default function ModerationPage() {
                       )}
                     </div>
                   </div>
-                  <RuleSwitch
-                    icon={<Link2 className="h-4 w-4" />}
-                    title={t("rule_antilinks_switch_title")}
-                    text={t("rule_antilinks_switch_text")}
-                    checked={settings.antiLinksEnabled}
-                    disabled={groupIsLocked}
-                    onCheckedChange={checked => updateLocalGroup(groupId, { antiLinksEnabled: checked })}
-                  />
-                  <SectionPanel enabled={Boolean(settings.forbiddenWords.trim())} icon={<Shield className="h-4 w-4" />} title={t("rule_forbidden_title")} text={t("rule_forbidden_text")} t={t}>
-                    <ForbiddenWordsInput
-                      value={settings.forbiddenWords}
-                      planLimit={forbiddenWordsLimit(activePlan)}
-                      disabled={groupIsLocked}
-                      onChange={value => updateLocalGroup(groupId, { forbiddenWords: value })}
-                      t={t}
-                    />
-                  </SectionPanel>
-                  <RuleSwitch
-                    icon={<MessageSquareText className="h-4 w-4" />}
-                    title={t("rule_welcome_switch_title")}
-                    text={t("rule_welcome_switch_text")}
-                    checked={settings.welcomeEnabled}
-                    disabled={groupIsLocked}
-                    onCheckedChange={checked => updateLocalGroup(groupId, { welcomeEnabled: checked })}
-                  />
-                  {settings.welcomeEnabled && (
-                    <div className="space-y-3 rounded-2xl border bg-background/60 p-4">
-                      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_140px]">
-                        <Textarea
-                          value={settings.welcomeMessage}
-                          onChange={event => updateLocalGroup(groupId, { welcomeMessage: event.target.value })}
-                          className="min-h-24 resize-none text-xs"
-                          placeholder={t("rule_welcome_placeholder")}
-                        />
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            {t("rule_welcome_send_time")}
-                          </label>
-                          <Input
-                            type="time"
-                            value={settings.welcomeDigestTime}
-                            onChange={event => updateLocalGroup(groupId, { welcomeDigestTime: event.target.value })}
-                            className="h-10 text-xs"
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-9 w-full text-xs"
-                            onClick={() => scheduleDailyWelcome(group)}
-                            disabled={schedulingGroupId === groupId || groupIsLocked}
-                          >
-                            {schedulingGroupId === groupId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="mr-2 h-3.5 w-3.5" />}
-                            {t("scheduled_button")}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <RuleSwitch
-                    icon={<AlertTriangle className="h-4 w-4" />}
-                    title={t("rule_warning_switch_title")}
-                    text={t("rule_warning_switch_text")}
-                    checked={settings.warningsEnabled}
-                    disabled={groupIsLocked}
-                    onCheckedChange={checked => updateLocalGroup(groupId, { warningsEnabled: checked })}
-                  />
-                  {settings.warningsEnabled && (
-                    <div className="space-y-3 rounded-2xl border bg-background/60 p-4">
-                      <Textarea
-                        value={settings.warningMessage}
-                        onChange={event => updateLocalGroup(groupId, { warningMessage: event.target.value })}
-                        className="min-h-24 resize-none text-xs"
-                        placeholder={t("rule_warning_placeholder")}
-                      />
-                      <div className="rounded-xl border bg-card p-3">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-xs font-semibold">{t("rule_exclusion_title")}</p>
-                            <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-                              {t("rule_exclusion_desc")}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={settings.exclusionEnabled}
-                            onCheckedChange={checked => updateLocalGroup(groupId, { exclusionEnabled: checked })}
-                            aria-label={t("rule_exclusion_title")}
-                          />
-                        </div>
-                        {settings.exclusionEnabled && (
-                          <div className="mt-3 grid gap-2 lg:grid-cols-[180px_1fr] lg:items-center">
-                            <Input
-                              type="number"
-                              min={1}
-                              max={10}
-                              value={settings.maxWarnings}
-                              onChange={event => updateLocalGroup(groupId, { maxWarnings: clampWarningLimit(event.target.value) })}
-                              className="h-10 text-xs"
-                            />
-                            <p className="text-[10px] leading-4 text-muted-foreground">
-                              {t("rule_exclusion_example", { max: settings.maxWarnings })}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-[10px] leading-4 text-muted-foreground">
-                        {t("rule_exclusion_variables")}
-                      </p>
-                    </div>
-                  )}
-
                   <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 border-t bg-card/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <CheckCircle2 className="h-4 w-4 text-primary" />
