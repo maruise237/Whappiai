@@ -12,6 +12,7 @@ import { useAuth } from "@clerk/clerk-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { getPlanCode, PlanBadge } from "@/components/dashboard/plan-badge"
+import { PLAN_CARDS, PLAN_COMPARISON_ROWS } from "@/lib/plan-features"
 
 export function BillingPlans({
   activePlan = "trial",
@@ -27,83 +28,12 @@ export function BillingPlans({
   const normalizedActivePlan = getPlanCode(activePlan)
   const normalizedRecommendedPlan = recommendedPlan ? getPlanCode(recommendedPlan) : null
 
-  const plans = [
-    {
-      id: "trial",
-      name: "Essai gratuit",
-      price: "7 jours",
-      description: "Pour connecter 1 groupe et verifier que Whappi modere bien en situation reelle.",
-      features: [
-        "1 groupe pendant 7 jours",
-        "Blocage des liens",
-        "Mots interdits choisis manuellement",
-        "Auto-exclusion activable",
-        "Message de bienvenue redige par vous",
-      ],
-      cta: "Essai en cours",
-      highlighted: false,
-      disabled: true,
-    },
-    {
-      id: "starter",
-      name: "Starter",
-      price: "3 500 FCFA",
-      description: "Pour moderer simplement jusqu'a 3 groupes avec les regles essentielles.",
-      features: [
-        "Jusqu'a 3 groupes",
-        "Blocage des liens",
-        "Mots interdits choisis manuellement",
-        "Auto-exclusion activable",
-        "Message de bienvenue redige par vous",
-      ],
-      cta: "Passer sur Starter",
-      highlighted: normalizedRecommendedPlan === "starter",
-    },
-    {
-      id: "pro",
-      name: "Pro IA",
-      price: "8 000 FCFA",
-      description: "Pour aller plus loin avec l'IA sur jusqu'a 6 groupes.",
-      features: [
-        "Jusqu'a 6 groupes",
-        "Toute la moderation Starter",
-        "Presets de moderation rapides",
-        "Assistant IA pour aider l'admin",
-        "Generation IA pour vos groupes",
-        "Messages programmes inclus",
-      ],
-      cta: "Passer sur Pro IA",
-      highlighted: normalizedRecommendedPlan === "pro",
-    },
-    {
-      id: "business",
-      name: "Business",
-      price: "18 000 FCFA",
-      description: "Pour les structures qui veulent plus de puissance sur jusqu'a 16 groupes.",
-      features: [
-        "Jusqu'a 16 groupes",
-        "Tout le plan Pro IA",
-        "Messages programmes sans limite",
-        "Generation IA pour vos groupes",
-        "Protection etendue sur plus de groupes",
-      ],
-      cta: "Passer sur Business",
-      highlighted: normalizedRecommendedPlan === "business",
-    },
-  ]
-
-  const comparisonRows = [
-    { feature: "Periode d'essai", starter: "Apres essai", pro: "Apres essai", business: "Apres essai" },
-    { feature: "Groupes geres", starter: "3", pro: "6", business: "16" },
-    { feature: "Blocage des liens", starter: "Inclus", pro: "Inclus", business: "Inclus" },
-    { feature: "Mots interdits", starter: "Personnalises", pro: "Personnalises", business: "Personnalises" },
-    { feature: "Auto-exclusion", starter: "Inclus", pro: "Inclus", business: "Inclus" },
-    { feature: "Message de bienvenue manuel", starter: "Inclus", pro: "Inclus", business: "Inclus" },
-    { feature: "Presets de moderation", starter: "-", pro: "Inclus", business: "Inclus" },
-    { feature: "Assistant IA", starter: "-", pro: "Inclus", business: "Inclus" },
-    { feature: "Generation IA", starter: "-", pro: "Inclus", business: "Inclus" },
-    { feature: "Messages programmes", starter: "-", pro: "Inclus", business: "Sans limite" },
-  ]
+  const plans = PLAN_CARDS.map(plan => ({
+    ...plan,
+    cta: plan.id === "trial" ? "Essai en cours" : plan.cta,
+    highlighted: normalizedRecommendedPlan === plan.id,
+    disabled: plan.id === "trial",
+  }))
 
   const handleSubscribe = async (planId: string) => {
     try {
@@ -180,7 +110,7 @@ export function BillingPlans({
               className="h-10 w-full"
               variant={plan.highlighted ? "default" : "outline"}
               onClick={() => handleSubscribe(plan.id)}
-              disabled={loading === plan.id || Boolean(plan.disabled)}
+              disabled={loading === plan.id || plan.disabled}
             >
               {loading === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : plan.cta}
             </Button>
@@ -216,7 +146,7 @@ export function BillingPlans({
                   </tr>
                 </thead>
                 <tbody>
-                  {comparisonRows.map(row => (
+                  {PLAN_COMPARISON_ROWS.map(row => (
                     <tr key={row.feature} className="border-b last:border-b-0">
                       <td className="px-4 py-3 text-xs font-medium">{row.feature}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{row.starter}</td>

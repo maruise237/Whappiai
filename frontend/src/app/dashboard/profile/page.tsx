@@ -28,6 +28,7 @@ import { api } from "@/lib/api"
 import { emitWappyEvent } from "@/lib/wappy-events"
 import { cn, ensureString, safeDate } from "@/lib/utils"
 import { getManagedGroupUsage, getPlanGroupLimit, getPlanUsageMessage } from "@/lib/plan-usage"
+import { getPlanScheduledMessageLabel } from "@/lib/plan-features"
 
 const COMMON_TIMEZONES = [
   'Africa/Douala', 'Africa/Lagos', 'Africa/Abidjan', 'Africa/Nairobi',
@@ -450,7 +451,5 @@ function getProfileExpiryValue(planCode: string, expiry: string | null, t: (key:
 }
 
 function getScheduledMessageValue(planCode: string) {
-  if (planCode === "trial" || planCode === "starter") return "3 max"
-  if (planCode === "pro" || planCode === "business") return "Illimites"
-  return "3 max"
+  return getPlanScheduledMessageLabel(planCode)
 }

@@ -6,70 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-
-const plans = [
-  {
-    code: "trial",
-    name: "Essai gratuit",
-    price: "7 jours",
-    cadence: "sans engagement",
-    description: "Pour connecter 1 groupe et verifier que Whappi modere bien en situation reelle.",
-    features: [
-      "1 groupe pendant 7 jours",
-      "Blocage des liens",
-      "Mots interdits choisis manuellement",
-      "Auto-exclusion activable",
-      "Message de bienvenue redige par vous",
-    ],
-    highlight: false,
-  },
-  {
-    code: "starter",
-    name: "Starter",
-    price: "3 500 FCFA",
-    cadence: "/ mois",
-    description: "Pour moderer simplement jusqu'a 3 groupes avec les regles essentielles.",
-    features: [
-      "Jusqu'a 3 groupes",
-      "Blocage des liens",
-      "Mots interdits choisis manuellement",
-      "Auto-exclusion activable",
-      "Message de bienvenue redige par vous",
-    ],
-    highlight: false,
-  },
-  {
-    code: "pro",
-    name: "Pro IA",
-    price: "8 000 FCFA",
-    cadence: "/ mois",
-    description: "Pour aller plus loin avec l'IA sur jusqu'a 6 groupes.",
-    features: [
-      "Jusqu'a 6 groupes",
-      "Toute la moderation Starter",
-      "Presets de moderation rapides",
-      "Assistant IA pour aider l'admin",
-      "Generation IA pour vos groupes",
-      "Messages programmes inclus",
-    ],
-    highlight: true,
-  },
-  {
-    code: "business",
-    name: "Business",
-    price: "18 000 FCFA",
-    cadence: "/ mois",
-    description: "Pour les structures qui veulent plus de puissance sur jusqu'a 16 groupes.",
-    features: [
-      "Jusqu'a 16 groupes",
-      "Tout le plan Pro IA",
-      "Messages programmes sans limite",
-      "Generation IA pour vos groupes",
-      "Protection etendue sur plus de groupes",
-    ],
-    highlight: false,
-  },
-]
+import { PLAN_CARDS } from "@/lib/plan-features"
 
 export default function PricingPage() {
   return (
@@ -83,16 +20,16 @@ export default function PricingPage() {
       </div>
 
       <div className="mx-auto mt-14 grid max-w-7xl gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {plans.map(plan => (
+        {PLAN_CARDS.map(plan => (
           <Card
-            key={plan.code}
+            key={plan.id}
             className={cn(
               "relative bg-card shadow-none",
-              plan.highlight && "border-primary shadow-[0_24px_70px_-50px_hsl(var(--primary))]",
-              plan.code === "trial" && "border-state-warning/30 bg-state-warning-light/35"
+              plan.highlighted && "border-primary shadow-[0_24px_70px_-50px_hsl(var(--primary))]",
+              plan.id === "trial" && "border-state-warning/30 bg-state-warning-light/35"
             )}
           >
-            {plan.highlight && (
+            {plan.highlighted && (
               <div className="absolute -top-3 left-4 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary-foreground sm:left-6">
                 Recommande
               </div>
@@ -114,8 +51,8 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <Button asChild className="mt-8" variant={plan.highlight ? "default" : "outline"}>
-                <Link href={`/register?plan=${plan.code}`}>{plan.code === "trial" ? "Commencer l'essai" : `Commencer avec ${plan.name}`}</Link>
+              <Button asChild className="mt-8" variant={plan.highlighted ? "default" : "outline"}>
+                <Link href={`/register?plan=${plan.id}`}>{plan.id === "trial" ? "Commencer l'essai" : `Commencer avec ${plan.name}`}</Link>
               </Button>
             </CardContent>
           </Card>

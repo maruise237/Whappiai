@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useTranslation } from "react-i18next"
-import { AlertCircle, BellRing, CalendarClock, CheckCircle2, CreditCard, Gift, Info, Loader2 } from "lucide-react"
+import { AlertCircle, BellRing, CalendarClock, CheckCircle2, CreditCard, Gift, Info, Loader2, ShieldCheck } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BillingPlans } from "@/components/dashboard/billing-plans"
@@ -277,6 +277,24 @@ export default function BillingPage() {
         </Card>
       )}
 
+      <div className="grid gap-3 md:grid-cols-3">
+        <SalesProofCard
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          title="Activation automatique"
+          text="Apres paiement, Whappi suit la transaction et active le forfait des que GeniusPay confirme."
+        />
+        <SalesProofCard
+          icon={<ShieldCheck className="h-4 w-4" />}
+          title="Forfaits verifiables"
+          text="Chaque plan affiche seulement les fonctions livrables: groupes, moderation, IA et messages programmes."
+        />
+        <SalesProofCard
+          icon={<Info className="h-4 w-4" />}
+          title="Support avec reference"
+          text="En cas de retard, gardez la reference de paiement: l'admin peut verifier la transaction."
+        />
+      </div>
+
       <div className="space-y-6">
         <div className="mb-6 space-y-2 text-center md:mb-10">
           <h2 className="text-2xl font-bold tracking-tight">{t("plans_heading")}</h2>
@@ -303,6 +321,22 @@ export default function BillingPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function SalesProofCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <Card className="border-primary/10 bg-card shadow-none">
+      <CardContent className="flex gap-3 p-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          {icon}
+        </span>
+        <div>
+          <p className="text-sm font-semibold">{title}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

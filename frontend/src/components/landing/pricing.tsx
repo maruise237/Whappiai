@@ -5,78 +5,7 @@ import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-
-const plans = [
-  {
-    id: "trial",
-    name: "Essai gratuit",
-    description: "Pour connecter 1 groupe et verifier que Whappi modere bien en situation reelle.",
-    price: "7 jours",
-    cadence: "sans engagement",
-    features: [
-      "1 groupe pendant 7 jours",
-      "Blocage des liens",
-      "Mots interdits choisis manuellement",
-      "Auto-exclusion activable",
-      "Message de bienvenue redige par vous",
-    ],
-    cta: "Commencer l'essai",
-    highlighted: false,
-    footer: "Le plus simple pour valider votre premier groupe",
-  },
-  {
-    id: "starter",
-    name: "Starter",
-    description: "Pour moderer simplement jusqu'a 3 groupes avec les regles essentielles.",
-    price: "3 500 FCFA",
-    cadence: "/mois",
-    features: [
-      "Jusqu'a 3 groupes",
-      "Blocage des liens",
-      "Mots interdits choisis manuellement",
-      "Auto-exclusion activable",
-      "Message de bienvenue redige par vous",
-    ],
-    cta: "Passer sur Starter",
-    highlighted: false,
-    footer: "Parfait pour demarrer proprement",
-  },
-  {
-    id: "pro",
-    name: "Pro IA",
-    description: "Pour aller plus loin avec l'IA sur jusqu'a 6 groupes.",
-    price: "8 000 FCFA",
-    cadence: "/mois",
-    features: [
-      "Jusqu'a 6 groupes",
-      "Toute la moderation Starter",
-      "Presets de moderation rapides",
-      "Assistant IA pour aider l'admin",
-      "Generation IA pour vos groupes",
-      "Messages programmes inclus",
-    ],
-    cta: "Passer sur Pro IA",
-    highlighted: true,
-    footer: "Le meilleur point d'equilibre pour grandir",
-  },
-  {
-    id: "business",
-    name: "Business",
-    description: "Pour les structures qui veulent plus de puissance sur jusqu'a 16 groupes.",
-    price: "18 000 FCFA",
-    cadence: "/mois",
-    features: [
-      "Jusqu'a 16 groupes",
-      "Tout le plan Pro IA",
-      "Messages programmes sans limite",
-      "Generation IA pour vos groupes",
-      "Protection etendue sur plus de groupes",
-    ],
-    cta: "Passer sur Business",
-    highlighted: false,
-    footer: "Pour les reseaux qui veulent scaler serieusement",
-  },
-]
+import { PLAN_CARDS } from "@/lib/plan-features"
 
 export function Pricing() {
   return (
@@ -104,7 +33,7 @@ export function Pricing() {
         </motion.div>
 
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {plans.map((plan, index) => (
+          {PLAN_CARDS.map((plan, index) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 20 }}
