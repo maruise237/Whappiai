@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useTranslation } from "react-i18next"
 import { AlertCircle, BellRing, CalendarClock, CheckCircle2, CreditCard, Gift, Info, Loader2, ShieldCheck } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,7 +23,7 @@ export default function BillingPage() {
   const [managedGroupsUsed, setManagedGroupsUsed] = React.useState(0)
   const [paymentState, setPaymentState] = React.useState<{
     orderId: string
-    status: "pending" | "completed" | "failed" | "cancelled" | "unknown"
+    status: "pending" | "completed" | "failed" | "cancelled" | "needs_review" | "unknown"
     planCode?: string | null
     reference?: string | null
   } | null>(null)
@@ -233,6 +234,8 @@ export default function BillingPage() {
                     ? t("payment_completed_title")
                     : paymentState.status === "failed" || paymentState.status === "cancelled"
                       ? t("payment_failed_title")
+                      : paymentState.status === "needs_review"
+                        ? t("payment_review_title")
                       : t("payment_pending_title")}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -240,8 +243,17 @@ export default function BillingPage() {
                     ? t("payment_completed_text")
                     : paymentState.status === "failed" || paymentState.status === "cancelled"
                       ? t("payment_failed_text")
+                      : paymentState.status === "needs_review"
+                        ? t("payment_review_text")
                       : t("payment_pending_text")}
                 </p>
+                {paymentState.status !== "completed" && (
+                  <Button asChild variant="outline" size="sm" className="mt-3 w-full rounded-full sm:w-auto">
+                    <Link href={buildPaymentSupportUrl(paymentState)}>
+                      {t("payment_support_cta")}
+                    </Link>
+                  </Button>
+                )}
               </div>
             </div>
           <div className="w-full min-w-0 rounded-2xl border bg-card px-4 py-3 text-left sm:w-auto sm:text-right">
@@ -435,11 +447,28 @@ function getRecommendedPlan(activePlan: string, managedGroupsUsed: number) {
   return null
 }
 
-function normalizePaymentState(value: unknown): "pending" | "completed" | "failed" | "cancelled" | "unknown" {
+function normalizePaymentState(value: unknown): "pending" | "completed" | "failed" | "cancelled" | "needs_review" | "unknown" {
   const status = ensureText(value).toLowerCase()
   if (status === "completed") return "completed"
   if (status === "failed") return "failed"
   if (status === "cancelled" || status === "canceled") return "cancelled"
+  if (status === "needs_review" || status === "manual_review" || status === "review") return "needs_review"
   if (status === "pending" || status === "created" || status === "processing") return "pending"
   return "unknown"
+}
+
+function buildPaymentSupportUrl(paymentState: {
+  orderId: string
+  status: string
+  planCode?: string | null
+  reference?: string | null
+}) {
+  const params = new URLSearchParams({
+    category: "payment",
+    orderId: paymentState.orderId,
+    status: paymentState.status,
+  })
+  if (paymentState.reference) params.set("reference", paymentState.reference)
+  if (paymentState.planCode) params.set("plan", paymentState.planCode)
+  return `/dashboard/support?${params.toString()}`
 }

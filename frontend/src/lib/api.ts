@@ -371,6 +371,10 @@ export const api = {
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
       })
     },
+    adminActivateTransaction: (transactionId: string, token?: string) => fetchApi(`/api/v1/support/admin/transactions/${encodeURIComponent(transactionId)}/activate`, {
+      method: "POST",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    }),
   },
   subscriptions: {
     current: (token?: string) => fetchApi("/api/v1/subscriptions/current", {

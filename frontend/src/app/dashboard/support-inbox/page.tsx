@@ -28,6 +28,7 @@ import {
 } from "@/lib/support"
 import {
   CreditCard,
+  CheckCircle2,
   Inbox,
   Loader2,
   MessageSquareReply,
@@ -55,6 +56,7 @@ export default function SupportInboxPage() {
   const [transactionsError, setTransactionsError] = React.useState("")
   const [detailError, setDetailError] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
+  const [activatingTransactionId, setActivatingTransactionId] = React.useState<string | null>(null)
   const [search, setSearch] = React.useState("")
   const [statusFilter, setStatusFilter] = React.useState("all")
   const [reply, setReply] = React.useState("")
@@ -178,12 +180,35 @@ export default function SupportInboxPage() {
     }
   }
 
+  const handleActivateTransaction = async (transaction: any) => {
+    const transactionId = ensureString(transaction.id)
+    if (!transactionId) return
+
+    if (!transaction.userId || !transaction.planCode) {
+      toast.error("Transaction incomplete: utilisez l'activation manuelle du compte.")
+      return
+    }
+
+    setActivatingTransactionId(transactionId)
+    try {
+      const token = await getToken()
+      await api.support.adminActivateTransaction(transactionId, token || undefined)
+      toast.success("Abonnement active depuis la transaction")
+      await fetchTransactions()
+    } catch (error: any) {
+      toast.error(getAdminErrorMessage(error, "Impossible d'activer cette transaction"))
+    } finally {
+      setActivatingTransactionId(null)
+    }
+  }
+
   const metrics = React.useMemo(() => {
     const open = threads.filter(item => item.status === "open").length
     const pending = threads.filter(item => item.status === "pending").length
     const unread = threads.reduce((sum, item) => sum + Number(item.adminUnreadCount || 0), 0)
     const completedPayments = transactions.filter(item => item.status === "completed").length
-    return { open, pending, unread, completedPayments }
+    const paymentsToReview = transactions.filter(item => ["needs_review", "pending", "created", "failed"].includes(String(item.status || "").toLowerCase())).length
+    return { open, pending, unread, completedPayments, paymentsToReview }
   }, [threads, transactions])
 
   if (!isAdmin) {
@@ -221,7 +246,7 @@ export default function SupportInboxPage() {
         <MetricCard label="Ouvertes" value={metrics.open} detail="nouvelles demandes" />
         <MetricCard label="En cours" value={metrics.pending} detail="a relancer ou verifier" />
         <MetricCard label="Non lus" value={metrics.unread} detail="messages client a lire" />
-        <MetricCard label="Paiements completes" value={metrics.completedPayments} detail="sur les transactions recentes" />
+        <MetricCard label="Paiements a verifier" value={metrics.paymentsToReview} detail={`${metrics.completedPayments} paiement(s) completes`} />
       </div>
 
       <Tabs defaultValue="threads" className="space-y-4">
@@ -472,7 +497,7 @@ export default function SupportInboxPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table className="min-w-[760px]">
+                <Table className="min-w-[860px]">
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="text-[10px] font-semibold text-muted-foreground">Client</TableHead>
@@ -481,18 +506,19 @@ export default function SupportInboxPage() {
                       <TableHead className="text-[10px] font-semibold text-muted-foreground">Statut</TableHead>
                       <TableHead className="text-[10px] font-semibold text-muted-foreground">Reference</TableHead>
                       <TableHead className="text-[10px] font-semibold text-muted-foreground">Mise a jour</TableHead>
+                      <TableHead className="text-right text-[10px] font-semibold text-muted-foreground">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {transactionsLoading ? (
                       Array.from({ length: 6 }).map((_, index) => (
                         <TableRow key={index}>
-                          <TableCell colSpan={6}><Skeleton className="h-10 w-full rounded-xl" /></TableCell>
+                          <TableCell colSpan={7}><Skeleton className="h-10 w-full rounded-xl" /></TableCell>
                         </TableRow>
                       ))
                     ) : transactions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-28 text-center text-xs text-muted-foreground">
+                        <TableCell colSpan={7} className="h-28 text-center text-xs text-muted-foreground">
                           Aucune transaction a afficher.
                         </TableCell>
                       </TableRow>
@@ -514,6 +540,26 @@ export default function SupportInboxPage() {
                           </TableCell>
                           <TableCell className="max-w-44 truncate font-mono text-[10px] text-muted-foreground">{safeRender(transaction.reference, "-")}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{safeDate(transaction.updatedAt)}</TableCell>
+                          <TableCell className="text-right">
+                            {canActivateTransaction(transaction) ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 whitespace-nowrap text-[10px]"
+                                disabled={activatingTransactionId === transaction.id}
+                                onClick={() => handleActivateTransaction(transaction)}
+                              >
+                                {activatingTransactionId === transaction.id ? (
+                                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="mr-1.5 h-3 w-3" />
+                                )}
+                                Activer
+                              </Button>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -538,4 +584,9 @@ function MetricCard({ label, value, detail }: { label: string; value: number; de
       </CardContent>
     </Card>
   )
+}
+
+function canActivateTransaction(transaction: any) {
+  const status = String(transaction?.status || "").toLowerCase()
+  return status === "needs_review" && Boolean(transaction?.id && transaction?.userId && transaction?.planCode)
 }

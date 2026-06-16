@@ -45,7 +45,13 @@ function normalizeProviderStatus(status) {
     if (['completed', 'success', 'succeeded', 'paid'].includes(value)) return 'completed';
     if (['failed', 'failure', 'error'].includes(value)) return 'failed';
     if (['cancelled', 'canceled'].includes(value)) return 'cancelled';
+    if (['needs_review', 'manual_review', 'review'].includes(value)) return 'needs_review';
     return 'pending';
+}
+
+function normalizeProviderToken(value) {
+    const token = String(value || '').trim();
+    return token || null;
 }
 
 async function saveTransaction({
@@ -60,10 +66,11 @@ async function saveTransaction({
     providerPayload = null,
 }) {
     const payload = providerPayload ? JSON.stringify(providerPayload) : null;
+    const normalizedToken = normalizeProviderToken(providerToken);
 
     const existing = await db.get(
         'SELECT * FROM payment_transactions WHERE id = $1 OR provider_token = $2',
-        [id, providerToken || null]
+        [id, normalizedToken]
     );
 
     if (existing) {
@@ -80,7 +87,7 @@ async function saveTransaction({
                 provider_payload = COALESCE($8, provider_payload),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = $9
-        `, [providerToken, userId, planId, amount, currency, status, checkoutUrl, payload, existing.id]);
+        `, [normalizedToken, userId, planId, amount, currency, status, checkoutUrl, payload, existing.id]);
         return existing.id;
     }
 
@@ -89,9 +96,16 @@ async function saveTransaction({
             id, provider, provider_token, user_id, plan_id, amount, currency, status, checkout_url, provider_payload
         )
         VALUES ($1, 'geniuspay', $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [id, providerToken, userId, planId, amount, currency, status, checkoutUrl, payload]);
+    `, [id, normalizedToken, userId, planId, amount, currency, status, checkoutUrl, payload]);
 
     return id;
+}
+
+function buildUnmatchedTransactionId(providerToken, rawPayload) {
+    const safeToken = String(providerToken || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    if (safeToken) return `geniuspay_unmatched_${safeToken}`;
+    const hash = crypto.createHash('sha256').update(Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(String(rawPayload || ''))).digest('hex').slice(0, 32);
+    return `geniuspay_unmatched_${hash}`;
 }
 
 async function createCheckoutSession(user, planCode, { phoneNumber, customerName } = {}) {
@@ -239,8 +253,8 @@ async function handleWebhook(rawPayload, headers = {}) {
     const transaction = parsed.data?.transaction || parsed.transaction || parsed.data || {};
     const metadata = transaction.metadata || parsed.metadata || parsed.data?.metadata || {};
     const status = normalizeProviderStatus(transaction.status || (event === 'payment.success' ? 'completed' : 'pending'));
-    const orderId = metadata.order_id || null;
-    const providerToken = transaction.reference || String(transaction.id || '') || null;
+    const orderId = normalizeProviderToken(metadata.order_id);
+    const providerToken = normalizeProviderToken(transaction.reference || transaction.id);
 
     let existing = null;
     if (orderId || providerToken) {
@@ -272,15 +286,28 @@ async function handleWebhook(rawPayload, headers = {}) {
     }
 
     if (!canonicalOrderId) {
-        log('Webhook GeniusPay ignore: impossible de retrouver la transaction d\'origine', 'PAYMENT', {
+        const reviewTransactionId = buildUnmatchedTransactionId(providerToken, rawPayload);
+        await saveTransaction({
+            id: reviewTransactionId,
+            providerToken,
+            userId,
+            planId,
+            amount,
+            currency: transaction.currency || 'XOF',
+            status: 'needs_review',
+            providerPayload: parsed,
+        });
+
+        log('Webhook GeniusPay conserve pour verification admin: transaction d\'origine introuvable', 'PAYMENT', {
             event,
+            reviewTransactionId,
             reference: providerToken,
             userId,
             userEmail,
             planId,
             planCode,
         }, 'WARN');
-        return { success: true, action: 'ignored_unmatched_payment', status, reference: providerToken };
+        return { success: true, action: 'saved_for_admin_review', status: 'needs_review', reference: providerToken };
     }
 
     await saveTransaction({
@@ -306,6 +333,18 @@ async function handleWebhook(rawPayload, headers = {}) {
     const user = (userId && await User.findById(userId))
         || (userEmail && await User.findByEmail(userEmail));
     if (!user) {
+        await saveTransaction({
+            id: canonicalOrderId,
+            providerToken,
+            userId,
+            planId,
+            amount,
+            currency: transaction.currency || existing?.currency || 'XOF',
+            status: 'needs_review',
+            checkoutUrl: existing?.checkout_url || null,
+            providerPayload: parsed,
+        });
+
         log('Impossible de relier le webhook GeniusPay a un utilisateur', 'PAYMENT', {
             orderId: canonicalOrderId,
             reference: providerToken,
@@ -314,15 +353,54 @@ async function handleWebhook(rawPayload, headers = {}) {
             metadata,
             hasExistingTransaction: Boolean(existing),
         }, 'ERROR');
-        throw new Error('Utilisateur GeniusPay introuvable');
+        return { success: true, action: 'needs_admin_review_user_missing', status: 'needs_review', reference: providerToken };
     }
 
     const plan = (planCode && await PricingService.getPlanByCode(planCode))
         || (planId && await PricingService.getPlan(planId));
-    if (!plan) throw new Error('Plan GeniusPay introuvable');
+    if (!plan) {
+        await saveTransaction({
+            id: canonicalOrderId,
+            providerToken,
+            userId: user.id,
+            planId,
+            amount,
+            currency: transaction.currency || existing?.currency || 'XOF',
+            status: 'needs_review',
+            checkoutUrl: existing?.checkout_url || null,
+            providerPayload: parsed,
+        });
+        log('Plan GeniusPay introuvable, transaction mise en verification admin', 'PAYMENT', {
+            orderId: canonicalOrderId,
+            reference: providerToken,
+            planId,
+            planCode,
+            userEmail: user.email,
+        }, 'ERROR');
+        return { success: true, action: 'needs_admin_review_plan_missing', status: 'needs_review', reference: providerToken };
+    }
 
     if (amount && amount < Number(plan.price)) {
-        throw new Error(`Montant GeniusPay insuffisant: ${amount} < ${plan.price}`);
+        await saveTransaction({
+            id: canonicalOrderId,
+            providerToken,
+            userId: user.id,
+            planId: plan.id,
+            amount,
+            currency: transaction.currency || existing?.currency || 'XOF',
+            status: 'needs_review',
+            checkoutUrl: existing?.checkout_url || null,
+            providerPayload: parsed,
+        });
+        log('Montant GeniusPay insuffisant, transaction mise en verification admin', 'PAYMENT', {
+            orderId: canonicalOrderId,
+            reference: providerToken,
+            amount,
+            expectedAmount: plan.price,
+            planCode: plan.code,
+            userEmail: user.email,
+        }, 'ERROR');
+        return { success: true, action: 'needs_admin_review_amount_mismatch', status: 'needs_review', reference: providerToken };
     }
 
     await SubscriptionService.subscribe(user.id, plan.code);

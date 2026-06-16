@@ -91,6 +91,26 @@ export default function SupportPage() {
   }, [fetchThreads])
 
   React.useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    const category = params.get("category")
+    const orderId = params.get("orderId")
+    const reference = params.get("reference")
+    const status = params.get("status")
+
+    if (category !== "payment" && !orderId && !reference) return
+
+    setForm(current => ({
+      ...current,
+      category: "payment",
+      subject: current.subject || "Paiement a verifier",
+      paymentOrderId: current.paymentOrderId || orderId || "",
+      paymentReference: current.paymentReference || reference || "",
+      message: current.message || `Bonjour, merci de verifier mon paiement Whappi.${orderId ? `\nOrder ID: ${orderId}` : ""}${reference ? `\nReference: ${reference}` : ""}${status ? `\nStatut affiche: ${status}` : ""}`,
+    }))
+  }, [])
+
+  React.useEffect(() => {
     if (!selectedThreadId) {
       setThreadDetail(null)
       return

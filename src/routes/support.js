@@ -16,6 +16,9 @@ const {
 } = require('../utils/validation');
 const { log } = require('../utils/logger');
 const ActivityLog = require('../models/ActivityLog');
+const User = require('../models/User');
+const PricingService = require('../services/PricingService');
+const SubscriptionService = require('../services/SubscriptionService');
 
 const router = express.Router();
 
@@ -488,6 +491,114 @@ router.get('/admin/transactions', requireAdmin, asyncHandler(async (req, res) =>
         updatedAt: row.updated_at,
         relatedThreads: Number(row.related_threads || 0),
     })));
+}));
+
+router.post('/admin/transactions/:transactionId/activate', requireAdmin, asyncHandler(async (req, res) => {
+    await ensureSupportSchema();
+
+    const { transactionId } = req.params;
+    if (!transactionId || transactionId.length > 140) {
+        return response.error(res, 'Transaction invalide', 422);
+    }
+
+    const transaction = await db.get(`
+        SELECT t.*, u.email AS user_email, pl.code AS plan_code, pl.name AS plan_name, pl.price AS plan_price
+        FROM payment_transactions t
+        LEFT JOIN users u ON u.id = t.user_id
+        LEFT JOIN pricing_plans pl ON pl.id = t.plan_id
+        WHERE t.id = $1
+    `, [transactionId]);
+
+    if (!transaction) {
+        return response.notFound(res, 'Transaction introuvable');
+    }
+
+    if (!transaction.user_id || !transaction.plan_id) {
+        return response.error(res, 'Transaction non liee a un utilisateur et un forfait. Utilisez l activation manuelle du compte.', 422);
+    }
+
+    if (String(transaction.status || '').toLowerCase() !== 'needs_review') {
+        return response.error(res, 'Seules les transactions en verification admin peuvent etre activees ici.', 422);
+    }
+
+    const user = await User.findById(transaction.user_id);
+    const plan = transaction.plan_code
+        ? await PricingService.getPlanByCode(transaction.plan_code)
+        : await PricingService.getPlan(transaction.plan_id);
+
+    if (!user || !plan) {
+        return response.error(res, 'Utilisateur ou forfait introuvable pour cette transaction', 422);
+    }
+
+    const amount = Number(transaction.amount || 0);
+    if (!amount || amount < Number(plan.price)) {
+        return response.error(res, `Montant insuffisant pour activer ${plan.name}: ${amount} < ${plan.price}`, 422);
+    }
+
+    await SubscriptionService.subscribe(user.id, plan.code);
+    await db.run(`
+        UPDATE payment_transactions
+        SET status = 'completed',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+    `, [transaction.id]);
+
+    await ActivityLog.log({
+        userEmail: req.currentUser.email,
+        action: 'ADMIN_PAYMENT_ACTIVATE',
+        resource: 'payment_transaction',
+        resourceId: transaction.id,
+        details: {
+            targetEmail: user.email,
+            planCode: plan.code,
+            amount,
+            reference: transaction.provider_token || null,
+            previousStatus: transaction.status,
+        },
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+    });
+
+    const updated = await db.get(`
+        SELECT
+            t.id,
+            t.provider,
+            t.provider_token,
+            t.user_id,
+            u.email AS user_email,
+            t.plan_id,
+            pl.code AS plan_code,
+            pl.name AS plan_name,
+            t.amount,
+            t.currency,
+            t.status,
+            t.checkout_url,
+            t.created_at,
+            t.updated_at,
+            0 AS related_threads
+        FROM payment_transactions t
+        LEFT JOIN users u ON u.id = t.user_id
+        LEFT JOIN pricing_plans pl ON pl.id = t.plan_id
+        WHERE t.id = $1
+    `, [transaction.id]);
+
+    return response.success(res, {
+        id: updated.id,
+        provider: updated.provider,
+        reference: updated.provider_token || null,
+        userId: updated.user_id || null,
+        userEmail: updated.user_email || null,
+        planId: updated.plan_id || null,
+        planCode: updated.plan_code || null,
+        planName: updated.plan_name || null,
+        amount: updated.amount !== null && updated.amount !== undefined ? Number(updated.amount) : 0,
+        currency: updated.currency || 'XOF',
+        status: updated.status || 'completed',
+        checkoutUrl: updated.checkout_url || null,
+        createdAt: updated.created_at,
+        updatedAt: updated.updated_at,
+        relatedThreads: Number(updated.related_threads || 0),
+    });
 }));
 
 router.use((err, req, res, next) => {

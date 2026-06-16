@@ -29,6 +29,7 @@ export function paymentStatusClass(status: string) {
   const value = String(status || "").toLowerCase()
   if (["completed", "success", "paid"].includes(value)) return "bg-primary/10 text-primary hover:bg-primary/10"
   if (["failed", "error"].includes(value)) return "bg-destructive/10 text-destructive hover:bg-destructive/10"
+  if (["needs_review", "manual_review", "review"].includes(value)) return "bg-orange-500/10 text-orange-600 hover:bg-orange-500/10"
   if (["pending", "created"].includes(value)) return "bg-amber-500/10 text-amber-600 hover:bg-amber-500/10"
   if (["cancelled", "canceled"].includes(value)) return "bg-muted text-muted-foreground hover:bg-muted"
   return "bg-muted text-muted-foreground hover:bg-muted"
@@ -38,6 +39,7 @@ export function formatPaymentStatus(status: string) {
   const value = String(status || "").toLowerCase()
   if (value === "completed") return "Paye"
   if (value === "failed") return "Echec"
+  if (value === "needs_review" || value === "manual_review" || value === "review") return "A verifier"
   if (value === "pending") return "En attente"
   if (value === "created") return "Cree"
   if (value === "cancelled" || value === "canceled") return "Annule"
