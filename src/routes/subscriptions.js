@@ -28,11 +28,7 @@ router.get('/current', ClerkExpressWithAuth(), async (req, res) => {
         const user = await User.findById(userId) || await User.findByEmail(email);
         const subscription = await SubscriptionService.getCurrentSubscription(user?.id || userId);
         const access = await AccountAccessService.getStatus(user);
-        const serializableEntitlements = access.entitlements ? {
-            ...access.entitlements,
-            scheduledMessagesUnlimited: !Number.isFinite(access.entitlements.scheduledMessages),
-            scheduledMessages: Number.isFinite(access.entitlements.scheduledMessages) ? access.entitlements.scheduledMessages : null,
-        } : null;
+        const serializableEntitlements = AccountAccessService.serializeEntitlements(access.entitlements);
 
         res.json({
             status: 'success',

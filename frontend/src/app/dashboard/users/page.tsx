@@ -504,6 +504,8 @@ export default function UsersPage() {
                   <Metric label="Expiration" value={safeDate(userDetails?.user?.subscription_expiry)} />
                 </div>
 
+                <PlanAuditCard audit={userDetails?.planAudit} fallbackUser={userDetails?.user} />
+
                 <Card className="bg-card shadow-none">
                   <CardContent className="space-y-3 p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -831,6 +833,95 @@ function AdminMetricCard({
   )
 }
 
+function PlanAuditCard({ audit, fallbackUser }: { audit: any; fallbackUser: any }) {
+  const entitlements = audit?.entitlements || getFallbackEntitlements(fallbackUser?.plan_id)
+  const usage = audit?.usage || {
+    sessions: 0,
+    groups: 0,
+    scheduledMessages: 0,
+    actionsUsed: Number(fallbackUser?.message_used || 0),
+    actionsLimit: Number(fallbackUser?.message_limit || 0),
+    actionsRemaining: remainingActions(fallbackUser),
+  }
+  const accessAllowed = audit?.accessAllowed ?? !isExpired(fallbackUser)
+  const scheduledLabel = entitlements?.scheduledMessagesUnlimited
+    ? "Illimite"
+    : formatLimit(entitlements?.scheduledMessages)
+
+  return (
+    <Card className="border-primary/20 bg-primary/5 shadow-none">
+      <CardContent className="space-y-4 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold">Plan reel et limites</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Vue support pour verifier rapidement ce que le compte peut utiliser maintenant.
+            </p>
+          </div>
+          <Badge className={cn(
+            "w-fit border-none text-[10px]",
+            accessAllowed ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-destructive/10 text-destructive hover:bg-destructive/10"
+          )}>
+            {accessAllowed ? "Acces actif" : "Acces bloque"}
+          </Badge>
+        </div>
+
+        {audit?.accessMessage ? (
+          <div className="rounded-xl border bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+            {safeRender(audit.accessMessage)}
+          </div>
+        ) : null}
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <QuotaLine label="Groupes proteges" used={usage.groups} limit={entitlements?.groups} />
+          <QuotaLine label="Sessions WhatsApp" used={usage.sessions} limit={entitlements?.sessions} />
+          <QuotaLine label="Actions mensuelles" used={usage.actionsUsed} limit={usage.actionsLimit} />
+          <InfoLine label="Messages programmes" value={`${safeRender(usage.scheduledMessages || 0)} / ${scheduledLabel}`} />
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <FeatureBadge enabled={Boolean(entitlements?.linkBlocking)} label="Blocage liens" />
+          <FeatureBadge enabled={Boolean(entitlements?.forbiddenWords)} label="Mots interdits" />
+          <FeatureBadge enabled={Boolean(entitlements?.autoExclusion)} label="Auto-exclusion" />
+          <FeatureBadge enabled={Boolean(entitlements?.manualWelcome)} label="Bienvenue manuel" />
+          <FeatureBadge enabled={Boolean(entitlements?.moderationPresets)} label="Presets moderation" />
+          <FeatureBadge enabled={Boolean(entitlements?.aiAssistant)} label="Assistant IA" />
+          <FeatureBadge enabled={Boolean(entitlements?.aiGeneration)} label="Generation IA" />
+          <FeatureBadge enabled={Boolean(entitlements?.advancedModeration)} label="Avance Business" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function QuotaLine({ label, used, limit }: { label: string; used: unknown; limit: unknown }) {
+  const normalizedUsed = Number(used || 0)
+  const normalizedLimit = Number(limit || 0)
+  const progress = normalizedLimit > 0 ? Math.min(100, Math.round((normalizedUsed / normalizedLimit) * 100)) : 0
+
+  return (
+    <div className="rounded-lg border bg-background/50 p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-[9px] font-bold uppercase text-muted-foreground">{label}</p>
+        <p className="text-xs font-semibold">{safeRender(normalizedUsed)} / {formatLimit(limit)}</p>
+      </div>
+      <Progress value={progress} className={cn("h-1.5", progress >= 90 && "[&>div]:bg-amber-500")} />
+    </div>
+  )
+}
+
+function FeatureBadge({ enabled, label }: { enabled: boolean; label: string }) {
+  return (
+    <div className={cn(
+      "flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs",
+      enabled ? "border-primary/20 bg-primary/5 text-foreground" : "bg-muted/20 text-muted-foreground"
+    )}>
+      <span className="font-medium">{label}</span>
+      {enabled ? <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground/60" />}
+    </div>
+  )
+}
+
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border bg-background/50 p-3">
@@ -838,6 +929,41 @@ function InfoLine({ label, value }: { label: string; value: string }) {
       <p className="truncate text-xs font-semibold">{value}</p>
     </div>
   )
+}
+
+function formatLimit(value: unknown) {
+  if (value === null || value === undefined) return "Illimite"
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return "Illimite"
+  return safeRender(numeric)
+}
+
+function getFallbackEntitlements(planId?: unknown) {
+  const code = planCode(planId)
+  const base = {
+    plan: code,
+    linkBlocking: code !== "free",
+    forbiddenWords: code !== "free",
+    autoExclusion: code !== "free",
+    manualWelcome: code !== "free",
+    moderationPresets: code === "pro" || code === "business",
+    aiAssistant: code === "pro" || code === "business",
+    aiGeneration: code === "pro" || code === "business",
+    sessionAi: code === "pro" || code === "business",
+    advancedModeration: code === "business",
+    scheduledMessagesUnlimited: code === "pro" || code === "business",
+    scheduledMessages: code === "pro" || code === "business" ? null : 0,
+  }
+
+  const limits: Record<string, { sessions: number; groups: number }> = {
+    trial: { sessions: 1, groups: 1 },
+    free: { sessions: 0, groups: 0 },
+    starter: { sessions: 3, groups: 3 },
+    pro: { sessions: 6, groups: 6 },
+    business: { sessions: 16, groups: 16 },
+  }
+
+  return { ...base, ...(limits[code] || limits.trial) }
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

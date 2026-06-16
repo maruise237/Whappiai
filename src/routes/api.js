@@ -373,18 +373,15 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // If claiming an orphaned session, we still need to check the quota
             if (isOrphaned && !isOwner && !isAdmin && !isMasterKey) {
                 const user = await User.findByEmail(currentEmail);
-                const access = await AccountAccessService.getStatus(user);
-                const planId = access.plan || user?.plan_id || 'trial';
-                const quotas = { trial: 1, free: 0, starter: 3, pro: 6, business: 16 };
-                const limit = access.allowed ? (quotas[planId] ?? 1) : 0;
                 const currentSessions = Session.getSessionIdsByOwner(currentEmail);
+                const access = AccountAccessService.canCreateSession(user, currentSessions.length);
 
-                if (currentSessions.length >= limit) {
-                    log(`Quota de sessions atteint lors de la revendication pour ${currentEmail} (Limit: ${limit})`, 'AUTH', { planId, current: currentSessions.length }, 'WARN');
+                if (!access.allowed) {
+                    log(`Quota de sessions atteint lors de la revendication pour ${currentEmail} (Limit: ${access.limit})`, 'AUTH', { planId: access.plan, current: currentSessions.length }, 'WARN');
                     return res.status(403).json({
                         status: 'error',
-                        message: `Limite de sessions atteinte pour votre forfait ${planId}. Impossible de revendiquer cette session.`,
-                        limit: limit,
+                        message: access.message || 'Limite de sessions atteinte pour ce forfait.',
+                        limit: access.limit,
                         current: currentSessions.length
                     });
                 }
@@ -393,18 +390,15 @@ function initializeApi(sessions, sessionTokens, createSession, getSessionsDetail
             // New session quota
             if (!isAdmin && !isMasterKey) {
                 const user = await User.findByEmail(currentEmail);
-                const access = await AccountAccessService.getStatus(user);
-                const planId = access.plan || user?.plan_id || 'trial';
-                const quotas = { trial: 1, free: 0, starter: 3, pro: 6, business: 16 };
-                const limit = access.allowed ? (quotas[planId] ?? 1) : 0;
                 const currentSessions = Session.getSessionIdsByOwner(currentEmail);
+                const access = AccountAccessService.canCreateSession(user, currentSessions.length);
 
-                if (currentSessions.length >= limit) {
-                    log(`Quota de sessions atteint pour ${currentEmail} (Limit: ${limit})`, 'AUTH', { planId, current: currentSessions.length }, 'WARN');
+                if (!access.allowed) {
+                    log(`Quota de sessions atteint pour ${currentEmail} (Limit: ${access.limit})`, 'AUTH', { planId: access.plan, current: currentSessions.length }, 'WARN');
                     return res.status(403).json({
                         status: 'error',
-                        message: `Limite de sessions atteinte pour votre forfait ${planId}. Veuillez passer à un forfait supérieur pour ajouter plus de sessions.`,
-                        limit: limit,
+                        message: access.message || 'Limite de sessions atteinte pour ce forfait.',
+                        limit: access.limit,
                         current: currentSessions.length
                     });
                 }

@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { User, Session, ActivityLog, AIModel } = require('../models');
 const SubscriptionService = require('../services/SubscriptionService');
+const AccountAccessService = require('../services/AccountAccessService');
 const { requireAdmin } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const response = require('../utils/response');
@@ -164,14 +165,22 @@ router.get('/users/:userId/details', requireAdmin, asyncHandler(async (req, res)
     if (!user) return response.error(res, 'Utilisateur non trouvé', 404);
 
     // Get user sessions
-    const sessions = await db.all('SELECT * FROM whatsapp_sessions WHERE owner_email = $1', [user.email]);
+    const sessions = await db.all('SELECT * FROM whatsapp_sessions WHERE lower(owner_email) = lower($1)', [user.email]);
 
     // Get user logs (last 50)
     const logs = await db.all('SELECT * FROM activity_logs WHERE user_email = $1 ORDER BY created_at DESC LIMIT 50', [user.email]);
+    const managedGroups = await AccountAccessService.countManagedGroups(userId);
+    const scheduledMessages = await AccountAccessService.countActiveScheduledTasks(userId);
+    const planAudit = AccountAccessService.getPlanAudit(user, {
+        sessions: sessions.length,
+        groups: managedGroups,
+        scheduledMessages
+    });
 
     return response.success(res, {
         user,
         sessions,
+        planAudit,
         logs: logs.map(l => ({
             ...l,
             timestamp: l.created_at,

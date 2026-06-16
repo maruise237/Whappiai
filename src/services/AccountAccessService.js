@@ -2,12 +2,19 @@ const db = require('../db/query');
 const User = require('../models/User');
 const NotificationService = require('./NotificationService');
 
+const BASE_MODERATION_FEATURES = {
+    linkBlocking: true,
+    forbiddenWords: true,
+    autoExclusion: true,
+    manualWelcome: true
+};
+
 const PLAN_LIMITS = {
-    trial: { sessions: 1, groups: 1, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false },
-    free: { sessions: 0, groups: 0, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false },
-    starter: { sessions: 3, groups: 3, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false },
-    pro: { sessions: 6, groups: 6, scheduledMessages: Infinity, moderationPresets: true, aiAssistant: true, aiGeneration: true, sessionAi: true },
-    business: { sessions: 16, groups: 16, scheduledMessages: Infinity, moderationPresets: true, aiAssistant: true, aiGeneration: true, sessionAi: true }
+    trial: { sessions: 1, groups: 1, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false, ...BASE_MODERATION_FEATURES },
+    free: { sessions: 0, groups: 0, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false, linkBlocking: false, forbiddenWords: false, autoExclusion: false, manualWelcome: false },
+    starter: { sessions: 3, groups: 3, scheduledMessages: 0, moderationPresets: false, aiAssistant: false, aiGeneration: false, sessionAi: false, ...BASE_MODERATION_FEATURES },
+    pro: { sessions: 6, groups: 6, scheduledMessages: Infinity, moderationPresets: true, aiAssistant: true, aiGeneration: true, sessionAi: true, ...BASE_MODERATION_FEATURES },
+    business: { sessions: 16, groups: 16, scheduledMessages: Infinity, moderationPresets: true, aiAssistant: true, aiGeneration: true, sessionAi: true, ...BASE_MODERATION_FEATURES, advancedModeration: true }
 };
 
 const BLOCK_MESSAGES = {
@@ -15,9 +22,9 @@ const BLOCK_MESSAGES = {
     subscription_expired: "Votre essai ou abonnement a expire. Choisissez un forfait pour relancer Whappi.",
     subscription_invalid: "Votre abonnement n'est plus actif. Choisissez un forfait pour continuer.",
     action_limit_reached: "Limite d'actions atteinte pour ce forfait. Passez au forfait superieur ou renouvelez.",
-    session_limit_reached: "Limite de sessions atteinte pour ce forfait.",
-    group_limit_reached: "Limite de groupes moderes atteinte pour ce forfait.",
-    scheduled_limit_reached: "Limite de messages programmes atteinte pour ce forfait."
+    session_limit_reached: "Votre forfait a atteint sa limite de sessions WhatsApp connectees.",
+    group_limit_reached: "Votre forfait a atteint sa limite de groupes proteges.",
+    scheduled_limit_reached: "Les messages programmes sont reserves au forfait Pro IA ou Business."
 };
 
 const FEATURE_MESSAGES = {
@@ -42,6 +49,41 @@ class AccountAccessService {
         return {
             plan: code,
             ...(PLAN_LIMITS[code] || PLAN_LIMITS.trial)
+        };
+    }
+
+    static serializeEntitlements(entitlements) {
+        if (!entitlements) return null;
+        const scheduledMessagesUnlimited = !Number.isFinite(entitlements.scheduledMessages);
+        return {
+            ...entitlements,
+            scheduledMessagesUnlimited,
+            scheduledMessages: scheduledMessagesUnlimited ? null : entitlements.scheduledMessages,
+            featureKeys: Object.keys(entitlements).filter((key) => entitlements[key] === true)
+        };
+    }
+
+    static getPlanAudit(user, usage = {}) {
+        const status = this.getStatus(user);
+        const entitlements = this.serializeEntitlements(status.entitlements);
+        const actionsLimit = Number(user?.message_limit || 0);
+        const actionsUsed = Number(user?.message_used || 0);
+
+        return {
+            plan: status.plan || this.getPlanCode(user?.plan_id),
+            status: status.status || user?.plan_status || 'unknown',
+            accessAllowed: Boolean(status.allowed),
+            accessCode: status.code,
+            accessMessage: status.message,
+            entitlements,
+            usage: {
+                sessions: Number(usage.sessions || 0),
+                groups: Number(usage.groups || 0),
+                scheduledMessages: Number(usage.scheduledMessages || 0),
+                actionsUsed,
+                actionsLimit,
+                actionsRemaining: Math.max(0, actionsLimit - actionsUsed)
+            }
         };
     }
 
