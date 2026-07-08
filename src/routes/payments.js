@@ -3,7 +3,7 @@ const router = express.Router();
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
 const { createCheckoutSession, handleWebhook, getPaymentStatusForUser } = require('../services/payment');
-const PricingService = require('./PricingService');
+const PricingService = require('../services/PricingService');
 const { log } = require('../utils/logger');
 
 // POST /api/v1/payments/checkout
