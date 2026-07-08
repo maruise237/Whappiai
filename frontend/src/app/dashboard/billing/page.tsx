@@ -78,10 +78,10 @@ export default function BillingPage() {
     let interval: number | null = null
     let cancelled = false
 
-    async function syncGeniusPayReturn() {
-      if (typeof window === "undefined") return
-      const params = new URLSearchParams(window.location.search)
-      if (params.get("payment") !== "geniuspay") return
+    async function syncMoneyFusionReturn() {
+	      if (typeof window === "undefined") return
+	      const params = new URLSearchParams(window.location.search)
+	      if (params.get("payment") !== "moneyfusion") return
       const orderId = params.get("order")
       if (!orderId) {
         await refreshPlan()
@@ -133,7 +133,7 @@ export default function BillingPage() {
       }, 5000)
     }
 
-    syncGeniusPayReturn()
+	    syncMoneyFusionReturn()
     return () => {
       cancelled = true
       if (interval) window.clearInterval(interval)

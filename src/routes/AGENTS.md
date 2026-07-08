@@ -22,8 +22,9 @@ This folder owns the HTTP contract of Whappi: public API, admin API, support, pa
 ## Payment Guidance
 
 - Browser redirect is convenience UX only; webhook/server correlation is the source of truth.
-- Webhook handlers must stay idempotent and safe against unmatched sandbox/test payloads.
-- Transaction/user correlation must prefer stored local transaction data over client-return assumptions.
+- Webhook handlers must stay idempotent and safe against duplicate notifications (MoneyFusion peut envoyer plusieurs fois le même webhook).
+- Transaction/user correlation via `personal_Info[0].orderId` et `tokenPay`.
+- MoneyFusion ne signe pas ses webhooks : la sécurité repose sur la confidentialité du webhook URL et la corrélation tokenPay + personal_Info.
 
 ## Maintenance Guidance
 

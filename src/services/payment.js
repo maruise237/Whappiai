@@ -1,3 +1,23 @@
+/**
+ * MoneyFusion Payment Service
+ *
+ * Provider: MoneyFusion (FusionPay)
+ * Docs: https://docs.moneyfusion.net/
+ *
+ * Flow:
+ *   1. createCheckoutSession() → POST to MoneyFusion API → get { token, url }
+ *   2. Redirect user to url (checkout page)
+ *   3. MoneyFusion sends webhook to /api/v1/payments/moneyfusion/webhook
+ *   4. handleWebhook() processes event, activates subscription on payin.session.completed
+ *   5. User redirected to return_url (billing page) — we pass ?payment=moneyfusion&order=ORDER_ID
+ *
+ * Security notes:
+ *   - MoneyFusion does NOT sign webhooks with HMAC.
+ *   - Correlation relies on tokenPay uniqueness + personal_Info orderId match.
+ *   - MoneyFusion may send duplicate webhooks — dedup via tokenPay + stored status.
+ *   - The MONEYFUSION_API_URL is a secret per-merchant URL from the dashboard.
+ */
+
 const crypto = require('crypto');
 const db = require('../db/query');
 const { log } = require('../utils/logger');
@@ -6,53 +26,64 @@ const ActivityLog = require('../models/ActivityLog');
 const SubscriptionService = require('./SubscriptionService');
 const PricingService = require('./PricingService');
 
-function getGeniusPayBaseUrl() {
-    return (process.env.GENIUSPAY_BASE_URL || 'http://pay.genius.ci/api/v1/merchant').replace(/\/$/, '');
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getMoneyFusionApiUrl() {
+    const url = (process.env.MONEYFUSION_API_URL || '').replace(/\/$/, '');
+    if (!url) throw new Error('MONEYFUSION_API_URL non configuré');
+    return url;
 }
 
 function getFrontendBaseUrl() {
     return (process.env.FRONTEND_URL || process.env.APP_URL || '').replace(/\/$/, '');
 }
 
-function getGeniusPayHeaders() {
-    const apiKey = process.env.GENIUSPAY_API_KEY;
-    const apiSecret = process.env.GENIUSPAY_API_SECRET;
-
-    if (!apiKey || !apiSecret) {
-        throw new Error('GENIUSPAY_API_KEY ou GENIUSPAY_API_SECRET non configure');
-    }
-
-    return {
-        'X-API-Key': apiKey,
-        'X-API-Secret': apiSecret,
-        'Content-Type': 'application/json',
-    };
+function getAppBaseUrl() {
+    return (process.env.APP_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '');
 }
 
-function buildBillingRedirectUrl(status, orderId) {
+function buildBillingReturnUrl(orderId) {
     const base = getFrontendBaseUrl();
-    if (!base) throw new Error('FRONTEND_URL requis pour GeniusPay');
-
-    const url = new URL('/dashboard/billing', base);
-    url.searchParams.set('payment', 'geniuspay');
-    url.searchParams.set('status', status);
-    if (orderId) url.searchParams.set('order', orderId);
-    return url.toString();
+    if (!base) throw new Error('FRONTEND_URL requis');
+    return `${base}/dashboard/billing?payment=moneyfusion&order=${orderId}`;
 }
 
+/**
+ * MoneyFusion status → Whappi internal status.
+ *
+ * MoneyFusion status check values: pending | paid | failure | no paid
+ * Webhook events:                payin.session.pending | payin.session.completed | payin.session.cancelled
+ */
 function normalizeProviderStatus(status) {
-    const value = String(status || '').toLowerCase();
-    if (['completed', 'success', 'succeeded', 'paid'].includes(value)) return 'completed';
-    if (['failed', 'failure', 'error'].includes(value)) return 'failed';
-    if (['cancelled', 'canceled'].includes(value)) return 'cancelled';
-    if (['needs_review', 'manual_review', 'review'].includes(value)) return 'needs_review';
+    const value = String(status || '').toLowerCase().replace(/_/g, ' ');
+    if (['paid', 'completed', 'success', 'succeeded'].includes(value)) return 'completed';
+    if (['failure', 'failed', 'error'].includes(value)) return 'failed';
+    if (['cancelled', 'canceled', 'no paid'].includes(value)) return 'cancelled';
     return 'pending';
+}
+
+/**
+ * Map a webhook event name to our canonical status.
+ * Returns null if the event is unknown.
+ */
+function normalizeWebhookEvent(event) {
+    const e = String(event || '').toLowerCase().trim();
+    if (e === 'payin.session.completed') return 'completed';
+    if (e === 'payin.session.cancelled') return 'cancelled';
+    if (e === 'payin.session.pending') return 'pending';
+    return null;
 }
 
 function normalizeProviderToken(value) {
     const token = String(value || '').trim();
     return token || null;
 }
+
+// ---------------------------------------------------------------------------
+// Transaction persistence
+// ---------------------------------------------------------------------------
 
 async function saveTransaction({
     id,
@@ -76,7 +107,7 @@ async function saveTransaction({
     if (existing) {
         await db.run(`
             UPDATE payment_transactions
-            SET provider = 'geniuspay',
+            SET provider = 'moneyfusion',
                 provider_token = COALESCE($1, provider_token),
                 user_id = COALESCE($2, user_id),
                 plan_id = COALESCE($3, plan_id),
@@ -95,46 +126,48 @@ async function saveTransaction({
         INSERT INTO payment_transactions (
             id, provider, provider_token, user_id, plan_id, amount, currency, status, checkout_url, provider_payload
         )
-        VALUES ($1, 'geniuspay', $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, 'moneyfusion', $2, $3, $4, $5, $6, $7, $8, $9)
     `, [id, normalizedToken, userId, planId, amount, currency, status, checkoutUrl, payload]);
 
     return id;
 }
 
-function buildUnmatchedTransactionId(providerToken, rawPayload) {
-    const safeToken = String(providerToken || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
-    if (safeToken) return `geniuspay_unmatched_${safeToken}`;
-    const hash = crypto.createHash('sha256').update(Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(String(rawPayload || ''))).digest('hex').slice(0, 32);
-    return `geniuspay_unmatched_${hash}`;
-}
+// ---------------------------------------------------------------------------
+// Create checkout session
+// ---------------------------------------------------------------------------
 
 async function createCheckoutSession(user, planCode, { phoneNumber, customerName } = {}) {
+    const apiUrl = getMoneyFusionApiUrl();
     const plan = await PricingService.getPlanByCode(planCode);
     if (!plan) throw new Error('Plan invalide');
 
     const orderId = crypto.randomUUID();
+
+    // Build the request body per MoneyFusion API spec
     const body = {
-        amount: Number(plan.price),
-        currency: 'XOF',
-        description: `Abonnement Whappi ${plan.name}`,
-        customer: {
-            name: String(customerName || user.name || user.email || 'Client Whappi').trim(),
-            email: user.email,
-        },
-        success_url: buildBillingRedirectUrl('success', orderId),
-        error_url: buildBillingRedirectUrl('error', orderId),
-        metadata: {
-            order_id: orderId,
-            user_id: user.id,
-            user_email: user.email,
-            plan_id: plan.id,
-            plan_code: plan.code,
-        },
+        totalPrice: Number(plan.price),
+        article: [
+            {
+                name: `Abonnement Whappi ${plan.name}`,
+                price: Number(plan.price),
+                quantity: 1,
+            },
+        ],
+        numeroSend: String(phoneNumber || user.phone || user.whatsapp_number || '').trim(),
+        nomclient: String(customerName || user.name || user.email || 'Client Whappi').trim(),
+        personal_Info: [
+            {
+                userId: user.id,
+                orderId: orderId,
+                planCode: plan.code,
+                planId: plan.id,
+            },
+        ],
+        return_url: buildBillingReturnUrl(orderId),
+        webhook_url: `${getAppBaseUrl()}/api/v1/payments/moneyfusion/webhook`,
     };
 
-    const cleanPhone = String(phoneNumber || user.phone || user.whatsapp_number || '').trim();
-    if (cleanPhone) body.customer.phone = cleanPhone;
-
+    // Persist initial transaction (pre-creation, no provider token yet)
     await saveTransaction({
         id: orderId,
         userId: user.id,
@@ -145,11 +178,28 @@ async function createCheckoutSession(user, planCode, { phoneNumber, customerName
         providerPayload: { request: body },
     });
 
-    const response = await fetch(`${getGeniusPayBaseUrl()}/payments`, {
-        method: 'POST',
-        headers: getGeniusPayHeaders(),
-        body: JSON.stringify(body),
-    });
+    // Call MoneyFusion API
+    let response;
+    try {
+        response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(15000),
+        });
+    } catch (fetchError) {
+        // Mark transaction as failed on network error
+        await saveTransaction({
+            id: orderId,
+            userId: user.id,
+            planId: plan.id,
+            amount: Number(plan.price),
+            currency: 'XOF',
+            status: 'failed',
+            providerPayload: { request: body, error: fetchError.message },
+        });
+        throw new Error(`MoneyFusion inaccessible: ${fetchError.message}`);
+    }
 
     let payload = null;
     try {
@@ -158,17 +208,22 @@ async function createCheckoutSession(user, planCode, { phoneNumber, customerName
         payload = null;
     }
 
-    if (!response.ok || !payload?.success || !payload?.data) {
-        throw new Error(payload?.message || 'GeniusPay a refuse la creation du paiement');
+    if (!response.ok || !payload?.statut || !payload?.token || !payload?.url) {
+        const errorMsg = payload?.message || `MoneyFusion a retourné HTTP ${response.status}`;
+        await saveTransaction({
+            id: orderId,
+            userId: user.id,
+            planId: plan.id,
+            amount: Number(plan.price),
+            currency: 'XOF',
+            status: 'failed',
+            providerPayload: { request: body, response: payload, error: errorMsg },
+        });
+        throw new Error(errorMsg);
     }
 
-    const checkoutUrl = payload.data.checkout_url || payload.data.payment_url;
-    if (!checkoutUrl) {
-        throw new Error('GeniusPay n\'a retourne aucune URL de checkout');
-    }
-
-    const providerToken = payload.data.reference || String(payload.data.id || '');
-    const normalizedStatus = normalizeProviderStatus(payload.data.status);
+    const checkoutUrl = payload.url;
+    const providerToken = String(payload.token);
 
     await saveTransaction({
         id: orderId,
@@ -176,203 +231,166 @@ async function createCheckoutSession(user, planCode, { phoneNumber, customerName
         userId: user.id,
         planId: plan.id,
         amount: Number(plan.price),
-        currency: payload.data.currency || 'XOF',
-        status: normalizedStatus,
+        currency: 'XOF',
+        status: 'pending',
         checkoutUrl,
-        providerPayload: { request: body, response: payload.data },
+        providerPayload: { request: body, response: payload },
     });
 
-    log(`GeniusPay checkout created for ${user.email}`, 'PAYMENT', { orderId, planCode, reference: providerToken }, 'INFO');
+    log(`MoneyFusion checkout créé pour ${user.email}`, 'PAYMENT', {
+        orderId,
+        planCode,
+        token: providerToken,
+    }, 'INFO');
 
     return {
-        provider: 'geniuspay',
+        provider: 'moneyfusion',
         orderId,
         reference: providerToken,
         url: checkoutUrl,
-        status: normalizedStatus,
+        status: 'pending',
     };
 }
 
-function buildCandidateSignatureBuffers(rawPayload, secret, timestamp) {
-    const payloadBuffer = Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(String(rawPayload || ''), 'utf8');
-    const candidates = [
-        crypto.createHmac('sha256', secret).update(payloadBuffer).digest(),
-    ];
+// ---------------------------------------------------------------------------
+// Webhook handler
+// ---------------------------------------------------------------------------
 
-    if (timestamp) {
-        const signedPayload = Buffer.concat([
-            Buffer.from(String(timestamp), 'utf8'),
-            Buffer.from('.', 'utf8'),
-            payloadBuffer,
-        ]);
-        candidates.unshift(crypto.createHmac('sha256', secret).update(signedPayload).digest());
-    }
-
-    return candidates;
-}
-
-function verifyWebhookSignature(rawPayload, signature, timestamp) {
-    const secret = process.env.GENIUSPAY_WEBHOOK_SECRET;
-    if (!secret) {
-        throw new Error('GENIUSPAY_WEBHOOK_SECRET non configure');
-    }
-
-    if (!signature) return false;
-
-    let provided;
-    try {
-        provided = Buffer.from(signature, 'hex');
-    } catch {
-        return false;
-    }
-
-    const candidates = buildCandidateSignatureBuffers(rawPayload, secret, timestamp);
-    for (const expected of candidates) {
-        if (provided.length !== expected.length) continue;
-        try {
-            if (crypto.timingSafeEqual(provided, expected)) {
-                return true;
-            }
-        } catch {
-            return false;
-        }
-    }
-
-    return false;
-}
-
-async function handleWebhook(rawPayload, headers = {}) {
-    const signature = headers['x-webhook-signature'] || headers['x-geniuspay-signature'];
-    const timestamp = headers['x-webhook-timestamp'] || headers['x-geniuspay-timestamp'];
-    if (!verifyWebhookSignature(rawPayload, signature, timestamp)) {
-        throw new Error('Invalid GeniusPay signature');
-    }
-
+/**
+ * Handle an incoming MoneyFusion webhook.
+ *
+ * MoneyFusion does NOT sign webhooks, so security relies on:
+ *   1. Secrecy of the webhook URL
+ *   2. Correlation of tokenPay against our stored provider_token
+ *   3. Matching personal_Info.orderId against our stored transaction id
+ *
+ * @param {Buffer|string} rawPayload - Raw HTTP body
+ * @returns {Promise<{success: boolean, action: string, status?: string, reference?: string}>}
+ */
+async function handleWebhook(rawPayload) {
     const parsed = JSON.parse(rawPayload.toString('utf8'));
-    const event = String(parsed.event || headers['x-webhook-event'] || headers['x-geniuspay-event'] || '').toLowerCase();
-    const transaction = parsed.data?.transaction || parsed.transaction || parsed.data || {};
-    const metadata = transaction.metadata || parsed.metadata || parsed.data?.metadata || {};
-    const status = normalizeProviderStatus(transaction.status || (event === 'payment.success' ? 'completed' : 'pending'));
-    const orderId = normalizeProviderToken(metadata.order_id);
-    const providerToken = normalizeProviderToken(transaction.reference || transaction.id);
+    const event = String(parsed.event || '').toLowerCase().trim();
+    const normalizedEvent = normalizeWebhookEvent(event);
 
+    if (!normalizedEvent) {
+        log(`MoneyFusion webhook: event inconnu "${event}"`, 'PAYMENT', { event }, 'WARN');
+        return { success: true, action: 'ignored_unknown_event', event };
+    }
+
+    // Extract correlation data from the webhook payload
+    const { tokenPay, personal_Info: rawPersonalInfo, Montant, statut, numeroTransaction } = parsed;
+    const personalInfo = Array.isArray(rawPersonalInfo) && rawPersonalInfo.length > 0
+        ? rawPersonalInfo[0]
+        : {};
+    const orderId = normalizeProviderToken(personalInfo.orderId);
+    const providerToken = normalizeProviderToken(tokenPay);
+
+    // Try to find the matching transaction
     let existing = null;
     if (orderId || providerToken) {
         existing = await db.get(
             'SELECT * FROM payment_transactions WHERE id = $1 OR provider_token = $2',
-            [orderId, providerToken || null]
+            [orderId || null, providerToken || null]
         );
     }
-    const existingPayload = existing?.provider_payload ? JSON.parse(existing.provider_payload) : {};
-    const planId = metadata.plan_id || existing?.plan_id || existingPayload?.request?.metadata?.plan_id || null;
-    const planCode = metadata.plan_code || existingPayload?.request?.metadata?.plan_code || null;
-    const userId = metadata.user_id || existing?.user_id || existingPayload?.request?.metadata?.user_id || null;
-    const userEmail = metadata.user_email
-        || existingPayload?.request?.metadata?.user_email
-        || transaction.customer?.email
-        || existingPayload?.request?.customer?.email
+
+    const existingPayload = existing?.provider_payload
+        ? (typeof existing.provider_payload === 'string'
+            ? JSON.parse(existing.provider_payload)
+            : existing.provider_payload)
+        : {};
+    const requestPersonalInfo = existingPayload?.request?.personal_Info?.[0] || {};
+
+    const userId = personalInfo.userId
+        || existing?.user_id
+        || requestPersonalInfo.userId
         || null;
-    const amount = Number(transaction.amount || existing?.amount || 0);
+
+    const planCode = personalInfo.planCode
+        || requestPersonalInfo.planCode
+        || null;
+
+    const planId = personalInfo.planId
+        || existing?.plan_id
+        || requestPersonalInfo.planId
+        || null;
+
+    const amount = Number(Montant || existing?.amount || 0);
     const canonicalOrderId = orderId || existing?.id || null;
 
-    if (!canonicalOrderId && !providerToken && !userId && !userEmail && !planId && !planCode) {
-        log('Webhook GeniusPay ignore: payload de test ou non correlable', 'PAYMENT', {
+    // Derive the canonical status from the event first, then fall back to statut field
+    const computedStatus = normalizedEvent === 'completed' ? 'completed'
+        : normalizedEvent === 'cancelled' ? 'cancelled'
+        : normalizeProviderStatus(statut || normalizedEvent);
+
+    // If we can't correlate at all, log and return
+    if (!canonicalOrderId && !providerToken && !userId) {
+        log('MoneyFusion webhook: payload non corrélable — ignoré', 'PAYMENT', {
             event,
-            topLevelKeys: Object.keys(parsed || {}),
-            dataKeys: parsed?.data && typeof parsed.data === 'object' ? Object.keys(parsed.data) : [],
-            transactionKeys: transaction && typeof transaction === 'object' ? Object.keys(transaction) : [],
+            tokenPay,
+            personalInfo,
         }, 'WARN');
-        return { success: true, action: 'ignored_unmatched_test_payload', status };
+        return { success: true, action: 'ignored_unmatched', status: computedStatus };
     }
 
-    if (!canonicalOrderId) {
-        const reviewTransactionId = buildUnmatchedTransactionId(providerToken, rawPayload);
-        await saveTransaction({
-            id: reviewTransactionId,
-            providerToken,
-            userId,
-            planId,
-            amount,
-            currency: transaction.currency || 'XOF',
-            status: 'needs_review',
-            providerPayload: parsed,
-        });
-
-        log('Webhook GeniusPay conserve pour verification admin: transaction d\'origine introuvable', 'PAYMENT', {
-            event,
-            reviewTransactionId,
-            reference: providerToken,
-            userId,
-            userEmail,
-            planId,
-            planCode,
-        }, 'WARN');
-        return { success: true, action: 'saved_for_admin_review', status: 'needs_review', reference: providerToken };
-    }
-
+    // Persist the webhook update
+    const resolvedId = canonicalOrderId || buildUnmatchedTransactionId(providerToken, rawPayload);
     await saveTransaction({
-        id: canonicalOrderId,
+        id: resolvedId,
         providerToken,
         userId,
         planId,
         amount,
-        currency: transaction.currency || existing?.currency || 'XOF',
-        status,
+        currency: 'XOF',
+        status: computedStatus,
         checkoutUrl: existing?.checkout_url || null,
         providerPayload: parsed,
     });
 
-    if (status !== 'completed') {
-        return { success: true, action: 'status_updated', status, reference: providerToken };
-    }
-
-    if (existing?.status === 'completed') {
-        return { success: true, action: 'ignored_duplicate', status, reference: providerToken };
-    }
-
-    const user = (userId && await User.findById(userId))
-        || (userEmail && await User.findByEmail(userEmail));
-    if (!user) {
-        await saveTransaction({
-            id: canonicalOrderId,
-            providerToken,
-            userId,
-            planId,
-            amount,
-            currency: transaction.currency || existing?.currency || 'XOF',
-            status: 'needs_review',
-            checkoutUrl: existing?.checkout_url || null,
-            providerPayload: parsed,
-        });
-
-        log('Impossible de relier le webhook GeniusPay a un utilisateur', 'PAYMENT', {
+    // ── Non-terminal statuses ───────────────────────────────────────────
+    if (computedStatus !== 'completed') {
+        log(`MoneyFusion webhook: statut ${computedStatus} pour transaction ${resolvedId}`, 'PAYMENT', {
             orderId: canonicalOrderId,
-            reference: providerToken,
+            token: providerToken,
+            event,
+            numeroTransaction: numeroTransaction || null,
+        }, 'INFO');
+        return { success: true, action: 'status_updated', status: computedStatus, reference: providerToken };
+    }
+
+    // ── Duplicate detection ─────────────────────────────────────────────
+    if (existing?.status === 'completed') {
+        log(`MoneyFusion webhook: doublon ignoré pour ${resolvedId}`, 'PAYMENT', {
+            orderId: canonicalOrderId,
+            token: providerToken,
+        }, 'INFO');
+        return { success: true, action: 'ignored_duplicate', status: 'completed', reference: providerToken };
+    }
+
+    // ── Resolve user ────────────────────────────────────────────────────
+    const user = (userId && await User.findById(userId))
+        || (personalInfo.userEmail && await User.findByEmail(personalInfo.userEmail));
+    if (!user) {
+        await flagForAdminReview(resolvedId, providerToken, userId, planId, amount, parsed,
+            `Utilisateur introuvable (userId=${userId})`);
+        log('MoneyFusion: utilisateur introuvable', 'PAYMENT', {
+            orderId: canonicalOrderId,
+            token: providerToken,
             userId,
-            userEmail,
-            metadata,
-            hasExistingTransaction: Boolean(existing),
+            personalInfo,
         }, 'ERROR');
         return { success: true, action: 'needs_admin_review_user_missing', status: 'needs_review', reference: providerToken };
     }
 
+    // ── Resolve plan ────────────────────────────────────────────────────
     const plan = (planCode && await PricingService.getPlanByCode(planCode))
         || (planId && await PricingService.getPlan(planId));
     if (!plan) {
-        await saveTransaction({
-            id: canonicalOrderId,
-            providerToken,
-            userId: user.id,
-            planId,
-            amount,
-            currency: transaction.currency || existing?.currency || 'XOF',
-            status: 'needs_review',
-            checkoutUrl: existing?.checkout_url || null,
-            providerPayload: parsed,
-        });
-        log('Plan GeniusPay introuvable, transaction mise en verification admin', 'PAYMENT', {
+        await flagForAdminReview(resolvedId, providerToken, user.id, planId, amount, parsed,
+            `Plan introuvable (code=${planCode}, id=${planId})`);
+        log('MoneyFusion: plan introuvable', 'PAYMENT', {
             orderId: canonicalOrderId,
-            reference: providerToken,
+            token: providerToken,
             planId,
             planCode,
             userEmail: user.email,
@@ -380,41 +398,34 @@ async function handleWebhook(rawPayload, headers = {}) {
         return { success: true, action: 'needs_admin_review_plan_missing', status: 'needs_review', reference: providerToken };
     }
 
+    // ── Amount check ────────────────────────────────────────────────────
     if (amount && amount < Number(plan.price)) {
-        await saveTransaction({
-            id: canonicalOrderId,
-            providerToken,
-            userId: user.id,
-            planId: plan.id,
-            amount,
-            currency: transaction.currency || existing?.currency || 'XOF',
-            status: 'needs_review',
-            checkoutUrl: existing?.checkout_url || null,
-            providerPayload: parsed,
-        });
-        log('Montant GeniusPay insuffisant, transaction mise en verification admin', 'PAYMENT', {
+        await flagForAdminReview(resolvedId, providerToken, user.id, plan.id, amount, parsed,
+            `Montant insuffisant: ${amount} < ${plan.price}`);
+        log('MoneyFusion: montant insuffisant', 'PAYMENT', {
             orderId: canonicalOrderId,
-            reference: providerToken,
             amount,
-            expectedAmount: plan.price,
+            expected: plan.price,
             planCode: plan.code,
             userEmail: user.email,
         }, 'ERROR');
         return { success: true, action: 'needs_admin_review_amount_mismatch', status: 'needs_review', reference: providerToken };
     }
 
+    // ── Activate! ───────────────────────────────────────────────────────
     await SubscriptionService.subscribe(user.id, plan.code);
 
-    log(`GeniusPay webhook activated subscription for ${user.email}`, 'PAYMENT', {
+    log(`MoneyFusion: abonnement ${plan.code} activé pour ${user.email}`, 'PAYMENT', {
         orderId: canonicalOrderId,
         reference: providerToken,
         planCode: plan.code,
         event,
+        numeroTransaction: numeroTransaction || null,
     }, 'INFO');
 
     ActivityLog.log({
         userEmail: user.email,
-        action: 'GENIUSPAY_PAYMENT_COMPLETED',
+        action: 'MONEYFUSION_PAYMENT_COMPLETED',
         resource: 'subscription',
         resourceId: plan.code,
         success: true,
@@ -423,11 +434,52 @@ async function handleWebhook(rawPayload, headers = {}) {
             reference: providerToken,
             amount,
             event,
-        }
+            numeroTransaction: numeroTransaction || null,
+        },
     });
 
-    return { success: true, action: 'subscription_activated', status, reference: providerToken, user: user.email };
+    return {
+        success: true,
+        action: 'subscription_activated',
+        status: 'completed',
+        reference: providerToken,
+        user: user.email,
+    };
 }
+
+/**
+ * Flag a transaction for admin review when automatic activation cannot proceed.
+ */
+async function flagForAdminReview(transactionId, providerToken, userId, planId, amount, parsedPayload, reason) {
+    await saveTransaction({
+        id: transactionId,
+        providerToken,
+        userId,
+        planId,
+        amount,
+        currency: 'XOF',
+        status: 'needs_review',
+        checkoutUrl: null,
+        providerPayload: { webhook: parsedPayload, review_reason: reason },
+    });
+}
+
+/**
+ * Build a synthetic transaction ID for webhooks that arrive for an unknown order.
+ */
+function buildUnmatchedTransactionId(providerToken, rawPayload) {
+    const safeToken = String(providerToken || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    if (safeToken) return `moneyfusion_unmatched_${safeToken}`;
+    const hash = crypto.createHash('sha256')
+        .update(Buffer.from(String(rawPayload || '')))
+        .digest('hex')
+        .slice(0, 32);
+    return `moneyfusion_unmatched_${hash}`;
+}
+
+// ---------------------------------------------------------------------------
+// Payment status lookup
+// ---------------------------------------------------------------------------
 
 async function getPaymentStatusForUser(userId, orderId) {
     if (!orderId) throw new Error('orderId requis');
@@ -440,15 +492,11 @@ async function getPaymentStatusForUser(userId, orderId) {
     `, [orderId]);
 
     if (!transaction) {
-        return {
-            found: false,
-            orderId,
-            status: 'unknown',
-        };
+        return { found: false, orderId, status: 'unknown' };
     }
 
     if (transaction.user_id && userId && transaction.user_id !== userId) {
-        throw new Error('Acces non autorise a cette transaction');
+        throw new Error('Accès non autorisé à cette transaction');
     }
 
     return {
@@ -456,7 +504,7 @@ async function getPaymentStatusForUser(userId, orderId) {
         orderId: transaction.id,
         reference: transaction.provider_token || null,
         provider: transaction.provider,
-        status: normalizeProviderStatus(transaction.status),
+        status: transaction.status || 'unknown',
         planId: transaction.plan_id || null,
         planCode: transaction.plan_code || null,
         planName: transaction.plan_name || null,
@@ -466,9 +514,12 @@ async function getPaymentStatusForUser(userId, orderId) {
     };
 }
 
+// ---------------------------------------------------------------------------
+// Exports
+// ---------------------------------------------------------------------------
+
 module.exports = {
     createCheckoutSession,
     handleWebhook,
     getPaymentStatusForUser,
-    verifyWebhookSignature,
 };

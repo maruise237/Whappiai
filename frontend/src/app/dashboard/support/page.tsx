@@ -241,12 +241,12 @@ export default function SupportPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-semibold text-muted-foreground">Reference GeniusPay (optionnel)</Label>
-                  <Input
-                    className="h-10 text-xs"
-                    value={form.paymentReference}
-                    onChange={event => setForm(current => ({ ...current, paymentReference: event.target.value }))}
-                    placeholder="Ex: SANDBOX_XXXX"
+                  <Label className="text-[10px] font-semibold text-muted-foreground">Reference MoneyFusion (optionnel)</Label>
+                    <Input
+                      className="h-10 text-xs"
+                      value={form.paymentReference}
+                      onChange={event => setForm(current => ({ ...current, paymentReference: event.target.value }))}
+                      placeholder="Ex: 5d58823b084564"
                   />
                 </div>
               </div>

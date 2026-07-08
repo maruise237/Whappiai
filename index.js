@@ -225,7 +225,7 @@ app.use((req, res, next) => {
 
 // JSON Body Parser with exception for Clerk Webhook (needs raw body)
 app.use((req, res, next) => {
-    if (req.originalUrl === '/webhooks/clerk' || req.originalUrl.startsWith('/api/v1/payments/geniuspay/webhook')) {
+    if (req.originalUrl === '/webhooks/clerk' || req.originalUrl.startsWith('/api/v1/payments/moneyfusion/webhook')) {
         next();
     } else {
         express.json({ limit: '1mb' })(req, res, next);

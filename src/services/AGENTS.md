@@ -6,7 +6,7 @@ This folder contains the core business logic of Whappi: provider orchestration, 
 
 ## Local Contracts
 
-- `payment.js` is the source of truth for GeniusPay integration behavior.
+- `payment.js` is the source of truth for MoneyFusion integration behavior.
 - `PricingService.js` and `SubscriptionService.js` define commercial plan logic.
 - `AccountAccessService.js` defines plan enforcement rules such as moderated-group limits.
 - `SessionService.js`, `SessionStore.js`, and `redis.js` govern runtime session behavior.

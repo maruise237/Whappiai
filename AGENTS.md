@@ -103,9 +103,11 @@ Sessions go through: `CONNECTING` -> `GENERATING_QR` -> `CONNECTED` (or `DISCONN
 - Admins are intentionally bypassed by the overlay so they can recover the platform while maintenance is active.
 
 ### Payments
-- Active payment provider is GeniusPay.
+- Active payment provider is MoneyFusion (FusionPay).
 - Never treat browser redirect as the source of truth for subscription activation.
 - Webhook reconciliation and transaction correlation must stay idempotent and defensive.
+- MoneyFusion webhooks have no HMAC signature; rely on `tokenPay` uniqueness and `personal_Info` correlation.
+- MoneyFusion can send duplicate webhooks; deduplicate using `tokenPay` and stored transaction status.
 
 ### Admin Stability
 - Do not mount normal admin/product routes behind strict auth-attempt rate limiters.
