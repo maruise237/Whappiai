@@ -380,6 +380,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         if (message.includes("404") || message.includes("not found")) {
           router.push("/register?conversion=true")
         }
+        if (message.includes("401") || message.includes("Unauthorized") || message.includes("Session expirée") || message.includes("Non autorisé")) {
+          window.location.href = "/login"
+        }
       }
     }
     checkUserSync()
@@ -398,7 +401,36 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, [isAdmin, pathname, router])
 
   // Auth guard: redirect to login if not authenticated
-  if (!isLoaded || !mounted) {
+  // Timeout: if Clerk takes >8s to load, redirect to login (session likely expired)
+  const [clerkTimedOut, setClerkTimedOut] = React.useState(false)
+
+  React.useEffect(() => {
+    if (isLoaded) return
+    const timer = setTimeout(() => {
+      setClerkTimedOut(true)
+    }, 8000)
+    return () => clearTimeout(timer)
+  }, [isLoaded])
+
+  if (!mounted || (clerkTimedOut && !isLoaded)) {
+    if (clerkTimedOut && typeof window !== "undefined") {
+      window.location.href = "/login"
+    }
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#0d0d0c]">
+        <div className="flex flex-col items-center gap-4">
+          <Logo size={40} showText={false} className="animate-pulse" />
+          {clerkTimedOut && (
+            <p className="text-xs text-muted-foreground animate-pulse">
+              Session expirée, redirection...
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (!isLoaded) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-[#0d0d0c]">
         <Logo size={40} showText={false} className="animate-pulse" />
@@ -407,7 +439,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    router.push("/login")
+    if (typeof window !== "undefined") {
+      window.location.href = "/login"
+    }
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-[#0d0d0c]">
         <Logo size={40} showText={false} className="animate-pulse" />

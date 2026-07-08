@@ -95,6 +95,16 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     });
 
     if (!res.ok) {
+      // Global 401 handling: redirect to login if session expired
+      if (res.status === 401 && typeof window !== 'undefined') {
+        const currentPath = window.location.pathname
+        // Only redirect if we're on a dashboard page and not already on login
+        if (currentPath.startsWith('/dashboard') && !currentPath.startsWith('/login')) {
+          window.location.href = '/login'
+          throw new Error('Session expirée')
+        }
+      }
+
       let errorMessage = res.statusText || "An error occurred";
       try {
         const error = await res.json();
