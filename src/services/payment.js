@@ -153,7 +153,7 @@ async function createCheckoutSession(user, planCode, { phoneNumber, customerName
                 quantity: 1,
             },
         ],
-        numeroSend: String(phoneNumber || user.phone || user.whatsapp_number || '').trim(),
+        numeroSend: String(phoneNumber || user.phone || user.whatsapp_number || '0000000000').trim(),
         nomclient: String(customerName || user.name || user.email || 'Client Whappi').trim(),
         personal_Info: [
             {
@@ -209,7 +209,18 @@ async function createCheckoutSession(user, planCode, { phoneNumber, customerName
     }
 
     if (!response.ok || !payload?.statut || !payload?.token || !payload?.url) {
+        const statusFromPayload = payload?.statut;
         const errorMsg = payload?.message || `MoneyFusion a retourné HTTP ${response.status}`;
+        log('MoneyFusion a rejeté la requête', 'PAYMENT', {
+            httpStatus: response.status,
+            payloadStatus: statusFromPayload,
+            payloadMessage: payload?.message,
+            hasToken: !!payload?.token,
+            hasUrl: !!payload?.url,
+            planPrice: plan.price,
+            planName: plan.name,
+            bodyPreview: JSON.stringify(body).slice(0, 200),
+        }, 'WARN');
         await saveTransaction({
             id: orderId,
             userId: user.id,
