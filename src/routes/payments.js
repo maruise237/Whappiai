@@ -6,6 +6,58 @@ const { createCheckoutSession, handleWebhook, getPaymentStatusForUser } = requir
 const PricingService = require('../services/PricingService');
 const { log } = require('../utils/logger');
 
+// GET /api/v1/payments/diag - Diagnostic MoneyFusion (sans auth)
+router.get('/diag', async (req, res) => {
+    const results = {
+        env: {
+            MONEYFUSION_API_URL: process.env.MONEYFUSION_API_URL ? 'défini (' + process.env.MONEYFUSION_API_URL.slice(0, 30) + '...)' : 'NON DÉFINI',
+            APP_URL: process.env.APP_URL || 'NON DÉFINI',
+            FRONTEND_URL: process.env.FRONTEND_URL || 'NON DÉFINI',
+        },
+        dns: null,
+        http: null,
+    };
+
+    const apiUrl = (process.env.MONEYFUSION_API_URL || '').replace(/\/$/, '');
+    if (!apiUrl) {
+        return res.json({ ...results, error: 'MONEYFUSION_API_URL non configuré' });
+    }
+
+    try {
+        const dnsResult = await fetch('https://1.1.1.1/dns-query?name=' + encodeURIComponent(new URL(apiUrl).hostname) + '&type=A', {
+            headers: { Accept: 'application/dns-json' },
+        });
+        const dnsData = await dnsResult.json();
+        results.dns = dnsData.Answer?.map(a => `${a.name} → ${a.data}`) || 'DNS lookup failed';
+    } catch (e) {
+        results.dns = `DNS error: ${e.message}`;
+    }
+
+    try {
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 10000);
+        const resp = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                totalPrice: 200,
+                article: [{ name: 'Test', price: 200, quantity: 1 }],
+                numeroSend: '0101010101',
+                nomclient: 'Diag',
+                personal_Info: [{ userId: 'diag', orderId: 'diag-' + Date.now(), planCode: 'starter', planId: 'starter' }],
+            }),
+            signal: ctrl.signal,
+        });
+        clearTimeout(timeout);
+        const data = await resp.json();
+        results.http = { status: resp.status, statut: data.statut, message: data.message, hasUrl: !!data.url };
+    } catch (e) {
+        results.http = `Fetch error: ${e.message}${e.cause ? ' | cause: ' + e.cause.message : ''}`;
+    }
+
+    res.json(results);
+});
+
 // POST /api/v1/payments/checkout
 router.post('/checkout', ClerkExpressWithAuth(), async (req, res) => {
     try {
@@ -24,7 +76,11 @@ router.post('/checkout', ClerkExpressWithAuth(), async (req, res) => {
         const checkout = await createCheckoutSession(user, planId, { phoneNumber, customerName });
         res.json(checkout);
     } catch (error) {
-        log('Erreur lors de la création du lien de paiement', 'PAYMENT', { error: error.message }, 'ERROR');
+        log('Erreur lors de la création du lien de paiement', 'PAYMENT', {
+            error: error.message,
+            stack: error.stack?.split('\n').slice(0, 4).join(' | '),
+            cause: error.cause?.message || error.cause || null,
+        }, 'ERROR');
         res.status(500).json({ error: error.message || 'Erreur lors de la création du lien de paiement' });
     }
 });
