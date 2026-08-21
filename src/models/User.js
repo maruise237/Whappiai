@@ -10,6 +10,17 @@ const crypto = require('crypto');
 
 class User {
     /**
+     * Ensure database schema includes all necessary columns for User model
+     */
+    static async ensureUserSchema() {
+        try {
+            await db.run("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+        } catch (e) {
+            // Ignore error if column already exists or table does not exist
+        }
+    }
+
+    /**
      * Create or Update a user from Clerk
      * @param {object} userData - User data
      * @returns {object} Created/Updated user

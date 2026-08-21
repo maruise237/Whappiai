@@ -13,6 +13,13 @@ async function migrate() {
   const ok = await pg.connect();
   if (!ok) { console.error('Postgres connection failed'); process.exit(1); }
 
+  // Ensure users updated_at column
+  try {
+    await pg.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+  } catch (e) {
+    // Ignore if table not created yet
+  }
+
   const tables = [
     'users', 'whatsapp_sessions', 'activity_logs', 'pricing_plans',
     'subscriptions', 'credit_history', 'group_settings', 'user_warnings',
