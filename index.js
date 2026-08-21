@@ -287,15 +287,25 @@ async function initRateLimitStores() {
   ]);
 }
 
-// General limiter (all routes) — 60 req/min
+// General limiter (all routes) — 600 req/min, skipping frontend static assets & page routes
+const getClientIp = (req) => req.headers["cf-connecting-ip"] || (req.headers["x-forwarded-for"] ? req.headers["x-forwarded-for"].split(",")[0].trim() : req.ip);
+
 const generalLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 300,
+    max: 600,
     message: { status: 'error', message: 'Too many requests' },
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
-    store: generalStore
+    store: generalStore,
+    skip: (req) => {
+        // Do not rate limit frontend HTML pages, Next.js static assets, or public files
+        if (req.method === 'GET' && !req.path.startsWith('/api/') && !req.path.startsWith('/webhooks') && !req.path.startsWith('/admin/')) {
+            return true;
+        }
+        return false;
+    },
+    keyGenerator: getClientIp
 });
 
 // Stricter limiter for authentication endpoints — 10 req/15min
@@ -333,16 +343,16 @@ const evolutionWebhookLimiter = rateLimit({
     keyGenerator: (req) => req.headers['x-evolution-instance'] || req.ip
 });
 
-// API limiter (per user) — 200 req/min per user
+// API limiter (per user) — 600 req/min per user
 const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 300,
+    max: 600,
     message: { status: 'error', message: 'API rate limit exceeded' },
     standardHeaders: true,
     legacyHeaders: false,
     validate: { trustProxy: false },
     store: apiStore,
-    keyGenerator: (req) => req.currentUser?.email || req.ip
+    keyGenerator: (req) => req.currentUser?.email || getClientIp(req)
 });
 
 app.use(generalLimiter);
