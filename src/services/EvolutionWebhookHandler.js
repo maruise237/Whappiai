@@ -103,9 +103,10 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                 const mapped = mapState(state);
                 const detail = data.statusReason || null;
                 const qrOrCode = data.base64 || data.code || null;
-                Session.updateStatus(localId, mapped, detail, null, qrOrCode);
                 if (global._broadcastSessionUpdate) {
-                    global._broadcastSessionUpdate(localId, mapped, detail, qrOrCode);
+                    await global._broadcastSessionUpdate(localId, mapped, detail, qrOrCode);
+                } else {
+                    await Session.updateStatus(localId, mapped, detail, undefined, qrOrCode || undefined);
                 }
                 if (mapped === 'CONNECTED') {
                     wappy.sessionConnected(localId);
@@ -119,9 +120,10 @@ router.post('/webhooks/evolution', express.json({ limit: '5mb' }), async (req, r
                 if (!instanceName) break;
                 const localId = stripPrefix(instanceName, process.env.EVOLUTION_INSTANCE_PREFIX || '');
                 const qrOrCode = data.base64 || data.code || null;
-                Session.updateStatus(localId, 'CONNECTING', 'QR updated', null, qrOrCode);
                 if (global._broadcastSessionUpdate) {
-                    global._broadcastSessionUpdate(localId, 'CONNECTING', 'QR updated', qrOrCode);
+                    await global._broadcastSessionUpdate(localId, 'CONNECTING', 'QR updated', qrOrCode);
+                } else {
+                    await Session.updateStatus(localId, 'CONNECTING', 'QR updated', undefined, qrOrCode || undefined);
                 }
                 break;
             }

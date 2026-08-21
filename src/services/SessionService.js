@@ -242,6 +242,15 @@ async function reconcileSessionsStatus(ownerEmail = null, isAdmin = false) {
             // Skip if DB already matches live state
             if (session.status === liveStatus) continue;
 
+            // Preserve connecting phase (CONNECTING, GENERATING_QR, GENERATING_CODE) if session has active QR/pairing code
+            // and Evolution returns transient "close"/"disconnected" state during initial setup
+            const isConnectingPhase = ['CONNECTING', 'GENERATING_QR', 'GENERATING_CODE'].includes(session.status);
+            const hasPairingData = Boolean(session.qr_code || session.pairing_code);
+            if (isConnectingPhase && hasPairingData && liveStatus === 'DISCONNECTED') {
+                log(`[Reconcile] Preserving connecting phase for ${session.id} despite Evolution state "${r.state}"`, 'SESSION', null, 'DEBUG');
+                continue;
+            }
+
             log(
                 `[Reconcile] ${session.id}: DB=${session.status} → Evolution=${r.state} (→ ${liveStatus})`,
                 'SESSION',
@@ -249,7 +258,11 @@ async function reconcileSessionsStatus(ownerEmail = null, isAdmin = false) {
                 'INFO'
             );
 
-            Session.updateStatus(session.id, liveStatus, `Reconciled from Evolution: ${r.state}`);
+            if (global._broadcastSessionUpdate) {
+                await global._broadcastSessionUpdate(session.id, liveStatus, `Reconciled from Evolution: ${r.state}`);
+            } else {
+                await Session.updateStatus(session.id, liveStatus, `Reconciled from Evolution: ${r.state}`);
+            }
         } catch (e) {
             log(`[Reconcile] Error checking ${session.id}: ${e.message}`, 'SESSION', null, 'WARN');
         }

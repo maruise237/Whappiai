@@ -552,8 +552,8 @@ const sessionTokens = new Map();
 // Helper to broadcast session updates
 // Exposed globally so EvolutionWebhookHandler can call it without circular require
 const broadcastSessionUpdate = async (id, status, detail, qrOrCode) => {
-    const isPairingCode = status === 'GENERATING_CODE';
-    const isQR = status === 'GENERATING_QR';
+    const isPairingCode = status === 'GENERATING_CODE' || (Boolean(qrOrCode) && typeof qrOrCode === 'string' && qrOrCode.length <= 15 && !qrOrCode.startsWith('data:'));
+    const isQR = status === 'GENERATING_QR' || (Boolean(qrOrCode) && typeof qrOrCode === 'string' && (qrOrCode.startsWith('data:') || qrOrCode.length > 15));
 
     // CRITICAL: We pass undefined instead of null to prevent clearing existing code/qr when status updates
     // EXCEPT when status is DISCONNECTED, in which case we clear them.

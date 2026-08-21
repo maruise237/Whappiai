@@ -13,6 +13,9 @@ const WebSocketContext = React.createContext<WebSocketContextType | undefined>(u
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const { getToken, isLoaded, isSignedIn } = useAuth()
+  const getTokenRef = React.useRef(getToken)
+  getTokenRef.current = getToken
+
   const [lastMessage, setLastMessage] = React.useState<any>(null)
   const [isConnected, setIsConnected] = React.useState(false)
   const socketRef = React.useRef<WebSocket | null>(null)
@@ -29,7 +32,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       if (!isComponentMounted || !isLoaded || !isSignedIn) return
 
       try {
-        const token = await getToken()
+        const token = await getTokenRef.current()
 
         if (!isComponentMounted || !token) return
 
@@ -107,7 +110,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       }
       clearTimeout(reconnectTimeout)
     }
-  }, [isLoaded, isSignedIn, getToken])
+  }, [isLoaded, isSignedIn])
 
   return (
     <WebSocketContext.Provider value={{ lastMessage, isConnected }}>
