@@ -165,10 +165,8 @@ class Session {
         let newPairingCode = pairingCode !== undefined ? pairingCode : existing.pairing_code;
         let newQrCode = qrCode !== undefined ? qrCode : existing.qr_code;
 
-        if (newStatus === 'DISCONNECTED' && pairingCode === undefined && qrCode === undefined) {
-            newPairingCode = null;
-            newQrCode = null;
-        }
+        if (pairingCode === null) newPairingCode = null;
+        if (qrCode === null) newQrCode = null;
 
         await db.run(`
             UPDATE whatsapp_sessions
