@@ -836,6 +836,7 @@ if (require.main === module) {
             throw new Error('Postgres bootstrap failed');
         }
         await AIModel.ensureDefaultDeepSeek();
+        await User.ensureUserSchema();
         await User.ensureAdmin(process.env.ADMIN_DASHBOARD_PASSWORD);
         await ensureSupportSchema();
         const existingSessions = await Session.getAll(null, true);
